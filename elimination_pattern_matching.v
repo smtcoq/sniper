@@ -260,54 +260,40 @@ Fixpoint remove_forall t := match t with
 end.
 
 
+Ltac unquote_requote_rec t :=
+run_template_program (tmUnquote t) (fun t => 
+let x:= eval hnf in t.(my_projT2) in run_template_program (tmQuoteRec x) ltac:(fun t => idtac t)).
 
-Definition min1 (x : nat) := match x with
-| 0 => 0
-| S x => x
+
+
+Definition erase_forall (H : term) := match H with
+| tProd _ Ty t => (Ty, t)
+| _ => (unit_reif, unit_reif)
 end.
 
-Definition min1' := min1.
-
-Definition min1'' := min1'.
-
-Definition min1''' := min1''.
-
-Section Examples.
+Definition head (t : term) :=
+match t with 
+| tApp x y => x 
+| _ => unit_reif 
+end.
 
 
 
-
-Goal True.
-Proof. 
-assert (forall x, min1''' x = match x with
-| 0 => 0
-| S x => x
-end) by reflexivity.
-Abort.
-
-
-
-
-
-
-
+(* Simplification : H must be of the form forall x, f x = match x with ... *)
 Ltac produce_eq_tCase_hyp H := 
 
-let eq := type of H in 
-quote_term eq (fun eq => 
-let eq := eval cbv in (eliminate_forall eq) in 
-let args := eval cbv in (get_type_of_args 
-let f_fold := eval cbv in (get_snd_arg T) in
-let f_unfold_reif := eval cbv in (get_thrd_arg f) in
-| forall x, (?f _) = ?f_unfold => match type of f with 
-| ?A -> ?B => quote_term B (fun codomain => 
-quote_term f_unfold (fun f_unfold_reif =>
+let T := type of H in 
+quote_term T (fun T => 
+let eq := eval cbv in (erase_forall T).2 in 
+let Ind := eval cbv in (erase_forall T).1 in 
+run_template_program (tmUnquote Ind) (fun Ind => 
+let x:= eval hnf in Ind.(my_projT2) in run_template_program (tmQuoteRec x) 
+ltac:(fun I_rec =>  
+let f_fold := eval cbv in (head (get_snd_arg eq)) in
+let f_unfold_reif := eval cbv in (get_thrd_arg eq) in
+let codomain := eval cbv in (get_fst_arg eq) in 
 let l := eval cbv in (find_list_tCase f_unfold_reif) in
-run_template_program (tmQuoteRec A) (fun I_rec => quote_term f (fun f => 
-let list := eval cbv in (eliminate_pattern_matching f codomain I_rec l) in unquote_list list))))
-| _ => fail 1
-end
-end.
+let list := eval cbv in (eliminate_pattern_matching f_fold codomain I_rec l) in unquote_list list))).
 
 
 Ltac prove_hypothesis :=

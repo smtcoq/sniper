@@ -35,7 +35,7 @@ Goal True.
 Proof. 
 unfold_recursive_subst min1'''.
 lambda_expand_all H2.
-eliminate_pattern_matching_hyp H. (* TODO : eliminate_pattern_matching_hyp H3 *)
+eliminate_pattern_matching_hyp H. 
 exact I.
 Qed.
 
