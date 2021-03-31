@@ -8,7 +8,11 @@ Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
+Require Import definitions.
+Require Import Coq.Arith.PeanoNat.
 Require Import String.
+Unset Strict Unquote Universe Mode.
+
 
 (* A tactic version of if/else *)
 Ltac if_else_ltac tac1 tac2 b := lazymatch b with
@@ -126,14 +130,14 @@ Fixpoint get_list_of_rel (i : nat) := match i with
 end.
 
 
+
 Fixpoint get_term_applied_aux (f f' : term) (acc : list term) 
  :=
 (* the function reified f, acc is the type of each arguments *)
 match f with 
-| tLambda _ Ty s => ((get_term_applied_aux s f' (Ty :: acc)).1, 
-(get_term_applied_aux s f' (Ty :: acc)).2)
+| tLambda _ Ty s => get_term_applied_aux s f' (Ty :: acc) 
 | _ => let n := (List.length acc) in if Nat.eqb n 0 then (f', acc) else
- (tApp f' (get_list_of_rel (List.length acc)), acc)
+ (tApp f' (rev (get_list_of_rel n)), acc)
 end.
 
 
@@ -146,38 +150,216 @@ Fixpoint produce_eq_aux (f_fold : term) (f_unfold : term)
 (type_of_args : list term) (codomain : term)  (n : nat) (n' : nat) := match type_of_args, n with
 | [], 0 => get_term_applied_eq f_fold codomain (get_term_applied f_unfold).1
 | x :: xs, S m  => tProd {| binder_name := nAnon; binder_relevance := Relevant |} x (produce_eq_aux
-(tApp f_fold [tRel (n' - n)])
+(tApp f_fold [tRel (n'-1)])
  f_unfold
-xs codomain m n')
+xs codomain m (n'-1))
 | _ , _ => unit_reif
 end.
 
 Definition produce_eq (f_fold : term) (f_unfold : term)
 (type_of_args : list term) (codomain : term) := produce_eq_aux f_fold
-f_unfold type_of_args codomain (Datatypes.length type_of_args) (Datatypes.length type_of_args).
+f_unfold (rev type_of_args) codomain (Datatypes.length type_of_args) (Datatypes.length type_of_args).
 
 
 
-Definition codomain_max t := 
-let fix aux t default :=
+Fixpoint codomain_max t := 
 match t with 
-| tLambda _ x s => aux s x
-| _ => default
+| tProd _ x s => codomain_max s
+| x => x
+end.
+
+MetaCoq Quote Definition type_reif := Type.
+
+Fixpoint correction args := match args with
+| [] => []
+| x :: xs => match x with 
+          | tSort s => type_reif :: correction xs
+          | _ => x :: correction xs
 end
-in aux t unit_reif.
-
-
+end.
 
 Ltac lambda_expand_all H := let t := type of H in 
 quote_term t ltac:(fun t => 
 let f_fold := eval cbv in (get_snd_arg t) 
 in let f_unfold := eval cbv in (get_thrd_arg t) 
-in let type_of_args := eval cbv in (get_type_of_args f_unfold) 
+in let type_of_args := eval cbv in (correction (get_type_of_args f_unfold)) 
 in let codomain := eval cbv in (codomain_max f_unfold) 
 in let x := eval cbv in (produce_eq f_fold f_unfold type_of_args codomain)
 in run_template_program (tmUnquote x) ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) 
 in assert u by reflexivity)).
+
+Ltac lambda_expand_fun f := let f_unfold := eval unfold f in f in 
+let T := type of f in quote_term T (fun T_reif =>
+quote_term f ltac:(fun f_fold =>
+quote_term f_unfold ltac:(fun f_unfold =>
+let type_of_args := eval cbv in (get_type_of_args f_unfold)
+in let codomain := eval cbv in (codomain_max T_reif) 
+in let x := eval cbv in (produce_eq f_fold f_unfold type_of_args codomain)
+in run_template_program (tmUnquote x) ltac:(fun z => 
+let u := eval hnf in (z.(my_projT2)) 
+in assert u by reflexivity)))). 
+
+Ltac lambda_expand_fun_test f := let f_unfold := eval unfold f in f in 
+let T := type of f in quote_term T (fun T_reif =>
+quote_term f ltac:(fun f_fold =>
+quote_term f_unfold ltac:(fun f_unfold =>
+let type_of_args := eval cbv in (get_type_of_args f_unfold)
+in let codomain := eval cbv in (codomain_max T_reif) 
+in let x := eval cbv in (produce_eq f_fold f_unfold type_of_args codomain)
+in pose x
+(* in run_template_program (tmUnquote x) ltac:(fun z => 
+let u := eval hnf in (z.(my_projT2)) 
+in assert u by reflexivity) *)))).
+
+
+(* MetaCoq Quote Definition hd_unfold_reif := (fun (A : Type) (default : A) (l : list A) =>
+      match l with
+      | [] => default
+      | x :: _ => x
+      end).
+
+MetaCoq Quote Definition typehd := (forall A : Type, A -> list A -> A).
+
+Goal False.
+unfold_recursive hd.
+let codomain := eval cbv in (codomain_max typehd) in pose codomain.
+Abort. 
+Definition min1 (x : nat) := match x with
+| 0 => 0
+| S x => x
+end.
+Goal False.
+lambda_expand_fun min1.
+unfold_recursive hd.
+lambda_expand_fun_test hd.
+let x := constr:(tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+       (tSort
+          {|
+          Universe.t_set := {|
+                            UnivExprSet.this := [(
+                                              Level.Level
+                                              "Coq.Lists.List.1", 0)];
+                            UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
+                                              (
+                                              Level.Level
+                                              "Coq.Lists.List.1", 0) |};
+          Universe.t_ne := Logic.eq_refl |})
+       (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+          (tRel 0)
+          (tProd
+             {| binder_name := nAnon; binder_relevance := Relevant |}
+             (tApp
+                (tInd
+                   {|
+                   inductive_mind := (MPfile
+                                        ["Datatypes"%string;
+                                        "Init"%string; "Coq"%string],
+                                     "list"%string);
+                   inductive_ind := 0 |} []) [tRel 1])
+             (tApp
+                (tInd
+                   {|
+                   inductive_mind := (MPfile
+                                        ["Logic"%string; "Init"%string;
+                                        "Coq"%string], "eq"%string);
+                   inductive_ind := 0 |} [])
+                [tRel 2;
+                tApp
+                  (tApp
+                     (tApp
+                        (tConst
+                           (MPfile
+                              ["List"%string; "Lists"%string;
+                              "Coq"%string], "hd"%string) []) [
+                        tRel 2]) [tRel 1]) [tRel 0];
+                tApp
+                  (tLambda
+                     {|
+                     binder_name := nNamed "A"%string;
+                     binder_relevance := Relevant |}
+                     (tSort
+                        {|
+                        Universe.t_set := {|
+                                          UnivExprSet.this := [(
+                                              Level.Level
+                                              "Coq.Lists.List.1", 0)];
+                                          UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
+                                              (
+                                              Level.Level
+                                              "Coq.Lists.List.1", 0) |};
+                        Universe.t_ne := Logic.eq_refl |})
+                     (tLambda
+                        {|
+                        binder_name := nNamed "default"%string;
+                        binder_relevance := Relevant |} 
+                        (tRel 0)
+                        (tLambda
+                           {|
+                           binder_name := nNamed "l"%string;
+                           binder_relevance := Relevant |}
+                           (tApp
+                              (tInd
+                                 {|
+                                 inductive_mind := (
+                                              MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string;
+                                              "Coq"%string],
+                                              "list"%string);
+                                 inductive_ind := 0 |} []) [
+                              tRel 1])
+                           (tCase
+                              ({|
+                               inductive_mind := (
+                                              MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string;
+                                              "Coq"%string],
+                                              "list"%string);
+                               inductive_ind := 0 |}, 1, Relevant)
+                              (tLambda
+                                 {|
+                                 binder_name := nNamed "l"%string;
+                                 binder_relevance := Relevant |}
+                                 (tApp
+                                    (tInd
+                                       {|
+                                       inductive_mind := (
+                                              MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string;
+                                              "Coq"%string],
+                                              "list"%string);
+                                       inductive_ind := 0 |} [])
+                                    [tRel 2]) (tRel 3)) 
+                              (tRel 0)
+                              [(0, tRel 1);
+                              (2,
+                              tLambda
+                                {|
+                                binder_name := nNamed "x"%string;
+                                binder_relevance := Relevant |}
+                                (tRel 2)
+                                (tLambda
+                                   {|
+                                   binder_name := nNamed "l0"%string;
+                                   binder_relevance := Relevant |}
+                                   (tApp
+                                      (tInd
+                                         {|
+                                         inductive_mind := (
+                                              MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string;
+                                              "Coq"%string],
+                                              "list"%string);
+                                         inductive_ind := 0 |} [])
+                                      [tRel 3]) 
+                                   (tRel 1)))]))))
+                  [tRel 2; tRel 1; tRel 0]])))) in pose x.
+
+lambda_expand_fun hd. *)
 
 
 

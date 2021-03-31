@@ -28,16 +28,34 @@ Definition min1''' := min1''.
 
 Section Examples.
 
-
-
-
 Goal True.
 Proof. 
 unfold_recursive_subst min1'''.
-lambda_expand_all H2.
+lambda_expand_fun min1.
 eliminate_pattern_matching_hyp H. 
 exact I.
 Qed.
+
+Goal forall A (a : A), hd a nil = a.
+unfold_recursive_subst hd.
+lambda_expand_fun hd.
+eliminate_pattern_matching_hyp H0.
+
+
+
+
+Print hd.
+
+
+Goal False.
+let x:= hd in run_template_program (tmQuoteRec x) (fun x => pose x).
+
+
+(* Goal forall (d : bool), hd d nil = d.
+intros d.
+unfold_recursive_subst hd.
+lambda_expand_all H. *)
+
 
 
 

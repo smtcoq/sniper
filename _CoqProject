@@ -1,0 +1,7 @@
+-R . TransfoCoq
+
+definitions.v
+lambda_expand.v
+elimination_polymorphism.v
+elimination_pattern_matching.v
+examples.v
