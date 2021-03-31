@@ -182,7 +182,7 @@ Ltac lambda_expand_all H := let t := type of H in
 quote_term t ltac:(fun t => 
 let f_fold := eval cbv in (get_snd_arg t) 
 in let f_unfold := eval cbv in (get_thrd_arg t) 
-in let type_of_args := eval cbv in (correction (get_type_of_args f_unfold)) 
+in let type_of_args := eval cbv in ((get_type_of_args f_unfold)) 
 in let codomain := eval cbv in (codomain_max f_unfold) 
 in let x := eval cbv in (produce_eq f_fold f_unfold type_of_args codomain)
 in run_template_program (tmUnquote x) ltac:(fun z => 
