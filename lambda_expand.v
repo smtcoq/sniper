@@ -123,6 +123,12 @@ let fix aux t (acc : list term) := match t with
 | _ => acc 
 end in aux t [].
 
+Definition get_type_of_args_prod t := 
+let fix aux t (acc : list term) := match t with 
+| tProd _ ty s => aux s (ty::acc)
+| _ => acc 
+end in aux t [].
+
 
 Fixpoint get_list_of_rel (i : nat) := match i with
 | 0 => []
@@ -179,15 +185,20 @@ end
 end.
 
 Ltac lambda_expand_all H := let t := type of H in 
+match t with 
+| @eq ?A ?x ?y => 
 quote_term t ltac:(fun t => 
-let f_fold := eval cbv in (get_snd_arg t) 
-in let f_unfold := eval cbv in (get_thrd_arg t) 
-in let type_of_args := eval cbv in ((get_type_of_args f_unfold)) 
-in let codomain := eval cbv in (codomain_max f_unfold) 
+let f_fold := eval cbv in (get_snd_arg t) in
+let f_unfold := eval cbv in (get_thrd_arg t)
+in quote_term A (fun A =>
+let type_of_args := eval cbv in (get_type_of_args_prod A)
+in let codomain := eval cbv in (codomain_max A) 
 in let x := eval cbv in (produce_eq f_fold f_unfold type_of_args codomain)
 in run_template_program (tmUnquote x) ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) 
-in assert u by reflexivity)).
+in assert u by reflexivity)))
+| _ => fail "not an equality"
+end.
 
 Ltac lambda_expand_fun f := let f_unfold := eval unfold f in f in 
 let T := type of f in quote_term T (fun T_reif =>
