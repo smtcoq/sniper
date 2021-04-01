@@ -15,7 +15,12 @@ Ltac unquote_term t_reif :=
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
 let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
 
+Definition test x := match x with
+| 0 => max 0 1
+| S x => max 0 x
+end.
 
+(* Recursive, be careful: it can unfold definitions that we want to keep folded *)
 Ltac get_definitions := repeat match goal with 
 | |- context C[?x] =>
 let x' := eval unfold x in x in (match goal with 
@@ -29,6 +34,16 @@ end ;
 end ;
  assert (x = x') by (unfold x ; reflexivity))
 end.
+
+(* The basic tactic, not recursive *)
+Ltac get_def x := 
+let x' := eval unfold x in x in 
+let H := fresh x "_def" in assert (H : x = x') by reflexivity.
+
+Ltac get_def_cont x := 
+let H := fresh  x "_def" in
+let _ := match goal with _ => 
+let x' := eval unfold x in x in assert (H : x = x') by reflexivity end in H.
 
 
 Ltac unfold_recursive x := let x' := eval unfold x in x in try unfold_recursive x' ; 
