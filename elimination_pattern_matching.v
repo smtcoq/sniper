@@ -9,6 +9,7 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
+Require Import eta_expand.
 Require Import List.
 
 Ltac unquote_term t_reif := 
@@ -170,6 +171,7 @@ assert z as H ; simpl ; try reflexivity)
 end.
 
 
+
 (* gets the list of constructors given an inductive recursively quoted and the number of its constructors *)
 Definition get_list_ctors_tConstruct I n := 
 let I' := get_info_inductive I in match I' with
@@ -181,6 +183,12 @@ end
 in aux n J.1 J.2
 | None => []
 end.
+
+Ltac list_ctors_unquote_requote_rec t :=
+run_template_program (tmUnquote t) (fun t => 
+let x:= eval hnf in t.(my_projT2) in run_template_program (tmQuoteRec x) ltac:(fun t => 
+let x:= eval cbv in (list_types_of_each_constructor t) in pose x)).
+
 
 Fixpoint find_list_tCase (t : term) := match t with
 | tLambda _ _ t' => find_list_tCase t'
@@ -319,6 +327,184 @@ produce_eq_tCase_fun f ; repeat prove_hypothesis ; repeat eliminate_id.
 
 Ltac eliminate_pattern_matching_hyp H :=
  produce_eq_tCase_hyp H ; repeat prove_hypothesis ; repeat eliminate_id.
+
+
+
+Definition get_env (T: term) (n  : nat) := 
+let fix aux T n acc := 
+match (T, n) with
+| (tProd _ A x, 0) => ((acc, x), A)
+| (tProd _ A x, S n') => aux x n' (A::acc)
+| _ => ((acc, T), T)
+end
+in aux T n [].
+
+Definition type_no_app t := match t with
+| tApp u l => u
+| _ => t
+end.
+
+
+Fixpoint prenex_quantif_list (l : list term) (t : term):= 
+match l with
+| [] => t 
+| x :: xs => prenex_quantif_list xs (mkProd x t)
+end.
+
+Definition list_of_args (t : term) := let fix aux acc t := match t with
+| tProd _ t1 t2 => aux (t1 :: acc) t2
+| _ => acc
+end in aux [] t.
+
+
+Definition prenex_quantif_list_ctor (c : term) (l : list term) (l' : list term) (E : term) :=
+(* c is the constructor reified, l is the list of the type of its arguments, l' is the list of the 
+type of the prenex quantification in the hypothesis, E is the environment *)
+let n := Datatypes.length l in
+prenex_quantif_list l' (prenex_quantif_list l (subst [tApp c (rev (get_list_of_rel n))] 0 (lift n 1 E))).
+
+Definition get_equalities (E : term) (l_ctors : list term) (l_ty_ctors  : list term) (l_ty : list term) :=
+let fix aux (E : term) (l_ctors : list term) (l_ty_ctors  : list term) (l_ty : list term) acc :=
+match (l_ctors, l_ty_ctors) with
+| (nil, _) | (_ , nil) => acc
+| (x :: xs, y :: ys) => aux E xs ys l_ty
+((prenex_quantif_list_ctor x (list_of_args y) l_ty E) :: acc)
+end
+in aux E l_ctors l_ty_ctors l_ty [].
+
+(* tac H n analyse l'hypothèse H qui doit être de la forme
+     forall x0, forall x1, ... forall x(k-1), E[match xi with _ end]
+   et définit une contante entière nommée n de valeur i *)
+Ltac tac H :=
+  (* tac_rec n x k renvoie k n si le but contient un match x with _ end,
+     sinon elle introduit si elle peut une variable dans le contexte et
+     s'appelle récursivement en incrémentant n,
+     et sinon échoue *)
+  let n := fresh "n" in 
+  let rec tac_rec n x k :=
+    match goal with
+        (* ça réussit *)
+      | |- context C[match x with _ => _ end] => k n
+        (* on introduit une variable et on appelle récursivement avec
+           le nom de cette variable et en incrémentant le premier paramètre *)
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S n) y k
+      | _ => fail
+    end in
+  (* cette evar sert à transmettre un resultat dans l'autre but qui sera généré *)
+  evar (n : nat);
+  let A := type of H in
+  let H' := fresh in
+  (* on crée artificiellement un but trivial à partir de l'hypothèse *)
+  assert (H' : False -> A);
+  [ let HFalse := fresh in
+    intro HFalse;
+    (* on appelle tac_rec avec 0, une variable fraîche (qui ne peut donc
+       pas apparaître dans H) et une continuation bien choisie *)
+    tac_rec 0 ltac:(fresh) ltac:(fun m =>
+      match constr:(m) with
+          (* ce cas ne peut pas arriver car on a passé une variable fraîche à tac_rec *)
+        | 0 => fail
+          (* c'est le cas qui réussit, on instantie alors n *)
+        | S ?p => instantiate (n := p)
+      end);
+    destruct HFalse (* on ferme le premier sous-but *)
+  | clear H' (* on efface l'hypothèse qui a été rajoutée *) ].
+
+Ltac eliminate_pattern_matching_debug H :=
+
+  let n := fresh "n" in 
+  let rec tac_rec n x k :=
+    match goal with
+      | |- context[match x with _ => _ end] => k n
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S n) y k
+      | _ => fail
+    end in
+  evar (n : nat);
+  let A := type of H in
+  let H' := fresh in
+  assert (H' : False -> A);
+  [ let HFalse := fresh in
+    intro HFalse;
+    tac_rec 0 ltac:(fresh) ltac:(fun m =>
+      match constr:(m) with
+        | 0 => fail
+        | S ?p => instantiate (n := p) 
+      end);
+    destruct HFalse
+  | clear H' ; let T := type of H in 
+quote_term T (fun T => let prod := eval cbv in (get_env T n) in
+let E := eval cbv in prod.1.2 in
+let l := eval cbv in prod.1.1 in 
+let A := eval cbv in prod.2 in pose A
+) ].
+
+
+
+Ltac eliminate_pattern_matching_hyp' H :=
+
+  let n := fresh "n" in 
+  let rec tac_rec n x k :=
+    match goal with
+      | |- context[match x with _ => _ end] => k n
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S n) y k
+      | _ => fail
+    end in
+  evar (n : nat);
+  let A := type of H in
+  let H' := fresh in
+  assert (H' : False -> A);
+  [ let HFalse := fresh in
+    intro HFalse;
+    tac_rec 0 ltac:(fresh) ltac:(fun m =>
+      match constr:(m) with
+        | 0 => fail
+        | S ?p => instantiate (n := p) 
+      end);
+    destruct HFalse
+  | clear H' ; let T := type of H in 
+quote_term T (fun T => let prod := eval cbv in (get_env T n) in
+let E := eval cbv in prod.1.2 in
+let l := eval cbv in prod.1.1 in 
+let A := eval cbv in prod.2 in
+let A' := eval cbv in (type_no_app A) in
+(* we need to quote AND requote recursively A*) 
+run_template_program (tmUnquote A') (fun P => 
+let x:= eval hnf in P.(my_projT2) in run_template_program (tmQuoteRec x) ltac:(fun A_rec =>  pose A_rec ;
+let l_ty_ctors := eval cbv in (list_types_of_each_constructor A_rec) in 
+let n := eval cbv in (Datatypes.length l_ty_ctors) in
+let l_ctors := eval cbv in (get_list_ctors_tConstruct A n) in
+let list_of_hyp := eval cbv in (get_equalities E l_ctors l_ty_ctors l) in
+unquote_list (* unquote_list *) list_of_hyp
+)))].
+
+MetaCoq Quote Recursively Definition list_reif:= Datatypes.list.
+Print list_reif.
+
+Definition min1 (x : nat) := match x with
+| 0 => 0
+| S x => x
+end.
+Definition min1' := min1.
+
+Definition min1'' := min1'.
+
+Definition min1''' := min1''.
+
+Goal (forall (a : nat) (b : nat) (c : nat), match b with 0 => a | S _ => c end = 0) -> True.
+intro H.
+tac H. (* n = 1 *)
+exact I.
+Qed.
+
+Goal True.
+Proof. 
+eta_expand_fun min1.
+eta_expand_fun hd.
+eliminate_pattern_matching_hyp' H.
+eliminate_pattern_matching_hyp' H0.
+
+exact I.
+Qed.
 
 
 
