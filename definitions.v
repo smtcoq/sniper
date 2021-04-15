@@ -22,18 +22,48 @@ end.
 
 (* Recursive, be careful: it can unfold definitions that we want to keep folded *)
 Ltac get_definitions := repeat match goal with 
+| |- context C[?x] => let H := fresh x "_def" in
+let x' := eval unfold x in x in (match goal with 
+| _ : x = x' |- _ => fail 1
+| _ => idtac
+end ; let H := fresh x "_def" in 
+ assert (H: x = x') by (unfold x ; reflexivity))
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
+                  | _ : x = x' |- _ => fail 1
+                  | _ => idtac
+end ;
+ assert (H: x = x') by (unfold x ; reflexivity))
+end.
+
+
+Ltac get_definitions_cont := fun k =>
+let H := fresh in
+match goal with 
 | |- context C[?x] =>
 let x' := eval unfold x in x in (match goal with 
 | _ : x = x' |- _ => fail 1
 | _ => idtac
 end ;
- assert (x = x') by (unfold x ; reflexivity))
+ assert (H: x = x') by (unfold x ; reflexivity))
 | _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
                   | _ : x = x' |- _ => fail 1
                   | _ => idtac
-end ;
- assert (x = x') by (unfold x ; reflexivity))
+end ; 
+ assert (H : x = x') by (unfold x ; reflexivity))
+end ; 
+match goal with 
+| _ =>  (get_definitions_cont ltac:(fun p => k (p, H)))
+| _ => k H
 end.
+
+
+
+
+
+Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
+get_definitions_cont ltac:(fun p => idtac p).
+Abort.
+
 
 (* The basic tactic, not recursive *)
 Ltac get_def x := 
