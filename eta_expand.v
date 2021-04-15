@@ -11,7 +11,7 @@ Require Import MetaCoq.Template.All.
 Require Import definitions.
 Require Import Coq.Arith.PeanoNat.
 Require Import String.
-Unset Strict Unquote Universe Mode.
+
 
 
 MetaCoq Quote Definition eq_reif := Eval cbn in @eq.
@@ -53,7 +53,8 @@ in assert u by reflexivity))))
 end.
 
 
-
+Ltac expand_fun f :=
+let H:= get_def_cont f in eta_expand_hyp H.
 
 
 
