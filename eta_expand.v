@@ -16,6 +16,11 @@ Require Import String.
 
 MetaCoq Quote Definition eq_reif := Eval cbn in @eq.
 
+Ltac notHyp T  :=
+repeat match goal with
+  | [H : _ |- _] => let U := type of H in constr_eq U T ; fail 2
+end.
+
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
 Definition mkProd T u :=
@@ -38,7 +43,7 @@ end.
 
 Ltac eta_expand_hyp H := 
 lazymatch type of H with 
-| @eq ?A ?t ?u => quote_term A ltac:(fun A =>
+| @eq ?A ?t ?u => let H' := fresh in quote_term A ltac:(fun A =>
 quote_term t ltac:(fun t =>
 quote_term u ltac:(fun u =>
 let p := eval cbv in (list_of_args_and_codomain A) in 
@@ -48,30 +53,44 @@ let eq := eval cbv in (gen_eq l B t u)
 in run_template_program (tmUnquote eq) 
 ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) 
-in assert u by (intros ; rewrite H; reflexivity)))))
+in assert (H': u) by (intros ; rewrite H; reflexivity)))))
 | _ => fail "not an equality"
 end.
 
-Goal False.
-get_def hd.
-eta_expand_hyp hd_def.
-
-Ltac expand_tuple p := 
-match p with
-| (?x, ?y) => let T := type of x in idtac x ; idtac y ; idtac T;
- eta_expand_hyp x ; idtac 2 ; clear x ; idtac 3 ; expand_tuple y ; idtac 4
-| unit => idtac 5
-| ?y => fail 100 "Wrong parameter" y
+Ltac eta_expand_hyp_cont H :=
+lazymatch type of H with 
+| @eq ?A ?t ?u => let H' := fresh in quote_term A ltac:(fun A =>
+quote_term t ltac:(fun t =>
+quote_term u ltac:(fun u =>
+let p := eval cbv in (list_of_args_and_codomain A) in 
+let l := eval cbv in (rev p.1) in 
+let B := eval cbv in p.2 in 
+let eq := eval cbv in (gen_eq l B t u)
+in run_template_program (tmUnquote eq) 
+ltac:(fun z => 
+let u := eval hnf in (z.(my_projT2)) in notHyp u ;
+assert (H': u) by (intros ; rewrite H; reflexivity))))) ; 
+H' 
+| _ => fail "not an equality"
 end.
+
+Ltac expand_tuple p := fun k => 
+match constr:(p) with
+| (?x, ?y) =>
+eta_expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p)))
+| unit => k unit
+end.
+
 
 Ltac expand_fun f :=
 let H:= get_def_cont f in eta_expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
+get_definitions_cont' ltac:(fun p => eta_expand_hyp p).
+Abort.
 
-get_definitions_cont ltac:(fun p => expand_tuple p).
-
-
+(* TODO : possible de clear ??? Truc vraiment bizarre avec des hypothèses qui changent
+de nom dès qu'on ajoute clear x à la tactique expand_tuple *)
 
 
 
