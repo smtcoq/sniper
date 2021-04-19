@@ -10,9 +10,12 @@ Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
+Require Import ZArith.
 Require Import definitions.
 Require Import lambda_expand.
-Require Import elimination_pattern_matching.
+Require Import elimination_pattern_matching. 
+Require Import elimination_polymorphism.
+
 
 
 Definition min1 (x : nat) := match x with
@@ -32,14 +35,14 @@ Goal True.
 Proof. 
 unfold_recursive_subst min1'''.
 lambda_expand_fun min1.
-eliminate_pattern_matching_hyp H. 
+eliminate_pattern_matching_test H. 
 exact I.
 Qed.
 
 Goal forall A (a : A), hd a nil = a.
 unfold_recursive_subst hd.
 lambda_expand_fun hd.
-eliminate_pattern_matching_hyp H0.
+Abort.
 
 
 
@@ -49,6 +52,7 @@ Print hd.
 
 Goal False.
 let x:= hd in run_template_program (tmQuoteRec x) (fun x => pose x).
+Abort.
 
 
 (* Goal forall (d : bool), hd d nil = d.

@@ -29,6 +29,12 @@ tProd {| binder_name := nAnon; binder_relevance := Relevant |} T u.
 Definition mkApp t u :=
 tApp t [u].
 
+Definition is_type_of_fun (T : term) :=
+match T with
+| tProd _ _ _ => true
+| _ => false
+end.
+
 Definition list_of_args_and_codomain (t : term) := let fix aux acc t := match t with
 | tProd _ t1 t2 => aux (t1 :: acc) t2
 | _ => (acc, t)
@@ -41,9 +47,32 @@ match l with
 end.
 
 
+Ltac eta_expand_hyp' H := 
+lazymatch type of H with 
+| @eq ?A ?t ?u => 
+let H' := fresh in quote_term A ltac:(fun A =>
+let b := eval cbv in (is_type_of_fun A) in 
+match b with
+| true =>
+quote_term t ltac:(fun t =>
+quote_term u ltac:(fun u =>
+let p := eval cbv in (list_of_args_and_codomain A) in 
+let l := eval cbv in (rev p.1) in 
+let B := eval cbv in p.2 in 
+let eq := eval cbv in (gen_eq l B t u)
+in run_template_program (tmUnquote eq) 
+ltac:(fun z => 
+let u := eval hnf in (z.(my_projT2)) 
+in assert (H': u) by (intros ; rewrite H; reflexivity) ; idtac A)))
+| false => fail "not a higher-order equality"
+end)
+| _ => fail "not an equality"
+end.
+
 Ltac eta_expand_hyp H := 
 lazymatch type of H with 
-| @eq ?A ?t ?u => let H' := fresh in quote_term A ltac:(fun A =>
+| @eq ?A ?t ?u => 
+let H' := fresh in quote_term A ltac:(fun A =>
 quote_term t ltac:(fun t =>
 quote_term u ltac:(fun u =>
 let p := eval cbv in (list_of_args_and_codomain A) in 
@@ -54,10 +83,11 @@ in run_template_program (tmUnquote eq)
 ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) 
 in assert (H': u) by (intros ; rewrite H; reflexivity)))))
-| _ => fail "not an equality"
+| _ => fail "not an equality" 
 end.
 
-Ltac eta_expand_hyp_cont H :=
+
+Ltac eta_expand_hyp_cont H := fun k =>
 lazymatch type of H with 
 | @eq ?A ?t ?u => let H' := fresh in quote_term A ltac:(fun A =>
 quote_term t ltac:(fun t =>
@@ -69,15 +99,15 @@ let eq := eval cbv in (gen_eq l B t u)
 in run_template_program (tmUnquote eq) 
 ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) in notHyp u ;
-assert (H': u) by (intros ; rewrite H; reflexivity))))) ; 
-H' 
+assert (H': u) by (intros ; rewrite H; reflexivity)))) ; 
+k H')
 | _ => fail "not an equality"
 end.
 
 Ltac expand_tuple p := fun k => 
 match constr:(p) with
 | (?x, ?y) =>
-eta_expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p)))
+eta_expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p))) ; clear x
 | unit => k unit
 end.
 
@@ -86,7 +116,8 @@ Ltac expand_fun f :=
 let H:= get_def_cont f in eta_expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont' ltac:(fun p => eta_expand_hyp p).
+get_definitions_cont' ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H => idtac H)).
+
 Abort.
 
 (* TODO : possible de clear ??? Truc vraiment bizarre avec des hypothèses qui changent

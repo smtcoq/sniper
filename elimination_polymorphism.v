@@ -68,24 +68,7 @@ Y in is_type_quote Y' ; instanciate H y
           end
 end.
 
-Ltac instanciate_type_ident H := 
-let l := nil in
-let P := type of H  in let P':= type of P in constr_eq P' Prop ; 
-lazymatch P with
-    | forall (x : ?A), _ =>
-      let A' := eval hnf in A in 
-is_type_quote A' ; repeat match goal with 
-          |- context C[?y] => let Y := type of y in let Y' := eval hnf in 
-Y in is_type_quote Y' ; let ident := instanciate_ident H y in constr:(ident :: l)
-          end
-end.
 
-
-Goal ((forall (A: Type) (x : A), x=x) -> (forall (x : nat), x =x)).
-Proof. intro H.
- let y := instanciate_ident H nat in idtac y.
- instanciate_type_ident H.
-Abort.
 
 
 
