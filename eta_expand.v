@@ -89,7 +89,7 @@ end.
 
 Ltac eta_expand_hyp_cont H := fun k =>
 lazymatch type of H with 
-| @eq ?A ?t ?u => let H' := fresh in quote_term A ltac:(fun A =>
+| @eq ?A ?t ?u => quote_term A ltac:(fun A =>
 quote_term t ltac:(fun t =>
 quote_term u ltac:(fun u =>
 let p := eval cbv in (list_of_args_and_codomain A) in 
@@ -98,9 +98,9 @@ let B := eval cbv in p.2 in
 let eq := eval cbv in (gen_eq l B t u)
 in run_template_program (tmUnquote eq) 
 ltac:(fun z => 
-let u := eval hnf in (z.(my_projT2)) in notHyp u ;
-assert (H': u) by (intros ; rewrite H; reflexivity)))) ; 
-k H')
+let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
+(assert (H': u) by (intros ; rewrite H; reflexivity) ; 
+k H')))))
 | _ => fail "not an equality"
 end.
 
@@ -116,7 +116,7 @@ Ltac expand_fun f :=
 let H:= get_def_cont f in eta_expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont' ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H => idtac H)).
+get_definitions_cont' ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H' => idtac H')).
 
 Abort.
 
