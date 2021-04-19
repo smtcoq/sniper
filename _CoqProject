@@ -6,3 +6,4 @@ elimination_polymorphism.v
 elimination_pattern_matching.v
 examples.v
 eta_expand.v
+fauto.v

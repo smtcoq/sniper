@@ -578,7 +578,7 @@ Ltac prove_hypothesis H :=
 repeat match goal with
   | H' := ?x : ?P |- _ =>  lazymatch P with 
                 | Prop => let def := fresh in assert (def : x) by 
-(intros ; rewrite H ; reflexivity) ;  clear H'
+(intros; rewrite H; auto) ;  clear H'
           end
 end.
 
@@ -737,49 +737,37 @@ Print lift.
 Ltac eliminate_pattern_matching_test H :=
 
   let n := fresh "n" in 
-  let n' := fresh "n'" in
-  evar (n : nat);
-  evar (n': nat);
+  epose (n := ?[n] : nat);
   let T := type of H in
   let H' := fresh in
   assert (H' : False -> T);
   [ let HFalse := fresh in
     intro HFalse;
-    let rec tac_rec m x b :=
-    match b with 
-    | false => 
+    let rec tac_rec m x :=
         match goal with
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
                                     | S ?p => instantiate (n := p) 
-                                        end ; 
-        tac_rec 0 x true
-      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y false
+                                        end
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
     end 
-    | true => match goal with
-              | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y true
-              | _ => instantiate (n' := m)
-              end
-      end
 in
-    tac_rec 0 ltac:(fresh) false;
+    tac_rec 0 ltac:(fresh) ;
     destruct HFalse
   | clear H' ;
 run_template_program (tmQuoteRec T) (fun Env => 
 let T := eval cbv in Env.2 in
 let e := eval cbv in Env.1 in
-let prod := eval cbv in (get_env T n) in
+let prod := eval cbv in (get_env T n) in clear n ;
 let E := eval cbv in prod.1.2 in
 let l := eval cbv in prod.1.1 in 
-let A := eval cbv in (lift n' 0 prod.2) in
+let A := eval cbv in prod.2 in
 let l_ty_ctors := eval cbv in (list_types_of_each_constructor (e, A)) in
 let n := eval cbv in (Datatypes.length l_ty_ctors) in
 let l_ctors := eval cbv in (get_list_ctors_tConstruct A n) in
 let list_of_hyp := eval cbv in (get_equalities E l_ctors l_ty_ctors l) in
-pose list_of_hyp
-(* unquote_list list_of_hyp ; prove_hypothesis H *)
-)].
+ unquote_list list_of_hyp ; prove_hypothesis H )].
 
 
 MetaCoq Quote Recursively Definition foo_reif := (fun A (l: list A) => match l with 
@@ -809,71 +797,19 @@ end)).
 
 Print hyp_cons_reif.
 
-Goal True.
-Proof. 
+Goal ((forall (A: Type) (x : A) (l : list A) (n : nat), hd x l = match l with 
+| [] => x 
+| y :: ys => y
+end) -> True).
+Proof.
+intros H. 
+eliminate_pattern_matching_test H.
 expand_fun min1.
 expand_fun hd.
-eliminate_pattern_matching_test H0.
-unquote_term (hd unit_reif l0).
-unquote_term (hd unit_reif (tl l0)).
-let l' := eval unfold l0 in l0 in unquote_list l'.
-unquote_term (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-        (tSort
-           {|
-           Universe.t_set := {|
-                             UnivExprSet.this := [(Level.Level "Coq.Lists.List.1", 0)];
-                             UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                    (Level.Level "Coq.Lists.List.1", 0) |};
-           Universe.t_ne := Logic.eq_refl |})
-        (tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
-           (tRel 0)
-           (tApp
-              (tInd
-                 {|
-                 inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                                   "eq"%string);
-                 inductive_ind := 0 |} [])
-              [tRel 1;
-              tApp (tConst (MPfile ["List"%string; "Lists"%string; "Coq"%string], "hd"%string) [])
-                [tRel 1; tRel 0;
-                tApp
-                  (tApp
-                     (tConstruct
-                        {|
-                        inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                          "list"%string);
-                        inductive_ind := 0 |} 0 []) [tRel 1]) []];
-              tCase
-                ({|
-                 inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                   "list"%string);
-                 inductive_ind := 0 |}, 1, Relevant)
-                (tLambda {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-                   (tApp
-                      (tInd
-                         {|
-                         inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                           "list"%string);
-                         inductive_ind := 0 |} []) [tRel 1]) (tRel 2))
-                (tApp
-                   (tApp
-                      (tConstruct
-                         {|
-                         inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                           "list"%string);
-                         inductive_ind := 0 |} 0 []) [tRel 1]) [])
-                [(0, tRel 0);
-                (2,
-                tLambda {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
-                  (tRel 1)
-                  (tLambda {| binder_name := nNamed "l0"%string; binder_relevance := Relevant |}
-                     (tApp
-                        (tInd
-                           {|
-                           inductive_mind := (MPfile
-                                                ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                             "list"%string);
-                           inductive_ind := 0 |} []) [tRel 2]) (tRel 1)))]]))).
+eliminate_pattern_matching_test H2.
+eliminate_pattern_matching_test H3.
+
+Abort.
 
 
 
