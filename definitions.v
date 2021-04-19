@@ -9,16 +9,22 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
+Require Import Bool Int63 PArray BinNat BinPos ZArith SMT_classes_instances.
+Require Import Misc State BVList. (* FArray Equalities DecidableTypeEx. *)
+Require FArray.
+
+
 
 
 Ltac unquote_term t_reif := 
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
 let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
 
-Definition test x := match x with
-| 0 => max 0 1
-| S x => max 0 x
-end.
+(* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
+Ltac inverse_tactic tactic := try (tactic; fail 1).
+
+(* [constr_neq t u] fails if and only if [t] and [u] are convertible *)
+Ltac constr_neq t u := inverse_tactic ltac:(constr_eq t u).
 
 (* Recursive, be careful: it can unfold definitions that we want to keep folded *)
 Ltac get_definitions := repeat match goal with 
@@ -36,32 +42,188 @@ end ;
 end.
 
 
+(* Definition prod_of_symb := (Zplus, 
+         Zminus, 
+         Zmult, 
+         Zlt_bool, 
+         Zle_bool, 
+         Zge_bool, 
+         Zgt_bool,
+         @BITVECTOR_LIST.bv_and,
+         @BITVECTOR_LIST.bv_or,
+         @BITVECTOR_LIST.bv_xor,
+         @BITVECTOR_LIST.bv_add,
+         @BITVECTOR_LIST.bv_mult,
+         @BITVECTOR_LIST.bv_ult,
+         @BITVECTOR_LIST.bv_slt,
+         @BITVECTOR_LIST.bv_concat,
+         @BITVECTOR_LIST.bv_shl,
+         @BITVECTOR_LIST.bv_shr,
+         FArray.select,
+         FArray.diff). *)
+
+Ltac get_definitions_built_in_theories :=  
+repeat match goal with 
+| |- context C[?x] =>  
+         constr_neq Zplus x ;
+         constr_neq Zminus x ;
+         constr_neq Zmult x ;
+         constr_neq Zlt_bool x ;
+         constr_neq Zle_bool x ;
+         constr_neq Zge_bool x ;
+         constr_neq Zgt_bool x ;
+         constr_neq Typ.i_eqb x ;
+         constr_neq @BITVECTOR_LIST.bv_and x ;
+         constr_neq @BITVECTOR_LIST.bv_or x ;
+         constr_neq @BITVECTOR_LIST.bv_xor x ;
+         constr_neq @BITVECTOR_LIST.bv_add x ;
+         constr_neq @BITVECTOR_LIST.bv_mult x ;
+         constr_neq @BITVECTOR_LIST.bv_ult x ;
+         constr_neq @BITVECTOR_LIST.bv_slt x ;
+         constr_neq @BITVECTOR_LIST.bv_concat x ;
+         constr_neq @BITVECTOR_LIST.bv_shl x ;
+         constr_neq @BITVECTOR_LIST.bv_shr x ;
+         constr_neq FArray.select x ;
+         constr_neq FArray.diff x ;
+let H := fresh x "_def" in
+let x' := eval unfold x in x in (match goal with 
+| _ : x = x' |- _ => fail 1
+| _ => idtac
+end ; let H := fresh x "_def" in 
+ assert (H: x = x') by (unfold x ; reflexivity))
+| _ : context C[?x] |- _ =>  constr_neq Zplus x ;
+         constr_neq Zminus x ;
+         constr_neq Zmult x ;
+         constr_neq Zlt_bool x ;
+         constr_neq Zle_bool x ;
+         constr_neq Zge_bool x ;
+         constr_neq Zgt_bool x ;
+         constr_neq Typ.i_eqb x ;
+         constr_neq @BITVECTOR_LIST.bv_and x ;
+         constr_neq @BITVECTOR_LIST.bv_or x ;
+         constr_neq @BITVECTOR_LIST.bv_xor x ;
+         constr_neq @BITVECTOR_LIST.bv_add x ;
+         constr_neq @BITVECTOR_LIST.bv_mult x ;
+         constr_neq @BITVECTOR_LIST.bv_ult x ;
+         constr_neq @BITVECTOR_LIST.bv_slt x ;
+         constr_neq @BITVECTOR_LIST.bv_concat x ;
+         constr_neq @BITVECTOR_LIST.bv_shl x ;
+         constr_neq @BITVECTOR_LIST.bv_shr x ;
+         constr_neq FArray.select x ;
+         constr_neq FArray.diff x ;
+let x' := eval unfold x in x in (match goal with 
+                  | _ : x = x' |- _ => fail 1
+                  | _ => idtac
+end ;
+ assert (H: x = x') by (unfold x ; reflexivity))
+end.
+
+
+Goal forall (x y : Z), Zplus x y = Zminus x y.
+get_definitions_built_in_theories.
+get_definitions.
+Abort.
+
 Ltac get_definitions_cont := fun k =>
 let H := fresh in
 match goal with 
-| |- context C[?x] =>
+| |- context C[?x] => constr_neq Zplus x ;
+         constr_neq Zminus x ;
+         constr_neq Zmult x ;
+         constr_neq Zlt_bool x ;
+         constr_neq Zle_bool x ;
+         constr_neq Zge_bool x ;
+         constr_neq Zgt_bool x ;
+         constr_neq Typ.i_eqb x ;
+         constr_neq @BITVECTOR_LIST.bv_and x ;
+         constr_neq @BITVECTOR_LIST.bv_or x ;
+         constr_neq @BITVECTOR_LIST.bv_xor x ;
+         constr_neq @BITVECTOR_LIST.bv_add x ;
+         constr_neq @BITVECTOR_LIST.bv_mult x ;
+         constr_neq @BITVECTOR_LIST.bv_ult x ;
+         constr_neq @BITVECTOR_LIST.bv_slt x ;
+         constr_neq @BITVECTOR_LIST.bv_concat x ;
+         constr_neq @BITVECTOR_LIST.bv_shl x ;
+         constr_neq @BITVECTOR_LIST.bv_shr x ;
+         constr_neq FArray.select x ;
+         constr_neq FArray.diff x ;
 let x' := eval unfold x in x in (match goal with 
 | _ : x = x' |- _ => fail 1
 | _ => idtac
 end ;
  assert (H: x = x') by (unfold x ; reflexivity))
-| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
+| _ : context C[?x] |- _ => constr_neq Zplus x ;
+         constr_neq Zminus x ;
+         constr_neq Zmult x ;
+         constr_neq Zlt_bool x ;
+         constr_neq Zle_bool x ;
+         constr_neq Zge_bool x ;
+         constr_neq Zgt_bool x ;
+         constr_neq Typ.i_eqb x ;
+         constr_neq @BITVECTOR_LIST.bv_and x ;
+         constr_neq @BITVECTOR_LIST.bv_or x ;
+         constr_neq @BITVECTOR_LIST.bv_xor x ;
+         constr_neq @BITVECTOR_LIST.bv_add x ;
+         constr_neq @BITVECTOR_LIST.bv_mult x ;
+         constr_neq @BITVECTOR_LIST.bv_ult x ;
+         constr_neq @BITVECTOR_LIST.bv_slt x ;
+         constr_neq @BITVECTOR_LIST.bv_concat x ;
+         constr_neq @BITVECTOR_LIST.bv_shl x ;
+         constr_neq @BITVECTOR_LIST.bv_shr x ;
+         constr_neq FArray.select x ;
+         constr_neq FArray.diff x ;
+let x' := eval unfold x in x in (match goal with 
                   | _ : x = x' |- _ => fail 1
                   | _ => idtac
 end ; 
- assert (H : x = x') by (unfold x ; reflexivity))
+ assert (H : x = x') by (unfold x ; reflexivity)) 
+| _ => k unit
 end ; 
+try (get_definitions_cont ltac:(fun p => k (H, p)))
+.
+
+Ltac get_definitions_cont' := fun k =>
+repeat
 match goal with 
-| _ =>  (get_definitions_cont ltac:(fun p => k (p, H)))
-| _ => k H
-end.
+| |- context C[?x] => 
+let x' := eval unfold x in x in (match goal with 
+| _ : x = x' |- _ => fail 1
+| _ => idtac
+end ; let H := fresh in 
+ (assert (H: x = x') by (unfold x ; reflexivity)) ; k H)
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
+                  | _ : x = x' |- _ => fail 1
+                  | _ => idtac 
+end ; let H := fresh in (
+ assert (H : x = x') by (unfold x ; reflexivity)) ; k H)
+| _ => idtac 
+end
+.
 
+Ltac get_definitions_cont_theories := fun k =>
+repeat
+match goal with 
+| |- context C[?x] => 
+let x' := eval unfold x in x in (match goal with 
+| _ : x = x' |- _ => fail 1
+| _ => idtac
+end ; let H := fresh in 
+ (assert (H: x = x') by (unfold x ; reflexivity)) ; k H)
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
+                  | _ : x = x' |- _ => fail 1
+                  | _ => idtac 
+end ; let H := fresh in (
+ assert (H : x = x') by (unfold x ; reflexivity)) ; k H)
+| _ => idtac 
+end
+.
 
-
-
+Goal False.
+get_definitions_cont ltac:(fun p => idtac p).
+Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont ltac:(fun p => idtac p).
+get_definitions_cont' ltac:(fun p => idtac p).
 Abort.
 
 
