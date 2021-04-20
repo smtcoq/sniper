@@ -200,6 +200,25 @@ end ; let H := fresh in (
 end
 .
 
+Ltac is_not_in_tuple p z := 
+match constr:(p) with
+| (?x, ?y) => constr_neq x z ; is_not_in_tuple y z ; idtac x "1" ; idtac y "2" ; idtac z "3"
+| unit => idtac
+end.
+
+Ltac get_definitions_cont'' p := fun k =>
+match goal with 
+| |- context C[?x] => 
+let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in 
+ (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_cont'' (x, p) k)
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
+ assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_cont'' (x, p) k)
+| _ => idtac 
+end
+.
+
+
+
 Ltac get_definitions_cont_theories := fun k =>
 repeat
 match goal with 
@@ -223,6 +242,7 @@ get_definitions_cont ltac:(fun p => idtac p).
 Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
+get_definitions_cont'' unit ltac:(fun p => let T:= type of p in idtac T).
 get_definitions_cont' ltac:(fun p => idtac p).
 Abort.
 
