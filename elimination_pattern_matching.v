@@ -9,331 +9,10 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
+Require Import definitions.
 Require Import eta_expand.
 Require Import List.
 
-Definition A := (tApp
-        (tInd
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                             "list"%string);
-           inductive_ind := 0 |} []) [tRel 2]).
-Definition e := [(MPfile ["List"%string; "Lists"%string; "Coq"%string], "hd"%string,
-       ConstantDecl
-         {|
-         cst_type := tProd
-                       {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                       (tSort
-                          {|
-                          Universe.t_set := {|
-                                            UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Lists.List.1", 0)];
-                                            UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Lists.List.1", 0) |};
-                          Universe.t_ne := Logic.eq_refl |})
-                       (tProd
-                          {|
-                          binder_name := nNamed "default"%string;
-                          binder_relevance := Relevant |} (tRel 0)
-                          (tProd
-                             {|
-                             binder_name := nNamed "l"%string;
-                             binder_relevance := Relevant |}
-                             (tApp
-                                (tInd
-                                   {|
-                                   inductive_mind := (MPfile
-                                                        ["Datatypes"%string; "Init"%string;
-                                                        "Coq"%string], "list"%string);
-                                   inductive_ind := 0 |} []) [tRel 1]) 
-                             (tRel 2)));
-         cst_body := Some
-                       (tLambda
-                          {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                          (tSort
-                             {|
-                             Universe.t_set := {|
-                                               UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Lists.List.1", 0)];
-                                               UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Lists.List.1", 0) |};
-                             Universe.t_ne := Logic.eq_refl |})
-                          (tLambda
-                             {|
-                             binder_name := nNamed "default"%string;
-                             binder_relevance := Relevant |} (tRel 0)
-                             (tLambda
-                                {|
-                                binder_name := nNamed "l"%string;
-                                binder_relevance := Relevant |}
-                                (tApp
-                                   (tInd
-                                      {|
-                                      inductive_mind := (MPfile
-                                                           ["Datatypes"%string; "Init"%string;
-                                                           "Coq"%string], "list"%string);
-                                      inductive_ind := 0 |} []) [tRel 1])
-                                (tCase
-                                   ({|
-                                    inductive_mind := (MPfile
-                                                         ["Datatypes"%string; "Init"%string;
-                                                         "Coq"%string], "list"%string);
-                                    inductive_ind := 0 |}, 1, Relevant)
-                                   (tLambda
-                                      {|
-                                      binder_name := nNamed "l"%string;
-                                      binder_relevance := Relevant |}
-                                      (tApp
-                                         (tInd
-                                            {|
-                                            inductive_mind := (MPfile
-                                                                 ["Datatypes"%string;
-                                                                 "Init"%string; "Coq"%string],
-                                                              "list"%string);
-                                            inductive_ind := 0 |} []) [
-                                         tRel 2]) (tRel 3)) (tRel 0)
-                                   [(0, tRel 1);
-                                   (2,
-                                   tLambda
-                                     {|
-                                     binder_name := nNamed "x"%string;
-                                     binder_relevance := Relevant |} 
-                                     (tRel 2)
-                                     (tLambda
-                                        {|
-                                        binder_name := nNamed "l0"%string;
-                                        binder_relevance := Relevant |}
-                                        (tApp
-                                           (tInd
-                                              {|
-                                              inductive_mind := (MPfile
-                                                                 ["Datatypes"%string;
-                                                                 "Init"%string; "Coq"%string],
-                                                                "list"%string);
-                                              inductive_ind := 0 |} []) [
-                                           tRel 3]) (tRel 1)))]))));
-         cst_universes := Monomorphic_ctx
-                            ({| VSet.this := []; VSet.is_ok := LevelSet.Raw.empty_ok |},
-                            {|
-                            CS.this := [(Level.Level "Coq.Lists.List.1",
-                                        ConstraintType.Le BinNums.Z0,
-                                        Level.Level "Coq.Init.Datatypes.60")];
-                            CS.is_ok := ConstraintSet.Raw.add_ok (s:=[])
-                                          (Level.Level "Coq.Lists.List.1",
-                                          ConstraintType.Le BinNums.Z0,
-                                          Level.Level "Coq.Init.Datatypes.60")
-                                          ConstraintSet.Raw.empty_ok |}) |});
-      (MPfile ["Logic"%string; "Init"%string; "Coq"%string], "eq"%string,
-      InductiveDecl
-        {|
-        ind_finite := Finite;
-        ind_npars := 2;
-        ind_params := [{|
-                       decl_name := {|
-                                    binder_name := nNamed "x"%string;
-                                    binder_relevance := Relevant |};
-                       decl_body := None;
-                       decl_type := tRel 0 |};
-                      {|
-                      decl_name := {|
-                                   binder_name := nNamed "A"%string;
-                                   binder_relevance := Relevant |};
-                      decl_body := None;
-                      decl_type := tSort
-                                     {|
-                                     Universe.t_set := {|
-                                                       UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0)];
-                                                       UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0) |};
-                                     Universe.t_ne := Logic.eq_refl |} |}];
-        ind_bodies := [{|
-                       ind_name := "eq"%string;
-                       ind_type := tProd
-                                     {|
-                                     binder_name := nNamed "A"%string;
-                                     binder_relevance := Relevant |}
-                                     (tSort
-                                        {|
-                                        Universe.t_set := {|
-                                                          UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0)];
-                                                          UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0) |};
-                                        Universe.t_ne := Logic.eq_refl |})
-                                     (tProd
-                                        {|
-                                        binder_name := nNamed "x"%string;
-                                        binder_relevance := Relevant |} 
-                                        (tRel 0)
-                                        (tProd
-                                           {|
-                                           binder_name := nAnon;
-                                           binder_relevance := Relevant |} 
-                                           (tRel 1) (tSort Universe.lProp)));
-                       ind_kelim := IntoAny;
-                       ind_ctors := [("eq_refl"%string,
-                                     tProd
-                                       {|
-                                       binder_name := nNamed "A"%string;
-                                       binder_relevance := Relevant |}
-                                       (tSort
-                                          {|
-                                          Universe.t_set := {|
-                                                            UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0)];
-                                                            UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Logic.13", 0) |};
-                                          Universe.t_ne := Logic.eq_refl |})
-                                       (tProd
-                                          {|
-                                          binder_name := nNamed "x"%string;
-                                          binder_relevance := Relevant |} 
-                                          (tRel 0) (tApp (tRel 2) [tRel 1; tRel 0; tRel 0])),
-                                     0)];
-                       ind_projs := [];
-                       ind_relevance := Relevant |}];
-        ind_universes := Monomorphic_ctx
-                           ({|
-                            VSet.this := [Level.Level "Coq.Init.Logic.13"];
-                            VSet.is_ok := LevelSet.Raw.add_ok (s:=[])
-                                            (Level.Level "Coq.Init.Logic.13")
-                                            LevelSet.Raw.empty_ok |},
-                           {| CS.this := []; CS.is_ok := ConstraintSet.Raw.empty_ok |});
-        ind_variance := None |});
-      (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "list"%string,
-      InductiveDecl
-        {|
-        ind_finite := Finite;
-        ind_npars := 1;
-        ind_params := [{|
-                       decl_name := {|
-                                    binder_name := nNamed "A"%string;
-                                    binder_relevance := Relevant |};
-                       decl_body := None;
-                       decl_type := tSort
-                                      {|
-                                      Universe.t_set := {|
-                                                        UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)];
-                                                        UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0) |};
-                                      Universe.t_ne := Logic.eq_refl |} |}];
-        ind_bodies := [{|
-                       ind_name := "list"%string;
-                       ind_type := tProd
-                                     {|
-                                     binder_name := nNamed "A"%string;
-                                     binder_relevance := Relevant |}
-                                     (tSort
-                                        {|
-                                        Universe.t_set := {|
-                                                          UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)];
-                                                          UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0) |};
-                                        Universe.t_ne := Logic.eq_refl |})
-                                     (tSort
-                                        {|
-                                        Universe.t_set := {|
-                                                          UnivExprSet.this := [
-                                                                 (Level.lSet, 0);
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)];
-                                                          UnivExprSet.is_ok := UnivExprSet.Raw.add_ok
-                                                                 (s:=[(Level.lSet, 0)])
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)
-                                                                 (UnivExprSet.Raw.singleton_ok
-                                                                 (Level.lSet, 0)) |};
-                                        Universe.t_ne := Universes.Universe.add_obligation_1
-                                                           (Level.Level
-                                                              "Coq.Init.Datatypes.60", 0)
-                                                           {|
-                                                           Universe.t_set := {|
-                                                                 UnivExprSet.this := [(Level.lSet,
-                                                                 0)];
-                                                                 UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (Level.lSet, 0) |};
-                                                           Universe.t_ne := Logic.eq_refl |} |});
-                       ind_kelim := IntoAny;
-                       ind_ctors := [("nil"%string,
-                                     tProd
-                                       {|
-                                       binder_name := nNamed "A"%string;
-                                       binder_relevance := Relevant |}
-                                       (tSort
-                                          {|
-                                          Universe.t_set := {|
-                                                            UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)];
-                                                            UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0) |};
-                                          Universe.t_ne := Logic.eq_refl |})
-                                       (tApp (tRel 1) [tRel 0]), 0);
-                                    ("cons"%string,
-                                    tProd
-                                      {|
-                                      binder_name := nNamed "A"%string;
-                                      binder_relevance := Relevant |}
-                                      (tSort
-                                         {|
-                                         Universe.t_set := {|
-                                                           UnivExprSet.this := [(
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0)];
-                                                           UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                                 (
-                                                                 Level.Level
-                                                                 "Coq.Init.Datatypes.60", 0) |};
-                                         Universe.t_ne := Logic.eq_refl |})
-                                      (tProd
-                                         {|
-                                         binder_name := nAnon;
-                                         binder_relevance := Relevant |} 
-                                         (tRel 0)
-                                         (tProd
-                                            {|
-                                            binder_name := nAnon;
-                                            binder_relevance := Relevant |}
-                                            (tApp (tRel 2) [tRel 1]) 
-                                            (tApp (tRel 3) [tRel 2]))), 2)];
-                       ind_projs := [];
-                       ind_relevance := Relevant |}];
-        ind_universes := Monomorphic_ctx
-                           ({|
-                            VSet.this := [Level.Level "Coq.Init.Datatypes.60"];
-                            VSet.is_ok := LevelSet.Raw.add_ok (s:=[])
-                                            (Level.Level "Coq.Init.Datatypes.60")
-                                            LevelSet.Raw.empty_ok |},
-                           {| CS.this := []; CS.is_ok := ConstraintSet.Raw.empty_ok |});
-        ind_variance := None |})].
 
 Ltac unquote_term t_reif := 
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
@@ -450,16 +129,6 @@ match T with
 end.
 
 
-
-(* Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) (n : nat) :=
-let T := p.1 in 
-let args := p.2 in
-match l with 
-| nil => nil
-| ((_, Ty), _):: l' => (typing_prod_list (subst1 T n Ty) args) :: (subst_type_constructor_list l' p n)
-end.
-(* subst10 T (tApp Ty args) or (tApp (subst10 T Ty) args)  *) *)
-
 Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) (n : nat) :=
 let T := p.1 in 
 let args := p.2 in
@@ -481,30 +150,6 @@ subst_type_constructor_list z v n in u
           end
 | None => nil
 end.
-
-Eval cbv in list_types_of_each_constructor (e, A).
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* Definition list_types_of_each_constructor_test t :=
-let x := get_decl_inductive t.2 t.1 in match x with
-| Some y => match y with 
-          | nil => nil
-          | cons y' l => let z := y'.(ind_ctors) in let v := t.2 in subst_type_constructor_list' z v
-          end
-| None => nil
-end. *)
-
 
 
 
@@ -724,17 +369,12 @@ end.
 
 Ltac count_prenex_forall H :=
   match H with
-| forall _ : _, ?A => idtac "a" ; constr:(S ltac:(count_prenex_forall A))
-| _ => idtac "b" ; constr:(0)
+| forall _ : _, ?A => constr:(S ltac:(count_prenex_forall A))
+| _ => constr:(0)
 end.
 
-Goal False.
-Fail let n := count_prenex_forall (forall (x y z : nat), 3=3) in pose n.
-Abort.
 
-Print lift.
-
-Ltac eliminate_pattern_matching_test H :=
+Ltac eliminate_pattern_matching H :=
 
   let n := fresh "n" in 
   epose (n := ?[n] : nat);
@@ -775,7 +415,6 @@ MetaCoq Quote Recursively Definition foo_reif := (fun A (l: list A) => match l w
 | cons x xs => unit
 end).
 
-Print foo_reif.
 
 Definition min1 (x : nat) := match x with
 | 0 => 0
@@ -787,7 +426,6 @@ Definition min1'' := min1'.
 
 Definition min1''' := min1''.
 
-Print list_reif.
 
 MetaCoq Quote Definition hyp_cons_reif := ((forall (A: Type) (x : A) (a : A) (l : list A), 
 @hd A x (@cons A a l) = match (@cons A a l) with
@@ -795,7 +433,6 @@ MetaCoq Quote Definition hyp_cons_reif := ((forall (A: Type) (x : A) (a : A) (l 
 | y :: xs => y
 end)).
 
-Print hyp_cons_reif.
 
 Goal ((forall (A: Type) (x : A) (l : list A) (n : nat), hd x l = match l with 
 | [] => x 
@@ -803,21 +440,44 @@ Goal ((forall (A: Type) (x : A) (l : list A) (n : nat), hd x l = match l with
 end) -> True).
 Proof.
 intros H. 
-eliminate_pattern_matching_test H.
+eliminate_pattern_matching H.
 expand_fun min1.
 expand_fun hd.
-eliminate_pattern_matching_test H2.
-eliminate_pattern_matching_test H3.
+eliminate_pattern_matching H2.
+eliminate_pattern_matching H3.
 
 Abort.
 
-
-
-Check cons.
-Print list_reif.
-
-exact I.
+Goal ((forall (A: Type) (x : A) (a : A) (l : list A), 
+@hd A x (@cons A a l) = match (@cons A a l) with
+| nil => x
+| y :: xs => y
+end)).
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+eliminate_pattern_matching H')). assumption.
 Qed.
+
+
+Goal ((forall (A: Type) (l : list A), 
+@List.length A l = match l with
+| nil => 0
+| y :: xs => length xs + 1
+end) -> True).
+intro H.
+eliminate_pattern_matching H.
+exact I. 
+Qed.
+
+
+Goal ((forall (H : Type) (H0 : list H),
+     #|H0| =
+     (fix length (l : list H) : nat :=
+        match l with
+        | [] => 0
+        | _ :: l' => S (length l')
+        end) H0) -> True).
+intro H.
+Fail eliminate_pattern_matching H.
 
 
 
