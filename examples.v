@@ -12,7 +12,7 @@ Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import definitions.
-Require Import lambda_expand.
+Require Import eta_expand.
 Require Import elimination_pattern_matching. 
 Require Import elimination_polymorphism.
 
@@ -34,14 +34,14 @@ Section Examples.
 Goal True.
 Proof. 
 unfold_recursive_subst min1'''.
-lambda_expand_fun min1.
-eliminate_pattern_matching_test H. 
+expand_fun min1.
+eliminate_pattern_matching H. 
 exact I.
 Qed.
 
 Goal forall A (a : A), hd a nil = a.
 unfold_recursive_subst hd.
-lambda_expand_fun hd.
+expand_fun hd.
 Abort.
 
 

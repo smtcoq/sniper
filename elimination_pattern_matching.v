@@ -478,7 +478,7 @@ Goal ((forall (H : Type) (H0 : list H),
         end) H0) -> True).
 intro H.
 Fail eliminate_pattern_matching H.
-
+Abort.
 
 
 
