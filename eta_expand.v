@@ -116,7 +116,7 @@ Ltac expand_fun f :=
 let H:= get_def_cont f in eta_expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont' ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H' => idtac H')).
+get_definitions_cont'' unit ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H' => idtac H')).
 
 Abort.
 
