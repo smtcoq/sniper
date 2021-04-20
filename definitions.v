@@ -42,7 +42,7 @@ end ;
 end.
 
 
-(* Definition prod_of_symb := (Zplus, 
+Definition prod_of_symb := (unit, Zplus, 
          Zminus, 
          Zmult, 
          Zlt_bool, 
@@ -59,8 +59,8 @@ end.
          @BITVECTOR_LIST.bv_concat,
          @BITVECTOR_LIST.bv_shl,
          @BITVECTOR_LIST.bv_shr,
-         FArray.select,
-         FArray.diff). *)
+         @FArray.select,
+         @FArray.diff).
 
 Ltac get_definitions_built_in_theories :=  
 repeat match goal with 
@@ -124,126 +124,47 @@ get_definitions_built_in_theories.
 get_definitions.
 Abort.
 
-Ltac get_definitions_cont := fun k =>
-let H := fresh in
-match goal with 
-| |- context C[?x] => constr_neq Zplus x ;
-         constr_neq Zminus x ;
-         constr_neq Zmult x ;
-         constr_neq Zlt_bool x ;
-         constr_neq Zle_bool x ;
-         constr_neq Zge_bool x ;
-         constr_neq Zgt_bool x ;
-         constr_neq Typ.i_eqb x ;
-         constr_neq @BITVECTOR_LIST.bv_and x ;
-         constr_neq @BITVECTOR_LIST.bv_or x ;
-         constr_neq @BITVECTOR_LIST.bv_xor x ;
-         constr_neq @BITVECTOR_LIST.bv_add x ;
-         constr_neq @BITVECTOR_LIST.bv_mult x ;
-         constr_neq @BITVECTOR_LIST.bv_ult x ;
-         constr_neq @BITVECTOR_LIST.bv_slt x ;
-         constr_neq @BITVECTOR_LIST.bv_concat x ;
-         constr_neq @BITVECTOR_LIST.bv_shl x ;
-         constr_neq @BITVECTOR_LIST.bv_shr x ;
-         constr_neq FArray.select x ;
-         constr_neq FArray.diff x ;
-let x' := eval unfold x in x in (match goal with 
-| _ : x = x' |- _ => fail 1
-| _ => idtac
-end ;
- assert (H: x = x') by (unfold x ; reflexivity))
-| _ : context C[?x] |- _ => constr_neq Zplus x ;
-         constr_neq Zminus x ;
-         constr_neq Zmult x ;
-         constr_neq Zlt_bool x ;
-         constr_neq Zle_bool x ;
-         constr_neq Zge_bool x ;
-         constr_neq Zgt_bool x ;
-         constr_neq Typ.i_eqb x ;
-         constr_neq @BITVECTOR_LIST.bv_and x ;
-         constr_neq @BITVECTOR_LIST.bv_or x ;
-         constr_neq @BITVECTOR_LIST.bv_xor x ;
-         constr_neq @BITVECTOR_LIST.bv_add x ;
-         constr_neq @BITVECTOR_LIST.bv_mult x ;
-         constr_neq @BITVECTOR_LIST.bv_ult x ;
-         constr_neq @BITVECTOR_LIST.bv_slt x ;
-         constr_neq @BITVECTOR_LIST.bv_concat x ;
-         constr_neq @BITVECTOR_LIST.bv_shl x ;
-         constr_neq @BITVECTOR_LIST.bv_shr x ;
-         constr_neq FArray.select x ;
-         constr_neq FArray.diff x ;
-let x' := eval unfold x in x in (match goal with 
-                  | _ : x = x' |- _ => fail 1
-                  | _ => idtac
-end ; 
- assert (H : x = x') by (unfold x ; reflexivity)) 
-| _ => k unit
-end ; 
-try (get_definitions_cont ltac:(fun p => k (H, p)))
-.
 
-Ltac get_definitions_cont' := fun k =>
-repeat
-match goal with 
-| |- context C[?x] => 
-let x' := eval unfold x in x in (match goal with 
-| _ : x = x' |- _ => fail 1
-| _ => idtac
-end ; let H := fresh in 
- (assert (H: x = x') by (unfold x ; reflexivity)) ; k H)
-| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
-                  | _ : x = x' |- _ => fail 1
-                  | _ => idtac 
-end ; let H := fresh in (
- assert (H : x = x') by (unfold x ; reflexivity)) ; k H)
-| _ => idtac 
-end
-.
+
 
 Ltac is_not_in_tuple p z := 
 match constr:(p) with
-| (?x, ?y) => constr_neq x z ; is_not_in_tuple y z ; idtac x "1" ; idtac y "2" ; idtac z "3"
-| unit => idtac
+| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z ; idtac x "1" ; idtac y "2" ; idtac z "3"
+| unit => idtac p
 end.
 
-Ltac get_definitions_cont'' p := fun k =>
+Ltac get_definitions_ho p := fun k =>
 match goal with 
 | |- context C[?x] => 
 let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in 
- (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_cont'' (x, p) k)
+ (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_ho (p, x) k)
 | _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
- assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_cont'' (x, p) k)
+ assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_ho (p, x) k)
 | _ => idtac 
 end
 .
-
-
-
-Ltac get_definitions_cont_theories := fun k =>
-repeat
-match goal with 
+Ltac get_definitions_aux p := fun k =>
+ match goal with 
 | |- context C[?x] => 
-let x' := eval unfold x in x in (match goal with 
-| _ : x = x' |- _ => fail 1
-| _ => idtac
-end ; let H := fresh in 
- (assert (H: x = x') by (unfold x ; reflexivity)) ; k H)
-| _ : context C[?x] |- _ => let x' := eval unfold x in x in (match goal with 
-                  | _ : x = x' |- _ => fail 1
-                  | _ => idtac 
-end ; let H := fresh in (
- assert (H : x = x') by (unfold x ; reflexivity)) ; k H)
+let x' := eval unfold x in x in is_not_in_tuple p x ; 
+let H := fresh in 
+ (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
+get_definitions_aux ((p, x), unit) k)
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
+ assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; 
+ get_definitions_aux ((p, x), unit) k)
 | _ => idtac 
 end
 .
 
-Goal False.
-get_definitions_cont ltac:(fun p => idtac p).
-Abort.
 
-Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont'' unit ltac:(fun p => let T:= type of p in idtac T).
-get_definitions_cont' ltac:(fun p => idtac p).
+
+Ltac get_definitions_theories := fun k =>
+let p := eval unfold prod_of_symb in prod_of_symb in get_definitions_aux p k.
+
+Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [] -> (forall (x y : Z), (x +y)%Z = 
+(x-y)%Z).
+get_definitions_theories ltac:(fun p => let T:= type of p in pose T).
 Abort.
 
 
