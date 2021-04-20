@@ -100,7 +100,7 @@ in run_template_program (tmUnquote eq)
 ltac:(fun z => 
 let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
 (assert (H': u) by (intros ; rewrite H; reflexivity) ; 
-k H' ; clear H')))))
+k H'))))) 
 | _ => fail "not an equality"
 end.
 
@@ -116,14 +116,15 @@ Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => let T := type of 
-H' in idtac T)).
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac H')).
 
 Abort.
 
 (* TODO : possible de clear ??? Truc vraiment bizarre avec des hypothèses qui changent
 de nom dès qu'on ajoute clear x à la tactique expand_tuple *)
-
+(* TODO : beta réduction
+tApp (fun x => t(x)) y => subst ..., ne se fait pas automatiquement quand c'est des fixpoints
+*)
 
 
 

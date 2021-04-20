@@ -377,7 +377,7 @@ end.
 Ltac eliminate_pattern_matching H :=
 
   let n := fresh "n" in 
-  epose (n := ?[n] : nat);
+  epose (n := ?[n_evar] : nat);
   let T := type of H in
   let H' := fresh in
   assert (H' : False -> T);
@@ -387,7 +387,7 @@ Ltac eliminate_pattern_matching H :=
         match goal with
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
-                                    | S ?p => instantiate (n := p) 
+                                    | S ?p => instantiate (n_evar := p) 
                                         end
       | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
@@ -478,7 +478,7 @@ Goal ((forall (H : Type) (H0 : list H),
         end) H0) -> True).
 intro H.
 Fail eliminate_pattern_matching H.
-Abort.
+
 
 
 

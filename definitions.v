@@ -129,8 +129,8 @@ Abort.
 
 Ltac is_not_in_tuple p z := 
 match constr:(p) with
-| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z
-| unit => idtac
+| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z ; idtac x "1" ; idtac y "2" ; idtac z "3"
+| unit => idtac p
 end.
 
 Ltac get_definitions_ho p := fun k =>
@@ -147,10 +147,11 @@ Ltac get_definitions_aux p := fun k =>
  match goal with 
 | |- context C[?x] => 
 let x' := eval unfold x in x in is_not_in_tuple p x ; 
-let H := fresh in 
+let H := fresh x "_def" in 
  (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
 get_definitions_aux ((p, x), unit) k)
-| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; 
+let H := fresh x "_def" in (
  assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; 
  get_definitions_aux ((p, x), unit) k)
 | _ => idtac 
