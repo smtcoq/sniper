@@ -69,7 +69,7 @@ end)
 | _ => fail "not an equality"
 end.
 
-Ltac eta_expand_hyp H := 
+Ltac expand_hyp H := 
 lazymatch type of H with 
 | @eq ?A ?t ?u => 
 let H' := fresh in quote_term A ltac:(fun A =>
@@ -87,7 +87,7 @@ in assert (H': u) by (intros ; rewrite H; reflexivity)))))
 end.
 
 
-Ltac eta_expand_hyp_cont H := fun k =>
+Ltac expand_hyp_cont H := fun k =>
 lazymatch type of H with 
 | @eq ?A ?t ?u => quote_term A ltac:(fun A =>
 quote_term t ltac:(fun t =>
@@ -107,16 +107,16 @@ end.
 Ltac expand_tuple p := fun k => 
 match constr:(p) with
 | (?x, ?y) =>
-eta_expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p))) ; clear x
+expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p))) ; clear x
 | unit => k unit
 end.
 
 
 Ltac expand_fun f :=
-let H:= get_def_cont f in eta_expand_hyp H ; clear H.
+let H:= get_def_cont f in expand_hyp H ; clear H.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_cont'' unit ltac:(fun H => eta_expand_hyp_cont H ltac:(fun H' => idtac H')).
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac H')).
 
 Abort.
 
