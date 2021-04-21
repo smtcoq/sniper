@@ -15,7 +15,7 @@ Require Import definitions.
 Require Import eta_expand.
 Require Import elimination_pattern_matching. 
 Require Import elimination_polymorphism.
-
+Require Import interpretation_algebraic_types.
 
 Ltac def_and_pattern_matching := 
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 

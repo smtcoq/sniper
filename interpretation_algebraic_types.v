@@ -1350,7 +1350,9 @@ Definition is_in_reif_simple (B t: term) (l : list term) :=
 (* \todo  gérer le nom des métavariables produites pas les énoncés, incl. la possibilité de ne pas les nommer *) 
 
 
-Definition inj_total_disj (B : term) (lf : list term) (lA : list (list term)) := and_nary_reif [are_inj B lf lA ; pairw_disj_codom B lf lA ; codom_union_total B lf lA ].
+
+
+Definition inj_total_disj (B : term) (lf : list term) (lA : list (list term)) := and_nary_reif [are_inj B lf lA ; pairw_disj_codom B lf lA  ; codom_union_total B lf lA ].
 
 
 
@@ -1359,6 +1361,9 @@ Definition inj_total_disj (B : term) (lf : list term) (lA : list (list term)) :=
 
 Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.
+
+Ltac inj_disj_tac B lf lA   :=
+    ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA .
 
 
 Ltac inj_ctor_tac f :=
@@ -1773,7 +1778,7 @@ reflexivity. Qed.
 
 Print get_ctors_and_types_i.
 
-Ltac treat_ctor_list_oind_tac_i indu p n i  u lA oind  :=
+Ltac treat_ctor_list_oind_tac_i_gen inj_total_disj_tac indu p n i  u lA oind  :=
   (* n: nombre de oind *)
   (* i: est le numéro de oind dans le mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
@@ -1785,6 +1790,9 @@ Ltac treat_ctor_list_oind_tac_i indu p n i  u lA oind  :=
   inj_total_disj_tac B lf lA
   end.
 
+Ltac treat_ctor_list_oind_tac_i :=  treat_ctor_list_oind_tac_i_gen inj_total_disj_tac.
+
+Ltac interpretation_alg_types_oind_i :=  treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
 Print Ltac inj_total_disj_tac.
   
@@ -1878,16 +1886,4 @@ reflexivity.
 Qed.
 
 
-
-Ltac get_oind_tac t i k :=  (*** remonter ***)
- let blut := fresh "blut" in  pose (ltac:(get_mind_tac t)) as blut ; k ((blut).(ind_bodies))
- (* let t_mind := fresh "mind" in (pose ((constr:(t_mind)).(ind_bodies)) as idn) *)
- .  
-
-
-Goal 2+2 = 4.
-Proof.
-get_oind_tac (list nat) 0 ltac:(fun x => idtac x)   .
-let oindtry := fresh "blut" in   pose ltac:(get_oind_tac (list nat) 0) as oindtry.
-(* let blutos := fresh "blut" in  get_mind_tac (list nat) blutos. clear blut. *)
-let glacos :=  fresh "blut" in get_oind_tac (list nat) 0 blutos.
+End Inductives_to_FO.
