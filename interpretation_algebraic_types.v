@@ -820,7 +820,7 @@ Ltac sdf B f A := assert (k := 5);  (match goal with
 end ).
 
 Ltac ctor_is_inj_tac B f lA  :=
-let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; unfold toto; intros ; [match goal with
+let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; [unfold toto; intros ; match goal with
                                                                                                             | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto.  (* repeat split . *) 
   (* ; assert Hinj ; (injection in Hinj). *)
 (* \! qqch de très important à comprendre: pq sans [ | ..], tactique appliquée à tous les sous-buts, même ceux qui ne sont pas créés par la 1ère partie.  *)
@@ -1917,12 +1917,8 @@ interp_alg_types_context_goal.
 Abort.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
-intros.
 interp_alg_types_context_goal.
-let T := type of H in match T with 
-| context C[?y] => let Y := type of y in is_not_in_tuple I Y ;
-interpretation_alg_types_tac Y ;  try (interp_alg_types_goal_aux (I, Y))
-end.
+
 Abort.
 
 
