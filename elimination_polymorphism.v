@@ -132,22 +132,11 @@ Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
 Proof. intros H. specialize_context_clear.
 Abort.
 
+Tactic Notation "inst" := specialize_context.
 
-(* This is a trick to admit no parameter in the tactic inst :
- we instanciate with a trivial hypothesis and then 
-we delete it *)
-
-Tactic Notation "inst_no_parameter" := let H := fresh in 
-assert (H : forall (x: Type), True) by (intros x ; exact I) ; inst H ; clear H ; match goal with 
-| U : True |- _ => clear U
-end.
-
-Tactic Notation "inst_no_parameter_clear" := let H := fresh in 
-assert (H : forall (x: Type), True) by (intros x ; exact I) ; inst_clear H ; match goal with 
-| U : True |- _ => clear U
-end.
+Tactic Notation "inst_clear" := specialize_context_clear.
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
-Proof. intros H. inst_no_parameter_clear.
+Proof. intros H. inst_clear.
 Abort.
