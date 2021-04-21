@@ -17,6 +17,8 @@ Require Import elimination_pattern_matching.
 Require Import elimination_polymorphism.
 Require Import interpretation_algebraic_types.
 
+
+
 Ltac def_and_pattern_matching := 
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_pattern_matching H')).
@@ -63,5 +65,14 @@ def_and_pattern_matching_mono.
 assumption.
 Qed.
 
+Goal forall (l : list Z) x,  hd_error l = Some x -> (l <> []).
+Proof.
+Search interpretation.
+interpretation_alg_types_tac (option Z).
 
-
+(* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
+Proof.
+intros. destruct H.
+apply triple_eq_is_eq in H. 
+verit  hd_error_def_nil  some_neq_none cons_neq_nil H   (* cons_neq_nil is necessary *).   
+Qed.*)

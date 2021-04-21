@@ -1778,7 +1778,7 @@ reflexivity. Qed.
 
 Print get_ctors_and_types_i.
 
-Ltac treat_ctor_list_oind_tac_i_gen inj_total_disj_tac indu p n i  u lA oind  :=
+Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
   (* n: nombre de oind *)
   (* i: est le numéro de oind dans le mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
@@ -1787,7 +1787,7 @@ Ltac treat_ctor_list_oind_tac_i_gen inj_total_disj_tac indu p n i  u lA oind  :=
   constr:(get_ctors_and_types_i indu  p n i u lA oind) 
   in lazymatch eval cbv in gct with 
   | (?lf,?lA) =>
-  inj_total_disj_tac B lf lA
+  statement B lf lA
   end.
 
 Ltac treat_ctor_list_oind_tac_i :=  treat_ctor_list_oind_tac_i_gen inj_total_disj_tac.
@@ -1817,20 +1817,25 @@ Abort.
 Print List.length.
 Check List.length.
 
-Ltac treat_ctor_mind_aux_tac indu p n  u  mind  i lA loind :=
+Ltac treat_ctor_mind_aux_tac_gen statement indu p n  u  mind  i lA loind :=
  lazymatch eval cbv in loind with
 | nil => idtac ""
-| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i indu p n i u lA oind ; 
-treat_ctor_mind_aux_tac indu p n u mind constr:(S i) lA tlloind
+| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p n i u lA oind ; 
+treat_ctor_mind_aux_tac_gen statement indu p n u mind constr:(S i) lA tlloind
 end.
     (* nombre de oind *)
     (* i est le numéro de oind dans le mutual inductive block *)
 (* mind est-il vraiment nécessaire ?*)
 
-Ltac treat_ctor_mind_tac indu p n u lA mind  
+
+Ltac treat_ctor_mind_tac_gen statement indu p n u lA mind  
 :=  let loind := constr:(mind.(ind_bodies)) in 
-treat_ctor_mind_aux_tac indu p n u mind 0  lA loind. 
+treat_ctor_mind_aux_tac_gen statement indu p n u mind 0  lA loind. 
    
+Ltac treat_ctor_mind_tac := treat_ctor_mind_tac_gen inj_total_disj_tac.
+
+Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
+
 
 Goal False.
 Proof.
@@ -1852,7 +1857,7 @@ Print inductive_mind.
 
 Print InductiveDecl.
 
-Ltac fo_prop_of_cons_tac t := (* reste à traiter quand inductive *sans* paramètre *)
+Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive *sans* paramètre *)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
      | (?Sigma,?ind) => idtac "Sigma ind"; lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
@@ -1864,7 +1869,7 @@ Ltac fo_prop_of_cons_tac t := (* reste à traiter quand inductive *sans* paramè
        | Some ?d =>   idtac "Some d";(* *) 
          match d with
          |  InductiveDecl ?mind =>  idtac "InductiveDecl"; let indu_p := constr:(mind.(ind_npars)) in 
-            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac indu indu_p n u lA mind ; clear rqt
+            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear rqt
          end       
        end
        end         
@@ -1872,14 +1877,15 @@ Ltac fo_prop_of_cons_tac t := (* reste à traiter quand inductive *sans* paramè
      end
     .
 
+Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
-
-
+Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
 
 Goal 2+2 = 4.
 Proof.
 fo_prop_of_cons_tac (list nat).
+clear. interpretation_alg_types_tac (list nat).
 Fail fo_prop_of_cons_tac nat. (* parce qu'on ne matche que des tApp *)
 Fail fo_prop_of_cons_tac Ntree.  
 reflexivity.
