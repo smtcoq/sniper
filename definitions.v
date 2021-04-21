@@ -9,11 +9,11 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
-Require Import Bool Int63 PArray BinNat BinPos ZArith SMT_classes_instances.
-Require Import Misc State BVList. (* FArray Equalities DecidableTypeEx. *)
-Require FArray.
-
-
+(* Require Import Bool (* Int63  PArray *) BinNat BinPos ZArith SMT_classes_instances.
+(* Require Import Misc State BVList. *) (* FArray Equalities DecidableTypeEx. *)
+Require FArray. *)
+Require Import ZArith.
+Require Import SMTCoq.bva.BVList.
 
 
 Ltac unquote_term t_reif := 

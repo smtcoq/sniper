@@ -6,4 +6,5 @@ elimination_polymorphism.v
 elimination_pattern_matching.v
 examples.v
 eta_expand.v
+interpretation_algebraic_types.v
 fauto.v
