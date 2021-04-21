@@ -67,8 +67,12 @@ Qed.
 
 Goal forall (l : list Z) x,  hd_error l = Some x -> (l <> []).
 Proof.
-Search interpretation.
+intros l x H.       
 interpretation_alg_types_tac (option Z).
+interpretation_alg_types_tac (list Z).
+def_and_pattern_matching.
+verit (H, H2, H3,  H6, H7, H8).
+
 
 (* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
 Proof.

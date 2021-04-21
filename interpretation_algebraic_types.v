@@ -751,7 +751,7 @@ MetaCoq Unquote Definition test_eq_combine_unquote3 :=  test_eq_combine3.
 Print test_eq_combine_unquote3.
 
 
-Section Inductives_to_FO. 
+(*Section Inductives_to_FO. *)
 
 
 
@@ -1892,4 +1892,4 @@ reflexivity.
 Qed.
 
 
-End Inductives_to_FO.
+(*End Inductives_to_FO.*)
