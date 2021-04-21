@@ -136,5 +136,3 @@ tApp (fun x => t(x)) y => subst ..., ne se fait pas automatiquement quand c'est 
 
 
 
-
-

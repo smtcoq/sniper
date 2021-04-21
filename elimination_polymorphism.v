@@ -93,9 +93,17 @@ Ltac specialize_context_aux :=
              end
           end.
 
-
+Ltac specialize_context_aux_clear :=
+ match goal with
+  | H: ?P |- _ => lazymatch P with 
+                | id _ => fail 
+                | _ => instanciate_type H ; clear H
+             end
+          end.
 
 Ltac specialize_context := repeat specialize_context_aux ; repeat eliminate_id.
+
+Ltac specialize_context_clear := repeat specialize_context_aux_clear.
 
 
 (* A tactic to handle hypothesis in a list : the problem is that the user should hide the hypothesis 
@@ -117,6 +125,14 @@ end.
 Ltac inst t := 
 specialize_context ; instanciate_type_tuple t.
 
+Ltac inst_clear t :=
+instanciate_type_tuple t ; specialize_context_clear.
+
+Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
+Proof. intros H. specialize_context_clear.
+Abort.
+
+
 (* This is a trick to admit no parameter in the tactic inst :
  we instanciate with a trivial hypothesis and then 
 we delete it *)
@@ -126,22 +142,12 @@ assert (H : forall (x: Type), True) by (intros x ; exact I) ; inst H ; clear H ;
 | U : True |- _ => clear U
 end.
 
-(* Ltac return_id := fun k => let x := fresh "test" in k ; x. *)
+Tactic Notation "inst_no_parameter_clear" := let H := fresh in 
+assert (H : forall (x: Type), True) by (intros x ; exact I) ; inst_clear H ; match goal with 
+| U : True |- _ => clear U
+end.
 
 
-Ltac return_id k :=
-  let x := fresh "test" in
-  let _ := match goal with _ => k end in
-  x.
-
-
-Goal False.
-
-let y := return_id idtac in assert (y : True).
-let y := return_id idtac in assert (y : True).
+Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
+Proof. intros H. inst_no_parameter_clear.
 Abort.
-
-
-(* TODO : Handle a list of identifiers ? *)
-
-
