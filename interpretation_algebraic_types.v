@@ -1,6 +1,10 @@
+Add Rec LoadPath "/home/louise/github.com/louiseddp/smtcoq/coq-8.11/src" as SMTCoq.
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
+Require Import elimination_polymorphism.
+Require Import ZArith.
+Require Import definitions.
 
 
 Open Scope string_scope.  (* pour que ça ne buggue pas avec les fonctions sur les strings, mais du coup, ++ plus interprété pour les listes *)
@@ -1860,15 +1864,15 @@ Print InductiveDecl.
 Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive *sans* paramètre *)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) => idtac "Sigma ind"; lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
-     | tApp ?iu ?lA => idtac "tApp iu lA" ; 
+     | (?Sigma,?ind) => lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
+     | tApp ?iu ?lA =>
        lazymatch eval hnf in iu with
        | tInd ?indu ?u => 
      let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
        lazymatch eval cbv in lkup  with
        | Some ?d =>   idtac "Some d";(* *) 
          match d with
-         |  InductiveDecl ?mind =>  idtac "InductiveDecl"; let indu_p := constr:(mind.(ind_npars)) in 
+         |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
             let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear rqt
          end       
        end
@@ -1881,6 +1885,25 @@ Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
+Ltac is_not_in_tuple p z := 
+lazymatch constr:(p) with
+| (?x, ?y) => constr_neq y z ; idtac "1" z ; is_not_in_tuple constr:(x) z ; idtac "2" p
+| I => idtac "3"
+end.
+
+Ltac interp_alg_types_goal_aux p :=
+match goal with 
+| |- context C[?y] => is_not_in_tuple p y ; let Y := type of y in let Y' := eval hnf in 
+Y in is_type_quote Y' ; interpretation_alg_types_tac y ; idtac "foo" ; try (interp_alg_types_goal_aux (p, y))
+end.
+
+Ltac interp_alg_types_goal := interp_alg_types_goal_aux (I, Z, bool).
+
+Goal forall (x : nat) (l : list nat) (u : Z), x = x /\ l =l /\ u=u.
+interp_alg_types_goal.
+Abort.
+
+(*TODO : affiner la liste des types à ne pas interpréter *)
 
 Goal 2+2 = 4.
 Proof.

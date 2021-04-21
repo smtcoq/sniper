@@ -79,7 +79,7 @@ Proof. intros H. specialize_context; assumption. Qed.
 Lemma app_nil_r_bool : (forall (X:Type), forall l:list X,
   l ++ [] = l) -> forall l : list bool, l ++ [] = l.
 Proof.
-  intros X. specialize_context. assumption. Qed.
+  intros X. inst. assumption. Qed.
 
 
 Theorem app_assoc : (forall A (l m n:list A),
@@ -111,7 +111,7 @@ Hypothesis length_app : forall A, forall (l1 l2: list A),
 Theorem length_app_auto : forall B (HB: CompDec (list B)), forall (l1 l2 l3 : list B), 
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. nat_convert. 
-inst_no_parameter. verit length_app_B. Qed.
+inst. verit length_app_B. Qed.
 
 End Examples.
 
@@ -123,6 +123,6 @@ Section combs.
   Lemma comb :
     forall B (HB:CompDec (list B)) (l1 l2 l3 l4 : list B),
       l1 ++ (l2 ++ (l3 ++ l4)) = ((l1 ++ l2) ++ l3) ++ l4.
-  Proof. intros. inst_no_parameter. verit (append_assoc_B HB). Qed.
+  Proof. intros. inst. verit (append_assoc_B HB). Qed.
 
 End combs.

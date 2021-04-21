@@ -24,7 +24,10 @@ get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' =>
 eliminate_pattern_matching H')).
 
 Ltac def_and_pattern_matching_mono :=
-def_and_pattern_matching ; inst_no_parameter.
+def_and_pattern_matching ; inst_clear.
+
+(* Ltac def_and_pattern_matching_mono_param t := *)
+
 
 Goal ((forall (A: Type) (x : A) (a : A) (l : list A), 
 @hd A x (@cons A a l) = match (@cons A a l) with
@@ -70,8 +73,11 @@ Proof.
 intros l x H.       
 interpretation_alg_types_tac (option Z).
 interpretation_alg_types_tac (list Z).
-def_and_pattern_matching.
-verit (H, H2, H3,  H6, H7, H8).
+def_and_pattern_matching_mono.
+verit (H, H3,  H6, H8_Z, H7_Z).
+Qed.
+
+
 
 
 (* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
