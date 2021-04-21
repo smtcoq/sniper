@@ -1025,8 +1025,8 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
 
 Ltac codom_disj_discr B f g lAf lAg :=
   let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
-assert toto; unfold toto ; intros ;
-                           [ try discriminate | .. ] ; subst toto. 
+assert toto; [unfold toto ; intros ;
+                            try discriminate | .. ] ; subst toto. 
 (* \todo : refolder not ? *)
 
 
