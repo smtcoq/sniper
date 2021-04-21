@@ -6,6 +6,11 @@ Require Import elimination_polymorphism.
 Require Import ZArith.
 Require Import definitions.
 
+(* todo : 
+- des intros à supprimer
+- factoriser code tactique finale
+- éliminer les formule triviale: True, injectivité des constructeurs sans arg
+*)
 
 Open Scope string_scope.  (* pour que ça ne buggue pas avec les fonctions sur les strings, mais du coup, ++ plus interprété pour les listes *)
 

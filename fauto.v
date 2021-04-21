@@ -70,12 +70,13 @@ Qed.
 
 Goal forall (l : list Z) x,  hd_error l = Some x -> (l <> []).
 Proof.
-intros l x H.       
+(* intros l y H.        *)
 interpretation_alg_types_tac (option Z).
 interpretation_alg_types_tac (list Z).
 def_and_pattern_matching_mono.
 verit (H, H3,  H6, H8_Z, H7_Z).
 Qed.
+
 
 
 
