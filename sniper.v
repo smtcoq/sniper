@@ -76,19 +76,31 @@ verit (H1, H3,  H5, H6_Z, H7_Z).
 Qed.
 
 Ltac snipe_param t :=
-interp_alg_types_context_goal ; def_and_pattern_matching_mono_param t.
+try interp_alg_types_context_goal ; try (def_and_pattern_matching_mono_param t).
 
 Ltac snipe_no_param :=
-interp_alg_types_context_goal; def_and_pattern_matching_mono.
+try interp_alg_types_context_goal; try def_and_pattern_matching_mono.
 
 Tactic Notation "snipe" constr(t) := snipe_param t.
 Tactic Notation "snipe" := snipe_no_param.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
-snipe. 
+snipe.
 verit (H1, H3,  H5, H6_Z, H7_Z).
 Qed.
+
+Local Open Scope Z_scope.
+
+Hypothesis length_app : forall A, forall (l1 l2: list A),
+       (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
+
+Theorem length_app_auto : forall B (HB: CompDec (list B)), forall (l1 l2 l3 : list B), 
+((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
+Proof. intros B HB l1 l2 l3. nat_convert.
+snipe length_app.
+ verit length_app_B. auto with typeclass_instances. Qed.
+
 
 
 (* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
