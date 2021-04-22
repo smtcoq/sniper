@@ -95,11 +95,55 @@ Local Open Scope Z_scope.
 Hypothesis length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
 
-Theorem length_app_auto : forall B (HB: CompDec (list B)), forall (l1 l2 l3 : list B), 
+Lemma length_app_auto : forall B (HB: CompDec (list B)), forall (l1 l2 l3 : list B), 
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. nat_convert.
 snipe length_app.
  verit length_app_B. auto with typeclass_instances. Qed.
+
+
+Inductive tree {A: Type} : Type :=
+| Leaf : tree
+| Node : tree -> A -> tree -> tree.
+
+
+
+Definition is_empty {A} (t : @tree A) :=
+ match t with
+ | Leaf => true
+ | _ => false
+ end.
+
+
+Definition remove_option {A} (default : A) (o : option A) := match o with 
+| Some x => x
+| None => default
+end.
+
+Ltac get_tuple_of_hypothesis_aux p p' k :=
+match goal with 
+| H : _ |- _ => let T := type of H in
+ is_not_in_tuple p T ; try (get_tuple_of_hypothesis_aux (p, T) (p', H) k) 
+; k (p', H)
+end.
+
+Ltac get_tuple_of_hypothesis k := let H := fresh in
+assert (H : True) by (exact I) ; get_tuple_of_hypothesis_aux I H k.
+
+Goal False -> False -> False -> False.
+intros. get_tuple_of_hypothesis ltac:(fun x => pose x).
+Abort.
+
+
+Lemma option_tree_Z : forall (t : tree), 
+is_empty (remove_option (Node Leaf 1 Leaf) (Some t)) = true -> t = Leaf.
+Proof.
+snipe.
+get_tuple_of_hypothesis ltac:(fun p => pose p).
+verit (H, H, H_bool, H_Z, H3, H3_bool, H3_Z, H4, H4_bool, H4_Z, H5, H5_bool, H5_Z, H6, H6_bool, H6_Z,
+     H7, H7_bool, H7_Z, H8, H2, H1, H0).
+
+
 
 
 
