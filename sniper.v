@@ -138,6 +138,36 @@ intros.
 Abort.
 
 
+
+
+Fixpoint search (x : Z) l := 
+  match l with 
+  | [] => false
+  | x0 :: l0 => if Z.eqb x  x0 then true else search x l0
+  end.
+
+Lemma search_app : forall (x: Z) (l1 l2: list Z), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
+Proof.
+intros x l1 l2. induction l1 as [ | x0 l0 H]. 
+- reflexivity.
+- simpl. destruct (Z.eqb x x0). 
+  + reflexivity.
+  + rewrite H. reflexivity. 
+Qed.
+
+
+Lemma search_lemma : forall (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
+Proof.
+intros x l1 l2 l3.  rewrite !search_app.  rewrite Coq.Bool.Bool.orb_comm with (b1 := search x l3). rewrite Coq.Bool.Bool.orb_comm  with (b1 := search x l2) (b2 := search x l1 ). rewrite  Coq.Bool.Bool.orb_assoc. reflexivity.
+Qed.
+
+
+Lemma snipe_search_lemma : forall (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
+Proof. Print nat. snipe. Fail verit search_app.
+Abort.
+
+
+
 Lemma option_tree_Z : forall (t : tree), 
 is_empty (remove_option (Node Leaf 1 Leaf) (Some t)) = true -> t = Leaf.
 Proof.
