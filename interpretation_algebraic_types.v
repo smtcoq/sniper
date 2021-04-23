@@ -1885,18 +1885,13 @@ Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
-Ltac is_not_in_tuple p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z
-| I => idtac
-end.
+
 
 
 Ltac interp_alg_types_goal_aux p :=
 match goal with 
-| |- context C[?y] => is_not_in_tuple p y ; let Y := type of y in let Y' := eval hnf in 
-Y in is_type_quote Y' ; interpretation_alg_types_tac y ;
-try (interpretation_alg_types_tac Y) ; try (interp_alg_types_goal_aux (p, y))
+| |- context C[?y] => is_not_in_tuple p y ; interpretation_alg_types_tac y ;
+ try (interp_alg_types_goal_aux (p, y))
 end.
 
 Ltac interp_alg_types_context_aux p :=
@@ -1904,15 +1899,17 @@ match goal with
 | |- context C[?y] => let Y := type of y in is_not_in_tuple p y ; 
 interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
 | _ : ?T |- _ => match T with 
-            | context C[?y] => let Y := type of y in is_not_in_tuple p Y ;
-interpretation_alg_types_tac Y ;  try (interp_alg_types_context_aux (p, Y))
+            | context C[?y] => let Y := type of y in is_not_in_tuple p y ;
+interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
 end
 end.
 
-Ltac interp_alg_types_goal := interp_alg_types_goal_aux (I, Z, bool).
-Ltac interp_alg_types_context_goal := interp_alg_types_context_aux (I, Z, bool).
+Ltac interp_alg_types_goal := interp_alg_types_goal_aux (unit, Z, bool).
+Ltac interp_alg_types_context_goal := interp_alg_types_context_aux (unit, Z, bool).
 
-Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l.
+
+Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
+interp_alg_types_goal.
 interp_alg_types_context_goal.
 Abort.
 
