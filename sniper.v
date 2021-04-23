@@ -134,36 +134,36 @@ assert (H : True) by (exact I) ; get_tuple_of_hypothesis_aux I H k.
 
 Goal False -> False -> False -> False.
 intros.
- get_tuple_of_hypothesis ltac:(fun x => pose x).
+Fail get_tuple_of_hypothesis ltac:(fun x => pose x).
 Abort.
 
 
 
 
-Fixpoint search (x : Z) l := 
+Fixpoint search {A : Type} {H: CompDec A} (x : A) l := 
   match l with 
   | [] => false
-  | x0 :: l0 => if Z.eqb x  x0 then true else search x l0
+  | x0 :: l0 => if @eqb_of_compdec _ H x x0  then true else search x l0
   end.
 
-Lemma search_app : forall (x: Z) (l1 l2: list Z), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
+Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof.
-intros x l1 l2. induction l1 as [ | x0 l0 H]. 
+intros A H x l1 l2. induction l1 as [ | x0 l0 IH]. 
 - reflexivity.
-- simpl. destruct (Z.eqb x x0). 
+- simpl. destruct (@eqb_of_compdec _ H x x0). 
   + reflexivity.
-  + rewrite H. reflexivity. 
+  + rewrite IH. reflexivity. 
 Qed.
 
 
-Lemma search_lemma : forall (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
+Lemma search_lemma : forall (A : Type) (H : CompDec A) (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof.
-intros x l1 l2 l3.  rewrite !search_app.  rewrite Coq.Bool.Bool.orb_comm with (b1 := search x l3). rewrite Coq.Bool.Bool.orb_comm  with (b1 := search x l2) (b2 := search x l1 ). rewrite  Coq.Bool.Bool.orb_assoc. reflexivity.
+intros A H x l1 l2 l3.  rewrite !search_app.  rewrite Coq.Bool.Bool.orb_comm with (b1 := search x l3). rewrite Coq.Bool.Bool.orb_comm  with (b1 := search x l2) (b2 := search x l1 ). rewrite  Coq.Bool.Bool.orb_assoc. reflexivity.
 Qed.
 
 
-Lemma snipe_search_lemma : forall (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. Print nat. snipe. Fail verit search_app.
+Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
+Proof. snipe. Fail verit search_app.
 Abort.
 
 
