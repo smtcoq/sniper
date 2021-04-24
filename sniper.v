@@ -128,13 +128,13 @@ match goal with
 end.
 
 Ltac get_tuple_of_hypothesis k := let H := fresh in
-assert (H : True) by (exact I) ; get_tuple_of_hypothesis_aux I H k.
+assert (H : True) by (exact I) ; get_tuple_of_hypothesis_aux unit H k.
 
 
 
 Goal False -> False -> False -> False.
 intros.
-Fail get_tuple_of_hypothesis ltac:(fun x => pose x).
+get_tuple_of_hypothesis ltac:(fun x => pose x).
 Abort.
 
 
