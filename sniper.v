@@ -162,18 +162,20 @@ intros A H x l1 l2 l3.  rewrite !search_app.  rewrite Coq.Bool.Bool.orb_comm wit
 Qed.
 
 
-Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. snipe. Fail verit search_app.
+Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A), 
+search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
+Proof. intros A H. snipe.
+Fail verit (search_app, H2, H3).
 Abort.
 
 
 
-Lemma option_tree_Z : forall (t : tree), 
-is_empty (remove_option (Node Leaf 1 Leaf) (Some t)) = true -> t = Leaf.
+Lemma option_tree_Z : forall (t : @tree Z), 
+is_empty t = true -> t = Leaf.
 Proof.
 snipe.
-Fail verit (H, H, H_bool, H_Z, H3, H3_bool, H3_Z, H4, H4_bool, H4_Z, H5, H5_bool, H5_Z, H6, H6_bool, H6_Z,
-     H7, H7_bool, H7_Z, H8, H2, H1, H0).
+get_tuple_of_hypothesis ltac:(fun x => pose x).
+Fail verit (H4_Z, H2, H5, H3_Z).
 
 
 
