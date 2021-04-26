@@ -87,6 +87,8 @@ in assert (H': u) by (intros ; rewrite H; reflexivity)))))
 end.
 
 
+
+
 Ltac expand_hyp_cont H := fun k =>
 lazymatch type of H with 
 | @eq ?A ?t ?u => quote_term A ltac:(fun A =>
@@ -111,6 +113,14 @@ expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', 
 | unit => k unit
 end.
 
+Goal False.
+get_def length.
+expand_hyp length_def.
+assert (forall x : string, length x = match x with 
+| ""%string => 0
+| String _ s' => S (length s') 
+end). intros x. destruct x ; simpl ; reflexivity.
+Abort. 
 
 Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.
