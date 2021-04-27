@@ -16,9 +16,7 @@ Unset Strict Unquote Universe Mode.
 Print term.
 
 
-Goal False.
-get_def length. expand_hyp length_def.
-Abort.
+
 (*  | tFix : mfixpoint term -> nat -> term *)
 Print mfixpoint.
 (* fun term : Type => list (def term)
@@ -37,7 +35,8 @@ Print length_reif_rec.
 
 
 (* Returns the definition in a fixpoint *)
-Definition get_def_in_fix (f: term) := match f with 
+Fixpoint get_def_in_fix (f: term) := match f with 
+| tLambda na T u => get_def_in_fix u 
 | tFix l _ => match l with 
           | [] => f
           | x :: xs => x.(dbody)
@@ -421,14 +420,70 @@ Definition toto := tApp
     (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string)
     []; subst10 length_reif body_reif].
 
+Compute (subst10 length_reif body_reif).
+
 
 MetaCoq Unquote Definition toto_unquote := toto.
 Print toto_unquote.
 
+Fixpoint eliminate_lambda_aux (t : term) (l : list (aname*term)) :=
+match t with 
+| tLambda na T u => eliminate_lambda_aux u ((na, T)::l)
+| _ => (t, l)
+end.
+
+Fixpoint eliminate_lambda t := eliminate_lambda_aux t [].
+
+Fixpoint create_lambda (t : term) (l : list (aname*term)) :=
+match l with 
+| nil => t
+| (na, T):: xs => create_lambda (tLambda na T t) xs
+end.
 
 
+Fixpoint replace_tFix_by_def (l : list term) (def : term) := match l with 
+| nil => nil
+| cons x xs => let p := (eliminate_lambda x) in match p.1 with 
+        | tFix _ _ => create_lambda (subst10 def (get_def_in_fix x)) p.2 :: xs
+        | _ => x :: (replace_tFix_by_def xs def)
+      end
+end.
+
+Definition get_args (t : term) := match t with 
+| tApp u l => l
+| _ => nil
+end.
+
+Definition new_app (t : term) (l : list term) := match t with 
+| tApp u _ => tApp u l
+| _ => t
+end.
 
 
+Ltac eliminate_fix_hyp H := 
+let T := type of H in
+lazymatch T with 
+| @eq ?A ?t ?u => 
+let H' := fresh in quote_term T ltac:(fun T =>
+quote_term t ltac:(fun t =>
+quote_term u ltac:(fun u => 
+let l := eval cbv in (get_args T) in 
+let l' := eval cbv in (replace_tFix_by_def l t) in 
+let eq := eval cbv in (new_app T l')
+in idtac eq ;
+run_template_program (tmUnquote eq) 
+ltac:(fun z => 
+let w := eval hnf in (z.(my_projT2)) 
+in pose w))))
+| _ => fail "not an equality" 
+end.
+
+Goal False.
+get_def @Datatypes.length.
+Fail eliminate_fix_hyp length_def.
+
+ expand_hyp length_def.
+Abort.
 
 
 
