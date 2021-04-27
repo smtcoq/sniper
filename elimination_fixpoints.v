@@ -15,6 +15,10 @@ Unset Strict Unquote Universe Mode.
 
 Print term.
 
+
+Goal False.
+get_def length. expand_hyp length_def.
+Abort.
 (*  | tFix : mfixpoint term -> nat -> term *)
 Print mfixpoint.
 (* fun term : Type => list (def term)
@@ -26,165 +30,10 @@ Print def.
   { dname : aname;  dtype : term;  dbody : term;  rarg : nat } 
 rarg = index of the recursive argument *)
 
-MetaCoq Quote Recursively Definition length_reif := Datatypes.length.
+MetaCoq Quote Recursively Definition length_reif_rec := Datatypes.length.
 
-Print length_reif.
-(* 
-length_reif = 
-([(MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string,
-  ConstantDecl
-    {|
-    cst_type := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                  (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
-                  (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-                     (tApp
-                        (tInd
-                           {|
-                           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                             "list"%string);
-                           inductive_ind := 0 |} []) [tRel 0])
-                     (tInd
-                        {|
-                        inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                          "nat"%string);
-                        inductive_ind := 0 |} []));
-    cst_body := Some
-                  (tLambda {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                     (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
-                     (tFix
-                        [{|
-                         dname := {| binder_name := nNamed "length"%string; binder_relevance := Relevant |};
-                         dtype := tProd {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-                                    (tApp
-                                       (tInd
-                                          {|
-                                          inductive_mind := (MPfile
-                                                               ["Datatypes"%string; "Init"%string;
-                                                               "Coq"%string], "list"%string);
-                                          inductive_ind := 0 |} []) [tRel 0])
-                                    (tInd
-                                       {|
-                                       inductive_mind := (MPfile
-                                                            ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                         "nat"%string);
-                                       inductive_ind := 0 |} []);
-                         dbody := tLambda {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-                                    (tApp
-                                       (tInd
-                                          {|
-                                          inductive_mind := (MPfile
-                                                               ["Datatypes"%string; "Init"%string;
-                                                               "Coq"%string], "list"%string);
-                                          inductive_ind := 0 |} []) [tRel 1])
-                                    (tCase
-                                       ({|
-                                        inductive_mind := (MPfile
-                                                             ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                          "list"%string);
-                                        inductive_ind := 0 |}, 1, Relevant)
-                                       (tLambda
-                                          {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-                                          (tApp
-                                             (tInd
-                                                {|
-                                                inductive_mind := (MPfile
-                                                                     ["Datatypes"%string; "Init"%string;
-                                                                     "Coq"%string], "list"%string);
-                                                inductive_ind := 0 |} []) [tRel 2])
-                                          (tInd
-                                             {|
-                                             inductive_mind := (MPfile
-                                                                  ["Datatypes"%string; "Init"%string;
-                                                                  "Coq"%string], "nat"%string);
-                                             inductive_ind := 0 |} [])) (tRel 0)
-                                       [(0,
-                                        tConstruct
-                                          {|
-                                          inductive_mind := (MPfile
-                                                               ["Datatypes"%string; "Init"%string;
-                                                               "Coq"%string], "nat"%string);
-                                          inductive_ind := 0 |} 0 []);
-                                       (2,
-                                       tLambda
-                                         {| binder_name := nNamed "a"%string; binder_relevance := Relevant |}
-                                         (tRel 2)
-                                         (tLambda
-                                            {|
-                                            binder_name := nNamed "l'"%string;
-                                            binder_relevance := Relevant |}
-                                            (tApp
-                                               (tInd
-                                                  {|
-                                                  inductive_mind := (MPfile
-                                                                       ["Datatypes"%string; "Init"%string;
-                                                                       "Coq"%string], "list"%string);
-                                                  inductive_ind := 0 |} []) [tRel 3])
-                                            (tApp
-                                               (tConstruct
-                                                  {|
-                                                  inductive_mind := (MPfile
-                                                                       ["Datatypes"%string; "Init"%string;
-                                                                       "Coq"%string], "nat"%string);
-                                                  inductive_ind := 0 |} 1 []) [tApp (tRel 3) [tRel 0]])))]);
-                         rarg := 0 |}] 0)| );
-    cst_universes := Monomorphic_ctx
-                       (LevelSetProp.of_list [Level.Level "Coq.Init.Datatypes.63"],
-                       ConstraintSet.add
-                         (UnivConstraint.make (Level.Level "Coq.Init.Datatypes.63") ConstraintType.Le0
-                            (Level.Level "Coq.Init.Datatypes.60")) ConstraintSet.empty) |});
- (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "nat"%string,
- InductiveDecl
-   {|
-   ind_finite := Finite;
-   ind_npars := 0;
-   ind_params := [];
-   ind_bodies := [{|
-                  ind_name := "nat"%string;
-                  ind_type := tSort (Universe.of_levels (inr Level.lSet));
-                  ind_kelim := IntoAny;
-                  ind_ctors := [("O"%string, tRel 0, 0);
-                               ("S"%string,
-                               tProd {| binder_name := nAnon; binder_relevance := Relevant |} (tRel 0) (tRel 1),
-                               1)];
-                  ind_projs := [];
-                  ind_relevance := Relevant |}];
-   ind_universes := Monomorphic_ctx (LevelSetProp.of_list [], ConstraintSet.empty);
-   ind_variance := None |});
- (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "list"%string,
- InductiveDecl
-   {|
-   ind_finite := Finite;
-   ind_npars := 1;
-   ind_params := [{|
-                  decl_name := {| binder_name := nNamed "A"%string; binder_relevance := Relevant |};
-                  decl_body := None;
-                  decl_type := tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.60"))) |}];
-   ind_bodies := [{|
-                  ind_name := "list"%string;
-                  ind_type := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                                (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.60"))))
-                                (tSort
-                                   (Universe.from_kernel_repr (Level.lSet, false)
-                                      [(Level.Level "Coq.Init.Datatypes.60", false)]));
-                  ind_kelim := IntoAny;
-                  ind_ctors := [("nil"%string,
-                                tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                                  (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.60"))))
-                                  (tApp (tRel 1) [tRel 0]), 0);
-                               ("cons"%string,
-                               tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-                                 (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.60"))))
-                                 (tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
-                                    (tRel 0)
-                                    (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-                                       (tApp (tRel 2) [tRel 1]) (tApp (tRel 3) [tRel 2]))), 2)];
-                  ind_projs := [];
-                  ind_relevance := Relevant |}];
-   ind_universes := Monomorphic_ctx
-                      (LevelSetProp.of_list [Level.Level "Coq.Init.Datatypes.60"], ConstraintSet.empty);
-   ind_variance := None |})],
-tConst (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string) [])
-     : program *)
+Print length_reif_rec.
+
 
 
 (* Returns the definition in a fixpoint *)
@@ -206,192 +55,382 @@ MetaCoq Quote Definition term_test := (forall A (l : list A),
 
 Print term_test.
 
-(* tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "TransfoCoq.elimination_fixpoints.217"))))
-  (tProd {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "list"%string);
-           inductive_ind := 0 |} []) [tRel 0])
-     (tApp
-        (tInd
-           {|
-           inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string], "eq"%string);
-           inductive_ind := 0 |} [])
-        [tInd
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "nat"%string);
-           inductive_ind := 0 |} [];
-        tApp (tConst (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string) [])
-          [tRel 1; tRel 0];
-        tApp
-          (tFix
-             [{|
-              dname := {| binder_name := nNamed "length"%string; binder_relevance := Relevant |};
-              dtype := tProd {| binder_name := nNamed "s"%string; binder_relevance := Relevant |}
+
+Definition body_reif := tLambda
+                {|
+                binder_name := nNamed "A"%string;
+                binder_relevance := Relevant |}
+                (tSort
+                   (Universe.of_levels
+                      (inr (Level.Level "TransfoCoq.elimination_fixpoints.271"))))
+                (tLambda
+                   {|
+                   binder_name := nNamed "l"%string;
+                   binder_relevance := Relevant |}
+                   (tApp
+                      (tInd
+                         {|
+                         inductive_mind := (MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string; "Coq"%string],
+                                           "list"%string);
+                         inductive_ind := 0 |} []) [
+                      tRel 0])
+                   (tCase
+                      ({|
+                       inductive_mind := (MPfile
+                                            ["Datatypes"%string; "Init"%string;
+                                            "Coq"%string], "list"%string);
+                       inductive_ind := 0 |}, 1, Relevant)
+                      (tLambda
+                         {|
+                         binder_name := nNamed "l"%string;
+                         binder_relevance := Relevant |}
                          (tApp
                             (tInd
                                {|
-                               inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                               inductive_mind := (MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
                                                  "list"%string);
-                               inductive_ind := 0 |} []) [tRel 1])
+                               inductive_ind := 0 |} []) [
+                            tRel 1])
                          (tInd
                             {|
-                            inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                            inductive_mind := (MPfile
+                                                 ["Datatypes"%string;
+                                                 "Init"%string; "Coq"%string],
                                               "nat"%string);
-                            inductive_ind := 0 |} []);
-              dbody := tLambda {| binder_name := nNamed "s"%string; binder_relevance := Relevant |}
-                         (tApp
-                            (tInd
-                               {|
-                               inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                 "list"%string);
-                               inductive_ind := 0 |} []) [tRel 2])
-                         (tCase
-                            ({|
-                             inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                               "list"%string);
-                             inductive_ind := 0 |}, 1, Relevant)
-                            (tLambda {| binder_name := nNamed "s"%string; binder_relevance := Relevant |}
-                               (tApp
-                                  (tInd
-                                     {|
-                                     inductive_mind := (MPfile
-                                                          ["Datatypes"%string; "Init"%string;
-                                                          "Coq"%string], "list"%string);
-                                     inductive_ind := 0 |} []) [tRel 3])
-                               (tInd
-                                  {|
-                                  inductive_mind := (MPfile
-                                                       ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                    "nat"%string);
-                                  inductive_ind := 0 |} [])) (tRel 0)
-                            [(0,
-                             tConstruct
-                               {|
-                               inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                 "nat"%string);
-                               inductive_ind := 0 |} 0 []);
-                            (2,
-                            tLambda {| binder_name := nNamed "a"%string; binder_relevance := Relevant |}
-                              (tRel 3)
-                              (tLambda
-                                 {| binder_name := nNamed "s'"%string; binder_relevance := Relevant |}
-                                 (tApp
-                                    (tInd
-                                       {|
-                                       inductive_mind := (MPfile
-                                                            ["Datatypes"%string; "Init"%string;
-                                                            "Coq"%string], "list"%string);
-                                       inductive_ind := 0 |} []) [tRel 4])
-                                 (tApp
-                                    (tConstruct
-                                       {|
-                                       inductive_mind := (MPfile
-                                                            ["Datatypes"%string; "Init"%string;
-                                                            "Coq"%string], "nat"%string);
-                                       inductive_ind := 0 |} 1 [])
-                                    [tApp
-                                       (tConst
-                                          (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                          "length"%string) []) [tRel 5; tRel 0]])))]);
-              rarg := 0 |}] 0) [tRel 0]]))
-     : term *)
-
-Definition body_reif := (tLambda {| binder_name := nNamed "s"%string; binder_relevance := Relevant |}
-                         (tApp
-                            (tInd
-                               {|
-                               inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                 "list"%string);
-                               inductive_ind := 0 |} []) [tRel 2])
-                         (tCase
-                            ({|
-                             inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                               "list"%string);
-                             inductive_ind := 0 |}, 1, Relevant)
-                            (tLambda {| binder_name := nNamed "s"%string; binder_relevance := Relevant |}
-                               (tApp
-                                  (tInd
-                                     {|
-                                     inductive_mind := (MPfile
-                                                          ["Datatypes"%string; "Init"%string;
-                                                          "Coq"%string], "list"%string);
-                                     inductive_ind := 0 |} []) [tRel 3])
-                               (tInd
-                                  {|
-                                  inductive_mind := (MPfile
-                                                       ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                    "nat"%string);
-                                  inductive_ind := 0 |} [])) (tRel 0)
-                            [(0,
-                             tConstruct
-                               {|
-                               inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                                 "nat"%string);
-                               inductive_ind := 0 |} 0 []);
-                            (2,
-                            tLambda {| binder_name := nNamed "a"%string; binder_relevance := Relevant |}
-                              (tRel 3)
-                              (tLambda
-                                 {| binder_name := nNamed "s'"%string; binder_relevance := Relevant |}
-                                 (tApp
-                                    (tInd
-                                       {|
-                                       inductive_mind := (MPfile
-                                                            ["Datatypes"%string; "Init"%string;
-                                                            "Coq"%string], "list"%string);
-                                       inductive_ind := 0 |} []) [tRel 4])
-                                 (tApp
-                                    (tConstruct
-                                       {|
-                                       inductive_mind := (MPfile
-                                                            ["Datatypes"%string; "Init"%string;
-                                                            "Coq"%string], "nat"%string);
-                                       inductive_ind := 0 |} 1 [])
-                                    [tApp
-                                       (tConst
-                                          (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                          "length"%string) []) [tRel 5; tRel 0]])))])).
+                            inductive_ind := 0 |} [])) 
+                      (tRel 0)
+                      [(0,
+                       tConstruct
+                         {|
+                         inductive_mind := (MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string; "Coq"%string],
+                                           "nat"%string);
+                         inductive_ind := 0 |} 0 []);
+                      (2,
+                      tLambda
+                        {|
+                        binder_name := nNamed "a"%string;
+                        binder_relevance := Relevant |} 
+                        (tRel 1)
+                        (tLambda
+                           {|
+                           binder_name := nNamed "xs"%string;
+                           binder_relevance := Relevant |}
+                           (tApp
+                              (tInd
+                                 {|
+                                 inductive_mind := (
+                                                   MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
+                                                   "list"%string);
+                                 inductive_ind := 0 |} []) [
+                              tRel 2])
+                           (tApp
+                              (tConstruct
+                                 {|
+                                 inductive_mind := (
+                                                   MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
+                                                   "nat"%string);
+                                 inductive_ind := 0 |} 1 [])
+                              [tApp (tRel 4) [tRel 3; tRel 0]])))])).
 
 
 
-Definition test_transfo := 
-tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "TransfoCoq.elimination_fixpoints.217"))))
-  (tProd {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "list"%string);
-           inductive_ind := 0 |} []) [tRel 0])
-     (tApp
-        (tInd
-           {|
-           inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string], "eq"%string);
-           inductive_ind := 0 |} [])
-        [tInd
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "nat"%string);
-           inductive_ind := 0 |} [];
-        tApp (tConst (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string) [])
-          [tRel 1; tRel 0];
-        tApp
-         body_reif [tRel 0]])).
 
-MetaCoq Quote Definition goal := (forall (A : Type) (l: list A), Datatypes.length l = match l with 
+MetaCoq Quote Definition goal := (Datatypes.length = fun A (l : list A) => match l with 
 | nil => 0
 | cons _ xs => S (Datatypes.length xs) 
 end).
 
 Print goal.
 
+(* tApp
+  (tInd
+     {|
+     inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string], "eq"%string);
+     inductive_ind := 0 |} [])
+  [tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+     (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
+     (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+        (tApp
+           (tInd
+              {|
+              inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                "list"%string);
+              inductive_ind := 0 |} []) [tRel 0])
+        (tInd
+           {|
+           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "nat"%string);
+           inductive_ind := 0 |} []));
+  tConst (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string) [];
+  tLambda {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+    (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
+    (tLambda {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
+       (tApp
+          (tInd
+             {|
+             inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                               "list"%string);
+             inductive_ind := 0 |} []) [tRel 0])
+       (tCase
+          ({|
+           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "list"%string);
+           inductive_ind := 0 |}, 1, Relevant)
+          (tLambda {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
+             (tApp
+                (tInd
+                   {|
+                   inductive_mind := (MPfile
+                                        ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                     "list"%string);
+                   inductive_ind := 0 |} []) [tRel 1])
+             (tInd
+                {|
+                inductive_mind := (MPfile
+                                     ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                  "nat"%string);
+                inductive_ind := 0 |} [])) (tRel 0)
+          [(0,
+           tConstruct
+             {|
+             inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                               "nat"%string);
+             inductive_ind := 0 |} 0 []);
+          (2,
+          tLambda {| binder_name := nNamed "a"%string; binder_relevance := Relevant |}
+            (tRel 1)
+            (tLambda {| binder_name := nNamed "xs"%string; binder_relevance := Relevant |}
+               (tApp
+                  (tInd
+                     {|
+                     inductive_mind := (MPfile
+                                          ["Datatypes"%string; "Init"%string;
+                                          "Coq"%string], "list"%string);
+                     inductive_ind := 0 |} []) [tRel 2])
+               (tApp
+                  (tConstruct
+                     {|
+                     inductive_mind := (MPfile
+                                          ["Datatypes"%string; "Init"%string;
+                                          "Coq"%string], "nat"%string);
+                     inductive_ind := 0 |} 1 [])
+                  [tApp
+                     (tConst
+                        (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                        "length"%string) []) [tRel 3; tRel 0]])))]))]*)
+
 Fail MetaCoq Unquote Definition test_unquote := test_transfo.
 
 (* Definition replace_fix (t : term) (f : term) :=
 let f' := get_def_in_fix f 
 in match t with *)
+
+
+
+
+MetaCoq Quote Definition test' := (Datatypes.length =
+             (fix length {A} (l : list A) : nat :=
+                match l with
+                | nil  => 0
+                | cons _ xs => S (length xs)
+                end)).
+
+Print test'.
+
+(* tApp
+  (tInd
+     {|
+     inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                       "eq"%string);
+     inductive_ind := 0 |} [])
+  [tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+     (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
+     (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+        (tApp
+           (tInd
+              {|
+              inductive_mind := (MPfile
+                                   ["Datatypes"%string; "Init"%string;
+                                   "Coq"%string], "list"%string);
+              inductive_ind := 0 |} []) [tRel 0])
+        (tInd
+           {|
+           inductive_mind := (MPfile
+                                ["Datatypes"%string; "Init"%string;
+                                "Coq"%string], "nat"%string);
+           inductive_ind := 0 |} []));
+  tConst
+    (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string)
+    [];
+  tFix
+    [{|
+     dname := {|
+              binder_name := nNamed "length"%string;
+              binder_relevance := Relevant |};
+     dtype := tProd
+                {|
+                binder_name := nNamed "A"%string;
+                binder_relevance := Relevant |}
+                (tSort
+                   (Universe.of_levels
+                      (inr (Level.Level "TransfoCoq.elimination_fixpoints.271"))))
+                (tProd
+                   {|
+                   binder_name := nNamed "l"%string;
+                   binder_relevance := Relevant |}
+                   (tApp
+                      (tInd
+                         {|
+                         inductive_mind := (MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string; "Coq"%string],
+                                           "list"%string);
+                         inductive_ind := 0 |} []) [
+                      tRel 0])
+                   (tInd
+                      {|
+                      inductive_mind := (MPfile
+                                           ["Datatypes"%string; "Init"%string;
+                                           "Coq"%string], "nat"%string);
+                      inductive_ind := 0 |} []));
+     dbody := tLambda
+                {|
+                binder_name := nNamed "A"%string;
+                binder_relevance := Relevant |}
+                (tSort
+                   (Universe.of_levels
+                      (inr (Level.Level "TransfoCoq.elimination_fixpoints.271"))))
+                (tLambda
+                   {|
+                   binder_name := nNamed "l"%string;
+                   binder_relevance := Relevant |}
+                   (tApp
+                      (tInd
+                         {|
+                         inductive_mind := (MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string; "Coq"%string],
+                                           "list"%string);
+                         inductive_ind := 0 |} []) [
+                      tRel 0])
+                   (tCase
+                      ({|
+                       inductive_mind := (MPfile
+                                            ["Datatypes"%string; "Init"%string;
+                                            "Coq"%string], "list"%string);
+                       inductive_ind := 0 |}, 1, Relevant)
+                      (tLambda
+                         {|
+                         binder_name := nNamed "l"%string;
+                         binder_relevance := Relevant |}
+                         (tApp
+                            (tInd
+                               {|
+                               inductive_mind := (MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
+                                                 "list"%string);
+                               inductive_ind := 0 |} []) [
+                            tRel 1])
+                         (tInd
+                            {|
+                            inductive_mind := (MPfile
+                                                 ["Datatypes"%string;
+                                                 "Init"%string; "Coq"%string],
+                                              "nat"%string);
+                            inductive_ind := 0 |} [])) 
+                      (tRel 0)
+                      [(0,
+                       tConstruct
+                         {|
+                         inductive_mind := (MPfile
+                                              ["Datatypes"%string;
+                                              "Init"%string; "Coq"%string],
+                                           "nat"%string);
+                         inductive_ind := 0 |} 0 []);
+                      (2,
+                      tLambda
+                        {|
+                        binder_name := nNamed "a"%string;
+                        binder_relevance := Relevant |} 
+                        (tRel 1)
+                        (tLambda
+                           {|
+                           binder_name := nNamed "xs"%string;
+                           binder_relevance := Relevant |}
+                           (tApp
+                              (tInd
+                                 {|
+                                 inductive_mind := (
+                                                   MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
+                                                   "list"%string);
+                                 inductive_ind := 0 |} []) [
+                              tRel 2])
+                           (tApp
+                              (tConstruct
+                                 {|
+                                 inductive_mind := (
+                                                   MPfile
+                                                   ["Datatypes"%string;
+                                                   "Init"%string; "Coq"%string],
+                                                   "nat"%string);
+                                 inductive_ind := 0 |} 1 [])
+                              [tApp (tRel 4) [tRel 3; tRel 0]])))]));
+     rarg := 1 |}] 0]
+
+
+*)
+
+MetaCoq Quote Definition length_reif := Datatypes.length.
+
+Definition toto := tApp
+  (tInd
+     {|
+     inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                       "eq"%string);
+     inductive_ind := 0 |} [])
+  [tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+     (tSort (Universe.of_levels (inr (Level.Level "Coq.Init.Datatypes.63"))))
+     (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+        (tApp
+           (tInd
+              {|
+              inductive_mind := (MPfile
+                                   ["Datatypes"%string; "Init"%string;
+                                   "Coq"%string], "list"%string);
+              inductive_ind := 0 |} []) [tRel 0])
+        (tInd
+           {|
+           inductive_mind := (MPfile
+                                ["Datatypes"%string; "Init"%string;
+                                "Coq"%string], "nat"%string);
+           inductive_ind := 0 |} []));
+  tConst
+    (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "length"%string)
+    []; subst10 length_reif body_reif].
+
+
+MetaCoq Unquote Definition toto_unquote := toto.
+Print toto_unquote.
+
+
+
+
+
+
+
 
 
 
