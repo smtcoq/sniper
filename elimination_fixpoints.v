@@ -389,9 +389,9 @@ Print goal.
 
 Fail MetaCoq Unquote Definition test_unquote := test_transfo.
 
-Definition replace_fix (t : term) (f : term) :=
+(* Definition replace_fix (t : term) (f : term) :=
 let f' := get_def_in_fix f 
-in match t with
+in match t with *)
 
 
 
