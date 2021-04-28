@@ -72,8 +72,8 @@ Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 interp_alg_types_context_goal. 
 def_and_pattern_matching_mono.     
-verit  (H2, H4_Z, .
-Abort.
+verit.
+Qed.
 
 
 Ltac snipe_param t :=
@@ -88,9 +88,8 @@ Tactic Notation "snipe" := snipe_no_param.
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 snipe.
-verit (H1, H3,  H5, H6_Z, H7_Z).
-(* CompDec None= None reste à montrer?*)
-Abort.
+verit.
+Qed.
 
 Local Open Scope Z_scope.
 
