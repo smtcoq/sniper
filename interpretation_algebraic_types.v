@@ -638,6 +638,7 @@ Ltac get_env_ind_param t idn :=
 Goal False.
 Proof.
 let s1 := fresh "s1" in get_env_ind_param (list nat) s1.
+get_env_ind_param list foo.
 Print list_reif.
 let s2 := fresh "s2" in get_ind_param (nat) s2.
 Print nat_reif.
@@ -1885,34 +1886,36 @@ Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive 
 
   
 
-Ltac fo_prop_of_cons_tac_gen' statement t := (* reste à traiter quand inductive *sans* paramètre *)
-    let rqt := fresh "rqt" in rec_quote_term t rqt ; 
-    lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) => lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
-     | tApp ?iu ?lA =>
-       lazymatch eval hnf in iu with
-       | tInd ?indu ?u => 
-     let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
-       lazymatch eval cbv in lkup  with
-       | Some ?d =>   idtac "Some d";(* *) 
-         match d with
-         |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
-            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear rqt
-         end       
-       end
-       end         
-     end
-     end
-    .
+
 
 Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
-Ltac is_not_in_tuple_type p z := 
+Goal False.
+interpretation_alg_types_tac nat.
+interpretation_alg_types_tac (list nat).
+Fail interpretation_alg_types_tac true.
+Abort.
+
+(* Ltac is_not_in_tuple_type p z := 
 match constr:(p) with
 | (?x, ?y) => constr_neq y z ; is_not_in_tuple_type constr:(x) z 
 | tt => idtac
+end. *)
+
+(* Check is a MetaCoq term is a sort *)
+Definition is_sort (t : term) := match t with
+                                 | tSort _ => true
+                                 |_ => false
+                                  end.
+Ltac is_sort_quote t := let t' := eval hnf in t in
+quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
+
+Ltac is_not_in_tuple_type p z := 
+lazymatch constr:(p) with
+| (?x, ?y) => is_not_in_tuple_type constr:(x) z ; is_not_in_tuple_type constr:(y) z
+| _ => constr_neq p z 
 end.
 
 
@@ -1923,35 +1926,61 @@ match goal with
  try (interp_alg_types_goal_aux (p, Y))
 end.
 
-Ltac interp_alg_types_context_aux p p' :=
+Ltac interp_alg_types_context_aux p :=
 match goal with 
-| |- context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ; 
-is_not_in_tuple p' y ;
-try (interpretation_alg_types_tac Y) ;
-interp_alg_types_context_aux (p, Y) (p', y)
-| _ : ?T |- _ => match T with 
-            | context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ;
-is_not_in_tuple p' y ;
-try (interpretation_alg_types_tac Y) ;  interp_alg_types_context_aux (p, Y) (p', y)
-end
+| |- context C[?y] => let Y := type of y in
+tryif (
+is_not_in_tuple_type p Y ;
+interpretation_alg_types_tac Y) then 
+(
+interp_alg_types_context_aux (p, Y)) else 
+(is_not_in_tuple_type p y ; 
+interpretation_alg_types_tac y ; 
+interp_alg_types_context_aux (p, y))
+| _ : context C[?y] |- _ => let Y := type of y in
+tryif (
+is_not_in_tuple_type p Y ;
+interpretation_alg_types_tac Y) then 
+(
+interp_alg_types_context_aux (p, Y)) else 
+(is_not_in_tuple_type p y ; 
+interpretation_alg_types_tac y ; 
+interp_alg_types_context_aux (p, y))
+| _ => idtac
 end.
 
-Definition prod_types := (tt, Z, bool, True, False, and, or).
+
+Ltac foo p := match goal with 
+| |- context C[?y] =>
+is_not_in_tuple constr:(p) y ; idtac y ; let x := eval cbv in (p, y) in
+foo x
+(* | _ : ?T |- _ => match T with 
+            | context C[?y] => is_not_in_tuple constr:(p) y ; idtac y ; 
+let x := eval cbv in (p, y) in
+foo x
+end *)
+end.
+
+
+
+Definition prod_types := (Z, bool, True, False, and, or).
 
 Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
 interp_alg_types_goal_aux p.
 Ltac interp_alg_types_context_goal := 
 let p := eval unfold prod_types in prod_types in
-(interp_alg_types_context_aux p unit).
+(interp_alg_types_context_aux p).
 
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
-interp_alg_types_goal.
+Set Printing All.
+(* interp_alg_types_goal. *)
+
 interp_alg_types_context_goal.
 Abort.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
-
+intros.
 interp_alg_types_context_goal.
 
 Abort.
