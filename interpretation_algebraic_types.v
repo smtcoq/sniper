@@ -629,9 +629,9 @@ Ltac get_env_ind_param t idn :=
      | (?Sigma,?ind) =>  lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
      | tApp ?iu ?lA =>  
        (lazymatch eval hnf in iu with
-       | tInd ?indu ?u => pose (Sigma,(indu,lA)) as idn ; clear rqt
+       | tInd ?indu ?u => pose (Sigma,((indu,u),lA)) as idn ; clear rqt
        end )
-     | tInd ?indu ?u => pose (Sigma,(indu,([]: list term))) as idn ; clear rqt
+     | tInd ?indu ?u => pose (Sigma,(((indu,u),([]: list term))) as idn ; clear rqt
      end
      end.
 
@@ -1861,7 +1861,37 @@ Print inductive_mind.
 
 Print InductiveDecl.
 
+get_env_ind_param
+
+
 Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive *sans* paramètre *)
+    let geip = fresh "geip" in get_env_ind_param_ t geip ; 
+    lazymatch eval hnf in geip with
+    | (?Sigma,?t_reif) => lazymatch eval hnf in t_reif with
+      | ()
+
+
+
+let rqt := fresh "rqt" in rec_quote_term t rqt ; 
+    lazymatch eval hnf in rqt with
+     | (?Sigma,?ind) => lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
+     | tApp ?iu ?lA =>
+       lazymatch eval hnf in iu with
+       | tInd ?indu ?u => 
+     let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
+       lazymatch eval cbv in lkup  with
+       | Some ?d =>   idtac "Some d";(* *) 
+         match d with
+         |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
+            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear rqt
+         end       
+       end
+       end         
+     end
+     end
+    .
+
+Ltac fo_prop_of_cons_tac_gen' statement t := (* reste à traiter quand inductive *sans* paramètre *)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
      | (?Sigma,?ind) => lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
