@@ -7,7 +7,7 @@ Require Import ZArith.
 Require Import definitions.
 
 (* todo : 
-- des intros à supprimer
+- des intros à supprimer (a priori ok)
 - factoriser code tactique finale
 - éliminer les formule triviale: True, injectivité des constructeurs sans arg
 *)
@@ -471,8 +471,8 @@ Definition mkAnd (A B : term) := tApp and_reif [A ; B].
 
 Fixpoint and_nary_reif (l : list term):=
   match l with
-  | t :: [] => t
-  | [] => False_reif               
+  | [] => False_reif      
+  | t :: [] => t         
   | t :: tll => mkAnd t (and_nary_reif tll)                
   end.
 
@@ -770,17 +770,7 @@ Print test_eq_combine_unquote3.
 
 (*** Injectivité ***)
 
-(* is_inj commenté : f est juste fonctionnelle ! *)
-  (* 
-Fixpoint is_inj_aux (B f1 f2: term) (lA : list term) :=
-  match lA with
-  | [] => mkEq B f1 f2  
-  | A1 :: tllA => tProd (mkNamed "x") A1 (tProd (mkNamed "y") A1 
-(mkImpl (tApp eq_reif [A1 ; tRel 1 ; tRel 0 ]) ( is_inj_aux B (tApp (lift0 2 f1) [tRel 1]) (tApp (lift0 2 f2) [tRel 0]) tllA)))  
-  end.
 
-
-Definition is_inj (B f: term) (lA : list term) := is_inj_aux B f f lA. *)
 
 (* MetaCoq Unquote Definition S_inj_reif := (is_inj nat_reif S_reif [nat_reif]).
 Print S_inj_reif.
@@ -791,7 +781,8 @@ Print cons_nat_inj_reif. *)
 Fixpoint is_inj (B f: term) (lA : list term) :=
 let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat) := 
   match lA with
-  | [] => (fun (t : term) => t, f1 , f2 , True_reif )  
+  | [] => (fun (t : term) => t, f1 , f2 , True_reif )
+  | [A] => (fun (t: term) => (tProd (mkNamed "x") A (tProd (mkNamed  "y") (lift0 1 A) t  )),  (tApp (lift0 2 f1) [tRel 1]) , (tApp (lift0 2 f2) [tRel 0]), mkEq A (tRel 0) (tRel 1))
   | A1 :: tllA => let blut := inj_aux B (tApp (lift0 2 f1) [tRel 1]) (tApp (lift0 2 f2) [tRel 0]) tllA (n-1) in
                 (fun (t: term) => (tProd (mkNamed "x") A1 (tProd (mkNamed "y") (lift0 1 A1) (blut.1.1.1 t)  )), blut.1.1.2, blut.1.2,  mkAnd (lift0 (2*(n-1)) (mkEq A1 (tRel 0) (tRel 1)))  blut.2 )
   end in 
@@ -825,16 +816,20 @@ Ltac sdf B f A := assert (k := 5);  (match goal with
 end ).
 
 Ltac ctor_is_inj_tac B f lA  :=
-let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; unfold toto; intros ; [match goal with
-                                                                                                            | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto.  (* repeat split . *) 
+  lazymatch eval hnf in lA with
+  | [] => idtac ""
+  | ?x :: ?tlA =>
+let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; [ unfold toto; intros ; match goal with
+                                                                                                            | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto
+                                              end              .  (* repeat split . *) 
   (* ; assert Hinj ; (injection in Hinj). *)
 (* \! qqch de très important à comprendre: pq sans [ | ..], tactique appliquée à tous les sous-buts, même ceux qui ne sont pas créés par la 1ère partie.  *)
 
 
 
 MetaCoq Unquote Definition is_inj_cons_nat := (is_inj list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]).
-Goal 2 + 2 = 4.
-Proof. 
+Goal forall (n: nat), 2 + 2 = 4.
+Proof.
   ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]. reflexivity. Qed.
 
 (*   lazymatch goal with
@@ -1030,14 +1025,14 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
 
 Ltac codom_disj_discr B f g lAf lAg :=
   let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
-assert toto; unfold toto ; intros ;
-                           [ try discriminate | .. ] ; subst toto. 
+assert toto; [unfold toto ; intros ;
+                            try discriminate | .. ] ; subst toto. 
 (* \todo : refolder not ? *)
 
 
 Goal 2 + 2 = 4.
 Proof.
-  codom_disj_discr list_nat_reif nil_nat_reif  cons_nat_reif  (@nil term) [ nat_reif ; list_nat_reif ].
+  codom_disj_discr list_nat_reif nil_nat_reif  cons_nat_reif  (@nil term) [ nat_reif ; list_nat_reif ]. 
 reflexivity. Qed.
 
 Example disj_codom1 := codom_disj list_nat_reif nil_nat_reif nil_nat_reif [ ] [].
@@ -1089,7 +1084,7 @@ Ltac pairw_disj_codom_tac B  lf  lA  :=
   | _ => idtac "wrong branch pair_disj_codom_tac"                                
   end.
 
-Goal 2 + 2 = 4.
+Goal nat -> 2 + 2 = 4.
 Proof.
  pairw_disj_codom_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].  
 reflexivity. Qed.
