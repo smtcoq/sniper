@@ -16,6 +16,36 @@ Unset Strict Unquote Universe Mode.
 Print term.
 
 
+Lemma test_length : (forall (H : Type) (H0 : list H),
+     #|H0| =
+     (fix length (l : list H) : nat :=
+        match l with
+        | [] => 0
+        | _ :: l' => S (length l')
+        end) H0) -> (forall (A : Type) (l : list A), #|l| =
+     (fun l => match l with
+        | [] => 0
+        | _ :: l' => S (Datatypes.length l')
+        end) l).
+Proof. 
+intros. simpl. destruct l ; auto. Qed.
+
+
+Lemma test_length2 : (forall (H : Type) (H0 : list H),
+     #|H0| =
+     (fix length (l : list H) : nat :=
+        match l with
+        | [] => 0
+        | _ :: l' => S (length l')
+        end) H0) -> (forall (A : Type) (l : list A), #|l| =
+     (fun l => match l with
+        | [] => 0
+        | _ :: l' => S (Datatypes.length l')
+        end) l).
+intros. simpl. match goal with 
+| |- context [match ?x with _ => _ end] => destruct x ; auto
+end. Qed.
+
 
 (*  | tFix : mfixpoint term -> nat -> term *)
 Print mfixpoint.
@@ -26,7 +56,8 @@ Print def.
 
 (* Record def (term : Type) : Type := mkdef
   { dname : aname;  dtype : term;  dbody : term;  rarg : nat } 
-rarg = index of the recursive argument *)
+rarg = index of the recursive argument 
+Cet indice est un niveau de db et pas un indice de db *)
 
 MetaCoq Quote Recursively Definition length_reif_rec := Datatypes.length.
 
@@ -532,7 +563,7 @@ MetaCoq Unquote Definition toto_unquote := toto.
 Print toto_unquote.
 
 
-
+Print length_reif_rec.
 
 Fixpoint replace_tFix_by_def (l : list term) (def : term) := match l with 
 | nil => nil
