@@ -6,5 +6,6 @@ elimination_polymorphism.v
 elimination_pattern_matching.v
 examples.v
 eta_expand.v
+elimination_fixpoints.v
 interpretation_algebraic_types.v
-fauto.v
+sniper.v

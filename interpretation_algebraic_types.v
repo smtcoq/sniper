@@ -631,7 +631,7 @@ Ltac get_env_ind_param t idn :=
        (lazymatch eval hnf in iu with
        | tInd ?indu ?u => pose (Sigma,((indu,u),lA)) as idn ; clear rqt
        end )
-     | tInd ?indu ?u => pose (Sigma,(((indu,u),([]: list term))) as idn ; clear rqt
+     | tInd ?indu ?u => pose (Sigma,((indu,u),([]: list term))) as idn ; clear rqt
      end
      end.
 
@@ -1861,35 +1861,29 @@ Print inductive_mind.
 
 Print InductiveDecl.
 
-get_env_ind_param
+
+
 
 
 Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive *sans* paramètre *)
-    let geip = fresh "geip" in get_env_ind_param_ t geip ; 
+    let geip := fresh "geip" in get_env_ind_param t geip ; 
     lazymatch eval hnf in geip with
     | (?Sigma,?t_reif) => lazymatch eval hnf in t_reif with
-      | ()
-
-
-
-let rqt := fresh "rqt" in rec_quote_term t rqt ; 
-    lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) => lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
-     | tApp ?iu ?lA =>
-       lazymatch eval hnf in iu with
-       | tInd ?indu ?u => 
-     let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
+      | (?induu,?lA) => lazymatch eval hnf in induu with
+      | (?indu,?u) =>      let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
        lazymatch eval cbv in lkup  with
        | Some ?d =>   idtac "Some d";(* *) 
          match d with
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
-            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear rqt
+            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear geip
          end       
        end
        end         
      end
      end
     .
+
+  
 
 Ltac fo_prop_of_cons_tac_gen' statement t := (* reste à traiter quand inductive *sans* paramètre *)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
@@ -1915,23 +1909,39 @@ Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
-Ltac is_not_in_tuple p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => constr_neq y z ; idtac "1" z ; is_not_in_tuple constr:(x) z ; idtac "2" p
-| I => idtac "3"
-end.
+
+
 
 Ltac interp_alg_types_goal_aux p :=
 match goal with 
-| |- context C[?y] => is_not_in_tuple p y ; let Y := type of y in let Y' := eval hnf in 
-Y in is_type_quote Y' ; interpretation_alg_types_tac y ; idtac "foo" ; try (interp_alg_types_goal_aux (p, y))
+| |- context C[?y] => is_not_in_tuple p y ; interpretation_alg_types_tac y ;
+ try (interp_alg_types_goal_aux (p, y))
 end.
 
-Ltac interp_alg_types_goal := interp_alg_types_goal_aux (I, Z, bool).
+Ltac interp_alg_types_context_aux p :=
+match goal with 
+| |- context C[?y] => let Y := type of y in is_not_in_tuple p y ; 
+interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
+| _ : ?T |- _ => match T with 
+            | context C[?y] => let Y := type of y in is_not_in_tuple p y ;
+interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
+end
+end.
 
-Goal forall (x : nat) (l : list nat) (u : Z), x = x /\ l =l /\ u=u.
+Ltac interp_alg_types_goal := interp_alg_types_goal_aux (unit, Z, bool).
+Ltac interp_alg_types_context_goal := interp_alg_types_context_aux (unit, Z, bool).
+
+
+Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
 interp_alg_types_goal.
+interp_alg_types_context_goal.
 Abort.
+
+Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
+interp_alg_types_context_goal.
+
+Abort.
+
 
 (*TODO : affiner la liste des types à ne pas interpréter *)
 
@@ -1939,8 +1949,8 @@ Goal 2+2 = 4.
 Proof.
 fo_prop_of_cons_tac (list nat).
 clear. interpretation_alg_types_tac (list nat).
-Fail fo_prop_of_cons_tac nat. (* parce qu'on ne matche que des tApp *)
-Fail fo_prop_of_cons_tac Ntree.  
+fo_prop_of_cons_tac nat. (* parce qu'on ne matche que des tApp *)
+fo_prop_of_cons_tac Ntree.  
 reflexivity.
 Qed.
 

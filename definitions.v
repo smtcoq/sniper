@@ -129,7 +129,7 @@ Abort.
 
 Ltac is_not_in_tuple p z := 
 match constr:(p) with
-| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z ; idtac x "1" ; idtac y "2" ; idtac z "3"
+| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z 
 | unit => idtac p
 end.
 
