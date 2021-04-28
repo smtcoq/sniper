@@ -1885,27 +1885,40 @@ Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
 
-
+Ltac is_not_in_tuple_type p z := 
+match constr:(p) with
+| (?x, ?y) => constr_neq y z ; is_not_in_tuple_type constr:(x) z 
+| tt => idtac
+end.
 
 
 Ltac interp_alg_types_goal_aux p :=
 match goal with 
-| |- context C[?y] => is_not_in_tuple p y ; interpretation_alg_types_tac y ;
- try (interp_alg_types_goal_aux (p, y))
+| |- context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ; 
+ interpretation_alg_types_tac y ;
+ try (interp_alg_types_goal_aux (p, Y))
 end.
 
-Ltac interp_alg_types_context_aux p :=
+Ltac interp_alg_types_context_aux p p' :=
 match goal with 
-| |- context C[?y] => let Y := type of y in is_not_in_tuple p y ; 
-interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
+| |- context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ; 
+is_not_in_tuple p' y ;
+try (interpretation_alg_types_tac Y) ;
+interp_alg_types_context_aux (p, Y) (p', y)
 | _ : ?T |- _ => match T with 
-            | context C[?y] => let Y := type of y in is_not_in_tuple p y ;
-interpretation_alg_types_tac y ;  try (interp_alg_types_context_aux (p, y))
+            | context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ;
+is_not_in_tuple p' y ;
+try (interpretation_alg_types_tac Y) ;  interp_alg_types_context_aux (p, Y) (p', y)
 end
 end.
 
-Ltac interp_alg_types_goal := interp_alg_types_goal_aux (unit, Z, bool).
-Ltac interp_alg_types_context_goal := interp_alg_types_context_aux (unit, Z, bool).
+Definition prod_types := (tt, Z, bool, True, False, and, or).
+
+Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
+interp_alg_types_goal_aux p.
+Ltac interp_alg_types_context_goal := 
+let p := eval unfold prod_types in prod_types in
+(interp_alg_types_context_aux p unit).
 
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
@@ -1914,6 +1927,7 @@ interp_alg_types_context_goal.
 Abort.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
+
 interp_alg_types_context_goal.
 
 Abort.

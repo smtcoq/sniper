@@ -49,6 +49,15 @@ Definition prod_of_symb := (unit, Zplus,
          Zle_bool, 
          Zge_bool, 
          Zgt_bool,
+         negb,
+         not,
+         andb,
+         orb,
+         implb,
+         xorb,
+         eqb,
+         iff,
+         @BITVECTOR_LIST.bv_eq,
          @BITVECTOR_LIST.bv_and,
          @BITVECTOR_LIST.bv_or,
          @BITVECTOR_LIST.bv_xor,
@@ -130,7 +139,7 @@ Abort.
 Ltac is_not_in_tuple p z := 
 match constr:(p) with
 | (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z 
-| unit => idtac p
+| unit => idtac
 end.
 
 Ltac get_definitions_ho p := fun k =>

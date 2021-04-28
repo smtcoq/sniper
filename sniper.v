@@ -72,8 +72,9 @@ Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 interp_alg_types_context_goal. 
 def_and_pattern_matching_mono.     
-verit (H1, H3,  H5, H6_Z, H7_Z).
-Qed.
+verit  (H2, H4_Z, .
+Abort.
+
 
 Ltac snipe_param t :=
 try interp_alg_types_context_goal ; try (def_and_pattern_matching_mono_param t).
@@ -88,18 +89,19 @@ Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 snipe.
 verit (H1, H3,  H5, H6_Z, H7_Z).
-Qed.
+(* CompDec None= None reste à montrer?*)
+Abort.
 
 Local Open Scope Z_scope.
 
 Hypothesis length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
 
-Lemma length_app_auto : forall B (HB: CompDec (list B)), forall (l1 l2 l3 : list B), 
+Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B), 
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. nat_convert.
 snipe length_app.
- verit length_app_B. auto with typeclass_instances. Qed.
+ verit length_app_B. Qed.
 
 
 Inductive tree {A: Type} : Type :=
@@ -156,6 +158,19 @@ intros A H x l1 l2. induction l1 as [ | x0 l0 IH].
 Qed.
 
 
+
+Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
+Proof.
+intros A H x l1 l2. induction l1 as [ | x0 l0 IH]. 
+- snipe. (*  verit (H1, H2, H3, H4, H5). *)
+- simpl. destruct (@eqb_of_compdec _ H x x0). 
+  + reflexivity.
+  + rewrite IH. reflexivity. 
+Qed.
+
+
+
+
 Lemma search_lemma : forall (A : Type) (H : CompDec A) (x: Z) (l1 l2 l3: list Z), search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof.
 intros A H x l1 l2 l3.  rewrite !search_app.  rewrite Coq.Bool.Bool.orb_comm with (b1 := search x l3). rewrite Coq.Bool.Bool.orb_comm  with (b1 := search x l2) (b2 := search x l1 ). rewrite  Coq.Bool.Bool.orb_assoc. reflexivity.
@@ -164,8 +179,8 @@ Qed.
 
 Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A), 
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. intros A H. snipe.
-Fail verit (search_app, H2, H3).
+Proof. intros A H. snipe @search_app.
+verit.
 Abort.
 
 
@@ -173,9 +188,11 @@ Abort.
 Lemma option_tree_Z : forall (t : @tree Z), 
 is_empty t = true -> t = Leaf.
 Proof.
-snipe.
-get_tuple_of_hypothesis ltac:(fun x => pose x).
-Fail verit (H4_Z, H2, H5, H3_Z).
+intro t ; case t. 
+- snipe. verit. admit. admit. admit.
+- snipe. verit (H2, H4_Z, H3_Z). Set Printing All.
+(* verit. => beaucoup trop long et supprime tous les axiomes *)
+Abort.
 
 
 
