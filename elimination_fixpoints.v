@@ -81,11 +81,11 @@ end.
 
 Definition find_args (t1 t2 : term) := 
 match t2 with
-| tApp _ l => let n:= Datatypes.length l in match t1 with 
-        | tApp u l' => (tApp u (rem_last_elem n l'), l)
-        | _ => (t1, l)
+| tApp v l => let n:= Datatypes.length l in match t1 with 
+        | tApp u l' => (tApp u (rem_last_elem n l'), v, l)
+        | _ => (t1, t2, l)
       end
-| _ => (t1, nil)
+| _ => (t1, t2, nil)
 end.
 
 Fixpoint under_forall_aux (t : term) (l : list (aname*term)) :=
@@ -109,6 +109,15 @@ Fixpoint params_eq (t : term) := match t with
             end
 | _ => (t, (t, t, t))
 end.
+
+
+Definition foo := (1, (2, 3, 4)).
+
+Compute foo.1.
+Compute foo.2.
+Compute foo.2.1.
+
+
 
 
 (* Returns the definition in a fixpoint *)
@@ -390,39 +399,31 @@ end.
 
 Ltac eliminate_fix_hyp H := 
 let T := type of H in
-let H' := fresh in quote_term T ltac:(fun T =>
+quote_term T ltac:(fun T =>
 let p := eval cbv in (under_forall T) in 
 let eq := eval cbv in p.1 in
 let list_quantif := eval cbv in p.2 in
 let get_info_eq := eval cbv in (params_eq eq) in 
 let eq_reif := eval cbv in get_info_eq.1 in 
-let A := eval cbv in get_info_eq.2.1 in 
-let t := eval cbv in get_info_eq.2.2.1 in 
-let u := eval cbc in get_info_eq.2.2.2 in
+let A := eval cbv in get_info_eq.2.1.1 in 
+let t := eval cbv in get_info_eq.2.1.2 in 
+let u := eval cbv in get_info_eq.2.2 in
 let prod := eval cbv in (find_args t u) in 
 let args := eval cbv in prod.2 in (* the arguments of u *)
-let def := eval cbv in prod.1 in 
-let u_no_fix := eval cbv in (replace_tFix_by_def u def) in 
-idtac).
+let def := eval cbv in prod.1.1 in 
+let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac u_no_fix "u" ;
+let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
+in run_template_program (tmUnquote eq_no_fix) 
+ltac:(fun z => let H' := fresh in let w := eval hnf in
+
+ (z.(my_projT2)) 
+in assert (H' :w) 
+by (intros ; match goal with 
+| |- context [match ?x with _ => _ end] => destruct x ; auto
+end) )).
 
 
-
-
-
-
-
-
-
-let l := eval cbv in (get_args T) in 
-let l' := eval cbv in (replace_tFix_by_def l t) in 
-let eq := eval cbv in (new_app T l')
-in idtac eq ;
-run_template_program (tmUnquote eq) 
-ltac:(fun z => 
-let w := eval hnf in (z.(my_projT2)) 
-in pose w))))
-| _ => fail "not an equality" 
-end.
 
 Goal Nat.add = (fun n m : nat => match n with
                             | 0 => m
@@ -435,12 +436,11 @@ Abort.
 Goal False.
 get_def @Datatypes.length.
 get_def Nat.add.
-eliminate_fix_hyp add_def.
-assert P.
-unfold P. 
-Fail eliminate_fix_hyp length_def.
+expand_hyp add_def.
+eliminate_fix_hyp H.
+expand_hyp length_def.
+Fail eliminate_fix_hyp H1.
 
- expand_hyp length_def.
 Abort.
 
 
