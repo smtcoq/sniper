@@ -133,14 +133,18 @@ get_definitions_built_in_theories.
 get_definitions.
 Abort.
 
-
-
-
 Ltac is_not_in_tuple p z := 
+lazymatch constr:(p) with
+| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
+| _ => constr_neq p z 
+end.
+
+
+(* Ltac is_not_in_tuple p z := 
 match constr:(p) with
 | (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z 
 | unit => idtac
-end.
+end. *)
 
 Ltac get_definitions_ho p := fun k =>
 match goal with 
@@ -158,11 +162,11 @@ Ltac get_definitions_aux p := fun k =>
 let x' := eval unfold x in x in is_not_in_tuple p x ; 
 let H := fresh x "_def" in 
  (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
-get_definitions_aux ((p, x), unit) k)
+get_definitions_aux (p, x) k)
 | _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; 
 let H := fresh x "_def" in (
  assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; 
- get_definitions_aux ((p, x), unit) k)
+ get_definitions_aux (p, x) k)
 | _ => idtac 
 end
 .
@@ -235,6 +239,7 @@ Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x =>
 
 Ltac get_definition_standard_library t := let e := fresh in rec_quote_term t e ;
 unquote_env e ; clear e.
+
 
 
 
