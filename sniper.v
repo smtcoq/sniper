@@ -76,11 +76,20 @@ verit.
 Qed.
 
 
-Ltac snipe_param t :=
+Ltac scope_param t :=
 try interp_alg_types_context_goal ; try (def_and_pattern_matching_mono_param t).
 
-Ltac snipe_no_param :=
+Ltac scope_no_param :=
 try interp_alg_types_context_goal; try def_and_pattern_matching_mono.
+
+Ltac snipe_param t := 
+scope_param t ; verit.
+
+Ltac snipe_no_param := 
+scope_no_param ; verit.
+
+Tactic Notation "scope" constr(t) := scope_param t.
+Tactic Notation "scope" := scope_no_param.
 
 Tactic Notation "snipe" constr(t) := snipe_param t.
 Tactic Notation "snipe" := snipe_no_param.
@@ -88,7 +97,6 @@ Tactic Notation "snipe" := snipe_no_param.
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 snipe.
-verit.
 Qed.
 
 Local Open Scope Z_scope.
@@ -99,8 +107,7 @@ Hypothesis length_app : forall A, forall (l1 l2: list A),
 Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B), 
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. nat_convert.
-snipe length_app.
- verit length_app_B. Qed.
+snipe length_app. Qed.
 
 
 Inductive tree {A: Type} : Type :=
@@ -161,11 +168,11 @@ Qed.
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof.
 intros A H x l1 l2. induction l1 as [ | x0 l0 IH]. 
-- snipe. (*  verit (H1, H2, H3, H4, H5). *)
+- scope. admit. (*  verit (H1, H2, H3, H4, H5). *)
 - simpl. destruct (@eqb_of_compdec _ H x x0). 
   + reflexivity.
   + rewrite IH. reflexivity. 
-Qed.
+Abort.
 
 
 
@@ -179,7 +186,6 @@ Qed.
 Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A), 
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof. intros A H. snipe @search_app.
-verit.
 Abort.
 
 
@@ -188,8 +194,8 @@ Lemma option_tree_Z : forall (t : @tree Z),
 is_empty t = true -> t = Leaf.
 Proof.
 intro t ; case t. 
-- snipe. verit. admit. admit. admit.
-- snipe. verit (H2, H4_Z, H3_Z). Set Printing All.
+- snipe. admit. admit. admit.
+- snipe. Set Printing All.
 (* verit. => beaucoup trop long et supprime tous les axiomes *)
 Abort.
 
