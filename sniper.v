@@ -12,6 +12,7 @@ Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import definitions.
+Require Import elimination_fixpoints.
 Require Import eta_expand.
 Require Import elimination_pattern_matching. 
 Require Import elimination_polymorphism.
@@ -22,6 +23,13 @@ Require Import interpretation_algebraic_types.
 Ltac def_and_pattern_matching := 
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_pattern_matching H')).
+
+
+Ltac def_fix_and_pattern_matching :=
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+eliminate_fix_ho H' ltac:(fun H'' =>
+eliminate_pattern_matching H''))).
+
 
 Ltac def_and_pattern_matching_mono :=
 def_and_pattern_matching ; inst_clear.
@@ -98,6 +106,15 @@ Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
 snipe.
 Qed.
+
+
+Goal forall (A: Type), CompDec A -> forall (l : list A) (x : A),  hd_error l = Some x -> (l <> []).
+Proof.
+intros A.
+snipe. admit. admit. admit.
+Abort.
+
+
 
 Local Open Scope Z_scope.
 
@@ -196,10 +213,17 @@ Proof.
 intro t ; case t. 
 - snipe. admit. admit. admit.
 - snipe. Set Printing All.
-(* verit. => beaucoup trop long et supprime tous les axiomes *)
+(* verit. => trop de compdec*)
 Abort.
 
+Local Open Scope nat_scope.
 
+Goal forall (x y z : nat), y = S x /\ z = 0 -> max y z = y.
+Proof.
+
+def_fix_and_pattern_matching.
+nat_convert.
+Abort.
 
 
 
