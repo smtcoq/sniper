@@ -80,10 +80,12 @@ Fixpoint rem_last_elem {A} (n : nat) (l : list A) := match l, n with
 | cons x xs, S n' => rem_last_elem n' xs
 end.
 
+Print lift.
+
 Definition find_args (t1 t2 : term) := 
 match t2 with
 | tApp v l => let n:= Datatypes.length l in match t1 with 
-        | tApp u l' => (tApp u (rem_last_elem n l'), v, l)
+        | tApp u l' => (lift n 0 (tApp u (rem_last_elem n l')), v, l)
         | _ => (t1, t2, l)
       end
 | _ => (t1, t2, nil)
@@ -413,9 +415,9 @@ let prod := eval cbv in (find_args t u) in
 let args := eval cbv in prod.2 in (* the arguments of u *)
 let def := eval cbv in prod.1.1 in 
 let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
-let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac u_no_fix "u" ;
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac t "t" ; idtac u_no_fix "u_no_fix" ;
 let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
-in run_template_program (tmUnquote eq_no_fix) 
+in idtac eq_no_fix "eq" ; run_template_program (tmUnquote eq_no_fix) 
 ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2) 
 in assert (H' :w) 
 by (intros ; match goal with 
@@ -437,7 +439,7 @@ let prod := eval cbv in (find_args t u) in
 let args := eval cbv in prod.2 in (* the arguments of u *)
 let def := eval cbv in prod.1.1 in 
 let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
-let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac u_no_fix "u" ;
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in 
 let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
 in run_template_program (tmUnquote eq_no_fix) 
 ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2)
@@ -462,7 +464,7 @@ get_def Nat.add.
 expand_hyp add_def.
 eliminate_fix_hyp H.
 expand_hyp length_def.
-Fail eliminate_fix_hyp H1.
+eliminate_fix_hyp H1.
 Abort.
 
 Fixpoint search { A : Type } { H : CompDec A } ( x : A ) l :=
@@ -480,12 +482,11 @@ get_def un.
 let x:= eval unfold search in search in pose x.
 get_def @search.
 expand_hyp search_def.
-specialize (H Z).
 eliminate_fix_hyp H.
 expand_hyp add_def.
 eliminate_fix_ho H ltac:(fun H0 => let t := type of H0 in idtac t).
 expand_hyp length_def.
-Fail eliminate_fix_hyp H.
+ eliminate_fix_hyp H.
 Abort.
 
 
