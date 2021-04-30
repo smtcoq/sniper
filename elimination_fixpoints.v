@@ -415,13 +415,35 @@ let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
 let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac u_no_fix "u" ;
 let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
 in run_template_program (tmUnquote eq_no_fix) 
-ltac:(fun z => let H' := fresh in let w := eval hnf in
-
- (z.(my_projT2)) 
+ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2) 
 in assert (H' :w) 
 by (intros ; match goal with 
 | |- context [match ?x with _ => _ end] => destruct x ; auto
 end) )).
+
+Ltac eliminate_fix_ho H := fun k =>
+let T := type of H in
+quote_term T ltac:(fun T =>
+let p := eval cbv in (under_forall T) in 
+let eq := eval cbv in p.1 in
+let list_quantif := eval cbv in p.2 in
+let get_info_eq := eval cbv in (params_eq eq) in 
+let eq_reif := eval cbv in get_info_eq.1 in 
+let A := eval cbv in get_info_eq.2.1.1 in 
+let t := eval cbv in get_info_eq.2.1.2 in 
+let u := eval cbv in get_info_eq.2.2 in
+let prod := eval cbv in (find_args t u) in 
+let args := eval cbv in prod.2 in (* the arguments of u *)
+let def := eval cbv in prod.1.1 in 
+let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac u_no_fix "u" ;
+let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
+in run_template_program (tmUnquote eq_no_fix) 
+ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2)
+in assert (H' :w) 
+by (intros ; match goal with 
+| |- context [match ?x with _ => _ end] => destruct x ; auto
+end) ; k H' ; clear H)).
 
 
 
@@ -440,13 +462,20 @@ expand_hyp add_def.
 eliminate_fix_hyp H.
 expand_hyp length_def.
 Fail eliminate_fix_hyp H1.
-
 Abort.
 
 
 
 
+Goal False.
+get_def @Datatypes.length.
+get_def Nat.add.
+expand_hyp add_def.
+eliminate_fix_ho H ltac:(fun H0 => let t := type of H0 in idtac t).
+expand_hyp length_def.
+Fail eliminate_fix_hyp H1.
 
+Abort.
 
 
 
