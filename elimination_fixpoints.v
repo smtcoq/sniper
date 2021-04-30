@@ -10,6 +10,7 @@ Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import definitions.
 Require Import eta_expand.
+Require Import ZArith.
 Require Import String.
 Unset Strict Unquote Universe Mode.
 
@@ -464,17 +465,27 @@ expand_hyp length_def.
 Fail eliminate_fix_hyp H1.
 Abort.
 
+Fixpoint search { A : Type } { H : CompDec A } ( x : A ) l :=
+match l with
+| [] => false
+| x0 :: l0 => if eqb_of_compdec H x x0 then true else search x l0
+end.
 
-
+Definition un := 1.
 
 Goal False.
 get_def @Datatypes.length.
 get_def Nat.add.
+get_def un.
+let x:= eval unfold search in search in pose x.
+get_def @search.
+expand_hyp search_def.
+specialize (H Z).
+eliminate_fix_hyp H.
 expand_hyp add_def.
 eliminate_fix_ho H ltac:(fun H0 => let t := type of H0 in idtac t).
 expand_hyp length_def.
-Fail eliminate_fix_hyp H1.
-
+Fail eliminate_fix_hyp H.
 Abort.
 
 
