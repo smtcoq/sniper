@@ -36,6 +36,8 @@ def_and_pattern_matching ; inst_clear.
 
 Ltac def_and_pattern_matching_mono_param t :=
 def_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
+Ltac def_fix_and_pattern_matching_mono_param t :=
+def_fix_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
 
 Goal ((forall (A: Type) (x : A) (a : A) (l : list A), 
 @hd A x (@cons A a l) = match (@cons A a l) with
@@ -85,10 +87,12 @@ Qed.
 
 
 Ltac scope_param t :=
-try interp_alg_types_context_goal ; try (def_and_pattern_matching_mono_param t).
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert).
+(* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
+hypothèses dans nat et ensuite verit se met à peiner *)
 
 Ltac scope_no_param :=
-try interp_alg_types_context_goal; try def_and_pattern_matching_mono.
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst_clear ; try nat_convert).
 
 Ltac snipe_param t := 
 scope_param t ; verit.
@@ -123,7 +127,7 @@ Hypothesis length_app : forall A, forall (l1 l2: list A),
 
 Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B), 
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
-Proof. intros B HB l1 l2 l3. nat_convert.
+Proof. intros B HB l1 l2 l3. 
 snipe length_app. Qed.
 
 
@@ -185,10 +189,13 @@ Qed.
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof.
 intros A H x l1 l2. induction l1 as [ | x0 l0 IH]. 
-- scope. admit. (*  verit (H1, H2, H3, H4, H5). *)
+- snipe. admit. admit. (*  pb de compdec sinon la preuve passe *)
 - simpl. destruct (@eqb_of_compdec _ H x x0). 
-  + reflexivity.
-  + rewrite IH. reflexivity. 
+ + snipe. admit. admit.
+ + snipe. admit. admit.
+
+(* TODO : clears parce que scope mouline *)
+
 Abort.
 
 
@@ -212,7 +219,7 @@ is_empty t = true -> t = Leaf.
 Proof.
 intro t ; case t. 
 - snipe. admit. admit. admit.
-- snipe. Set Printing All.
+- scope. 
 (* verit. => trop de compdec*)
 Abort.
 
@@ -221,8 +228,6 @@ Local Open Scope nat_scope.
 Goal forall (x y z : nat), y = S x /\ z = 0 -> max y z = y.
 Proof.
 
-def_fix_and_pattern_matching.
-nat_convert.
 Abort.
 
 

@@ -407,7 +407,7 @@ let l_ty_ctors := eval cbv in (list_types_of_each_constructor (e, A)) in
 let n := eval cbv in (Datatypes.length l_ty_ctors) in
 let l_ctors := eval cbv in (get_list_ctors_tConstruct A n) in
 let list_of_hyp := eval cbv in (get_equalities E l_ctors l_ty_ctors l) in
- unquote_list list_of_hyp ; prove_hypothesis H )].
+ unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
 
 
 MetaCoq Quote Recursively Definition foo_reif := (fun A (l: list A) => match l with 
@@ -444,7 +444,7 @@ eliminate_pattern_matching H.
 expand_fun min1.
 expand_fun hd.
 eliminate_pattern_matching H2.
-eliminate_pattern_matching H3.
+eliminate_pattern_matching H.
 
 Abort.
 
