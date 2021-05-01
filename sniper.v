@@ -230,6 +230,18 @@ Proof.
 
 Abort.
 
+(*Exemple avec une induction qui passe bien *)
+Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
+Proof. intros A H. induction l.
+- snipe.
+- snipe. 
+Qed. 
+
+
+(* Lemma rev_app_distr : forall (A : Type) (H : CompDec A) (x y: list A), List.rev (x ++ y)%list = (List.rev y ++ List.rev x)%list.
+Proof. intros A. induction x.
+- snipe @app_nil_r. *)
+
 
 
 (* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
