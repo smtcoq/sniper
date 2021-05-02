@@ -238,6 +238,7 @@ Proof. intros A H. induction l.
 Qed. 
 
 
+
 (* Lemma rev_app_distr : forall (A : Type) (H : CompDec A) (x y: list A), List.rev (x ++ y)%list = (List.rev y ++ List.rev x)%list.
 Proof. intros A. induction x.
 - snipe @app_nil_r. *)
