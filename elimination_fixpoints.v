@@ -424,6 +424,13 @@ by (intros ; match goal with
 | |- context [match ?x with _ => _ end] => destruct x ; auto
 end) )).
 
+Ltac intro_k k := 
+let k' := eval cbv in k in 
+lazymatch constr:(k') with
+| 0 => idtac
+| _ => intro ; intro_k constr:(k'-1)
+end.
+
 Ltac eliminate_fix_ho H := fun k =>
 let T := type of H in
 quote_term T ltac:(fun T =>
@@ -489,7 +496,20 @@ expand_hyp length_def.
  eliminate_fix_hyp H.
 Abort.
 
-
+Goal False.
+get_def @Datatypes.length.
+expand_hyp length_def.
+eliminate_fix_hyp H.
+assert (forall (H : Type) (H0 : list H),
+    (fix length (l : list H) : nat := match l with
+                                      | [] => 0
+                                      | _ :: l' => S (length l')
+                                      end) H0 = match H0 with
+                                              | [] => 0
+                                              | _ :: l' => S #|l'|
+                                              end).
+intros H1 H2. destruct H2; reflexivity.
+Abort.
 
 
 
