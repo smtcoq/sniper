@@ -424,12 +424,29 @@ by (intros ; match goal with
 | |- context [match ?x with _ => _ end] => destruct x ; auto
 end) )).
 
-Ltac intro_k k := 
-let k' := eval cbv in k in 
-lazymatch constr:(k') with
-| 0 => idtac
-| _ => intro ; intro_k constr:(k'-1)
-end.
+
+Ltac eliminate_fix_hyp_test H := 
+let T := type of H in
+quote_term T ltac:(fun T =>
+let p := eval cbv in (under_forall T) in 
+let eq := eval cbv in p.1 in
+let list_quantif := eval cbv in p.2 in
+let get_info_eq := eval cbv in (params_eq eq) in 
+let eq_reif := eval cbv in get_info_eq.1 in 
+let A := eval cbv in get_info_eq.2.1.1 in 
+let t := eval cbv in get_info_eq.2.1.2 in 
+let u := eval cbv in get_info_eq.2.2 in
+let prod := eval cbv in (find_args t u) in 
+let args := eval cbv in prod.2 in (* the arguments of u *)
+let def := eval cbv in prod.1.1 in 
+let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac t "t" ; idtac u_no_fix "u_no_fix" ;
+let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
+in idtac eq_no_fix "eq" ; run_template_program (tmUnquote eq_no_fix) 
+ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2) 
+in assert (H' :w) 
+by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) )).
+
 
 Ltac eliminate_fix_ho H := fun k =>
 let T := type of H in
@@ -496,10 +513,21 @@ expand_hyp length_def.
  eliminate_fix_hyp H.
 Abort.
 
+(* allows us to control the name of the last variable introduced *) 
+Ltac intro_k k x := 
+let k' := eval cbv in k in 
+lazymatch constr:(k') with
+| 0 => intro x 
+| _ => let u:= fresh in intro u; intro_k constr:(k'-1) x
+end.
+
 Goal False.
 get_def @Datatypes.length.
 expand_hyp length_def.
-eliminate_fix_hyp H.
+eliminate_fix_hyp_test H.
+get_def Nat.add.
+expand_hyp add_def.
+eliminate_fix_hyp_test H1.
 assert (forall (H : Type) (H0 : list H),
     (fix length (l : list H) : nat := match l with
                                       | [] => 0
@@ -508,7 +536,8 @@ assert (forall (H : Type) (H0 : list H),
                                               | [] => 0
                                               | _ :: l' => S #|l'|
                                               end).
-intros H1 H2. destruct H2; reflexivity.
+repeat (let x := fresh in intro x ; try (destruct x ; reflexivity)).
+let x:= fresh in intro_k 1 x ; destruct x; reflexivity.
 Abort.
 
 
