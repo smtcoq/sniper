@@ -12,7 +12,7 @@ Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import definitions.
-Require Import eta_expand.
+Require Import expand.
 Require Import elimination_pattern_matching. 
 Require Import elimination_polymorphism.
 

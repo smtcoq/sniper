@@ -1,11 +1,11 @@
 -R . TransfoCoq
 
+utilities.v
 definitions.v
-lambda_expand.v
 elimination_polymorphism.v
 elimination_pattern_matching.v
 examples.v
-eta_expand.v
+expand.v
 elimination_fixpoints.v
 interpretation_algebraic_types.v
 sniper.v

@@ -9,22 +9,12 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
+Require Import utilities.
 (* Require Import Bool (* Int63  PArray *) BinNat BinPos ZArith SMT_classes_instances.
 (* Require Import Misc State BVList. *) (* FArray Equalities DecidableTypeEx. *)
 Require FArray. *)
 Require Import ZArith.
 Require Import SMTCoq.bva.BVList.
-
-
-Ltac unquote_term t_reif := 
-run_template_program (tmUnquote t_reif) ltac:(fun t => 
-let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
-
-(* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
-Ltac inverse_tactic tactic := try (tactic; fail 1).
-
-(* [constr_neq t u] fails if and only if [t] and [u] are convertible *)
-Ltac constr_neq t u := inverse_tactic ltac:(constr_eq t u).
 
 (* Recursive, be careful: it can unfold definitions that we want to keep folded *)
 Ltac get_definitions := repeat match goal with 
@@ -133,12 +123,6 @@ get_definitions_built_in_theories.
 get_definitions.
 Abort.
 
-Ltac is_not_in_tuple p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
-| _ => constr_neq p z 
-end.
-
 
 (* Ltac is_not_in_tuple p z := 
 match constr:(p) with
@@ -213,29 +197,6 @@ Ltac unfold_recursive_subst x :=
 unfold_recursive x ; subst_def x.
 
 (* MetaCoq version of the same tactic *)
-
-Ltac unquote_env_aux e := match e with 
-| [] => idtac
-| ?x :: ?xs => unquote_term x ; unquote_env_aux xs
-end.
-
-(* Nothing about inductives for now *)
-Fixpoint get_decl (e : global_env) := match e with 
-| [] => []
-| x :: e' => match (snd x) with
-      | ConstantDecl u => match u.(cst_body) with
-            | Some v => v :: get_decl e'
-            | None => get_decl e'
-            end
-      | InductiveDecl u => get_decl e'
-      end
-end.
-
-Ltac unquote_env e := let e' := constr:(fst e) in 
-let l := constr:(get_decl e') in let l':= eval compute in l in 
-unquote_env_aux l'.
-
-Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
 
 Ltac get_definition_standard_library t := let e := fresh in rec_quote_term t e ;
 unquote_env e ; clear e.

@@ -9,22 +9,14 @@ Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
+Require Import utilities.
 Require Import definitions.
-Require Import eta_expand.
+Require Import expand.
 Require Import List.
 
 
-Ltac unquote_term t_reif := 
-run_template_program (tmUnquote t_reif) ltac:(fun t => 
-let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
-
-MetaCoq Quote Definition unit_reif := unit.
-
-MetaCoq Quote Definition eq_reif := Eval cbn in @eq.
 
 
-(* Equality of type B between two terms *)
-Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
 
 (* find the bodies of an inductive simply quoted *)

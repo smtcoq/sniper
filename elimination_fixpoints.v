@@ -8,8 +8,9 @@ Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
+Require Import utilities.
 Require Import definitions.
-Require Import eta_expand.
+Require Import expand.
 Require Import ZArith.
 Require Import String.
 Unset Strict Unquote Universe Mode.
@@ -537,7 +538,7 @@ assert (forall (H : Type) (H0 : list H),
                                               | _ :: l' => S #|l'|
                                               end).
 repeat (let x := fresh in intro x ; try (destruct x ; reflexivity)).
-let x:= fresh in intro_k 1 x ; destruct x; reflexivity.
+(* let x:= fresh in intro_k 1 x ; destruct x; reflexivity. *)
 Abort.
 
 

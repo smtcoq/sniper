@@ -2,9 +2,9 @@ Add Rec LoadPath "/home/louise/github.com/louiseddp/smtcoq/coq-8.11/src" as SMTC
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
-Require Import elimination_polymorphism.
+Require Import utilities.
 Require Import ZArith.
-Require Import definitions.
+
 
 (* todo : 
 - des intros à supprimer (a priori ok)
@@ -1912,16 +1912,12 @@ Definition is_sort (t : term) := match t with
 Ltac is_sort_quote t := let t' := eval hnf in t in
 quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
 
-Ltac is_not_in_tuple_type p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => is_not_in_tuple_type constr:(x) z ; is_not_in_tuple_type constr:(y) z
-| _ => constr_neq p z 
-end.
+
 
 
 Ltac interp_alg_types_goal_aux p :=
 match goal with 
-| |- context C[?y] => let Y := type of y in is_not_in_tuple_type p Y ; 
+| |- context C[?y] => let Y := type of y in is_not_in_tuple p Y ; 
  interpretation_alg_types_tac y ;
  try (interp_alg_types_goal_aux (p, Y))
 end.
@@ -1930,20 +1926,20 @@ Ltac interp_alg_types_context_aux p :=
 match goal with 
 | |- context C[?y] => let Y := type of y in
 tryif (
-is_not_in_tuple_type p Y ;
+is_not_in_tuple p Y ;
 interpretation_alg_types_tac Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple_type p y ; 
+(is_not_in_tuple p y ; 
 interpretation_alg_types_tac y ; 
 interp_alg_types_context_aux (p, y))
 | _ : context C[?y] |- _ => let Y := type of y in
 tryif (
-is_not_in_tuple_type p Y ;
+is_not_in_tuple p Y ;
 interpretation_alg_types_tac Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple_type p y ; 
+(is_not_in_tuple p y ; 
 interpretation_alg_types_tac y ; 
 interp_alg_types_context_aux (p, y))
 | _ => idtac

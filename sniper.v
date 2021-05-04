@@ -11,9 +11,10 @@ Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 Require Import ZArith.
+Require Import utilities.
 Require Import definitions.
 Require Import elimination_fixpoints.
-Require Import eta_expand.
+Require Import expand.
 Require Import elimination_pattern_matching. 
 Require Import elimination_polymorphism.
 Require Import interpretation_algebraic_types.

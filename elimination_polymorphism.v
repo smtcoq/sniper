@@ -8,26 +8,10 @@ Require Import Coq.Arith.PeanoNat.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.All.
 Require Import List.
+Require Import utilities.
 Import ListNotations.
 
 
-(* Check is a MetaCoq term is a sort which is not Prop *)
-Definition is_type (t : term) := match t with
-                                 | tSort s => negb (Universe.is_prop s)
-                                 |_ => false
-                                  end.
-
-(* This tactic checks if a hypothesis is already in the context *)
-Ltac notHyp T  :=
-repeat match goal with
-  | [H : _ |- _] => let U := type of H in constr_eq U T ; fail 2
-end.
-
-(* A tactic version of if/else *)
-Ltac if_else_ltac tac1 tac2 b := lazymatch b with
-  | true => tac1
-  | false => tac2
-end.
 
 (* Instanciate a hypothesis with the parameter x *)
 Ltac instanciate H x :=
