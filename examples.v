@@ -32,17 +32,7 @@ Proof. intros B HB l1 l2 l3.
 snipe length_app. Qed.
 
 
-Inductive tree {A: Type} : Type :=
-| Leaf : tree
-| Node : tree -> A -> tree -> tree.
 
-
-
-Definition is_empty {A} (t : @tree A) :=
- match t with
- | Leaf => true
- | _ => false
- end.
 
 
 Definition remove_option {A} (default : A) (o : option A) := match o with 
