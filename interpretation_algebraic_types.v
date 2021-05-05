@@ -19,7 +19,7 @@ Goal False.
   pose_quote_term nat nat_reif.
 Abort.  
 
-Print term.
+
 
 
 
@@ -48,17 +48,16 @@ Proof.
   unquote_type_cbv1 qdreif qdtype1.
   unquote_type_cbv2 qdreif qdtype2. 
   unquote_type2 qdreif qdtype2' ltac:(cbv in qdtype2').
-  reflexivity. Qed.
+  reflexivity. Abort.
 
 Definition MonProjT1 t := ret (my_projT1 t).
 
-Print TemplateMonad.
-
+(* Print TemplateMonad.
 Print typed_term.
-Print Monad.
+Print Monad. *)
 (* Record Monad (m : Type -> Type) : Type := Build_Monad
   { ret : forall t : Type, t -> m t;  bind : forall t u : Type, m t -> (t -> m u) -> m u } *)
-Print ret.
+(* Print ret. *)
 (* ret@{d c} = 
 fun (m : Type -> Type) (Monad0 : Monad m) => let (ret, _) := Monad0 in ret
      : forall m : Type -> Type, Monad m -> forall t : Type, t -> m t *)
@@ -92,11 +91,8 @@ unquote_type3 zero_reif nat_hopefully. (* yes *)
 reflexivity.
 Qed.
 
-Print tmQuoteRec.
 
 Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t ) ltac:(fun x =>  (pose  x as idn))).
-
-
 
 Fixpoint get_decl (I : term) (e : global_env) :=
   match e with
@@ -108,9 +104,6 @@ Fixpoint get_decl (I : term) (e : global_env) :=
       end)    
     end.
 
-    Print ind_bodies.
-    Print one_inductive_body.
-    Print mutual_inductive_body.
 
 (* Definition list_ctors_mind I :=
   let fix list_ctors_aux l :=
@@ -127,11 +120,7 @@ Ltac list_ctors_and_types I :=
   ; let bod := constr:(fst Ier)  in let Iq := constr:(snd Ier)
   in let blut := constr:(get_decl Iq bod) in let res := fresh "res" in pose blut as res; hnf in res.
 
-(*   Print global_env.
-Print inductive_decl.
-*)
-Print InductiveDecl.
-Print global_env.
+
 
 Goal 2+2 = 4.
 Proof.
@@ -140,7 +129,7 @@ Proof.
   pose (fst truc) as truc'.
   Eval cbn in truc'.
   reflexivity.
-  Qed.
+  Abort.
 
 
 
@@ -227,8 +216,8 @@ MetaCoq Quote Definition length_reif := @List.length.
 MetaCoq Quote Definition le_reif := le.
 MetaCoq Quote Definition S_reif := Eval cbn in S.
 MetaCoq Quote Recursively Definition S_env_reif := S.
-Print S_env_reif.
-Print S_reif.
+(* Print S_env_reif.
+Print S_reif. *)
 MetaCoq Quote Definition O_reif := O.
 MetaCoq Quote Definition add_reif := Eval cbn in Nat.add.
 MetaCoq Quote Definition nil_reif := nil.
@@ -243,9 +232,8 @@ MetaCoq Quote Definition cons_nat_reif := cons_nat.
 
 MetaCoq Quote Definition nat_reif := nat.
 MetaCoq Unquote Definition nat_unreif := nat_reif.
-Print nat_unreif.
 MetaCoq Quote Recursively Definition nat_env_reif := nat.
-Print nat_env_reif. 
+
 
 Definition nat_oind := {|
 ind_name := "nat"%string;
@@ -267,11 +255,10 @@ ind_relevance := Relevant |}.
 
   MetaCoq Quote Definition list_reif_generic := list.
 MetaCoq Quote Definition list_reif := @list.
-Print list_reif_generic.
-Print list_reif. (* idem *)
+(* Print list_reif_generic.
+Print list_reif.  *)
+(* idem *)
 MetaCoq Quote Recursively Definition list_env_reif := @list.
-Print list_env_reif.
-
 
 
 Definition list_nat := @list nat.
@@ -280,10 +267,9 @@ MetaCoq Quote Recursively Definition list_nat_env_reif := list_nat.
 MetaCoq Quote Definition cons_nat_type_reif := (nat -> list_nat -> list_nat).
 
 
-Print "=".
 
 Definition eq_nat := @eq nat.
-Print eq_nat.
+(* Print eq_nat. *)
 
 MetaCoq Quote Definition Type_reif := Eval cbn in Type.
 MetaCoq Quote Definition Prop_reif := Eval cbn in Prop. 
@@ -291,20 +277,19 @@ MetaCoq Quote Definition Set_reif := Eval cbn in Set.
 
 MetaCoq Quote Definition eq_reif := Eval cbn in @eq. 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
-Print eq_reif. 
+ 
 
 
 (*\evar MetaCoq Quote Definition eq_reif_generic := Eval cbn in eq.  *)
 (*\evar Print eq_reif_generic. *) (* \Q comment se débarrasser du tEvar ? *)
 
 MetaCoq Quote Definition eq_nat_reif := Eval cbn in (@eq nat).
-Print eq_nat_reif.
+(* Print eq_nat_reif. *)
 
 MetaCoq Quote Definition eq_term_reif := Eval cbn in (@eq term).
-Print eq_term_reif.
+(* Print eq_term_reif.*)
 
-MetaCoq Quote Definition eq_reif_generic' := Eval cbn in @eq. 
-Print eq_reif_generic'.
+
 
 MetaCoq Quote Definition True_reif := Eval cbn in True.
 MetaCoq Quote Definition False_reif := Eval cbn in False.
@@ -315,23 +300,22 @@ MetaCoq Quote Definition or_reif := Eval cbn in or.
 
  
 MetaCoq Unquote Definition two_unreif := two_reif.
-Print two_unreif.
+
 
 MetaCoq Unquote Definition list_nat_unreif := list_nat_reif.
-Print list_nat_unreif.
 
-MetaCoq Quote Definition and_reif_blut := (and (1 = 1) (0 = 1)).
-MetaCoq Unquote Definition and_unreif_blut := and_reif_blut.
-Print and_unreif_blut.
+
+MetaCoq Quote Definition and_reif_ex1 := (and (1 = 1) (0 = 1)).
+MetaCoq Unquote Definition and_unreif_ex1 := and_reif_ex1.
 
 (** reified equalities **)
 
-MetaCoq Quote Definition zero_equal_zero_reif := Eval cbn in (eq 0 0).
-Print zero_equal_zero_reif.                                                      
-MetaCoq Quote Definition zero_equal_zero_reif' := Eval cbn in (@eq nat 0 0).
-Print zero_equal_zero_reif'.                                                      
+MetaCoq Quote Definition zero_equal_zero_reif := Eval cbn in (eq 0 0).                                                    
+MetaCoq Quote Definition zero_equal_zero_reif' := Eval cbn in (@eq nat 0 0).                                                    
 MetaCoq Quote Definition zero_equal_zero_reif'' := Eval cbn in (eq_nat 0 0).
-Print zero_equal_zero_reif''.                                                      
+(* Print zero_equal_zero_reif'. 
+Print zero_equal_zero_reif.
+Print zero_equal_zero_reif''.                                                      *) 
 
 
 (** list in Set **)
@@ -339,29 +323,22 @@ Inductive listS (A : Set) :=
 | nilS : listS A
 | consS : A -> listS A -> listS A
 .
-Print listS.
 MetaCoq Quote Definition listS_reif := listS.
 MetaCoq Quote Definition nilS_reif := nilS.
 MetaCoq Quote Definition consS_reif := consS.
 MetaCoq Quote Recursively Definition listS_env_reif := listS.
-Print listS_env_reif.
-Print Set_reif.
-Print consS_reif.
 
-Print tProd.
-Print aname.
-Print name.
 MetaCoq Quote Definition lam_true_reif := (forall (A: Type), True).
-Print lam_true_reif.
+(* Print lam_true_reif. *)
 MetaCoq Quote Definition T_imp_T_reif :=  (True -> True).
-Print T_imp_T_reif.
+(* Print T_imp_T_reif. *)
 
 
 
 Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
 Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
 
-Definition truc := mkNamed (("B"%string) : ident).
+Definition mkNamedtry := mkNamed (("B"%string) : ident).
 
 
 Definition consS_typ := tProd (mkNamed "A") (tSort (Universe.from_kernel_repr (Level.lSet, false) []))
@@ -376,7 +353,6 @@ Definition consS_typ := tProd (mkNamed "A") (tSort (Universe.from_kernel_repr (L
 (** reified connectives **)
 
 
-Print ex.
 
 
 MetaCoq Quote Definition ex_reif := Eval cbn in @ex.
@@ -935,7 +911,6 @@ MetaCoq Unquote Definition in_codom_unreif3 := in_codom3.
 
 Example in_codom4 := Eval cbn in (tProd (mkNamed "y") list_nat_reif ( is_in_codom list_nat_reif (tRel 0) cons_nat_reif [nat_reif ; list_nat_reif])).
 MetaCoq Unquote Definition in_codom_unreif4 := in_codom4.
-Print in_codom_unreif4.
 (* Print in_codom_unreif4. *)
 
 
@@ -988,8 +963,6 @@ Example cdu'2 := codom_union_total list_nat_reif [nil_nat_reif ; cons_nat_reif ]
 MetaCoq Unquote Definition cdu_u'2 := cdu'2.
 (* Print cdu_u'2. *)
 
-
-Print intros_exist_aux.
 
 
 Ltac revert_intro_ex_tac_aux e :=
@@ -1161,11 +1134,10 @@ Inductive tutu : nat -> Type :=
 | Tutu : tutu (let fix toto (n:nat) := match n with O => O | S p => p end in toto 17).
 
 
-Print nat_reif. 
 Definition nat_indu := 
   {| inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat"); inductive_ind := 0 |}.
 
-Print nat_env_reif.
+
 Definition nat_oind' := 
   ltac:(let s := fresh "s" in pose_mind_tac (nat) s ; exact s).  
 
