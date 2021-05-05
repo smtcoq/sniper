@@ -40,25 +40,29 @@ def_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
 Ltac def_fix_and_pattern_matching_mono_param t :=
 def_fix_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
 
-Goal ((forall (A: Type) (x : A) (a : A) (l : list A), 
-@hd A x (@cons A a l) = match (@cons A a l) with
-| nil => x
-| y :: xs => y
-end)). 
-def_and_pattern_matching. assumption.
-Qed. 
 
-Goal ((forall (A: Type) (l : list A), 
-@List.length A l = match l with
-| nil => 0
-| y :: xs => S (length xs)
-end)).
-get_definitions_theories ltac:(fun H => let T := type of H in pose T).
-assert P. unfold P. reflexivity.
-unfold P in H.
-expand_hyp H.
-Fail eliminate_pattern_matching H0.
-Abort.
+
+Ltac scope_param t :=
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert).
+(* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
+hypothèses dans nat et ensuite verit se met à peiner *)
+
+Ltac scope_no_param :=
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst_clear ; try nat_convert).
+
+Ltac snipe_param t := 
+scope_param t ; verit.
+
+Ltac snipe_no_param := 
+scope_no_param ; verit.
+
+Tactic Notation "scope" constr(t) := scope_param t.
+Tactic Notation "scope" := scope_no_param.
+
+Tactic Notation "snipe" constr(t) := snipe_param t.
+Tactic Notation "snipe" := snipe_no_param.
+
+Section tests.
 
 Goal ((forall (A : Type) (l : list A),
 #|l| = match l with
@@ -87,22 +91,4 @@ verit.
 Qed.
 
 
-Ltac scope_param t :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert).
-(* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
-hypothèses dans nat et ensuite verit se met à peiner *)
-
-Ltac scope_no_param :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst_clear ; try nat_convert).
-
-Ltac snipe_param t := 
-scope_param t ; verit.
-
-Ltac snipe_no_param := 
-scope_no_param ; verit.
-
-Tactic Notation "scope" constr(t) := scope_param t.
-Tactic Notation "scope" := scope_no_param.
-
-Tactic Notation "snipe" constr(t) := snipe_param t.
-Tactic Notation "snipe" := snipe_no_param.
+End tests.
