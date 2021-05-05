@@ -6,29 +6,11 @@ Require Import utilities.
 Require Import ZArith.
 
 
-(* todo : 
-- des intros à supprimer (a priori ok)
-- factoriser code tactique finale
-- éliminer les formule triviale: True, injectivité des constructeurs sans arg
-*)
-
 Open Scope string_scope.  (* pour que ça ne buggue pas avec les fonctions sur les strings, mais du coup, ++ plus interprété pour les listes *)
 
 Import ListNotations MonadNotation. 
 
-(* in newTacs.v, a lot of remarks about Ltac !!!!*)
 
-(* Playing with inductive types *)
-
-(* ci-dessous, vient de add_constructor.v dans depot-metacoq. \Q Comment faire pour importer directement ? *)
-
-(* \todo avoir des fonctions permettant de définir plus robustement les variables terminant en indu, mind, oind *)
-
-(* \todo des tactiques qui permettent d'extraire les indu, les mind, les oind ... *) 
-
-(*** Pour quote_term ***)
-
-(* src/quoter *)
 
 Ltac pose_quote_term c idn :=
   let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
@@ -469,6 +451,7 @@ Definition mkNot (A :term) := mkImpl A False_reif.
 
 Definition mkAnd (A B : term) := tApp and_reif [A ; B]. 
 
+
 Fixpoint and_nary_reif (l : list term):=
   match l with
   | [] => False_reif      
@@ -476,9 +459,6 @@ Fixpoint and_nary_reif (l : list term):=
   | t :: tll => mkAnd t (and_nary_reif tll)                
   end.
 
-Example anr1 := and_nary_reif [True_reif; False_reif ; zero_equal_zero_reif ].
-MetaCoq Unquote Definition anr_u1 := anr1.
-Print anr_u1.
 
 
 Fixpoint or_nary_reif (l : list term):=
@@ -488,9 +468,6 @@ Fixpoint or_nary_reif (l : list term):=
   | t :: tll => tApp or_reif [t ; or_nary_reif tll ]                
   end.
 
-Example onr1 := or_nary_reif [True_reif; False_reif ; zero_equal_zero_reif ].
-MetaCoq Unquote Definition onr_u1 := onr1.
-Print onr_u1.
 
 Fixpoint build_prod (B : term) (lA : list term) :=
   match lA with
@@ -498,17 +475,6 @@ Fixpoint build_prod (B : term) (lA : list term) :=
   | A1 :: tllA  => tProd mkNAnon A1 (build_prod B tllA )
   end.
 
-Example bprod1 := build_prod zero_equal_zero_reif [True_reif; False_reif ; zero_equal_zero_reif ].
-MetaCoq Unquote Definition bprodu1 := bprod1.
-Print bprodu1.
-
-
-
-Goal 2 + 2 = 4.
-Proof.
-idtac "kikoo". Search Nat.add. idtac  "blut". Search kername. Print kername_eq_dec. Search kername_eq_dec.
-reflexivity.
-Qed.
 
 Definition get_kn_term (t: term) :=
   (* gets the kername of a reified inductive *)
@@ -537,11 +503,6 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
 
 
 Example dlf1 := Eval cbn in dom_list_f cons_nat_type_reif 2.
-Print dlf1. 
-
-
-
-
 
 (* dom_and_codom_sim is limited because it does not handle an output type that is morally a product *)
 (* the 1st element of the output is the list of domains of C and the 2nd element is its codomain *)
@@ -556,10 +517,8 @@ Definition dom_and_codom_sim (C : term) :=
 
 
 Example dcodsim1 := Eval cbn in dom_and_codom_sim cons_nat_type_reif.
-Print dcodsim1.
+
     
-
-
 (***  Marks impossible cases ***)
 
 Inductive impossible_type : Type  := .
@@ -569,47 +528,22 @@ MetaCoq Quote Definition imposs_mark :=  impossible_type  .
 
 
 
-(*** Sur le typage ***)
-
-
-Existing Instance config.default_checker_flags. (* pour les defs ci-dessous *)
- 
-
-Definition is_typable (t: term) := { Sigma & { Gamma & { B &  Sigma  ;;; Gamma |- t : B}}}.
-
-Definition is_type (A : term) := {Sigma & {Gamma & { s &  Sigma ;;; Gamma |- A : tSort s}}}.
-
-Definition has_type (t A:  term) := { Sigma & { Gamma & { B &  Sigma  ;;; Gamma |- t : B}}}.
-
 
 
 (** ** Auxiliary functions *)
 
 
-Class TslIdent := { tsl_ident : ident -> ident }.
-
-Instance prime_tsl_ident : TslIdent
-  := {| tsl_ident := fun id => (id ++ "'")%string |}.
-
-Fixpoint try_remove_n_lambdas (n : nat) (t : term) {struct n} : term :=
-  match n, t with
-  | 0, _ => t
-  | S n, tLambda _ _ t => try_remove_n_lambdas n t
-  | S n, _ => t
-  end.
 
 
-(** * Plugin *)
 
 
 Definition ind_ident (kerna : kername) := let (mdp , idind) := kerna in idind.
 
-(*** Ltac: récupérer une liste de termes réifiés dans Ltac à partir de leurs noms***)
 
 
 (*** extracting parameters ****)
 
-(* \todo écrire pose_inductive, qui nous extrait indu *)
+
 
 Ltac get_ind_param t idn := 
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
@@ -639,10 +573,7 @@ Goal False.
 Proof.
 let s1 := fresh "s1" in get_env_ind_param (list nat) s1.
 get_env_ind_param list foo.
-Print list_reif.
 let s2 := fresh "s2" in get_ind_param (nat) s2.
-Print nat_reif.
-Print even_reif.
 Abort.
 
 
@@ -714,19 +645,7 @@ Fixpoint forall_nary lx lA B:=
 end.
 
 
-
-Polymorphic Fixpoint and_iter_try (n : nat) :=
-  match n with
-  | 0 => True_reif
-  | 1 => zero_equal_zero_reif
-  | S n =>  tApp and_reif [zero_equal_zero_reif ;  and_iter_try n ]
-  end. 
-
-
-MetaCoq Unquote Definition and_iter_try1:= (and_iter_try 1).
-Print and_iter_try1.        
-MetaCoq Unquote Definition and_iter_try2:= (and_iter_try 2).
-Print and_iter_try2.        
+ 
 
 Polymorphic Fixpoint and_eq_combine_reif (lA l1 l2 : list term) :=
 (* if l1=[t1,...,tn], l2=[u1,...,un], lA=[A1,...An] and ti,ui: have type Ai, outputs the reification of   t1^ = u1^ /\ ... /\ tn^ /\ un^ ]. One must specify, the type of the terms *)
@@ -745,38 +664,10 @@ end.
 
 
 
-Fail MetaCoq Unquote Definition blut0 :=  (tApp eq_reif_generic [nat_reif; two_reif ; one_reif ]). 
-(* problem with tEvar in eq_reif_generic *)
 
-(* MetaCoq Unquote Definition blut0' :=  (tApp eq_nat_reif [two_reif ; one_reif ]). *)
-(* non-functional construction *)
-MetaCoq Unquote Definition blut1 :=  (tApp eq_nat_reif [two_reif]). 
+(*** Injectivity ***)
 
 
-
-Example test_eq_combine3 := Eval cbn in let '(lA, l1, l2) := ([nat_reif; list_nat_reif],  [zero_reif ;  list_one_three_reif] , [one_reif ; list_one_three_reif' ]) in and_eq_combine_reif lA l1 l2 .
-
-
-MetaCoq Unquote Definition test_eq_combine_unquote3 :=  test_eq_combine3.
-Print test_eq_combine_unquote3.
-
-
-(*Section Inductives_to_FO. *)
-
-
-
-
-(* \!  dependency not taken into account *)
-
-
-(*** Injectivité ***)
-
-
-
-(* MetaCoq Unquote Definition S_inj_reif := (is_inj nat_reif S_reif [nat_reif]).
-Print S_inj_reif.
-MetaCoq Unquote Definition cons_nat_inj_reif := (is_inj list_nat_reif cons_nat_reif  [nat_reif; list_nat_reif]).
-Print cons_nat_inj_reif. *)
  
 
 Fixpoint is_inj (B f: term) (lA : list term) :=
@@ -791,24 +682,16 @@ let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat) :=
 (* \Q comment éviter de lire la longueur de la liste en entrée de inj_aux *) 
 
 MetaCoq Unquote Definition really_S_inj_reif := (is_inj nat_reif S_reif [nat_reif]).
-Print really_S_inj_reif.
+(* Print really_S_inj_reif.*)
 
-(* Definition inj_aux_test := Eval cbn in (inj_aux list_nat_reif cons_nat_reif cons_nat_reif [nat_reif; list_nat_reif]) 2.
-Print inj_aux_test. *)
 MetaCoq Unquote Definition really_cons_nat_inj_reif := (is_inj list_nat_reif cons_nat_reif  [nat_reif; list_nat_reif]).
-Print really_cons_nat_inj_reif.
-
-
-
-
-(* \! dans ctor_is_inj, i devrait être un entier de Ltac, pas de Coq *)
-
+(* Print really_cons_nat_inj_reif. *)
 
 
 Ltac just_cbv t := cbv in t.
 
 Goal 2 + 2 = 4.
-Proof.  pose ( String.append "kikoo" "lol") as H. just_cbv H.
+Proof.  pose ( String.append "hello " "world") as H. just_cbv H.
 reflexivity. Qed.
 
 
@@ -822,28 +705,15 @@ Ltac ctor_is_inj_tac B f lA  :=
   | ?x :: ?tlA =>
 let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; [ unfold toto; intros ; match goal with
                                                                                                             | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto
-                                              end              .  (* repeat split . *) 
-  (* ; assert Hinj ; (injection in Hinj). *)
-(* \! qqch de très important à comprendre: pq sans [ | ..], tactique appliquée à tous les sous-buts, même ceux qui ne sont pas créés par la 1ère partie.  *)
-
+                                              end              .  
 
 
 MetaCoq Unquote Definition is_inj_cons_nat := (is_inj list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]).
 Goal forall (n: nat), 2 + 2 = 4.
 Proof.
-  ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]. reflexivity. Qed.
+  ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]. reflexivity. Abort.
 
-(*   lazymatch goal with
-| h : _ = _ |- _ =>  inversion h
-end. *)
- (*  inversion H0. repeat split. 
-  unfold H in H0. clear H. *)
   
-  
-Goal (2 + 2 = 4) -> (1 + 1 = 2) -> ( 2 + 2 = 4 /\ 1 +1 = 2).
-Proof. 
-intros. split. split. split.
-Qed.
                                                                                                 
 
 
@@ -854,7 +724,7 @@ Definition nilterm := @nil term.
 
 Ltac ctors_are_inj_tac B lf lA :=  
   match constr:((lf , lA)) with
-  | ( nil , nil ) => idtac "nothing happens. Improve this message"
+  | ( nil , nil ) => idtac 
   | ( ?f1 :: ?tlf , ?A1 :: ?tlA) => ctor_is_inj_tac B f1 A1; ctors_are_inj_tac B tlf tlA
   end.
   
@@ -862,7 +732,7 @@ Ltac ctors_are_inj_tac B lf lA :=
 Goal 2 + 2 = 4.
 Proof. 
 ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]. 
-reflexivity. Qed.
+reflexivity. Abort.
                                                                                                       
 Fixpoint are_inj (B : term) (lf : list term) (lA : list (list term)):=
   match (lf , lA) with
@@ -873,10 +743,10 @@ Fixpoint are_inj (B : term) (lf : list term) (lA : list (list term)):=
 (* \rmk : this function may be improved by skipping function of arity 0 *)
 
 MetaCoq Unquote Definition nat_inj_reif := (are_inj nat_reif [zero_reif ; S_reif] [[] ; [nat_reif]]).
-Print nat_inj_reif.
+(* Print nat_inj_reif. *)
 
 MetaCoq Unquote Definition list_nat_inj_reif := (are_inj list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]).
-Print list_nat_inj_reif.
+(* Print list_nat_inj_reif. *)
 
 Example test_are_inj_cons_nat : 2 + 2 = 4.
 (ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]).
