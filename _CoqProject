@@ -1,4 +1,4 @@
--R . TransfoCoq
+-R . Sniper
 
 utilities.v
 definitions.v
