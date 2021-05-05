@@ -1,4 +1,5 @@
 Require Import sniper.
+Require Import Bool.
 
 Local Open Scope Z_scope.
 
@@ -54,7 +55,7 @@ end.
 Fixpoint search {A : Type} {H: CompDec A} (x : A) l := 
   match l with 
   | [] => false
-  | x0 :: l0 => if @eqb_of_compdec _ H x x0  then true else search x l0
+  | x0 :: l0 => @eqb_of_compdec _ H x x0 || search x l0
   end.
 
 Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
@@ -69,13 +70,7 @@ Qed.
 
 
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A), search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof.
-intros A H x l1 l2. induction l1 as [ | x0 l0 IH]. 
-- snipe.
-- simpl. destruct (@eqb_of_compdec _ H x x0). 
- + snipe.
- + snipe.
-Qed.
+Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe. Qed.
 
 
 
