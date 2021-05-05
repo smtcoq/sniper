@@ -10,9 +10,6 @@ Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
-(* Require Import Bool (* Int63  PArray *) BinNat BinPos ZArith SMT_classes_instances.
-(* Require Import Misc State BVList. *) (* FArray Equalities DecidableTypeEx. *)
-Require FArray. *)
 Require Import ZArith.
 Require Import SMTCoq.bva.BVList.
 
@@ -61,74 +58,6 @@ Definition prod_of_symb := (unit, Zplus,
          @FArray.select,
          @FArray.diff).
 
-Ltac get_definitions_built_in_theories :=  
-repeat match goal with 
-| |- context C[?x] =>  
-         constr_neq Zplus x ;
-         constr_neq Zminus x ;
-         constr_neq Zmult x ;
-         constr_neq Zlt_bool x ;
-         constr_neq Zle_bool x ;
-         constr_neq Zge_bool x ;
-         constr_neq Zgt_bool x ;
-         constr_neq Typ.i_eqb x ;
-         constr_neq @BITVECTOR_LIST.bv_and x ;
-         constr_neq @BITVECTOR_LIST.bv_or x ;
-         constr_neq @BITVECTOR_LIST.bv_xor x ;
-         constr_neq @BITVECTOR_LIST.bv_add x ;
-         constr_neq @BITVECTOR_LIST.bv_mult x ;
-         constr_neq @BITVECTOR_LIST.bv_ult x ;
-         constr_neq @BITVECTOR_LIST.bv_slt x ;
-         constr_neq @BITVECTOR_LIST.bv_concat x ;
-         constr_neq @BITVECTOR_LIST.bv_shl x ;
-         constr_neq @BITVECTOR_LIST.bv_shr x ;
-         constr_neq FArray.select x ;
-         constr_neq FArray.diff x ;
-let H := fresh x "_def" in
-let x' := eval unfold x in x in (match goal with 
-| _ : x = x' |- _ => fail 1
-| _ => idtac
-end ; let H := fresh x "_def" in 
- assert (H: x = x') by (unfold x ; reflexivity))
-| _ : context C[?x] |- _ =>  constr_neq Zplus x ;
-         constr_neq Zminus x ;
-         constr_neq Zmult x ;
-         constr_neq Zlt_bool x ;
-         constr_neq Zle_bool x ;
-         constr_neq Zge_bool x ;
-         constr_neq Zgt_bool x ;
-         constr_neq Typ.i_eqb x ;
-         constr_neq @BITVECTOR_LIST.bv_and x ;
-         constr_neq @BITVECTOR_LIST.bv_or x ;
-         constr_neq @BITVECTOR_LIST.bv_xor x ;
-         constr_neq @BITVECTOR_LIST.bv_add x ;
-         constr_neq @BITVECTOR_LIST.bv_mult x ;
-         constr_neq @BITVECTOR_LIST.bv_ult x ;
-         constr_neq @BITVECTOR_LIST.bv_slt x ;
-         constr_neq @BITVECTOR_LIST.bv_concat x ;
-         constr_neq @BITVECTOR_LIST.bv_shl x ;
-         constr_neq @BITVECTOR_LIST.bv_shr x ;
-         constr_neq FArray.select x ;
-         constr_neq FArray.diff x ;
-let x' := eval unfold x in x in (match goal with 
-                  | _ : x = x' |- _ => fail 1
-                  | _ => idtac
-end ;
- assert (H: x = x') by (unfold x ; reflexivity))
-end.
-
-
-Goal forall (x y : Z), Zplus x y = Zminus x y.
-get_definitions_built_in_theories.
-get_definitions.
-Abort.
-
-
-(* Ltac is_not_in_tuple p z := 
-match constr:(p) with
-| (?x, ?y) => constr_neq y z ; is_not_in_tuple constr:(x) z 
-| unit => idtac
-end. *)
 
 Ltac get_definitions_ho p := fun k =>
 match goal with 
@@ -160,10 +89,6 @@ end
 Ltac get_definitions_theories := fun k =>
 let p := eval unfold prod_of_symb in prod_of_symb in get_definitions_aux p k.
 
-Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [] -> (forall (x y : Z), (x +y)%Z = 
-(x-y)%Z).
-get_definitions_theories ltac:(fun p => let T:= type of p in pose T).
-Abort.
 
 
 (* The basic tactic, not recursive *)

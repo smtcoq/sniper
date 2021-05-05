@@ -11,6 +11,7 @@ Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
 Require Import definitions.
+Require Import elimination_fixpoints.
 Require Import expand.
 Require Import List.
 
@@ -87,28 +88,12 @@ MetaCoq Quote Recursively Definition list_reif := list.
 Print list_reif.
 
 
-(* Fixpoint subst_type_constructor_list_no_param (l : list ((string × term) × nat)) (T : term) (n : nat) :=
-let l' := subst_type_constructor_list' l T n in 
-let fix aux (l' : list term) n := match (n, l') with
-| (0, _) => l'
-| (S m, nil) => nil
-| (S m, x :: xs) => aux xs m
-end in rev (aux  (rev l') n).
-Check subst_type_constructor_list_no_param. *)
 
 Definition type_no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
 end.
 
-(* Ltac list_types_of_ctors I :=
-run_template_program (tmQuoteRec I) ltac:(fun t => 
-let x := eval compute in (get_decl_inductive t.2 t.1) in match x with
-| Some (?y::_) => let z := eval cbv in y.(ind_ctors) in 
-let v := eval cbv in t.2 in let u := eval cbv in (subst_type_constructor_list' z v) in
-pose u
-| None => fail 1
-end). *)
 
 (* beta reduction *)
 Fixpoint typing_prod_list (T : term) (args : list term) := 
@@ -184,16 +169,7 @@ in aux n J.1.1 J.1.2 J.2
 | None => []
 end.
 
-(* Definition list_types_of_each_constructor_no_param  t :=
-let x := get_decl_inductive t.2 t.1 in let n:= get_npar_inductive t.2 t.1 in 
-match x with
-| Some y => match y with 
-          | nil => nil
-          | cons y' l => let z := y'.(ind_ctors) in let v := t.2 in let u := 
-subst_type_constructor_list_no_param z v n in u
-          end
-| None => nil
-end. *)
+
 
 Ltac list_ctors_unquote_requote_rec t :=
 run_template_program (tmUnquote t) (fun t => 
@@ -256,83 +232,6 @@ Definition list_of_args (t : term) := let fix aux acc t := match t with
 end in aux [] t.
 
 
-Definition E := (tApp
-       (tInd
-          {|
-          inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                            "eq"%string);
-          inductive_ind := 0 |} [])
-       [tRel 2;
-       tApp (tConst (MPfile ["List"%string; "Lists"%string; "Coq"%string], "hd"%string) [])
-         [tRel 2; tRel 1; tRel 0];
-       tCase
-         ({|
-          inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-          inductive_ind := 0 |}, 1, Relevant)
-         (tLambda {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-            (tApp
-               (tInd
-                  {|
-                  inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                    "list"%string);
-                  inductive_ind := 0 |} []) [tRel 2]) (tRel 3)) (tRel 0)
-         [(0, tRel 1);
-         (2,
-         tLambda {| binder_name := nNamed "x"%string; binder_relevance := Relevant |} 
-           (tRel 2)
-           (tLambda {| binder_name := nNamed "l0"%string; binder_relevance := Relevant |}
-              (tApp
-                 (tInd
-                    {|
-                    inductive_mind := (MPfile
-                                         ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                      "list"%string);
-                    inductive_ind := 0 |} []) [tRel 3]) (tRel 1)))]]).
-Definition l_constructor := [tApp
-        (tConstruct
-           {|
-           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                             "list"%string);
-           inductive_ind := 0 |} 0 []) [tRel 2];
-     tApp
-       (tConstruct
-          {|
-          inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-          inductive_ind := 0 |} 1 []) [tRel 2]].
-Definition l_ty_constructor := [tApp
-         (tInd
-            {|
-            inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                              "list"%string);
-            inductive_ind := 0 |} []) [tRel 2];
-      tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
-        (tRel 2)
-        (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-           (tApp
-              (tInd
-                 {|
-                 inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                   "list"%string);
-                 inductive_ind := 0 |} []) [tRel 3])
-           (tApp
-              (tInd
-                 {|
-                 inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                                   "list"%string);
-                 inductive_ind := 0 |} []) [tRel 4]))].
-
-Eval cbv in list_of_args (hd unit_reif ( l_ty_constructor)).
-
-Definition l := [tRel 0;
-      tSort
-        {|
-        Universe.t_set := {|
-                          UnivExprSet.this := [(Level.Level "Coq.Lists.List.1", 0)];
-                          UnivExprSet.is_ok := UnivExprSet.Raw.singleton_ok
-                                                 (Level.Level "Coq.Lists.List.1", 0) |};
-        Universe.t_ne := Logic.eq_refl |}].
 
 
 Definition prenex_quantif_list_ctor (c : term) (l : list term) (l' : list term) (E : term) :=
@@ -402,10 +301,7 @@ let list_of_hyp := eval cbv in (get_equalities E l_ctors l_ty_ctors l) in
  unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
 
 
-MetaCoq Quote Recursively Definition foo_reif := (fun A (l: list A) => match l with 
-| [] => unit
-| cons x xs => unit
-end).
+Section tests.
 
 
 Definition min1 (x : nat) := match x with
@@ -469,10 +365,11 @@ Goal ((forall (H : Type) (H0 : list H),
         | _ :: l' => S (length l')
         end) H0) -> True).
 intro H.
-Fail eliminate_pattern_matching H.
+eliminate_fix_hyp H.
+eliminate_pattern_matching H0.
 Abort.
 
-
+End tests.
 
 
 

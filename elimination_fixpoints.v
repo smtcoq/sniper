@@ -57,15 +57,6 @@ Fixpoint params_eq (t : term) := match t with
 end.
 
 
-Definition foo := (1, (2, 3, 4)).
-
-Compute foo.1.
-Compute foo.2.
-Compute foo.2.1.
-
-
-
-
 (* Returns the definition in a fixpoint *)
 Fixpoint get_def_in_fix (f: term) := 
 match f with 
@@ -102,10 +93,10 @@ let u := eval cbv in get_info_eq.2.2 in
 let prod := eval cbv in (find_args t u) in 
 let args := eval cbv in prod.2 in (* the arguments of u *)
 let def := eval cbv in prod.1.1 in 
-let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
-let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in idtac t "t" ; idtac u_no_fix "u_no_fix" ;
-let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
-in idtac eq_no_fix "eq" ; run_template_program (tmUnquote eq_no_fix) 
+let u_no_app := eval cbv in prod.1.2 in 
+let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in
+let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif) in
+run_template_program (tmUnquote eq_no_fix) 
 ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2) 
 in assert (H' :w) 
 by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) )).
@@ -125,7 +116,7 @@ let u := eval cbv in get_info_eq.2.2 in
 let prod := eval cbv in (find_args t u) in 
 let args := eval cbv in prod.2 in (* the arguments of u *)
 let def := eval cbv in prod.1.1 in 
-let u_no_app := eval cbv in prod.1.2 in idtac u_no_app ;
+let u_no_app := eval cbv in prod.1.2 in 
 let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in 
 let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
 in run_template_program (tmUnquote eq_no_fix) 
@@ -173,7 +164,7 @@ eliminate_fix_hyp H.
 expand_hyp add_def.
 eliminate_fix_ho H ltac:(fun H0 => let t := type of H0 in idtac).
 expand_hyp length_def.
- eliminate_fix_hyp H.
+eliminate_fix_hyp H.
 Abort.
 
 
@@ -185,15 +176,6 @@ eliminate_fix_hyp H.
 get_def Nat.add.
 expand_hyp add_def.
 eliminate_fix_hyp H1.
-assert (forall (H : Type) (H0 : list H),
-    (fix length (l : list H) : nat := match l with
-                                      | [] => 0
-                                      | _ :: l' => S (length l')
-                                      end) H0 = match H0 with
-                                              | [] => 0
-                                              | _ :: l' => S #|l'|
-                                              end).
-repeat (let x := fresh in intro x ; try (destruct x ; reflexivity)).
 Abort.
 
 

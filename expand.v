@@ -33,28 +33,6 @@ match l with
 end.
 
 
-Ltac eta_expand_hyp' H := 
-lazymatch type of H with 
-| @eq ?A ?t ?u => 
-let H' := fresh in quote_term A ltac:(fun A =>
-let b := eval cbv in (is_type_of_fun A) in 
-match b with
-| true =>
-quote_term t ltac:(fun t =>
-quote_term u ltac:(fun u =>
-let p := eval cbv in (list_of_args_and_codomain A) in 
-let l := eval cbv in (rev p.1) in 
-let B := eval cbv in p.2 in 
-let eq := eval cbv in (gen_eq l B t u)
-in run_template_program (tmUnquote eq) 
-ltac:(fun z => 
-let u := eval hnf in (z.(my_projT2)) 
-in assert (H': u) by (intros ; rewrite H; reflexivity) ; idtac A)))
-| false => fail "not a higher-order equality"
-end)
-| _ => fail "not an equality"
-end.
-
 Ltac expand_hyp H := 
 lazymatch type of H with 
 | @eq ?A ?t ?u => 
@@ -99,6 +77,12 @@ expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', 
 | unit => k unit
 end.
 
+Ltac expand_fun f :=
+let H:= get_def_cont f in expand_hyp H ; clear H.
+
+
+Section tests.
+
 Goal False.
 get_def length.
 expand_hyp length_def.
@@ -108,8 +92,6 @@ assert (forall x : string, length x = match x with
 end). intros x. destruct x ; simpl ; reflexivity.
 Abort. 
 
-Ltac expand_fun f :=
-let H:= get_def_cont f in expand_hyp H ; clear H.
 
 Goal False.
 get_def length.
@@ -118,13 +100,12 @@ expand_fun Datatypes.length.
 Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac H')).
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
 
 Abort.
 
 
-
-
+End tests.
 
 
 
