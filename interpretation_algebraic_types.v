@@ -753,17 +753,6 @@ Example test_are_inj_cons_nat : 2 + 2 = 4.
 reflexivity.
 Qed.
   
-Definition is_inj' (A t: term) (lA l1 l2 : list term) :=
- mkImpl ( tApp eq_reif  [A; tApp t l1; tApp t l2]) ( and_eq_combine_reif lA l1 l2).
-(* t^u is a function of type lA^u -> A^u *)
-
-
-
-MetaCoq Unquote Definition is_inj'_test1 := ( is_inj' list_nat_reif cons_nat_reif [nat_reif; list_nat_reif] [zero_reif ; nil_nat_reif] [one_reif ; nil_nat_reif ]).
-Print is_inj'_test1. (* cons_nat 0 [] = cons_nat 1 [] -> 0 = 1 /\ [] = []  *)
-
-
-
 
 (*** Constructeurs disjoints : fail ***)
 
@@ -776,107 +765,13 @@ mkImpl (tApp eq_reif [B ; tApp f l1 ; tApp g l2 ])  (tApp eq_reif [Set_reif; Af 
 
 
 
-
-
 Example same_dom_Set_1 := same_dom_Set list_nat_reif cons_nat_type_reif list_nat_reif cons_nat_reif nil_nat_reif [zero_reif ; nil_nat_reif ] [].
 MetaCoq Unquote Definition sds_unreif1 := same_dom_Set_1.
-Print sds_unreif1.
+(* Print sds_unreif1. *)
 
-Example same_dom_Set_2 := same_dom_Set list_nat_reif cons_nat_type_reif list_nat_reif cons_nat_reif nil_nat_reif [zero_reif ; nil_nat_reif ] [nil_nat_reif (*!*) ].
-Fail MetaCoq Unquote Definition sds_unreif2 := same_dom_Set_2.
-(* Erreur s'aperçoit que @nil nat ne peut être appliqué à qqch *)
-
-
-(* \pb : intuitivement, il faut matcher l'égalité de Af et Ag avant de calculer f = g *)
-
-
-
-
-Definition codom_disj_sort_fail (B s f g: term)  (lAf lAg l1 l2 : list term) :=
-(* f^u : lAf^u -> B, g^u : lAg^u -> B of sort s^u. If f l1 = g l2 then lAf lAg, f = g and l1 = l2 *)
- let pABf := build_prod B lAf  in let pABg := build_prod B lAg in    
-  mkImpl (tApp eq_reif [B ; tApp f l1 ; tApp g l2 ])
-   (and_eq_combine_reif [s ; pABf ]   [pABf ; f ][ pABg ; g] )
-. (* \rmk computation may be optimized *) 
-
-     
-
-
-
-Example codom_disj_sort1 := (* Eval cbn in *) codom_disj_sort_fail list_nat_reif Set_reif cons_nat_reif nil_nat_reif [nat_reif ; list_nat_reif ] [] [zero_reif ; nil_nat_reif] [].
-Fail MetaCoq Unquote Definition cds_u1 := codom_disj_sort1.
-
-     (* \ Q ne faut-il pas gérer les sortes de B et de chaque lAf et lAg différemment, genre avoir des listes de sortes en argument ? *)
-  (* \todo comprendre comment récupérer les informations sur les sortes dans les environnements *)
-
-(** \Pb Problème **)
-(* codom_disj_sort_fail ne peut marcher car dès que les domaines de f et g sont distincts, on ne peut plus dire que f et g sont égaux *)
-(* il faut probablement utiliser des sigma types/records. Voir si faisable bien *)
-(* ou alors, on suppose qu'on pourra appliquer uniquement la fonction à des constructeurs distincts (on peut extraire la liste des constructeurs d'un inductif ce qui donne codom_disj ci-dessous *)
-
-Print list.
-
-Fixpoint blut0 (l1 l2 : list nat) : list nat:=
-  match l1 with
-  | x1 :: tl1 => blut0  tl1 l2
-  | [] => (fix blut0_aux l2 := match l2 with
-       | [] => []
-       | t2 :: tl2 => blut0_aux tl2
-         end) l2
-  end.
-
-Fail Fixpoint blut0 (l1 l2 : list nat) : list nat:=
-  match l1 with
-  | x1 :: tl1 => blut0  tl1 l2
-  | [] => match l2 with
-       | [] => []
-       | t2 :: tl2 => blut0  [] tl2
-         end                                 
-  end.
-
-
-
-
-
-Fail Fixpoint blut2 (B f g: nat) (l1 l2 : list nat) : list nat:=
-  match l1 with
-  | nil => match l2 with
-         | [] => []
-         | t2 :: tl2 => blut2 B f g [] tl2
-         end
-  | x1 :: tl2 => blut2 B f g tl2 l2
-  end.
-
-
-Fail Fixpoint blut3 (B f g: term) (l1 l2 : list term) :=
-  match l1 with
-  | [] => match l2 with
-         | [] => []
-         | t2 :: tl2 => blut3 B f g [] tl2
-         end
-  | x1 :: tl2 => blut3 B f g tl2 l2
-  end.
-
+   
   
-
-(* Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
-  match lAf  with
-  | [] => (fix codom_disj_aux lAG := match lAg with
-         | [] => mkNot (tApp eq_reif [B ; f ;  g])
-         | A1 :: tllAg  =>  codom_disj B f g [] tllAg  
-         end ) lAg          
-  |  A1 :: tllAf =>  codom_disj B f g tllAf lAg 
-  end. *)
-
-
-Fail Fixpoint codom_disj' (B f g: term)  (lAf lAg : list term)  : term :=
-  match (lAf , lAg) with
-  | ( [] , [] ) => mkNot (tApp eq_reif [B ; f ;  g])
-  |  ([], A1 :: tllAg ) =>  tProd mkNAnon A1 (codom_disj' B f (tApp 1 g [tRel 1]) [] tllAg  )           
-  | ( A1 :: tllAf , _ ) => tProd mkNAnon A1 (codom_disj' B (tApp f [tRel 1] ) g tllAf lAg  ) 
-  end.
-
-
+  
 (*** codomaines disjoints ***)
 
 
@@ -890,15 +785,14 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
          end ) B f g lAg          
   | A1 :: tllAf => tProd mkNAnon A1 (codom_disj B (tApp (lift0 1 f) [tRel 0] )   (lift0 1 g) tllAf lAg  ) 
   end.
-(* on lifte tlm dès qu'on fait une abstraction
- *) 
+(* on lifte tout dès qu'on fait une abstraction. Factoriser ?  *) 
 
 
 Ltac codom_disj_discr B f g lAf lAg :=
   let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
 assert toto; [unfold toto ; intros ;
                             try discriminate | .. ] ; subst toto. 
-(* \todo : refolder not ? *)
+(*  refolder not ? *)
 
 
 Goal 2 + 2 = 4.
@@ -909,16 +803,16 @@ reflexivity. Qed.
 Example disj_codom1 := codom_disj list_nat_reif nil_nat_reif nil_nat_reif [ ] [].
 MetaCoq Unquote Definition d_cod_u1 := disj_codom1.
 (* Set Printing All. *)
-Print d_cod_u1.
+(* Print d_cod_u1. *)
 
 Example disj_codom2 := Eval cbn in codom_disj list_nat_reif cons_nat_reif cons_nat_reif [nat_reif ; list_nat_reif ] [nat_reif ; list_nat_reif ].
 MetaCoq Unquote Definition d_cod_u2 := disj_codom2. 
-Print d_cod_u2.
+(* Print d_cod_u2. *)
 
 
 Example disj_codom3 := codom_disj list_nat_reif nil_nat_reif  cons_nat_reif  [] [ nat_reif ; list_nat_reif ].
 MetaCoq Unquote Definition d_cod_u3 := disj_codom3.
-Print d_cod_u3.
+(* Print d_cod_u3. *)
 
 Fixpoint pairw_disj_codom ( B : term) (lf : list term) (lA : list (list term)) :=
   let fix pairw_aux (B f : term) (lAf lf : list term)  (lA : list (list term)) :=
@@ -945,7 +839,7 @@ Ltac pairw_aux B f lAf lf lA :=
 Goal 2 + 2 = 4.
   Proof.
       pairw_aux list_nat_reif nil_nat_reif  (@nil term) [cons_nat_reif]  [ [nat_reif; list_nat_reif]].
-      reflexivity. Qed. 
+      reflexivity. Abort. 
  
     
 Ltac pairw_disj_codom_tac B  lf  lA  :=
@@ -958,11 +852,11 @@ Ltac pairw_disj_codom_tac B  lf  lA  :=
 Goal nat -> 2 + 2 = 4.
 Proof.
  pairw_disj_codom_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].  
-reflexivity. Qed.
+reflexivity. Abort.
 
 Example pwdc1 := pairw_disj_codom list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].
 MetaCoq Unquote Definition pwdcu1 := pwdc1.
-Print pwdcu1.
+(* Print pwdcu1. *)
 
 (* test avec 3 constructeurs pas fait*)
 
@@ -987,27 +881,17 @@ Ltac intros_exist_aux n e := (* merci Theo *)
 
  Goal forall (n m k: nat), exists (x y z: nat), x = n /\ y = m /\ z = k .
  Proof. intros_exist_aux  3 ltac:(idtac "").  let x := fresh "x" in let x:= fresh "x" in idtac "hello world". repeat split.
-Qed.
+Abort.
         
 
 
-(*\evar MetaCoq Quote Definition ex_ex_reif1 := Eval cbn in (exists n, True ). *)
-Fail Print ex_ex_reif1. (* un tEvar *)
 MetaCoq Quote Definition ex_ex_reif2 := Eval cbn in (@ex nat (fun n => True) ).  
-Print ex_ex_reif2. (* pas de tEvar *)
-
-Print ex. (* Inductive ex (A : Type) (P : A -> Prop) : Prop :=  ex_intro : forall x : A, P x -> exists y, P y *)
-
-
-(* inclut de la currif avec l'appli partielle de le*)
-Print tLetIn.
+(* Print ex_ex_reif2. (* pas de tEvar *)
+Print ex. *) 
+(* Inductive ex (A : Type) (P : A -> Prop) : Prop :=  ex_intro : forall x : A, P x -> exists y, P y *)
 
 
-MetaCoq Quote Definition double_ex_reif1 := Eval cbn in (exists (n m: nat ), n + m = 2).
-Print double_ex_reif1.
-(* ex_reif puis tLambda n puis  ex_reif puis tLambda m *)
 
-Print ex. (* \Q ??????*)
 
 
 
@@ -1020,46 +904,46 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
   end.
 (* base case : f is 0-ary and  t is just f *)
 
-Print ex_reif.
-Print ex.
-
+(* Print ex_reif.
+Print ex. *)
+ 
 
 
 
 Example in_codom1 := is_in_codom nat_reif  one_reif add_reif [nat_reif ; nat_reif ].
 MetaCoq Unquote Definition in_codom_unreif1 := in_codom1.
-Print in_codom_unreif1.
+(* Print in_codom_unreif1. *)
 
 Example in_codom'1 := tProd (mkNamed "y") nat_reif (is_in_codom nat_reif  (tRel 0) add_reif [nat_reif ; nat_reif ]).
 MetaCoq Unquote Definition in_codom_unreif'1 := in_codom'1.
-Print in_codom_unreif'1. (* ça marche  ! *)
+(* Print in_codom_unreif'1. *)
 
 
 Example in_codom2 := is_in_codom nat_reif  two_reif S_reif [nat_reif ].
 MetaCoq Unquote Definition in_codom_unreif2 := in_codom2.
-Print in_codom_unreif2.
+(* Print in_codom_unreif2. *)
 
 
 Example in_codom'2 := tProd (mkNamed "x") nat_reif  (is_in_codom nat_reif  (tRel 0) S_reif [nat_reif ]) .
 MetaCoq Unquote Definition in_codom_unreif'2 := in_codom'2.
-Print in_codom_unreif'2.  (* marche *)
+(* Print in_codom_unreif'2.*)
 
 
 Example in_codom3 := Eval cbn in is_in_codom list_nat_reif nil_nat_reif cons_nat_reif [nat_reif ; list_nat_reif].
 MetaCoq Unquote Definition in_codom_unreif3 := in_codom3.
-Print in_codom_unreif3.
+(* Print in_codom_unreif3. *)
 
 Example in_codom4 := Eval cbn in (tProd (mkNamed "y") list_nat_reif ( is_in_codom list_nat_reif (tRel 0) cons_nat_reif [nat_reif ; list_nat_reif])).
 MetaCoq Unquote Definition in_codom_unreif4 := in_codom4.
 Print in_codom_unreif4.
-(*  list nat -> exists (x : nat) (x0 : list nat), x0 = cons_nat x x0 *)
-(* pas bien : list N->  + x0 deux fois *)
+(* Print in_codom_unreif4. *)
+
 
 Example in_codom'4 := Eval cbn in (tProd (mkNamed "y") list_nat_reif ( is_in_codom list_nat_reif (tRel 0) cons_nat_reif [nat_reif ; list_nat_reif])).
 MetaCoq Unquote Definition in_codom_unreif'4 := in_codom'4.
-Print in_codom_unreif'4.
+(* Print in_codom_unreif'4. *)
 
-(* \rmk le x de forall x est lifté à chaque quantif existentiel *)
+(* le x de forall x est lifté à chaque quantif existentielle *)
 
 
 Fixpoint codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
@@ -1076,16 +960,16 @@ Fixpoint codom_union_total (B : term) (lf : list term) (lA : list (list term)) :
 
 Example cdu1 := codom_union_total list_nat_reif  [nil_nat_reif ; nil_nat_reif ] [ [] ; [] ].
 MetaCoq Unquote Definition cdu_u1 := cdu1.
-Print cdu_u1.
+(* Print cdu_u1. *)
 
 
 Example cdu2 := codom_union_total nat_reif [ O_reif; S_reif ] [ []; [nat_reif ]].
 MetaCoq Unquote Definition cdu_u2 := cdu2.
-Print cdu_u2. (*  nat -> exists x0 : nat, x0 = S x0  ??? d'où bien le N-> et pq doublon variable ?*)
+(* Print cdu_u2. *)
 
 Example cdu3 := codom_union_total list_nat_reif [cons_nat_reif ] [ [nat_reif ; list_nat_reif ] ].
 MetaCoq Unquote Definition cdu_u3 := cdu3.
-Print cdu_u3.
+(* Print cdu_u3. *)
 
 
 Example cdu_4 := codom_union_total Prop_reif [evenS_reif] [[nat_reif (* ; reif de even n*)  ]].
@@ -1095,14 +979,14 @@ Fail MetaCoq Unquote Definition cdu_u4 := cdu_4.
 
 Example cdu'1 := codom_union_total nat_reif [zero_reif ; S_reif ] [ [] ; [nat_reif]].
 MetaCoq Unquote Definition cdu_u'1 := cdu'1.
-Print cdu_u'1.
+(* Print cdu_u'1. *)
 
 
 
 
 Example cdu'2 := codom_union_total list_nat_reif [nil_nat_reif ; cons_nat_reif ] [ [] ; [nat_reif; list_nat_reif]].
 MetaCoq Unquote Definition cdu_u'2 := cdu'2.
-Print cdu_u'2.
+(* Print cdu_u'2. *)
 
 
   
@@ -1172,7 +1056,7 @@ Ltac ctor_ex_case :=
   | |- _ \/ _ => right ; ctor_ex_case
   | _ =>  revert_intro_ex_tac ; reflexivity
   end.
-(* to much backtracking *)
+(* too much backtracking *)
 
 
 
@@ -1191,49 +1075,13 @@ Qed.
 
   
 
-
-Goal (1 = 1 ) \/ (2 = 2 ) \/ (3 = 3) \/ (4 = 4).
-Proof.
-  left. reflexivity.
-Qed.
-
   
-
-Fail  Ltac ctor_is_inj_tac B f lA  :=
-let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; unfold toto; intros ; [match goal with
-                                                                                                            | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto.
-
-Fail Fixpoint codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
-(* lf is a list of function [f1;...;fn] whose return type is B, lA = [lA1 ; ...; lAn] is the list of the list of the types of the fi, e.g. lA1 is the list of argument types of lA *)
-  let fix arg_org (B  t : term) (lf : list term) (lA: list (list term)) :=
-      match (lf , lA)  with
-      | (f1 :: tllf, lA1 :: tllA)  => (is_in_codom B t f1 lA1) :: (arg_org B t tllf tllA )
-      | ([], []) => []
-      | _ => [False_reif]               
-      end
-  in tProd (mkNamed "x") B  (or_nary_reif (arg_org B (tRel 0)  lf lA)).
-
-     
-Definition is_in_reif_simple (B t: term) (l : list term) :=
-  fold_left ( fun u p => tApp or_reif [ tApp eq_reif [B; t ; u] ;  p ] ) l True_reif .
-(* if l1 := [t1,...,tn], returns the reification of (t^u = t1^u) \/ ... \/ (t^u = tn^u) ] *)
-(* works when t and the ti have the same type B *)
-
+    
 
 (*** Propriétés globales des constructeurs ***)
 
-(* \todo  gérer le nom des métavariables produites pas les énoncés, incl. la possibilité de ne pas les nommer *) 
-
-
-
-
-Definition inj_total_disj (B : term) (lf : list term) (lA : list (list term)) := and_nary_reif [are_inj B lf lA ; pairw_disj_codom B lf lA  ; codom_union_total B lf lA ].
-
-
 
                                                                                                            
-
-
 Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.
 
@@ -1256,10 +1104,8 @@ Ltac inj_ctor_tac f :=
 Goal 2 + 2 = 4.
 Proof.
 inj_ctor_tac cons_nat.
-reflexivity. Qed.
+reflexivity. Abort.
 
-Print list_nat_reif.
-Print list_nat_env_reif.
 
 Ltac goal_inj_total_tac :=
   match goal with
@@ -1267,49 +1113,27 @@ Ltac goal_inj_total_tac :=
 end.     
 
 
-MetaCoq Unquote Definition itd_nat := (inj_total_disj nat_reif [zero_reif ; S_reif] [ [] ; [nat_reif]] ).
-Print itd_nat.
-
 Goal 2+ 2 = 4.
 Proof.
 inj_total_disj_tac nat_reif [zero_reif ; S_reif] [ [] ; [nat_reif]].
 reflexivity.
-Qed.
+Abort.
 
-Print typed_term.
-
-
-
-MetaCoq Unquote Definition itd_list_nat := (inj_total_disj list_nat_reif [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]] ).
-Print itd_nat.
 
 Goal 2 + 2 = 4.
 Proof.
 inj_total_disj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]].
   reflexivity.
-Qed.
+Abort.
 
 Goal 2 + 2 = 4.
 Proof.
   inj_total_disj_tac Nforest_reif [Nleaf_reif ; Ncons_reif] [[nat_reif] ; [Ntree_reif ; Nforest_reif]].
 reflexivity.
-Qed.
-
-Print Nforest.
-MetaCoq Unquote Definition itd_Nforest := (inj_total_disj Nforest_reif [Nleaf_reif ; Ncons_reif] [[nat_reif] ; [Ntree_reif ; Nforest_reif]]).
-Print itd_Nforest.
-
-
-Fail MetaCoq Unquote Definition itd_even := (inj_total_disj even_reif [evenS_reif] [ [odd_reif] ] ). (* \! *)
-Fail Print itd_even.
+Abort.
 
 
 
-Definition dummy_consl := (False_reif , [False_reif] , [[False_reif]] ).
-
-Print InductiveDecl. (* InductiveDecl : mutual_inductive_body -> global_decl *)
-Print mutual_inductive_body.  (* ind_bodies : list one_inductive_body; *)
-Print one_inductive_body.  (* ind_ctors : list ((ident × term) × nat); *)
 
 
 
@@ -1330,47 +1154,16 @@ Definition dom_list_oind ( oind : one_inductive_body ) := (* unused, delete *)
 
  
 
-Print cons_nat_env_reif.
 
 Definition list_nat_oind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). (*** !!! à mettre dans chlitac *)
 
 (** Definition list_nat_oind := ltac:(let s:= get_mind_tac (list_nat) in exact s). \chli !!! ***)
 
 
-Print even_env_reif.
-Print inj_total_disj.
-
-Print nat_reif.
-Print S_reif.
-Print tConstruct. 
-Print Instance.t.
-(* \Q rapport entre ident et termes ? A quoi appliquer prédicats sur constructeurs ? *)
-(* tConstruct ind i u *)
-(* \ Q tCons ind numéro liste d'univers ? *)
-
-Print inductive. (* inductive_ind : nat champ d'inductif *)
-(* \Q où est spécifié le nombre d'inductifs ? *)
-Print mutual_inductive_body. (* \Q ind_npars = nombre d'ijnductifs ? ou doit-on lire le nombre de oind ? *)
-Print one_inductive_body. (* \Q doit-on lire le nombre de constructeurs ? *) 
-Print lookup_env.
-Print global_env. (* global_env = list (kername × global_decl) : Type *)
-Print kername. (* modpath x ident *)
-Print one_inductive_body.
-Print tConstruct. (*  tConstruct : inductive -> nat -> Instance.t -> term *)
-Print tInd.  (* tInd : inductive -> Instance.t -> term *)
-Print inductive. (* Record inductive : Set := mkInd { inductive_mind : kername;  inductive_ind : nat } *)
-(* \Q comment fait-on l'induction e.g. sur un record dont un champ est inductif à part ac un let in ? *)
-
-Print map.
-Print cons_env_reif.
-
-
 
 Inductive tutu : nat -> Type :=
 | Tutu : tutu (let fix toto (n:nat) := match n with O => O | S p => p end in toto 17).
 
-Print evenS_env_reif.
-Print mkInd.
 
 Print nat_reif. 
 Definition nat_indu := 
@@ -1381,14 +1174,10 @@ Definition nat_oind' :=
   ltac:(let s := fresh "s" in pose_mind_tac (nat) s ; exact s).  
 
 
-
-Print even_reif.
 Definition even_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedInductives"], "odd"); inductive_ind := 1 |}.
 
-Print even_env_reif.
-Definition even_oind := ltac:(let s :=  fresh "s" in pose_oind_tac even 0 s; exact s).
 
-  
+Definition even_oind := ltac:(let s :=  fresh "s" in pose_oind_tac even 0 s; exact s). 
 
 
 Definition switch_inductive ( indu : inductive) (i : nat) :=
@@ -1397,12 +1186,7 @@ Definition switch_inductive ( indu : inductive) (i : nat) :=
 end.
  
 
-Print list_env_reif.
-
-Print subst0.
-
-
-Print list_env_reif.
+(* Print list_env_reif. *)
 (* type de cons: tProd 
 (mkNamed "A")
  (tSort _  (tProd mkNAnon (tRel 0) (tProd mkNAnon 
@@ -1411,21 +1195,6 @@ Print list_env_reif.
 
 
 
-Fixpoint remove_binding_param (T: term) (p : nat ) := 0.
-
-
-
-(* 
-Fixpoint apply_param (T : term) (lA: list term) :=
-  match T with 
-  | tProd _ tRel i => 
-    match lA with
-    | A :: tlA => [] (* subst *)  
-    | [] => []  (* this case should  not occur *)
-    end
-  | _ => []  (* this case should  not occur *)
-  end.
-*)
 
 
 Fixpoint debruijn_mess_aux (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u : Instance.t)  (k: nat) (lA : list term) (B: term):=
@@ -1452,29 +1221,29 @@ Fixpoint debruijn_mess_aux (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u :
 
 
 
-  Check debruijn_mess_aux.
+(* Check debruijn_mess_aux. *)
 
 Example dbmaO :=  Eval cbn in (debruijn_mess_aux nat_indu 0 0 1 []  0 [] (tRel 0)).
 (* tRel 0 : décla de O dans nat_oind *)
-Print dbmaO.
+(* Print dbmaO. *)
 
-Print nat_indu.
-Print nat_oind.
+(* Print nat_indu.
+Print nat_oind. *)
 Example dbmaS :=  Eval cbn in (debruijn_mess_aux nat_indu 0 0 1 []  0 [] (tProd mkNAnon (tRel 0) (tRel 1))).
 (* (tProd mkNAnon (tRel 0) (tRel 1)) : décla de S dans nat_oind *)
-Print dbmaS.
+(* Print dbmaS. *)
 MetaCoq Unquote Definition typ_S := dbmaS.
-Print typ_S.
+(* Print typ_S.
 Print listS_env_reif.
-Print listS_reif.
+Print listS_reif. *)
 Definition listS_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedInductives"], "listS"); inductive_ind := 0 |}.
-Print consS_typ.
+(* Print consS_typ. *)
 
 Example dbmaconsS := Eval cbn in (debruijn_mess_aux listS_indu 0 0 1 [] 0 [] consS_typ).
-Print dbmaconsS.
+(* Print dbmaconsS. *)
 (* tProd "A" Set_reif. tProd mkNAnon (tRel 0). tProd (listS_reif (Rel 1) ). listS_reif (Rel 2)  *)
 Example dlist_consS := Eval cbn in dom_list_f dbmaconsS 3. (*\! \Q cbn et cbv évaluent Set_reif très différemment *)
-Print dlist_consS.
+(* Print dlist_consS. *)
 (* [ Set_reif ; Rel 0 ; (listS_reif (Rel 1))] *)
 
 Example dbmaevenS := Eval cbn in (debruijn_mess_aux even_indu 0 0 2 [] 0 
@@ -1490,14 +1259,13 @@ Example dbmaevenS := Eval cbn in (debruijn_mess_aux even_indu 0 0 2 [] 0
                                              {|
                                              inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
                                              inductive_ind := 0 |} 1 []) [tRel 1]])))).
-Print dbmaevenS. (* tProd nat_reif tProd (odd_reif (Rel 0)) . (even_reif (S_reif (Rel 1)))  *)
-Print evenS. (* evenS forall n : nat, odd n -> even (S n) *) 
+(* Print dbmaevenS. *)
+(* tProd nat_reif tProd (odd_reif (Rel 0)) . (even_reif (S_reif (Rel 1)))  *)
+(* Print evenS. *)
+(* evenS forall n : nat, odd n -> even (S n) *) 
 
 
-Print list_env_reif.
-Print nil_env_reif.
-Print InductiveDecl.
-Print list_reif.
+
 Definition list_indu := {|
 inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
 inductive_ind := 0 |}.
@@ -1508,7 +1276,7 @@ Example nil_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 1 1 [] 0  [nat_
      (tApp (tRel 1) [tRel 0])).
      
 MetaCoq Unquote Definition nil_dbm_unquote := nil_dbm_try.
-Print nil_dbm_unquote.
+(* Print nil_dbm_unquote. *)
 
 Example cons_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 1 1 [] 0  [nat_reif]
 (tProd (mkNamed "A")
@@ -1522,17 +1290,7 @@ Example cons_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 1 1 [] 0  [nat
                                         (tApp (tRel 3) [tRel 2]))))
 .
 MetaCoq Unquote Definition cons_dbm_unquote := cons_dbm_try.
-Print cons_dbm_unquote.
-
-
-
-(* \anomaly 
-MetaCoq Unquote Definition typ_evensS := dbmaevenS. *)
-(* Print typ_evenS. *)
-
-
-Print nat_reif.
-
+(* Print cons_dbm_unquote. *)
 
 
 Definition get_ctors_and_types_i (indu : inductive) (p: nat) (n: nat) (i : nat) (u : Instance.t) (lA : list term) (oind : one_inductive_body ) :=
@@ -1553,46 +1311,40 @@ let indui := switch_inductive indu i in
   2ème proj: la liste de domaines (chaque domaine est une liste) de ces constructeurs *)
 
 
-  (* voir si les constructeurs sont bien appliqués *)
-Print inj_total_disj.
-Print get_ctors_and_types_i.
 
 Goal forall (l : list_nat), (l = [] ) \/ (exists n l0, l = n :: l0).
 Proof.  
   intros. destruct l.
   - (* congruence fails *) left. reflexivity.
   - right. (* congruence fails *) exists n. exists l. reflexivity. 
-Qed.
+Abort.
 
 
-Print Ltac reflexivity.
+(* Print Ltac reflexivity.*)
 
 
 
 
 (* MetaCoq Unquote Definition tclo_nat1' := (Eval cbn in (2+4)). *)
 
-Definition bid := (3,4).
+(* Definition bid := (3,4).
 Definition bid' := let (a,_) := bid in a.
 Eval cbv in bid'.
-Print bid'.
+Print bid'. *)
 
 Definition hd' := hd imposs_mark.
 Definition hd'' := hd [imposs_mark].
 
 
-Definition tructruc := (let (a,b) := (get_ctors_and_types_i  nat_indu 0 1 0 [] [] nat_oind)  in  hd' (hd'' (tl b))). 
-Eval cbn in tructruc.
-Print tructruc.
+Definition gctt_ex1 := (let (a,b) := (get_ctors_and_types_i  nat_indu 0 1 0 [] [] nat_oind)  in  hd' (hd'' (tl b))). 
+Eval cbn in gctt_ex1.
+(* Print gctt_ex1. *)
 
-MetaCoq Unquote Definition tclo_nat1' := tructruc.
+MetaCoq Unquote Definition tclo_nat1' := gctt_ex1.
 Print tclo_nat1'.
 
 Definition list_oind := ltac:(let s := fresh "s" in pose_oind_tac list 0 s ; exact s).
   
-
-
-Print list_env_reif. Print InductiveDecl.
 
 Definition list_mind :=  ltac:(let s := fresh "s" in pose_mind_tac list s ; simpl in s; exact s).
 
@@ -1600,30 +1352,27 @@ Definition list_mind :=  ltac:(let s := fresh "s" in pose_mind_tac list s ; simp
 Example list_get_ctors_types1 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' (tl (hd'' (tl b))).
 MetaCoq Unquote Definition gct_list_unquote1 := list_get_ctors_types1.
 Eval cbn in gct_list_unquote1.
-Print gct_list_unquote1. 
+(* Print gct_list_unquote1.  *)
 
 
 Example list_get_ctors_types2 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' (tl a).
 MetaCoq Unquote Definition gct_list_unquote2 := list_get_ctors_types2.
 Eval cbn in gct_list_unquote2.
-Print gct_list_unquote2. (* cons nat as expected*)
+(* Print gct_list_unquote2. *)
+(* cons nat as expected*)
 
 Example list_get_ctors_types3 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' a.
 MetaCoq Unquote Definition gct_list_unquote3 := list_get_ctors_types3.
 Eval cbn in gct_list_unquote3.
-Print gct_list_unquote3. (* nil nat as expected*)
+(* Print gct_list_unquote3.  *)
+(* nil nat as expected*)
 
 
-
-Print Nforest_reif.
 Definition Ntree_indu := {| inductive_mind := (MPfile ["pxtp_pierre"], "Ntree"); inductive_ind := 1 |}.
-Print Ncons_env_reif.
+(* Print Ncons_env_reif. *)
 
 Definition Ntree_mind :=  ltac:(let s:= fresh "s" in pose_mind_tac Ntree s ; exact s ).
-  
 
-  
-Print Ntree_mind.
       
 Definition Ntree_oind := 
    ltac:(let s:= fresh "s" in pose_oind_tac Ntree 0 s ; exact s ).
@@ -1632,30 +1381,28 @@ Definition Ntree_oind :=
 Definition Nforest_oind :=
   ltac:(let s:= fresh "s" in pose_oind_tac Ntree 1 s ; exact s ).
 
-
-
-
+(*   
 Ltac match_let_in l :=
   match l with
   | [] => constr:((4,5))
   | ?c  :: ?tll => match c with 
    | (?a,?b) => a 
-  end end.
+  end end. *)
 
-Ltac nested_fun x := let gag := fresh "gaga" in let g y z := (pose y as z) in g x gag.
+(* Ltac nested_fun x := let gag := fresh "gaga" in let g y z := (pose y as z) in g x gag. *)
 
-
+(*
 Goal 2+ 2 = 4.
 Proof.
 ltac:(let idgo := fresh "gogo" in let gogo := match_let_in constr:([(2,3);(4,9); (7,8)]) in (pose gogo as idgo)).
 nested_fun  49.
-reflexivity. Qed.
+reflexivity. Abort.*)
 
-Print get_ctors_and_types_i.
+
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
-  (* n: nombre de oind *)
-  (* i: est le numéro de oind dans le mutual inductive block *)
+  (* n: number of oind *)
+  (* i: is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
  in let B := constr:(tApp (tInd indui u) lA)
  in  let gct :=
@@ -1675,7 +1422,7 @@ Print Ltac inj_total_disj_tac.
   Proof.
     treat_ctor_list_oind_tac_i  nat_indu 0 1 0 ([] : Instance.t) ([] : list term) nat_oind.
   reflexivity.
-  Qed.
+  Abort.
   
 
 Goal False.
@@ -1689,12 +1436,9 @@ Abort.
 
 
 
-Print List.length.
-Check List.length.
-
 Ltac treat_ctor_mind_aux_tac_gen statement indu p n  u  mind  i lA loind :=
  lazymatch eval cbv in loind with
-| nil => idtac ""
+| nil => idtac 
 | ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p n i u lA oind ; 
 treat_ctor_mind_aux_tac_gen statement indu p n u mind constr:(S i) lA tlloind
 end.
@@ -1722,21 +1466,7 @@ Proof.
   treat_ctor_mind_tac list_indu 1 1 ([] : Instance.t)  [nat_reif] list_mind.
 Abort.
 
-Print mutual_inductive_body.
-Print nat_reif.
-
-(* \Q u ne doit il pas être un param d'un global_env_ext ? *)
-
-
-Print inductive_mind.
-
-Print InductiveDecl.
-
-
-
-
-
-Ltac fo_prop_of_cons_tac_gen statement t := (* reste à traiter quand inductive *sans* paramètre *)
+Ltac fo_prop_of_cons_tac_gen statement t := 
     let geip := fresh "geip" in get_env_ind_param t geip ; 
     lazymatch eval hnf in geip with
     | (?Sigma,?t_reif) => lazymatch eval hnf in t_reif with
