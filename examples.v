@@ -1,5 +1,6 @@
 Require Import sniper.
 
+Local Open Scope Z_scope.
 
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
@@ -8,15 +9,19 @@ snipe.
 Qed.
 
 
-Goal forall (A: Type), CompDec A -> forall (l : list A) (x : A),  hd_error l = Some x -> (l <> []).
-Proof.
-intros A.
-snipe. admit. admit. admit.
-Abort.
+Section Generic.
+
+  Variable A : Type.
+  Variable HA : CompDec A.
+
+  Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> []).
+  Proof.
+    snipe.
+  Qed.
+
+End Generic.
 
 
-
-Local Open Scope Z_scope.
 
 Hypothesis length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
