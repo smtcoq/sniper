@@ -6,7 +6,7 @@ Require Import utilities.
 Require Import ZArith.
 
 
-Open Scope string_scope.  (* pour que ça ne buggue pas avec les fonctions sur les strings, mais du coup, ++ plus interprété pour les listes *)
+Open Scope string_scope.  
 
 Import ListNotations MonadNotation. 
 
@@ -693,9 +693,6 @@ Proof.
                                                                                                 
 
 
-(* \Q mettre le lift dans le premier élément du quadruplet ?*)
-
-
 Definition nilterm := @nil term.
 
 Ltac ctors_are_inj_tac B lf lA :=  
@@ -918,7 +915,6 @@ Example in_codom'4 := Eval cbn in (tProd (mkNamed "y") list_nat_reif ( is_in_cod
 MetaCoq Unquote Definition in_codom_unreif'4 := in_codom'4.
 (* Print in_codom_unreif'4. *)
 
-(* le x de forall x est lifté à chaque quantif existentielle *)
 
 
 Fixpoint codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
@@ -1166,18 +1162,15 @@ end.
 
 
 Fixpoint debruijn_mess_aux (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u : Instance.t)  (k: nat) (lA : list term) (B: term):=
-  (* not (yet?) tail-recursive *)
-  (* indu: un inductive , p: nombre de paramètres n nombre de types inductifs dans indu,
-   sp : nombre de binders supprimés (optimiser cette partie du code)
-  k : profondeur de dB , lA: liste des p types des paramètres, B : type d'un constructeur, qui comporte des tReli correspondant aux constructeurs de i*)
-  match B with  (* cas crucial *)
+
+  match B with 
     | tRel j  =>
     match (Nat.leb (j + 1) (k - p), Nat.leb (j+1) k)  with
     | (true , _ ) => tRel j
     | (false,true) => nth (k - j - 1) lA imposs_mark
     | _ => tInd (switch_inductive indu (n +k - 1 - j) ) u  (* in practice, j >= k + n impossible *)
     end
-      (* \Q utiliser lift0 1 pour la suite ? probablement pas, parce que comportement trop différent *)
+
   | tProd na ty body  => if Nat.eqb sp 0 then 
   tProd na (debruijn_mess_aux indu p sp n u  k lA ty) (debruijn_mess_aux indu p sp n u  (k+1) lA body) 
   else  (debruijn_mess_aux indu p (sp - 1) n u  (k+1) lA body) 
@@ -1210,7 +1203,7 @@ Definition listS_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedIndu
 Example dbmaconsS := Eval cbn in (debruijn_mess_aux listS_indu 0 0 1 [] 0 [] consS_typ).
 (* Print dbmaconsS. *)
 (* tProd "A" Set_reif. tProd mkNAnon (tRel 0). tProd (listS_reif (Rel 1) ). listS_reif (Rel 2)  *)
-Example dlist_consS := Eval cbn in dom_list_f dbmaconsS 3. (*\! \Q cbn et cbv évaluent Set_reif très différemment *)
+Example dlist_consS := Eval cbn in dom_list_f dbmaconsS 3. 
 (* Print dlist_consS. *)
 (* [ Set_reif ; Rel 0 ; (listS_reif (Rel 1))] *)
 
@@ -1262,9 +1255,8 @@ MetaCoq Unquote Definition cons_dbm_unquote := cons_dbm_try.
 
 
 Definition get_ctors_and_types_i (indu : inductive) (p: nat) (n: nat) (i : nat) (u : Instance.t) (lA : list term) (oind : one_inductive_body ) :=
-              (* n: nombre de oind *)
-              (* i: est le numéro de oind dans le mutual inductive block *)
-              (* quelle est la fonction de oind ? sans doute un membre de indu *)
+              (* n: nb of oind *)
+              (* i: indice of oind in the mutual inductive block *)
 let indui := switch_inductive indu i in 
   let fix treat_ctor_oind_aux (indu : inductive) (n : nat) (j: nat)   (l : list ((ident * term) * nat  ))  :=
     match l with
@@ -1274,9 +1266,6 @@ let indui := switch_inductive indu i in
       ( (tApp  (tConstruct indui j u) lA )   :: tll1 , (dom_list_f (debruijn_mess_aux indui p p n u 0 lA typc) nc) :: tll2 ) 
     end in let oind_split := treat_ctor_oind_aux indu n 0  oind.(ind_ctors)  in (oind_split.1 , oind_split.2).
 
-(*get_ctors_and_types_i:
-  1ère proj: tous les constructeurs du i-ème bloc
-  2ème proj: la liste de domaines (chaque domaine est une liste) de ces constructeurs *)
 
 
 
@@ -1349,23 +1338,6 @@ Definition Ntree_oind :=
 Definition Nforest_oind :=
   ltac:(let s:= fresh "s" in pose_oind_tac Ntree 1 s ; exact s ).
 
-(*   
-Ltac match_let_in l :=
-  match l with
-  | [] => constr:((4,5))
-  | ?c  :: ?tll => match c with 
-   | (?a,?b) => a 
-  end end. *)
-
-(* Ltac nested_fun x := let gag := fresh "gaga" in let g y z := (pose y as z) in g x gag. *)
-
-(*
-Goal 2+ 2 = 4.
-Proof.
-ltac:(let idgo := fresh "gogo" in let gogo := match_let_in constr:([(2,3);(4,9); (7,8)]) in (pose gogo as idgo)).
-nested_fun  49.
-reflexivity. Abort.*)
-
 
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
@@ -1400,19 +1372,13 @@ Abort.
 
 
 
-(* appelle treat_ctor_list_oind *)
-
-
-
 Ltac treat_ctor_mind_aux_tac_gen statement indu p n  u  mind  i lA loind :=
  lazymatch eval cbv in loind with
 | nil => idtac 
 | ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p n i u lA oind ; 
 treat_ctor_mind_aux_tac_gen statement indu p n u mind constr:(S i) lA tlloind
 end.
-    (* nombre de oind *)
-    (* i est le numéro de oind dans le mutual inductive block *)
-(* mind est-il vraiment nécessaire ?*)
+
 
 
 Ltac treat_ctor_mind_tac_gen statement indu p n u lA mind  
@@ -1466,11 +1432,7 @@ interpretation_alg_types_tac (list nat).
 Fail interpretation_alg_types_tac true.
 Abort.
 
-(* Ltac is_not_in_tuple_type p z := 
-match constr:(p) with
-| (?x, ?y) => constr_neq y z ; is_not_in_tuple_type constr:(x) z 
-| tt => idtac
-end. *)
+
 
 (* Check is a MetaCoq term is a sort *)
 Definition is_sort (t : term) := match t with
@@ -1514,19 +1476,6 @@ interp_alg_types_context_aux (p, y))
 end.
 
 
-Ltac foox p := match goal with 
-| |- context C[?y] =>
-is_not_in_tuple constr:(p) y ; idtac y ; let x := eval cbv in (p, y) in
-foox x
-(* | _ : ?T |- _ => match T with 
-            | context C[?y] => is_not_in_tuple constr:(p) y ; idtac y ; 
-let x := eval cbv in (p, y) in
-foo x
-end *)
-end.
-
-
-
 Definition prod_types := (Z, bool, True, False, and, or).
 
 Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
@@ -1537,7 +1486,6 @@ let p := eval unfold prod_types in prod_types in
 
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
-Set Printing All.
 (* interp_alg_types_goal. *)
 
 interp_alg_types_context_goal.
@@ -1550,16 +1498,14 @@ interp_alg_types_context_goal.
 Abort.
 
 
-(*TODO : affiner la liste des types à ne pas interpréter *)
 
 Goal 2+2 = 4.
 Proof.
 fo_prop_of_cons_tac (list nat).
 clear. interpretation_alg_types_tac (list nat).
-fo_prop_of_cons_tac nat. (* parce qu'on ne matche que des tApp *)
+fo_prop_of_cons_tac nat. 
 fo_prop_of_cons_tac Ntree.  
 reflexivity.
 Qed.
 
 
-(*End Inductives_to_FO.*)
