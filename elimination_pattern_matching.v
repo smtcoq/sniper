@@ -84,11 +84,6 @@ end.
 
 
 
-MetaCoq Quote Recursively Definition list_reif := list.
-Print list_reif.
-
-
-
 Definition type_no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
@@ -170,14 +165,6 @@ in aux n J.1.1 J.1.2 J.2
 end.
 
 
-
-Ltac list_ctors_unquote_requote_rec t :=
-run_template_program (tmUnquote t) (fun t => 
-let x:= eval hnf in t.(my_projT2) in run_template_program (tmQuoteRec x) ltac:(fun t => 
-let x:= eval cbv in (list_types_of_each_constructor t) in pose x)).
-
-
-
 Definition get_type_of_args t := 
 let fix aux t (acc : list term) := match t with 
 | tLambda _ ty s => aux s (ty::acc)
@@ -249,8 +236,6 @@ match (l_ctors, l_ty_ctors) with
 end
 in aux E l_ctors l_ty_ctors l_ty [].
 
-(*TODO : tactique qui prend la liste en paramètre + l'hypothèse H et qui prouve l'unquote de la liste 
-grâce à H *)
 
 Ltac prove_list_hypothesis H l := match constr:(l) with 
 | [] => idtac 

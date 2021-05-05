@@ -28,7 +28,7 @@ end ;
  assert (H: x = x') by (unfold x ; reflexivity))
 end.
 
-
+(* Tuple of symbols we do not want to unfold *)
 Definition prod_of_symb := (unit, Zplus, 
          Zminus, 
          Zmult, 
@@ -67,8 +67,8 @@ let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in
 | _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
  assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_ho (p, x) k)
 | _ => idtac 
-end
-.
+end.
+
 Ltac get_definitions_aux p := fun k =>
  match goal with 
 | |- context C[?x] => 
@@ -81,10 +81,7 @@ let H := fresh x "_def" in (
  assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; 
  get_definitions_aux (p, x) k)
 | _ => idtac 
-end
-.
-
-
+end.
 
 Ltac get_definitions_theories := fun k =>
 let p := eval unfold prod_of_symb in prod_of_symb in get_definitions_aux p k.
@@ -102,29 +99,6 @@ let _ := match goal with _ =>
 let x' := eval unfold x in x in assert (H : x = x') by reflexivity end in H.
 
 
-Ltac unfold_recursive x := let x' := eval unfold x in x in try unfold_recursive x' ; 
-(match goal with 
-| H : x = x' |- _ => fail 1
-| _ => idtac
-end ; let H := fresh in
- assert (H : x = x') by (unfold x ; reflexivity)).
-
-Ltac subst_def_no_clear x := repeat match goal with
-| H : x = ?x', H' : ?x' = ?x''|- _ => rewrite H' in H ; subst_def_no_clear x''
-end.
-
-
-Ltac subst_def x := repeat match goal with
-| H : x = ?x', H' : ?x' = ?x''|- _ => rewrite H' in H ; clear H' ; subst_def x''
-end.
-
-Ltac unfold_recursive_subst x := 
-unfold_recursive x ; subst_def x.
-
-(* MetaCoq version of the same tactic *)
-
-Ltac get_definition_standard_library t := let e := fresh in rec_quote_term t e ;
-unquote_env e ; clear e.
 
 
 
