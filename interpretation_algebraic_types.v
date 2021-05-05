@@ -1401,12 +1401,12 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
 
 Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
-Ltac interpretation_alg_types_tac := fo_prop_of_cons_tac_gen inj_disj_tac.
+Ltac interp_alg_types := fo_prop_of_cons_tac_gen inj_disj_tac.
 
 Goal False.
-interpretation_alg_types_tac nat.
-interpretation_alg_types_tac (list nat).
-Fail interpretation_alg_types_tac true.
+interp_alg_types nat.
+interp_alg_types (list nat).
+Fail interp_alg_types true.
 Abort.
 
 
@@ -1425,7 +1425,7 @@ quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_s
 Ltac interp_alg_types_goal_aux p :=
 match goal with 
 | |- context C[?y] => let Y := type of y in is_not_in_tuple p Y ; 
- interpretation_alg_types_tac y ;
+ interp_alg_types y ;
  try (interp_alg_types_goal_aux (p, Y))
 end.
 
@@ -1434,20 +1434,20 @@ match goal with
 | |- context C[?y] => let Y := type of y in
 tryif (
 is_not_in_tuple p Y ;
-interpretation_alg_types_tac Y) then 
+interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
 (is_not_in_tuple p y ; 
-interpretation_alg_types_tac y ; 
+interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
 | _ : context C[?y] |- _ => let Y := type of y in
 tryif (
 is_not_in_tuple p Y ;
-interpretation_alg_types_tac Y) then 
+interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
 (is_not_in_tuple p y ; 
-interpretation_alg_types_tac y ; 
+interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
 | _ => idtac
 end.
@@ -1479,7 +1479,7 @@ Abort.
 Goal 2+2 = 4.
 Proof.
 fo_prop_of_cons_tac (list nat).
-clear. interpretation_alg_types_tac (list nat).
+clear. interp_alg_types (list nat).
 fo_prop_of_cons_tac nat. 
 fo_prop_of_cons_tac Ntree.  
 reflexivity.
