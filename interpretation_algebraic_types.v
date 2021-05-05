@@ -548,7 +548,7 @@ Definition ind_ident (kerna : kername) := let (mdp , idind) := kerna in idind.
 Ltac get_ind_param t idn := 
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
+     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
      | tApp ?iu ?lA =>  
        (lazymatch eval hnf in iu with
        | tInd ?indu ?u => pose (indu,lA) as idn ; clear rqt
@@ -560,7 +560,7 @@ Ltac get_ind_param t idn :=
 Ltac get_env_ind_param t idn := 
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
+     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
      | tApp ?iu ?lA =>  
        (lazymatch eval hnf in iu with
        | tInd ?indu ?u => pose (Sigma,((indu,u),lA)) as idn ; clear rqt
@@ -581,7 +581,7 @@ Abort.
 Ltac pose_mind_tac t idn :=   (* factoriser code !*)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
-     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
+     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
      | tApp ?iu ?lA =>  
        lazymatch eval hnf in iu with
        | tInd ?indu ?u => 
@@ -596,7 +596,7 @@ Ltac pose_mind_tac t idn :=   (* factoriser code !*)
        |   tInd ?indu ?u => 
        let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
          lazymatch eval cbv in lkup  with
-         | Some ?d =>   idtac "Some d";(* *) 
+         | Some ?d =>    
            match d with
            |  InductiveDecl ?mind =>  pose mind as idn ; simpl in idn ; clear rqt
            end       
@@ -609,13 +609,13 @@ Ltac pose_mind_tac t idn :=   (* factoriser code !*)
     Ltac get_mind_tac t  :=  
       let rqt := fresh "rqt" in rec_quote_term t rqt ; 
       lazymatch eval hnf in rqt with
-       | (?Sigma,?ind) => idtac "Sigma ind"; lazymatch eval hnf in ind with (* voir si hnf marche !!!! *)
-       | tApp ?iu ?lA => idtac "tApp iu lA" ; 
+       | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
+       | tApp ?iu ?lA =>   
          lazymatch eval hnf in iu with
          | tInd ?indu ?u => 
        let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
          lazymatch eval cbv in lkup  with
-         | Some ?d =>   idtac "Some d";(* *) 
+         | Some ?d =>   
            match d with
            |  InductiveDecl ?mind =>   clear rqt ;constr:(mind) 
            end       
@@ -701,7 +701,7 @@ end ).
 
 Ltac ctor_is_inj_tac B f lA  :=
   lazymatch eval hnf in lA with
-  | [] => idtac ""
+  | [] => idtac 
   | ?x :: ?tlA =>
 let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert toto   ; [ unfold toto; intros ; match goal with
                                                                                                             | h : _ = _ |- _ => inversion h                                                                     end  ; repeat split | .. ]; subst toto
@@ -831,7 +831,7 @@ Fixpoint pairw_disj_codom ( B : term) (lf : list term) (lA : list (list term)) :
 
 Ltac pairw_aux B f lAf lf lA :=
      lazymatch constr:((lf , lA)) with
-        | ([] , []) => idtac "" (* \Q tactique qui ne fait rien ? *)
+        | ([] , []) => idtac 
         | (?f1 :: ?tllf , ?A1 :: ?tllA ) => codom_disj_discr B f f1 lAf A1 ; pairw_aux B f lAf tllf tllA
         | _ => idtac "wrong branch pairw_aux"  ; fail                                             
       end.
@@ -844,7 +844,7 @@ Goal 2 + 2 = 4.
     
 Ltac pairw_disj_codom_tac B  lf  lA  :=
   match constr:((lf , lA))  with
-  | ([] , [] ) => idtac ""
+  | ([] , [] ) => idtac 
   | (?f1 :: ?tllf  , ?A1 :: ?tllA ) => ltac:(pairw_aux B f1 A1 tllf tllA) ; ltac:(pairw_disj_codom_tac B tllf tllA)
   | _ => idtac "wrong branch pair_disj_codom_tac"                                
   end.
@@ -880,7 +880,7 @@ Ltac intros_exist_aux n e := (* merci Theo *)
   end.
 
  Goal forall (n m k: nat), exists (x y z: nat), x = n /\ y = m /\ z = k .
- Proof. intros_exist_aux  3 ltac:(idtac "").  let x := fresh "x" in let x:= fresh "x" in idtac "hello world". repeat split.
+ Proof. intros_exist_aux  3 ltac:(idtac).  let x := fresh "x" in let x:= fresh "x" in idtac "hello world". repeat split.
 Abort.
         
 
@@ -989,11 +989,7 @@ MetaCoq Unquote Definition cdu_u'2 := cdu'2.
 (* Print cdu_u'2. *)
 
 
-  
-
-
 Print intros_exist_aux.
-
 
 
 Ltac revert_intro_ex_tac_aux e :=
@@ -1001,20 +997,20 @@ Ltac revert_intro_ex_tac_aux e :=
         | H : _ |- _ =>  first [ revert H ;  let e':= (intro H; e)  in revert_intro_ex_tac_aux  e'  ; exists H   | e]
 end.
 
-Ltac revert_intro_ex_tac  := revert_intro_ex_tac_aux ltac:(idtac "").
+Ltac revert_intro_ex_tac  := revert_intro_ex_tac_aux ltac:(idtac).
 
 Ltac n_right n :=
   match n with
-  | O => idtac ""
+  | O => idtac 
   | S ?n => right; n_right n             
   end.
     
 Ltac right_k_n k n :=
   match n with
-  | O => idtac ""
+  | O => idtac 
   | S ?n
     => match k with
-      | O => idtac ""
+      | O => idtac 
       | S ?k => right ;  right_k_n k n
       end
   end.
@@ -1341,7 +1337,7 @@ Eval cbn in gctt_ex1.
 (* Print gctt_ex1. *)
 
 MetaCoq Unquote Definition tclo_nat1' := gctt_ex1.
-Print tclo_nat1'.
+(* Print tclo_nat1'. *)
 
 Definition list_oind := ltac:(let s := fresh "s" in pose_oind_tac list 0 s ; exact s).
   
@@ -1416,7 +1412,7 @@ Ltac treat_ctor_list_oind_tac_i :=  treat_ctor_list_oind_tac_i_gen inj_total_dis
 
 Ltac interpretation_alg_types_oind_i :=  treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
-Print Ltac inj_total_disj_tac.
+
   
   Goal 2+ 2 = 4.
   Proof.
@@ -1473,7 +1469,7 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
       | (?induu,?lA) => lazymatch eval hnf in induu with
       | (?indu,?u) =>      let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
        lazymatch eval cbv in lkup  with
-       | Some ?d =>   idtac "Some d";(* *) 
+       | Some ?d =>    
          match d with
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
             let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u lA mind ; clear geip
@@ -1546,10 +1542,10 @@ interp_alg_types_context_aux (p, y))
 end.
 
 
-Ltac foo p := match goal with 
+Ltac foox p := match goal with 
 | |- context C[?y] =>
 is_not_in_tuple constr:(p) y ; idtac y ; let x := eval cbv in (p, y) in
-foo x
+foox x
 (* | _ : ?T |- _ => match T with 
             | context C[?y] => is_not_in_tuple constr:(p) y ; idtac y ; 
 let x := eval cbv in (p, y) in
