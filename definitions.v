@@ -59,15 +59,6 @@ Definition prod_of_symb := (unit, Zplus,
          @FArray.diff).
 
 
-Ltac get_definitions_ho p := fun k =>
-match goal with 
-| |- context C[?x] => 
-let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in 
- (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_ho (p, x) k)
-| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; let H := fresh in (
- assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; get_definitions_ho (p, x) k)
-| _ => idtac 
-end.
 
 Ltac get_definitions_aux p := fun k =>
  match goal with 

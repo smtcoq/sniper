@@ -32,7 +32,7 @@ match l with
 | A :: l' => mkProd A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
 end.
 
-
+(* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
 Ltac expand_hyp H := 
 lazymatch type of H with 
 | @eq ?A ?t ?u => 

@@ -73,12 +73,7 @@ Definition replace_tFix_by_def (t : term) (def : term) := match t with
 end.
 
 
-
-
-
-
-
-
+(* replace an anonymous fix by its definition *)
 Ltac eliminate_fix_hyp H := 
 let T := type of H in
 quote_term T ltac:(fun T =>
@@ -126,6 +121,10 @@ by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear
 
 
 
+
+
+Section tests.
+
 Goal Nat.add = (fun n m : nat => match n with
                             | 0 => m
                             | S p => S (p + m)
@@ -149,8 +148,6 @@ match l with
 | x0 :: l0 => if eqb_of_compdec H x x0 then true else search x l0
 end.
 
-
-Section tests.
 
 
 

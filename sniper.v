@@ -1,4 +1,4 @@
-Add Rec LoadPath "/home/artemis/Recherche/github.com/smtcoq/smtcoq/coq-8.11/src" as SMTCoq.
+Add Rec LoadPath "/home/louise/github.com/louiseddp/smtcoq/coq-8.11/src" as SMTCoq.
 
 Require Export SMTCoq.SMTCoq.
 
