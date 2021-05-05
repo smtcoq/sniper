@@ -8,3 +8,4 @@ expand.v
 elimination_fixpoints.v
 interpretation_algebraic_types.v
 sniper.v
+examples.v
