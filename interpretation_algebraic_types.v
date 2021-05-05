@@ -28,10 +28,9 @@ Ltac unquote_type t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_
 
 Ltac unquote_type0 t idn := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) .
 
-Ltac unquote_type1 t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) ; e idn . (* même effet que unquote_type *)
+Ltac unquote_type1 t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) ; e idn . 
 
-Ltac unquote_type2 t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) ; e . (* idem que unquote_type *)
-
+Ltac unquote_type2 t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) ; e . 
 Ltac cbv1 t := eval cbv in t.
 
 Ltac unquote_type_cbv' t idn :=  unquote_type t idn ltac:(fun t => hnf in idn).
@@ -142,10 +141,7 @@ Ltac unquote_term t idn e := (run_template_program (tmUnquote t ) ltac:(fun x =>
 Ltac pose_unquote_term_hnf t idn  := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT2 x) as idn))); cbv in idn.
 
 Ltac unquote_term_cbv' t idn  := unquote_term t idn ltac:(fun x => cbv in x).
-(*Ltac unquote_term_cbv'' t idn  := unquote_term t idn (fun x => cbv in x). *)
-(* \ltac Error:
-Syntax error: ';' or ',' or ')' expected after [constr:operconstr level 200] (in [constr:operconstr]).
- -> spécifie que 3ème arg interprété comme un constr: *)
+
 
 
 Goal 2 + 2 = 4.
@@ -161,13 +157,10 @@ Qed.
  pose (mpT2ltac blut) as idn. *)
 
 
-Ltac blutblut t := let blut := 3 in pose ?blut as kikoo.
-
 Goal 2 + 2 = 4.
 Proof.
-pose_quote_term 2 nat_reif.  (* uqt nat_reif kik. *)
+pose_quote_term 2 nat_reif.  
 
-  (* blutblut 3. *)
   reflexivity.
   Qed.
 
@@ -176,7 +169,6 @@ Ltac uqt t idn ty := (run_template_program (r <- tmUnquote t  ;; @ret TemplateMo
 
  Goal 2+ 2 = 4.
   pose_quote_term 0 zero_reif. unquote_type_cbv' zero_reif nat_type.
- (* unquote_term zero_reif blutblut.  *)
   reflexivity.
   Qed.
 
@@ -612,7 +604,7 @@ Abort.
 
 
 
-(*** Propriétés des inductifs ***)
+(*** Properties of inductives ***)
 
 Fixpoint forall_nary lx lA B:=
   match (lx,lA) with
@@ -625,20 +617,12 @@ end.
 
 Polymorphic Fixpoint and_eq_combine_reif (lA l1 l2 : list term) :=
 (* if l1=[t1,...,tn], l2=[u1,...,un], lA=[A1,...An] and ti,ui: have type Ai, outputs the reification of   t1^ = u1^ /\ ... /\ tn^ /\ un^ ]. One must specify, the type of the terms *)
-  (* \todo améliorer si possible de trouver conjonction /\ n-aire efficace *)
         match (lA , l1, l2) with
   | (A::[], x1 :: [], x2 :: []) =>  tApp eq_reif [A; x1; x2] 
   | (A1 :: tlA, x1 :: tl1, x2 :: tl2) =>  tApp and_reif ((tApp eq_reif [A1; x1 ; x2]) ::  [and_eq_combine_reif tlA tl1 tl2] )
   | (_, [] , [] ) => True_reif                                         
   | (_ ,_ ,_) => False_reif (* return False if length l1 neq l2 *)
 end.
-
-
-
-(* why only two arguments to eq, including type? *)
-
-
-
 
 
 (*** Injectivity ***)
@@ -655,7 +639,6 @@ let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat) :=
                 (fun (t: term) => (tProd (mkNamed "x") A1 (tProd (mkNamed "y") (lift0 1 A1) (blut.1.1.1 t)  )), blut.1.1.2, blut.1.2,  mkAnd (lift0 (2*(n-1)) (mkEq A1 (tRel 0) (tRel 1)))  blut.2 )
   end in 
    let kik := inj_aux B f f  lA (List.length lA)  in kik.1.1.1 (mkImpl  (mkEq B kik.1.1.2 kik.1.2) kik.2   ) .
-(* \Q comment éviter de lire la longueur de la liste en entrée de inj_aux *) 
 
 MetaCoq Unquote Definition really_S_inj_reif := (is_inj nat_reif S_reif [nat_reif]).
 (* Print really_S_inj_reif.*)
@@ -745,7 +728,7 @@ MetaCoq Unquote Definition sds_unreif1 := same_dom_Set_1.
    
   
   
-(*** codomaines disjoints ***)
+(*** Disjoints codomains ***)
 
 
 
@@ -758,14 +741,13 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
          end ) B f g lAg          
   | A1 :: tllAf => tProd mkNAnon A1 (codom_disj B (tApp (lift0 1 f) [tRel 0] )   (lift0 1 g) tllAf lAg  ) 
   end.
-(* on lifte tout dès qu'on fait une abstraction. Factoriser ?  *) 
+
 
 
 Ltac codom_disj_discr B f g lAf lAg :=
   let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
 assert toto; [unfold toto ; intros ;
                             try discriminate | .. ] ; subst toto. 
-(*  refolder not ? *)
 
 
 Goal 2 + 2 = 4.
@@ -831,7 +813,6 @@ Example pwdc1 := pairw_disj_codom list_nat_reif [nil_nat_reif ; cons_nat_reif] [
 MetaCoq Unquote Definition pwdcu1 := pwdc1.
 (* Print pwdcu1. *)
 
-(* test avec 3 constructeurs pas fait*)
 
 
 
@@ -842,7 +823,7 @@ MetaCoq Unquote Definition pwdcu1 := pwdc1.
 
 
 
-Ltac intros_exist_aux n e := (* merci Theo *)
+Ltac intros_exist_aux n e := 
   lazymatch n with
   | 0 => e
   | S ?n =>
@@ -853,7 +834,7 @@ Ltac intros_exist_aux n e := (* merci Theo *)
   end.
 
  Goal forall (n m k: nat), exists (x y z: nat), x = n /\ y = m /\ z = k .
- Proof. intros_exist_aux  3 ltac:(idtac).  let x := fresh "x" in let x:= fresh "x" in idtac "hello world". repeat split.
+ Proof. intros_exist_aux  3 ltac:(idtac).  let x := fresh "x" in let x:= fresh "x" in idtac. repeat split.
 Abort.
         
 
@@ -985,7 +966,7 @@ Ltac right_k_n k n :=
   end.
 
 Ltac righter_tac1 t n :=
-  n_right n ; idtac "blut" ; first [left ; t  ; righter_tac1 t constr:(S n) | t ].
+  n_right n ; idtac ; first [left ; t  ; righter_tac1 t constr:(S n) | t ].
 
                          
 Ltac blut := let e := revert_intro_ex_tac; reflexivity in 
@@ -1043,7 +1024,7 @@ Qed.
   
     
 
-(*** Propriétés globales des constructeurs ***)
+(*** Global properties of constructors ***)
 
 
                                                                                                            
@@ -1120,11 +1101,7 @@ Definition dom_list_oind ( oind : one_inductive_body ) := (* unused, delete *)
  
 
 
-Definition list_nat_oind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). (*** !!! à mettre dans chlitac *)
-
-(** Definition list_nat_oind := ltac:(let s:= get_mind_tac (list_nat) in exact s). \chli !!! ***)
-
-
+Definition list_nat_oind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). 
 
 Inductive tutu : nat -> Type :=
 | Tutu : tutu (let fix toto (n:nat) := match n with O => O | S p => p end in toto 17).
