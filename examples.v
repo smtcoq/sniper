@@ -81,7 +81,7 @@ Proof. intros A H. snipe @search_app. Qed.
 
 (*
 Lemma empty_tree_Z : forall (t : @tree Z), 
-is_empty t = true -> t = Leaf Z.
+is_empty t = true -> t = Leaf.
 Proof.
 intro t ; case t. 
 - snipe.
@@ -92,7 +92,7 @@ Qed.
 
 
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
-is_empty t = true -> t <> Node Z a t' b.
+is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
 
 
