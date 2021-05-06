@@ -151,3 +151,4 @@ Arguments is_empty {_} _.
 
 
 
+Hint Resolve tree_ord tree_eqbtype tree_comp tree_inh : typeclass_instances.
