@@ -169,10 +169,10 @@ assumption.
 End tree. 
 
 Arguments tree {_}.
-
-
+Arguments Leaf {_}.
+Arguments Node {_} _ _ _.
 Arguments is_empty {_} _.
 
 
 
-Hint Resolve tree_ord tree_eqbtype tree_comp tree_inh tree_compdec : typeclass_instances.
+Hint Resolve tree_compdec : typeclass_instances.
