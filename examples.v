@@ -79,22 +79,27 @@ Proof. intros A H. snipe @search_app. Qed.
 
 
 
+(*
 Lemma empty_tree_Z : forall (t : @tree Z), 
 is_empty t = true -> t = Leaf Z.
 Proof.
 intro t ; case t. 
 - snipe.
-- scope. (* verit. ; apply tree_compdec; auto with typeclass_instances. *)
+- scope. revert H. verit.
+Qed.
+*)
 
-Abort.
+
+
+Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
+is_empty t = true -> t <> Node Z a t' b.
+Proof. intros t a t' b; snipe. Qed.
+
 
 
 
 (*Exemple with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros A H. induction l.
-- snipe.
-- snipe. 
-Qed. 
+Proof. intros A H; induction l; snipe. Qed.
 
 
