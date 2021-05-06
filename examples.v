@@ -49,7 +49,7 @@ Proof. intros B HB l1 l2 l3. snipe length_app. Qed.
 Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
   match l with
   | [] => false
-  | x0 :: l0 => @eqb_of_compdec _ H x x0 || search x l0
+  | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
 Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
@@ -57,7 +57,7 @@ Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
 Proof.
   intros A H x l1 l2. induction l1 as [ | x0 l0 IH].
   - reflexivity.
-  - simpl. destruct (@eqb_of_compdec _ H x x0).
+  - simpl. destruct (eqb_of_compdec H x x0).
     + reflexivity.
     + rewrite IH. reflexivity.
 Qed.
@@ -73,9 +73,9 @@ Lemma search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A)
     search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof.
   intros A H x l1 l2 l3. rewrite !search_app.
-  rewrite Coq.Bool.Bool.orb_comm with (b1 := search x l3).
-  rewrite Coq.Bool.Bool.orb_comm  with (b1 := search x l2) (b2 := search x l1 ).
-  rewrite  Coq.Bool.Bool.orb_assoc.
+  rewrite orb_comm with (b1 := search x l3).
+  rewrite orb_comm  with (b1 := search x l2) (b2 := search x l1 ).
+  rewrite orb_assoc.
   reflexivity.
 Qed.
 
@@ -84,6 +84,12 @@ Qed.
 Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof. intros A H. snipe @search_app. Qed.
+
+
+(* Another example with search *)
+Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
+    search b (a :: l) -> eqb_of_compdec HA a b \/ search b l.
+Proof. intros A HA. snipe. Qed.
 
 
 (* Another example with an induction *)
@@ -100,8 +106,7 @@ Proof. intros t a t' b; snipe. Qed.
 
 
 
-(*  Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A), search b (a :: l) -> (eqb_of_compdec HA a b || search b l).
-Proof. intros A HA. snipe. *)
+
 
 
 
