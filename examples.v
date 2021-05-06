@@ -1,4 +1,5 @@
 Require Import sniper.
+Require Import tree.
 Require Import Bool.
 
 Local Open Scope Z_scope.
@@ -78,23 +79,18 @@ Proof. intros A H. snipe @search_app. Qed.
 
 
 
-Lemma option_tree_Z : forall (t : @tree Z), 
-is_empty t = true -> t = Leaf.
+Lemma empty_tree_Z : forall (t : @tree Z), 
+is_empty t = true -> t = Leaf Z.
 Proof.
 intro t ; case t. 
-- snipe. admit. admit. admit.
-- scope. 
-(* verit. => trop de compdec*)
-Abort.
-
-Local Open Scope nat_scope.
-
-Goal forall (x y z : nat), y = S x /\ z = 0 -> max y z = y.
-Proof.
+- snipe ; apply tree_compdec; auto with typeclass_instances.
+- scope. (* verit. ; apply tree_compdec; auto with typeclass_instances. *)
 
 Abort.
 
-(*Exemple avec une induction qui passe bien *)
+
+
+(*Exemple with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H. induction l.
 - snipe.
@@ -102,16 +98,3 @@ Proof. intros A H. induction l.
 Qed. 
 
 
-
-(* Lemma rev_app_distr : forall (A : Type) (H : CompDec A) (x y: list A), List.rev (x ++ y)%list = (List.rev y ++ List.rev x)%list.
-Proof. intros A. induction x.
-- snipe @app_nil_r. *)
-
-
-
-(* forall l, (exists x, (hd_error l = Some x)) -> negb (l ====? nil) .
-Proof.
-intros. destruct H.
-apply triple_eq_is_eq in H. 
-verit  hd_error_def_nil  some_neq_none cons_neq_nil H   (* cons_neq_nil is necessary *).   
-Qed.*)
