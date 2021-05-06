@@ -25,9 +25,19 @@ Section Generic.
 End Generic.
 
 
-
-Hypothesis length_app : forall A, forall (l1 l2: list A),
+Lemma length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
+Proof.
+intros A l1 l2.
+apply Z.eqb_eq.
+induction l1.
+- reflexivity.
+- simpl length.
+  rewrite !Nat2Z.inj_succ.
+  rewrite IHl1.
+  rewrite Z.add_succ_l.
+  reflexivity.
+Qed.
 
 Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
