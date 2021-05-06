@@ -1,5 +1,3 @@
-Add Rec LoadPath "/home/louise/github.com/louiseddp/smtcoq/coq-8.11/src" as SMTCoq.
-
 Require Export SMTCoq.SMTCoq.
 
 From MetaCoq Require Export All.
