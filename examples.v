@@ -83,7 +83,7 @@ Lemma empty_tree_Z : forall (t : @tree Z),
 is_empty t = true -> t = Leaf Z.
 Proof.
 intro t ; case t. 
-- snipe ; apply tree_compdec; auto with typeclass_instances.
+- snipe.
 - scope. (* verit. ; apply tree_compdec; auto with typeclass_instances. *)
 
 Abort.
