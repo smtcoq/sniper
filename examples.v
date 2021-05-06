@@ -1,6 +1,7 @@
 Require Import sniper.
 Require Import tree.
 Require Import Bool.
+Require Import Coq.Lists.List.
 
 Local Open Scope Z_scope.
 
@@ -78,6 +79,10 @@ search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof. intros A H. snipe @search_app. Qed.
 
 
+(*  Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A), search b (a :: l) -> (eqb_of_compdec HA a b || search b l).
+Proof. intros A HA. snipe. *)
+
+
 
 (*
 Lemma empty_tree_Z : forall (t : @tree Z), 
@@ -88,6 +93,26 @@ intro t ; case t.
 - scope. revert H. verit.
 Qed.
 *)
+
+(* Check rev_elements_aux.
+
+Ltac def_fix_and_pattern_matching' :=
+get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+eliminate_fix_ho H' ltac:(fun H'' => try 
+(eliminate_pattern_matching H'')))).
+
+Lemma rev_elements_app :
+ forall A s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
+Proof. intros A s acc. induction acc.
+- def_fix_and_pattern_matching'. inst.
+
+
+
+
+Lemma rev_elements_node c l x r :
+ rev_elements c (Node c l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
+Proof. destruct r.
+-  verit. *)
 
 
 

@@ -18,6 +18,30 @@ Definition is_empty (t : tree) :=
  | _ => false
  end.
 
+
+Fixpoint rev_elements_aux acc s :=
+  match s with
+   | Leaf => acc
+   | Node l x r => rev_elements_aux (x :: rev_elements_aux acc l) r
+  end.
+
+Definition rev_elements := rev_elements_aux nil.
+
+Fixpoint cardinal (s : tree) : nat :=
+  match s with
+   | Leaf => 0
+   | Node l _ r => S (cardinal l + cardinal r)
+  end.
+
+Fixpoint maxdepth s :=
+ match s with
+ | Leaf => 0
+ | Node l _ r => S (max (maxdepth l) (maxdepth r))
+ end.
+
+
+
+
  Context `{HA : CompDec A}.
 
 
