@@ -27,7 +27,7 @@ eliminate_pattern_matching H')).
 Ltac def_fix_and_pattern_matching :=
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
-eliminate_pattern_matching H''))).
+(* try *) (eliminate_pattern_matching H'')))).
 
 
 Ltac def_and_pattern_matching_mono :=
