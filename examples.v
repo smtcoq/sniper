@@ -40,6 +40,28 @@ induction l1.
   reflexivity.
 Qed.
 
+Search app.
+
+Lemma rev_elements_app :
+ forall A s acc (H : CompDec A), tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
+Proof. intros A s ; induction s.
+- snipe app_nil_r. admit. admit. admit.
+- scope (app_ass, app_nil_r). (* rewrite IHs1. rewrite IHs2. rewrite !H4_A. rewrite IHs2. rewrite H6_A. 
+rewrite IHs2. rewrite app_nil_r_A. rewrite !app_assoc_reverse_A. rewrite H8_A. reflexivity. *)
+
+(* timeout 60 verit. ==> devrait passer aussi puisque la preuve se fait 
+avec seulement les hypothèses générées par scope *)
+ Admitted.
+
+
+
+Lemma rev_elements_node c l x r (H: CompDec c) :
+ rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
+Proof.  scope (rev_elements_app, app_nil_r). 
+(* timeout 60 snipe (rev_elements_app, app_nil_r). *)
+Abort.
+
+
 Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. snipe length_app. Qed.
