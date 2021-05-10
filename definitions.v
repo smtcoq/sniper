@@ -54,7 +54,8 @@ Definition prod_of_symb := (unit, Zplus,
          @BITVECTOR_LIST.bv_shl,
          @BITVECTOR_LIST.bv_shr,
          @FArray.select,
-         @FArray.diff).
+         @FArray.diff,
+         is_true).
 
 
 
