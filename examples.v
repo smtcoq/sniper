@@ -102,25 +102,3 @@ Proof. intros A H; induction l; snipe. Qed.
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
-
-
-
-
-Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A), search b (a :: l) -> (eqb_of_compdec HA a b || search b l).
-Proof. intros A HA. snipe. Qed.
-
-
-
-
-Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
-is_empty t = true -> t <> Node a t' b.
-Proof. intros t a t' b; snipe. Qed.
-
-
-
-
-(*Exemple with an induction *)
-Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros A H; induction l; snipe. Qed.
-
-
