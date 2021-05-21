@@ -147,14 +147,12 @@ end.
 
 Ltac instanciate_type_tuple t := match t with
 | pair ?a ?b => instanciate_type b ; instanciate_type_tuple a 
-| ?x => instanciate_type x
-| ?y => fail 100 "Wrong parameter" y
+| ?x => try (instanciate_type x)
 end.
 
 Ltac instanciate_type_tuple_all t := match t with
-| pair ?a ?b => instanciate_type_all b ; instanciate_type_tuple_all a 
-| ?x => instanciate_type_all x
-| ?y => fail 100 "Wrong parameter" y
+| pair ?a ?b => try (instanciate_type_all b) ; instanciate_type_tuple_all a 
+| ?x => try (instanciate_type_all x)
 end.
 
 
@@ -176,7 +174,8 @@ Tactic Notation "inst_clear_all" constr(t) := instanciate_type_tuple_all t ; spe
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
-Proof. intros H. inst_clear app_length.
+Proof. intros H. inst_clear_all False. inst_clear app_length.
+
 Abort.
 
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
