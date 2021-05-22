@@ -7,6 +7,10 @@ Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.All.
 Require Import List.
 Require Import utilities.
+Require Import definitions.
+Require Import expand.
+Require Import elimination_fixpoints.
+Require Import elimination_pattern_matching.
 Import ListNotations.
 Require Import String.
 
@@ -45,8 +49,16 @@ Compute app 0 Nil 2 (Cons 1 x (Cons 0 x Nil)).
       | Cons _ h t => h :: unject _ t
     end.
 
+End ilist.
+
 
 MetaCoq Quote Recursively Definition app_reif := app.
+
+Goal False.
+get_def app.
+expand_hyp app_def.
+eliminate_fix_hyp H.
+Fail eliminate_pattern_matching H0.
 
 
 Print app_reif.
