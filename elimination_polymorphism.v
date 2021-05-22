@@ -180,5 +180,5 @@ Abort.
 
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
 inst pair_equal_spec. clear pair_equal_spec_nat.
-inst_clear_all pair_equal_spec.
+inst_clear_all (pair_equal_spec, false, app_length).
 Abort.
