@@ -28,6 +28,7 @@ Fixpoint app n1 (ls1 : ilist n1) n2 (ls2 : ilist n2) : ilist (n1 + n2) :=
       | Cons _ x ls1' => Cons _ x (app _ ls1' _ ls2)
     end.
 
+Print app.
 
 Variable x : A.
 
@@ -102,33 +103,466 @@ MetaCoq Quote Definition foo := (forall (H : nat) (H0 : ilist H) (H1 : nat) (H2 
      | Cons n x ls1' => Cons (n + H1) x (app n ls1' H1 H2)
      end).
 
-MetaCoq Quote Definition foo1 := (forall (H : nat) (H0 : ilist H) (H1 : nat) (H2 : ilist H1),
+MetaCoq Quote Definition foo1 := (forall (H0 : ilist 0) (H1 : nat) (H2 : ilist H1),
      app 0 Nil H1 H2 = H2). (* on substitue les indices dans la variable sur laquelle on matche 
 dans le corps de la fonction? *)
 
 
 Definition foo2 := (forall (n : nat) (x : A) (ls1' : ilist n) (H1 : nat) (H2 : ilist H1),
-     app _ (Cons n x ls1') H1 H2 = Cons (n + H1) x (app n ls1' H1 H2)).
+     app (S n) (Cons n x ls1') H1 H2 = Cons (n + H1) x (app n ls1' H1 H2)).
 
 MetaCoq Quote Definition foo2_reif:= 
 (forall (n : nat) (x : A) (ls1' : ilist n) (H1 : nat) (H2 : ilist H1),
      app _ (Cons n x ls1') H1 H2 = Cons (n + H1) x (app n ls1' H1 H2)).
 
+MetaCoq Quote Recursively Definition ilist_reif := ilist.
+
+MetaCoq Quote Definition S_reif := S.
+
+Print ilist_reif.
+
 Print foo2.
 
 Print foo.
-Print foo2.
+Print foo2_reif.
+
+Definition wrong_term := (tApp
+                       (tInd
+                          {|
+                          inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                                            "eq"%string);
+                          inductive_ind := 0 |} [])
+                       [tApp
+                          (tInd
+                             {|
+                             inductive_mind := (MPfile
+                                                  ["dependent_pattern_matching"%string;
+                                                  "Sniper"%string], "ilist"%string);
+                             inductive_ind := 0 |} [])
+                          [tApp
+                             (tConst
+                                (MPfile ["Nat"%string; "Init"%string; "Coq"%string], "add"%string)
+                                []) [tRel 4; tRel 1]];
+                       tApp
+                         (tConst
+                            (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                            "app"%string) [])
+                         [tRel 4;
+                         tApp
+                           (tApp
+                              (tConstruct
+                                 {|
+                                 inductive_mind := (MPfile
+                                                      ["dependent_pattern_matching"%string;
+                                                      "Sniper"%string], "ilist"%string);
+                                 inductive_ind := 0 |} 1 []) [tRel 4]) [tRel 3; tRel 2]; 
+                         tRel 1; tRel 0];
+                       tCase
+                         ({|
+                          inductive_mind := (MPfile
+                                               ["dependent_pattern_matching"%string;
+                                               "Sniper"%string], "ilist"%string);
+                          inductive_ind := 0 |}, 0, Relevant)
+                         (tLambda
+                            {| binder_name := nNamed "n1"%string; binder_relevance := Relevant |}
+                            (tInd
+                               {|
+                               inductive_mind := (MPfile
+                                                    ["Datatypes"%string; "Init"%string;
+                                                    "Coq"%string], "nat"%string);
+                               inductive_ind := 0 |} [])
+                            (tLambda
+                               {|
+                               binder_name := nNamed "ls1"%string;
+                               binder_relevance := Relevant |}
+                               (tApp
+                                  (tInd
+                                     {|
+                                     inductive_mind := (MPfile
+                                                          ["dependent_pattern_matching"%string;
+                                                          "Sniper"%string], "ilist"%string);
+                                     inductive_ind := 0 |} []) [tRel 0])
+                               (tApp
+                                  (tInd
+                                     {|
+                                     inductive_mind := (MPfile
+                                                          ["dependent_pattern_matching"%string;
+                                                          "Sniper"%string], "ilist"%string);
+                                     inductive_ind := 0 |} [])
+                                  [tApp
+                                     (tConst
+                                        (MPfile ["Nat"%string; "Init"%string; "Coq"%string],
+                                        "add"%string) []) [tRel 1; tRel 3]])))
+                         (tApp
+                            (tApp
+                               (tConstruct
+                                  {|
+                                  inductive_mind := (MPfile
+                                                       ["dependent_pattern_matching"%string;
+                                                       "Sniper"%string], "ilist"%string);
+                                  inductive_ind := 0 |} 1 []) [tRel 4]) 
+                            [tRel 3; tRel 2])
+                         [(0, tRel 0);
+                         (3,
+                         tLambda
+                           {| binder_name := nNamed "n"%string; binder_relevance := Relevant |}
+                           (tInd
+                              {|
+                              inductive_mind := (MPfile
+                                                   ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                                "nat"%string);
+                              inductive_ind := 0 |} [])
+                           (tLambda
+                              {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
+                              (tVar "A"%string)
+                              (tLambda
+                                 {|
+                                 binder_name := nNamed "ls1'"%string;
+                                 binder_relevance := Relevant |}
+                                 (tApp
+                                    (tInd
+                                       {|
+                                       inductive_mind := (MPfile
+                                                            ["dependent_pattern_matching"%string;
+                                                            "Sniper"%string], "ilist"%string);
+                                       inductive_ind := 0 |} []) [tRel 1])
+                                 (tApp
+                                    (tConstruct
+                                       {|
+                                       inductive_mind := (MPfile
+                                                            ["dependent_pattern_matching"%string;
+                                                            "Sniper"%string], "ilist"%string);
+                                       inductive_ind := 0 |} 1 [])
+                                    [tApp
+                                       (tConst
+                                          (MPfile ["Nat"%string; "Init"%string; "Coq"%string],
+                                          "add"%string) []) [tRel 2; tRel 4]; 
+                                    tRel 1;
+                                    tApp
+                                      (tConst
+                                         (MPfile
+                                            ["dependent_pattern_matching"%string; "Sniper"%string],
+                                         "app"%string) []) [tRel 2; tRel 0; tRel 4; tRel 3]]))))]]).
+
+Compute subst1 (tApp S_reif [tRel 0]) 4 wrong_term.
+
+Definition foo3 := tApp
+         (tInd
+            {|
+            inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string], "eq"%string);
+            inductive_ind := 0 |} [])
+         [tApp
+            (tInd
+               {|
+               inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                                 "ilist"%string);
+               inductive_ind := 0 |} [])
+            [tApp (tConst (MPfile ["Nat"%string; "Init"%string; "Coq"%string], "add"%string) [])
+               [tApp
+                  (tConstruct
+                     {|
+                     inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                       "nat"%string);
+                     inductive_ind := 0 |} 1 []) [tRel 4]; tRel 1]];
+         tApp
+           (tConst (MPfile ["dependent_pattern_matching"%string; "Sniper"%string], "app"%string) [])
+           [tApp
+              (tConstruct
+                 {|
+                 inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                   "nat"%string);
+                 inductive_ind := 0 |} 1 []) [tRel 4];
+           tApp
+             (tConstruct
+                {|
+                inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                                  "ilist"%string);
+                inductive_ind := 0 |} 1 [])
+             [tApp
+                (tConstruct
+                   {|
+                   inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                     "nat"%string);
+                   inductive_ind := 0 |} 1 []) [tRel 4]; tRel 3; tRel 2]; 
+           tRel 1; tRel 0];
+         tCase
+           ({|
+            inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                              "ilist"%string);
+            inductive_ind := 0 |}, 0, Relevant)
+           (tLambda {| binder_name := nNamed "n1"%string; binder_relevance := Relevant |}
+              (tInd
+                 {|
+                 inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                   "nat"%string);
+                 inductive_ind := 0 |} [])
+              (tLambda {| binder_name := nNamed "ls1"%string; binder_relevance := Relevant |}
+                 (tApp
+                    (tInd
+                       {|
+                       inductive_mind := (MPfile
+                                            ["dependent_pattern_matching"%string; "Sniper"%string],
+                                         "ilist"%string);
+                       inductive_ind := 0 |} []) [tRel 0])
+                 (tApp
+                    (tInd
+                       {|
+                       inductive_mind := (MPfile
+                                            ["dependent_pattern_matching"%string; "Sniper"%string],
+                                         "ilist"%string);
+                       inductive_ind := 0 |} [])
+                    [tApp
+                       (tConst (MPfile ["Nat"%string; "Init"%string; "Coq"%string], "add"%string) [])
+                       [tRel 1; tRel 3]])))
+           (tApp
+              (tConstruct
+                 {|
+                 inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                                   "ilist"%string);
+                 inductive_ind := 0 |} 1 [])
+              [tApp
+                 (tConstruct
+                    {|
+                    inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                      "nat"%string);
+                    inductive_ind := 0 |} 1 []) [tRel 4]; tRel 3; tRel 2])
+           [(0, tRel 0);
+           (3,
+           tLambda {| binder_name := nNamed "n"%string; binder_relevance := Relevant |}
+             (tInd
+                {|
+                inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                  "nat"%string);
+                inductive_ind := 0 |} [])
+             (tLambda {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
+                (tVar "A"%string)
+                (tLambda {| binder_name := nNamed "ls1'"%string; binder_relevance := Relevant |}
+                   (tApp
+                      (tInd
+                         {|
+                         inductive_mind := (MPfile
+                                              ["dependent_pattern_matching"%string; "Sniper"%string],
+                                           "ilist"%string);
+                         inductive_ind := 0 |} []) [tRel 1])
+                   (tApp
+                      (tConstruct
+                         {|
+                         inductive_mind := (MPfile
+                                              ["dependent_pattern_matching"%string; "Sniper"%string],
+                                           "ilist"%string);
+                         inductive_ind := 0 |} 1 [])
+                      [tApp
+                         (tConst (MPfile ["Nat"%string; "Init"%string; "Coq"%string], "add"%string)
+                            []) [tRel 2; tRel 4]; tRel 1;
+                      tApp
+                        (tConst
+                           (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                           "app"%string) []) [tRel 2; tRel 0; tRel 4; tRel 3]]))))]].
+
+Definition new_term := (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+        (tInd
+           {|
+           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "nat"%string);
+           inductive_ind := 0 |} [])
+        (tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
+           (tVar "A"%string)
+           (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+              (tApp
+                 (tInd
+                    {|
+                    inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                                      "ilist"%string);
+                    inductive_ind := 0 |} []) [tRel 1])
+              (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+                 (tInd
+                    {|
+                    inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                      "nat"%string);
+                    inductive_ind := 0 |} [])
+                 (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+                    (tApp
+                       (tInd
+                          {|
+                          inductive_mind := (MPfile
+                                               ["dependent_pattern_matching"%string;
+                                               "Sniper"%string], "ilist"%string);
+                          inductive_ind := 0 |} []) [tRel 0]) foo3))))).
+
+Print new_term.
+
+MetaCoq Unquote Definition essai := new_term.
 
 Goal False.
 get_def app.
 expand_hyp app_def.
 eliminate_fix_hyp H.
 eliminate_pattern_matching_test H0.
-assert (test1 : forall (H : nat) (H0 : ilist H) (H1 : nat) (H2 : ilist H1),
+assert (test1 : forall (H0 : ilist 0) (H1 : nat) (H2 : ilist H1),
      app 0 Nil H1 H2 = H2) by (intros ; reflexivity).
 
 Fail eliminate_pattern_matching H0.
 unquote_term (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+        (tInd
+           {|
+           inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "nat"%string);
+           inductive_ind := 0 |} [])
+        (tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
+           (tVar "A"%string)
+           (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+              (tApp
+                 (tInd
+                    {|
+                    inductive_mind := (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                                      "ilist"%string);
+                    inductive_ind := 0 |} []) [tRel 1])
+              (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+                 (tInd
+                    {|
+                    inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                      "nat"%string);
+                    inductive_ind := 0 |} [])
+                 (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+                    (tApp
+                       (tInd
+                          {|
+                          inductive_mind := (MPfile
+                                               ["dependent_pattern_matching"%string;
+                                               "Sniper"%string], "ilist"%string);
+                          inductive_ind := 0 |} []) [tRel 0])
+                    (tApp
+                       (tInd
+                          {|
+                          inductive_mind := (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                                            "eq"%string);
+                          inductive_ind := 0 |} [])
+                       [tApp
+                          (tInd
+                             {|
+                             inductive_mind := (MPfile
+                                                  ["dependent_pattern_matching"%string;
+                                                  "Sniper"%string], "ilist"%string);
+                             inductive_ind := 0 |} [])
+                          [tApp
+                             (tConst
+                                (MPfile ["Nat"%string; "Init"%string; "Coq"%string], "add"%string)
+                                []) [tApp
+                          (tConstruct
+                             {|
+                             inductive_mind := (MPfile
+                                                  ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                               "nat"%string);
+                             inductive_ind := 0 |} 1 []) [tRel 4]; tRel 1]];
+                       tApp
+                         (tConst
+                            (MPfile ["dependent_pattern_matching"%string; "Sniper"%string],
+                            "app"%string) [])
+                         [ tApp S_reif [tRel 4];
+                         tApp
+                           (tApp
+                              (tConstruct
+                                 {|
+                                 inductive_mind := (MPfile
+                                                      ["dependent_pattern_matching"%string;
+                                                      "Sniper"%string], "ilist"%string);
+                                 inductive_ind := 0 |} 1 []) [tRel 4]) [tRel 3; tRel 2]; 
+                         tRel 1; tRel 0];
+                       tCase
+                         ({|
+                          inductive_mind := (MPfile
+                                               ["dependent_pattern_matching"%string;
+                                               "Sniper"%string], "ilist"%string);
+                          inductive_ind := 0 |}, 0, Relevant)
+                         (tLambda
+                            {| binder_name := nNamed "n1"%string; binder_relevance := Relevant |}
+                            (tInd
+                               {|
+                               inductive_mind := (MPfile
+                                                    ["Datatypes"%string; "Init"%string;
+                                                    "Coq"%string], "nat"%string);
+                               inductive_ind := 0 |} [])
+                            (tLambda
+                               {|
+                               binder_name := nNamed "ls1"%string;
+                               binder_relevance := Relevant |}
+                               (tApp
+                                  (tInd
+                                     {|
+                                     inductive_mind := (MPfile
+                                                          ["dependent_pattern_matching"%string;
+                                                          "Sniper"%string], "ilist"%string);
+                                     inductive_ind := 0 |} []) [tRel 0])
+                               (tApp
+                                  (tInd
+                                     {|
+                                     inductive_mind := (MPfile
+                                                          ["dependent_pattern_matching"%string;
+                                                          "Sniper"%string], "ilist"%string);
+                                     inductive_ind := 0 |} [])
+                                  [tApp
+                                     (tConst
+                                        (MPfile ["Nat"%string; "Init"%string; "Coq"%string],
+                                        "add"%string) []) [tRel 1; tRel 3]])))
+                         (tApp
+                            (tApp
+                               (tConstruct
+                                  {|
+                                  inductive_mind := (MPfile
+                                                       ["dependent_pattern_matching"%string;
+                                                       "Sniper"%string], "ilist"%string);
+                                  inductive_ind := 0 |} 1 []) [tRel 4]) 
+                            [tRel 3; tRel 2])
+                         [(0, tRel 0);
+                         (3,
+                         tLambda
+                           {| binder_name := nNamed "n"%string; binder_relevance := Relevant |}
+                           (tInd
+                              {|
+                              inductive_mind := (MPfile
+                                                   ["Datatypes"%string; "Init"%string; "Coq"%string],
+                                                "nat"%string);
+                              inductive_ind := 0 |} [])
+                           (tLambda
+                              {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
+                              (tVar "A"%string)
+                              (tLambda
+                                 {|
+                                 binder_name := nNamed "ls1'"%string;
+                                 binder_relevance := Relevant |}
+                                 (tApp
+                                    (tInd
+                                       {|
+                                       inductive_mind := (MPfile
+                                                            ["dependent_pattern_matching"%string;
+                                                            "Sniper"%string], "ilist"%string);
+                                       inductive_ind := 0 |} []) [tRel 1])
+                                 (tApp
+                                    (tConstruct
+                                       {|
+                                       inductive_mind := (MPfile
+                                                            ["dependent_pattern_matching"%string;
+                                                            "Sniper"%string], "ilist"%string);
+                                       inductive_ind := 0 |} 1 [])
+                                    [tApp
+                                       (tConst
+                                          (MPfile ["Nat"%string; "Init"%string; "Coq"%string],
+                                          "add"%string) []) [tRel 2; tRel 4]; 
+                                    tRel 1;
+                                    tApp
+                                      (tConst
+                                         (MPfile
+                                            ["dependent_pattern_matching"%string; "Sniper"%string],
+                                         "app"%string) []) [ tRel 2; tRel 0; tRel 4; tRel 3]]))))]])))))).
+
+
+
+
+
+
+
+
+(tProd {| binder_name := nAnon; binder_relevance := Relevant |}
         (tInd
            {|
            inductive_mind := (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "nat"%string);
