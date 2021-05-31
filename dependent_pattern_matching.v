@@ -501,8 +501,6 @@ Print term.
 
 MetaCoq Unquote Definition essai := new_term.
 
-MetaCoq Unquote Definition essai2 := (tEvar _ [S_reif]).
-
 Print essai.
 
 (*TODO : ouvrir tous les binders de l'énoncé faux, substituer les indices bindés n1 ... nk par 
@@ -679,8 +677,34 @@ End ilist.
 
 
 
+MetaCoq Quote Recursively Definition ilist_reif' := ilist.
 
+Print ilist_reif'.
 
+Fixpoint get_indexes_term (t: term) (n : nat) :=
+        match t with
+            | tProd _ _ u => get_indexes_term u n
+            | tApp u v => (remove_elem n v)
+            | _ => nil 
+end.
+
+Fixpoint get_indexes_in_return_type_aux (l : list term) (acc : list (list term)) (n : nat) {struct l} :=
+(* l is the list of the types of the constructors of an inductive type, n the number of parameters *)
+match l with
+| nil => nil
+| t :: l' =>(get_indexes_term t n):: (get_indexes_in_return_type_aux l' acc n)
+end.
+
+Definition get_indexes_in_return_type l n := get_indexes_in_return_type_aux l nil n.
+
+Definition test_index := list_types_of_each_constructor ilist_reif'.
+
+Compute get_indexes_in_return_type test_index 1.
+
+(* OK *)
+
+(* Dans cette liste, séparer les indices des paramètres => les indices c'est ceux 
+dans le type de retour une fois qu'on a retiré toutes les abstractions??? *)
 
 
 
