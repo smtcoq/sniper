@@ -1,4 +1,23 @@
-This file describes the steps required to try the snipe tactic.
+# sniper
+
+`sniper` is a Coq plugin that provides a new Coq tactic, `snipe`, that
+provides general proof automation.
+
+This plugin is an extension of [SMTCoq](https://smtcoq.github.io), a
+plugin to safely call external SMT solvers from Coq. `sniper` extends
+SMTCoq by translating (a subset) of Coq goals into first-order logic
+before calling SMTCoq.
+
+The translation is implemented through a combination of modular, small
+transformations that independently eliminate specific aspects of Coq
+logic towards first-order logic. These small transformations are safe,
+either generating proof terms on the fly (*certifying* transformations)
+or being proved once and for all in Coq (*certified* transformations).
+
+
+## Installation and use
+
+This part describes the steps required to try the `snipe` tactic.
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
@@ -48,3 +67,8 @@ Now you can run the examples in coqide:
 `coqide examples.v`
 
 Have fun!
+
+
+## License
+As a wrap-up of SMTCoq, `sniper` is released under the same license as
+SMTCoq: CeCILL-C. See the file LICENSE for details.
