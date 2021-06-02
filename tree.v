@@ -12,7 +12,6 @@
 
 Require Import SMTCoq.SMTCoq.
 Require Import Bool OrderedType OrderedTypeEx.
-Require Import Structures.
 
 Section tree.
 
