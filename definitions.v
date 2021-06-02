@@ -67,7 +67,8 @@ Definition prod_of_symb := (unit, Zplus,
          @BITVECTOR_LIST.bv_shr,
          @FArray.select,
          @FArray.diff,
-         is_true).
+         is_true,
+         @eqb_of_compdec).
 
 
 
