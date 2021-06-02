@@ -27,44 +27,68 @@ You will need the following packages. The names are those for debian, please ada
 - bison, flex: for compiling veriT
 
 If opam was not installed on your machine you have to initialize it (all the files are confined within ~/.opam):
-`opam init --bare --no-setup`
+```
+opam init --bare --no-setup
+```
 
 The version of metacoq that we use requires ocaml < 4.10 and >= 4.09:
-`opam switch create 4.09.1`
+```
+opam switch create 4.09.1
+```
 
 Snipe requires coq 8.11:
-`opam install coqide.8.11.2`
+```
+opam install coqide.8.11.2
+```
 
 Metacoq is available through the `coq-released` opam repository:
-`opam repo add coq-released https://coq.inria.fr/opam/released`
+```
+opam repo add coq-released https://coq.inria.fr/opam/released
+```
 
 Snipe requires this version of metacoq:
-`opam install coq-metacoq.1.0~beta2+8.11`
+```
+opam install coq-metacoq.1.0~beta2+8.11
+```
 
 Smtcoq is available through the `coq-extra-dev` opam repository:
-`opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev`
-`opam install coq-smtcoq`
+```
+opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+opam install coq-smtcoq
+```
 
 Sources of the veriT SMT solver are included in the archive. Compilation of veriT is as follows:
-`cd veriT`
-`./configure`
-`make`
+```
+cd veriT
+./configure
+make
+```
 
 We need the veriT binary to be in PATH in order for snipe to use it:
-`export PATH="$PATH:$(pwd)"`
-`cd ..`
+```
+export PATH="$PATH:$(pwd)"
+cd ..
+```
 
 This command adds the tools installed by opam to PATH
-`eval $(opam env)`
+```
+eval $(opam env)
+```
 
 We generate the makefile for snipe:
-`coq_makefile -f _CoqProject -o Makefile`
+```
+coq_makefile -f _CoqProject -o Makefile
+```
 
 We build snipe:
-`make`
+```
+make
+```
 
 Now you can run the examples in coqide:
-`coqide examples.v`
+```
+coqide examples.v
+```
 
 Have fun!
 
