@@ -51,15 +51,21 @@ Snipe requires this version of metacoq:
 opam install coq-metacoq.1.0~beta2+8.11
 ```
 
-Smtcoq is available through the `coq-extra-dev` opam repository:
+A [tag of SMTCoq](https://github.com/smtcoq/smtcoq/releases/tag/pxtp21)
+is distributed for this tag of `snipe`. Download it and install it as
+follows:
 ```
-opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install coq-smtcoq
+cd src
+./configure.sh
+make
+make install
 ```
 
-Sources of the veriT SMT solver are included in the archive. Compilation of veriT is as follows:
+Sources of the veriT SMT solver are distributed
+[here](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
+Once unpacked, compilation of veriT is as follows:
 ```
-cd veriT
+cd veriT9f48a98
 ./configure
 make
 ```
