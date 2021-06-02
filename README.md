@@ -70,5 +70,5 @@ Have fun!
 
 
 ## License
-As a wrap-up of SMTCoq, `sniper` is released under the same license as
-SMTCoq: CeCILL-C. See the file LICENSE for details.
+As an extension of SMTCoq, `sniper` is released under the same license
+as SMTCoq: CeCILL-C. See the file LICENSE for details.
