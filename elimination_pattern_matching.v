@@ -1,3 +1,15 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 Require Import SMTCoq.SMTCoq.
 
 From MetaCoq Require Import All.

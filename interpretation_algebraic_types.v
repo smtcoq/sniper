@@ -1,3 +1,15 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
