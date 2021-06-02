@@ -38,15 +38,7 @@ Ltac unquote_type_cbv t idn :=  unquote_type t idn cbv1.
 Ltac unquote_type_cbv1 t idn := unquote_type1 t idn ltac:(fun t => hnf in idn).
 Ltac unquote_type_cbv2 t idn := unquote_type2 t idn ltac:(cbn in idn).
  
-Goal 2 + 2 = 4.
-Proof.
-  pose_quote_term 42 qdreif. unquote_type0 qdreif qtype0.
-  Time unquote_type_cbv' qdreif qdtype'. (* takes times *)
-  Fail unquote_type_cbv qdreif qdtype. (* Error: Expression does not evaluate to a tactic. *)
-  unquote_type_cbv1 qdreif qdtype1.
-  unquote_type_cbv2 qdreif qdtype2. 
-  unquote_type2 qdreif qdtype2' ltac:(cbv in qdtype2').
-  reflexivity. Abort.
+
 
 Definition MonProjT1 t := ret (my_projT1 t).
 
@@ -627,23 +619,108 @@ end.
 (*** Injectivity ***)
 
 
- 
+Fixpoint splitList {A : Type} (l : list A) (p : nat) :=
+  match (l,p) with  (* à écrire en récursif terminal*)
+  | ( _ , 0) => ([],l)
+  | ([] , _ ) => ([],[])
+  | (x :: l , S p ) => let (l1,l2) := splitList l p in ( x :: l1, l2)
+  end.
 
-Fixpoint is_inj (B f: term) (lA : list term) :=
-let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat) := 
+Fixpoint listDB (d : nat) (p : nat) := 
+  match p with
+  | 0 => []
+  | S p => (tRel  (d + p + 1)) :: listDB d   p
+  end.
+
+(* tests subst*)
+
+Definition t1 := tApp (tRel 0) [tRel 1 ; tRel 2].
+Definition t2 := Eval cbv in subst0 [True_reif] t1.
+Print t2.
+(* descend les dB*)
+
+
+Fixpoint new_inj_aux (B f : term ) (lA : list term) (n p : nat) (l1 l2 : list term ) :=
+  let d := n - p in let m := 2 * d - p in 
+  let fix aux (lA : list term) (i j : nat) :=
+    match (lA , p ) with 
+    | ([], _) =>  0 (* (l1 , l2)  *) (* utiliser B et f *)
+    | (A :: lA, 0) => 0 (*  new_inj_aux B f lA ????  *)
+    | (A :: lA, S p) =>  0 (* let Alift1 := lift0 A in  new_inj_aux B f lA p ( :: l1) *)
+    end in 0.
+
+
+MetaCoq Quote Definition cons_inj_reif :=
+  (forall (A: Set) (x1 x2: A) (l1 l2: list A), x1 :: l1 = x2 :: l2 -> ((x1 = x2) /\ (l1 = l2))).
+  Check cons.
+MetaCoq Quote Definition cons_typ_reif := (forall (A : Type), A -> list A -> list A).
+Print cons_typ_reif.
+(* tProd A Type_reif tProd _ O tProd _ (tApp list_reif 1) (tApp list_reif 2)*) 
+Print cons_inj_reif.
+(* 
+(tProd A Set_reif 
+  (tProd x1 0 
+    (tProd x2 1 
+      (tProd l1 (tApp list_reif [2]))
+        (tProd l2 (tApp list_reif [3])) 
+           tProd nAnon (eq_reif [list_reif [4] ]
+              (cons_reif [4, 3, 1]  )
+              (cons_reif) [4, 2 , 0]
+             ))))
+             and_reif [eq_reif [5, 4 , 3]] ] [eq_reif [tApp list_reif 5, 2 1]]
+
+
+*)
+
+
+Fixpoint is_inj_aux1 n p :=
+  let (d,m) := (n - p , 2 * n - p) in 0.
+
+
+Fixpoint is_inj (B f: term) (lA : list term)   :=
+let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat)  :=
   match lA with
-  | [] => (fun (t : term) => t, f1 , f2 , True_reif )
-  | [A] => (fun (t: term) => (tProd (mkNamed "x") A (tProd (mkNamed  "y") (lift0 1 A) t  )),  (tApp (lift0 2 f1) [tRel 1]) , (tApp (lift0 2 f2) [tRel 0]), mkEq A (tRel 0) (tRel 1))
-  | A1 :: tllA => let blut := inj_aux B (tApp (lift0 2 f1) [tRel 1]) (tApp (lift0 2 f2) [tRel 0]) tllA (n-1) in
+  | []  => (fun (t : term) => t, f1 , f2 , True_reif )
+  | [A]  => 
+   (fun (t: term) => (tProd (mkNamed "x") A (tProd (mkNamed  "y") (lift0 1 A) t  )),  (tApp (lift0 2 f1) [tRel 1]) , (tApp (lift0 2 f2) [tRel 0]), mkEq A (tRel 0) (tRel 1))
+  | A1 :: tllA => let blut := inj_aux B (tApp (lift0 2 f1) [tRel 1]) (tApp (lift0 2 f2) [tRel 0]) tllA (n-1)   in
                 (fun (t: term) => (tProd (mkNamed "x") A1 (tProd (mkNamed "y") (lift0 1 A1) (blut.1.1.1 t)  )), blut.1.1.2, blut.1.2,  mkAnd (lift0 (2*(n-1)) (mkEq A1 (tRel 0) (tRel 1)))  blut.2 )
   end in 
-   let kik := inj_aux B f f  lA (List.length lA)  in kik.1.1.1 (mkImpl  (mkEq B kik.1.1.2 kik.1.2) kik.2   ) .
+   let kik := inj_aux B f f  lA (List.length lA)  in kik.1.1.1 (mkImpl  (mkEq B kik.1.1.2 kik.1.2) kik.2   ) . 
 
-MetaCoq Unquote Definition really_S_inj_reif := (is_inj nat_reif S_reif [nat_reif]).
-(* Print really_S_inj_reif.*)
+
+Fixpoint is_inj_with_param (B f : term) (lA : list term) (p : nat) :=
+  let (l1, l2) := splitList lA p in let n := List.length lA in let s := n - p in  let lDB := listDB (2 * s) p  in 0
+.
+
+(*
+Fixpoint is_inj' (B f: term) (lA : list term) (p : nat)  :=
+    let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat)  (p : nat) :=
+      match ( lA , p ) with
+      | ([],_)  => (fun (t : term) => t, f1 , f2 , True_reif )
+      | ([A],0)  => 
+       (fun (t: term) => (tProd (mkNamed "x") A (tProd (mkNamed  "y") (lift0 1 A) t  )),  (tApp (lift0 2 f1) [tRel 1]) , (tApp (lift0 2 f2) [tRel 0]), mkEq A (tRel 0) (tRel 1))
+       | ([A],S p) =>  (fun (t : term) => t, f1 , f2 , True_reif )
+      | (A1 :: tllA , 0 ) => let blut := inj_aux B (tApp (lift0 2 f1) [tRel 1]) (tApp (lift0 2 f2) [tRel 0]) tllA (n-1) 0  in
+                    (fun (t: term) => (tProd (mkNamed "x") A1 (tProd (mkNamed "y") (lift0 1 A1) (blut.1.1.1 t)  )), blut.1.1.2, blut.1.2,  mkAnd (lift0 (2*(n-1)) (mkEq A1 (tRel 0) (tRel 1)))  blut.2 )
+      | (A1 :: tllA , S p) => let d := n - p in let blut := inj_aux (tApp ???B [tRel ???]) (tApp ??? [tRel ???]) (tApp ??? [tRel ???]) n-1 p in 
+      (fun (t: term ) => , , , True_reif )               
+      end in 
+       let kik := inj_aux B f f  lA (List.length lA) p in kik.1.1.1 (mkImpl  (mkEq B kik.1.1.2 kik.1.2) kik.2   ) .
+*)
+
+Definition S_inj_reif :=  (is_inj nat_reif S_reif [nat_reif]).
+
+MetaCoq Unquote Definition really_S_inj_reif := S_inj_reif.
+Print really_S_inj_reif.
+
+MetaCoq Unquote Definition O_inj := (is_inj nat_reif O_reif []).
+Print O_inj.
+
 
 MetaCoq Unquote Definition really_cons_nat_inj_reif := (is_inj list_nat_reif cons_nat_reif  [nat_reif; list_nat_reif]).
-(* Print really_cons_nat_inj_reif. *)
+Print really_cons_nat_inj_reif. 
+
 
 
 Ltac just_cbv t := cbv in t.
@@ -653,9 +730,6 @@ Proof.  pose ( String.append "hello " "world") as H. just_cbv H.
 reflexivity. Qed.
 
 
-Ltac sdf B f A := assert (k := 5);  (match goal with
-| h : _ = _ |- _ => inversion h
-end ).
 
 Ltac ctor_is_inj_tac B f lA  :=
   lazymatch eval hnf in lA with
@@ -861,7 +935,7 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
 Print ex. *)
  
 
-
+Print list_env_reif.
 
 Example in_codom1 := is_in_codom nat_reif  one_reif add_reif [nat_reif ; nat_reif ].
 MetaCoq Unquote Definition in_codom_unreif1 := in_codom1.
