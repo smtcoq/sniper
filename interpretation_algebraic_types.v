@@ -639,16 +639,26 @@ Definition t2 := Eval cbv in subst0 [True_reif] t1.
 Print t2.
 (* descend les dB*)
 
+Print lift0.
 
 Fixpoint new_inj_aux (B f : term ) (lA : list term) (n p : nat) (l1 l2 : list term ) :=
   let d := n - p in let m := 2 * d - p in 
-  let fix aux (lA : list term) (i j : nat) :=
+  let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
     match (lA , p ) with 
-    | ([], _) =>  0 (* (l1 , l2)  *) (* utiliser B et f *)
-    | (A :: lA, 0) => 0 (*  new_inj_aux B f lA ????  *)
-    | (A :: lA, S p) =>  0 (* let Alift1 := lift0 A in  new_inj_aux B f lA p ( :: l1) *)
-    end in 0.
+    | ([], _) =>   (l1 , l2)  
+    | (A :: lA, 0) => let A' := lift0 i A in let A'' := lift0 j A' in 
+    aux1 lA 0 (i+1) (j-2) (A' :: (lift0 1 A'):: l1 ) (A'' :: l2) 
+    | (A :: lA, S p) =>   aux1 lA  p i j (A :: l1) l2
+    end in let (l1, l2) := aux1 lA p 0 (S(2 * d)) [] [] in let d' := 2 * d - 2 in 
+  let fix aux2 (k i  : nat) (l2 dB1 dB2 : list term) (andeq : term) :=
+    match (k , l2) with 
+    | (0,_) =>  (dB1 , dB2 , andeq )  
+    | (S k, []) => ([],[],andeq) (* this case doesn't happen *)
+    | (S k, A' :: l2) => if Nat.leb i d' then aux2 k (i + 2)  l2 ( (tRel (i+1)) :: dB1 ) ((tRel i) :: dB2 ) (mkAnd (mkEq  A' (tRel (S (S i))) (tRel (S i) )) andeq) else aux2 k (i + 1)  l2 ((tRel i) :: dB1 ) ((tRel i):: dB2) andeq (* cas où l2' singleton *)
+    end in let '((dB1 , dB2), andeq) := aux2 n 0 l2 [] [] True_reif in l2.
 
+Definition truc := Eval compute in new_inj_aux  (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  3 1 [] [].
+Print truc.
 
 MetaCoq Quote Definition cons_inj_reif :=
   (forall (A: Set) (x1 x2: A) (l1 l2: list A), x1 :: l1 = x2 :: l2 -> ((x1 = x2) /\ (l1 = l2))).
