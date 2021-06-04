@@ -774,6 +774,7 @@ Print is_inj_cons.
 
 Goal False.
 Proof.  new_ctor_is_inj_tac (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]] 3 1.
+Abort.
 
 MetaCoq Unquote Definition is_inj_cons_nat := (is_inj list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]).
 
@@ -781,40 +782,44 @@ Goal forall (n: nat), 2 + 2 = 4.
 Proof.
   ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]. reflexivity. Abort.
 
-  
+
+Goal forall (n: nat), 2 + 2 = 4.
+Proof.
+  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 2 0. reflexivity. Abort.
                                                                                                 
 
 
 Definition nilterm := @nil term.
 
-Ltac ctors_are_inj_tac B lf lA :=  
+Ltac ctors_are_inj_tac B lf lA n p :=  
   match constr:((lf , lA)) with
   | ( nil , nil ) => idtac 
-  | ( ?f1 :: ?tlf , ?A1 :: ?tlA) => ctor_is_inj_tac B f1 A1; ctors_are_inj_tac B tlf tlA
+  | ( ?f1 :: ?tlf , ?A1 :: ?tlA) => new_ctor_is_inj_tac B f1 A1 n p; ctors_are_inj_tac B tlf tlA n p
   end.
   
 
 Goal 2 + 2 = 4.
 Proof. 
-ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]. 
+ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0. 
+(* (ctors_are_inj_tac (tApp list_reif [tRel 2]) [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 3 1). *)
 reflexivity. Abort.
                                                                                                       
-Fixpoint are_inj (B : term) (lf : list term) (lA : list (list term)):=
+Fixpoint are_inj (B : term) (lf : list term) (lA : list (list term)) (n p : nat):=
   match (lf , lA) with
   | ([], []) => True_reif
-  | (f1 :: tllf , A1 :: tllA ) => mkAnd (is_inj B f1 A1) (are_inj B tllf tllA)
+  | (f1 :: tllf , A1 :: tllA ) => mkAnd (is_inj B f1 A1) (are_inj B tllf tllA n p)
   | _ => False_reif
   end.
 (* \rmk : this function may be improved by skipping function of arity 0 *)
 
-MetaCoq Unquote Definition nat_inj_reif := (are_inj nat_reif [zero_reif ; S_reif] [[] ; [nat_reif]]).
-(* Print nat_inj_reif. *)
+MetaCoq Unquote Definition nat_inj_reif := (are_inj nat_reif [zero_reif ; S_reif] [[] ; [nat_reif]] 1 0).
+Print nat_inj_reif. 
 
-MetaCoq Unquote Definition list_nat_inj_reif := (are_inj list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]).
+MetaCoq Unquote Definition list_nat_inj_reif := (are_inj list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0).
 (* Print list_nat_inj_reif. *)
 
 Example test_are_inj_cons_nat : 2 + 2 = 4.
-(ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]]).
+(ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0).
 reflexivity.
 Qed.
   
