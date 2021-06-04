@@ -632,7 +632,8 @@ Definition cutEvar (t: term) :=
   end.
     
    
-Fixpoint new_inj_aux (B f : term ) (lA : list term) (n p : nat) (l1 l2 : list term ) :=
+Fixpoint new_inj_aux (B f : term ) (lA : list term) (p : nat) (l1 l2 : list term ) :=
+  let n := List.length lA in 
   let d := n - p in let f' := cutEvar f in 
   let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
     match (lA , p ) with 
@@ -655,11 +656,11 @@ Fixpoint new_inj_aux (B f : term ) (lA : list term) (n p : nat) (l1 l2 : list te
     .
    
 
-Definition truc := Eval compute in (new_inj_aux  (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  3 1 [] []).
+Definition truc := Eval compute in (new_inj_aux  (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]   1 [] []).
 MetaCoq Unquote Definition trucu := truc. 
 Print trucu.
 
-Definition new_is_inj B f lA  n p := new_inj_aux B f lA n p [] [].
+Definition new_is_inj B f lA  p := new_inj_aux B f lA  p [] [].
 Check new_is_inj.
 
 Print truc.
@@ -754,11 +755,11 @@ let toto := fresh "H" in  (pose_unquote_term_hnf (is_inj B f lA) toto );  assert
  subst toto                                             
  end.  
 
- Ltac new_ctor_is_inj_tac B f lA n p  :=
+ Ltac new_ctor_is_inj_tac B f lA  p  :=
   lazymatch eval hnf in lA with
   | [] => idtac 
   | ?x :: ?tlA =>
-let toto := fresh "H" in  (pose_unquote_term_hnf (new_is_inj B f lA n p) toto );  assert toto   ; [ unfold toto; intros ;
+let toto := fresh "H" in  (pose_unquote_term_hnf (new_is_inj B f lA  p) toto );  assert toto   ; [ unfold toto; intros ;
  match goal with  
  | h : _ = _ |- _ => inversion h    
  end  ; 
@@ -769,11 +770,11 @@ let toto := fresh "H" in  (pose_unquote_term_hnf (new_is_inj B f lA n p) toto );
  Print list_reif.
 
 MetaCoq Unquote Definition is_inj_cons :=
-(new_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]] 3 1).
+(new_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1).
 Print is_inj_cons.
 
 Goal False.
-Proof.  new_ctor_is_inj_tac (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]] 3 1.
+Proof.  new_ctor_is_inj_tac (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1.
 Abort.
 
 MetaCoq Unquote Definition is_inj_cons_nat := (is_inj list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]).
@@ -785,45 +786,36 @@ Proof.
 
 Goal forall (n: nat), 2 + 2 = 4.
 Proof.
-  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 2 0. reflexivity. Abort.
+  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 0. reflexivity. Abort.
                                                                                                 
 
 
 Definition nilterm := @nil term.
 
-Ltac ctors_are_inj_tac B lf lA n p :=  
-  match constr:((lf , lA)) with
-  | ( nil , nil ) => idtac 
-  | ( ?f1 :: ?tlf , ?A1 :: ?tlA) => new_ctor_is_inj_tac B f1 A1 n p; ctors_are_inj_tac B tlf tlA n p
+Check nil.
+MetaCoq Quote Definition nil_type_reif := (forall (A : Set), list A).
+Print nil_type_reif.
+
+Ltac ctors_are_inj_tac lB lf lA p :=  
+  match lA with
+  |  nil  => idtac 
+  | ?A1 :: ?tlA => match lf with 
+    | nil => idtac  
+    | ?f1 :: ?tlf => match lB with
+      | nil => idtac 
+      | ?B1 :: ?tlB => 
+  new_ctor_is_inj_tac B1 f1 A1  p; ctors_are_inj_tac tlB tlf tlA p
+    end
+  end
   end.
   
 
 Goal 2 + 2 = 4.
 Proof. 
-ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0. 
-(* (ctors_are_inj_tac (tApp list_reif [tRel 2]) [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 3 1). *)
+ctors_are_inj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0. 
+ (ctors_are_inj_tac [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). 
 reflexivity. Abort.
-                                                                                                      
-Fixpoint are_inj (B : term) (lf : list term) (lA : list (list term)) (n p : nat):=
-  match (lf , lA) with
-  | ([], []) => True_reif
-  | (f1 :: tllf , A1 :: tllA ) => mkAnd (is_inj B f1 A1) (are_inj B tllf tllA n p)
-  | _ => False_reif
-  end.
-(* \rmk : this function may be improved by skipping function of arity 0 *)
-
-MetaCoq Unquote Definition nat_inj_reif := (are_inj nat_reif [zero_reif ; S_reif] [[] ; [nat_reif]] 1 0).
-Print nat_inj_reif. 
-
-MetaCoq Unquote Definition list_nat_inj_reif := (are_inj list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0).
-(* Print list_nat_inj_reif. *)
-
-Example test_are_inj_cons_nat : 2 + 2 = 4.
-(ctors_are_inj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 2 0).
-reflexivity.
-Qed.
-  
-
+                                                                
 (*** Constructeurs disjoints : fail ***)
 
 Definition same_dom_Set (B Af Ag f g: term)  (l1 l2: list term) :=
@@ -856,6 +848,55 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
   | A1 :: tllAf => tProd mkNAnon A1 (codom_disj B (tApp (lift0 1 f) [tRel 0] )   (lift0 1 g) tllAf lAg  ) 
   end.
 
+  Fixpoint new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
+    let (n,n') := (List.length lAf , List.length lAg) in 
+    let (d,d') := ( n - p, n' - p) in 
+    let fix removeandlift p l :=
+      match (p, l)  with
+      | (0 , _) => List.rev (lAf ++ List.map (lift0 d) l) 
+      | ( S p , x :: l) => removeandlift p l 
+      | ( S _, []) => [] (* this case doesn't happen *)
+      end 
+    in let lQ := removeandlift p lAg 
+    in let fix aux2 p i dB  :=
+      match p with 
+      | 0 => dB
+      | S p => aux2  p (S i)  ((tRel i) :: dB)
+      end 
+     in let (dB1,dB2) := (aux2 d d'  [], aux2 d' 0 []) 
+     in let fix aux3 p i l1 l2 :=
+       match p with
+       | 0 => (l1,l2)
+       | S p => aux3 p (S i)  (tRel i :: l1) (tRel i :: l2)
+       end 
+      in let (l1,l2) := aux3 p (d + d') dB1 dB2 in
+      let fix aux3  l t := match l with
+      | [] => t 
+      | A' :: l => aux3 l (tProd (mkNamed "x") A' t)
+      end in   aux3 lQ (mkNot (mkEq (lift0 d' B) (tApp (cutEvar f) l1) (tApp (cutEvar g) l2))).  
+     
+
+  Example disj_codom1 := new_codom_disj list_nat_reif nil_nat_reif nil_nat_reif [ ] [] 0.
+  (* MetaCoq Unquote Definition dcodu1 := disj_codom1. 
+  Print dcodu1. *)
+
+MetaCoq Quote Definition disj_cons_cons := (forall (A : Set) (x1 : A) (l1 : list A) (x2 : A) (l2 : list A), x1 :: l1 <> x2 :: l2) .  
+Print disj_cons_cons.
+
+Example disj_cons_cons2 := Eval compute in new_codom_disj (tApp list_reif [tRel 2]) cons_reif cons_reif  [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ]    [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1.
+Print disj_cons_cons2. 
+MetaCoq Unquote Definition dccu2 := disj_cons_cons2. 
+Print dccu2. 
+
+MetaCoq Quote Definition disj_nil_cons := (forall (A : Set) x l, @nil A <> x :: l ).
+Print disj_nil_cons.
+
+Example disj_codom2 := Eval compute in new_codom_disj (tApp list_reif [tRel 0]) nil_reif cons_reif   [Set_reif ] [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1.
+Print disj_codom2.
+MetaCoq Unquote Definition dcodu2 := (new_codom_disj (tApp list_reif [tRel 0]) nil_reif cons_reif   [Set_reif ] [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1).
+Print dcodu2.
+
+  
 
 
 Ltac codom_disj_discr B f g lAf lAg :=
@@ -863,6 +904,7 @@ Ltac codom_disj_discr B f g lAf lAg :=
 assert toto; [unfold toto ; intros ;
                             try discriminate | .. ] ; subst toto. 
 
+                    
 
 Goal 2 + 2 = 4.
 Proof.
@@ -888,7 +930,7 @@ Fixpoint pairw_disj_codom ( B : term) (lf : list term) (lA : list (list term)) :
       match (lf , lA) with
         | ([] , []) => True_reif
         | (f1 :: tllf , A1 :: tllA ) => mkAnd (codom_disj B f f1 lAf A1) (pairw_aux B f lAf tllf tllA)
-        | _ => False_reif                                                    
+        | _ => False_reif   
       end        
       in 
   match (lf , lA)  with
