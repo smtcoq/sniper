@@ -102,95 +102,96 @@ Definition tog (d : door) (ω : Ω) : Ω :=
   | right => (fst ω, negb (snd ω))
   end.
 
-Variable H1 : doors_o_callee2 ω bool (IsOpen d) true.
+Variable H1 : doors_o_callee2 ω (IsOpen d) true.
 Variable x1 : unit.
-Variable H2 : doors_o_callee2 ω unit (Toggle d) x1.
+Variable H2 : doors_o_callee2 ω (Toggle d) x1.
 
 Goal sel d (tog d ω) = false.
-Proof. scope. assert (forall (H : Ω) (d : door) (H2 : bool),
-     doors_o_callee2 H bool (IsOpen d) H2 = Bool.eqb (sel d H) H2) by reflexivity.
+Proof. scope.
+
+
+
+ assert (forall (H : Ω) (d : door) (H2 : bool),
+     doors_o_callee2 H (IsOpen d) H2 = Bool.eqb (sel d H) H2) by reflexivity.
 assert (forall (H : Ω) (d: door) (H2 : unit),
-     doors_o_callee2 H unit (Toggle d) H2 = true) by reflexivity.
+     doors_o_callee2 H (Toggle d) H2 = true) by reflexivity.
 clear - H6 H7 H8 H9 H12 H13 H11. (* je crois qu'on a besoin d'une analyse de cas sur ω *)
 Admitted.
 
 
 Variable ω' : Ω.
-Variable Hyp : doors_o_callee2 ω' bool (IsOpen d) false.
+Variable Hyp : doors_o_callee2 ω' (IsOpen d) false.
 
 Goal sel d ω' = false.
-Proof. scope. clear o_caller o_caller0 H10 H11 H1 H2.
- assert (forall (H : Ω) (d : door) (H2 : bool),
-     doors_o_callee2 H bool (IsOpen d) H2 = Bool.eqb (sel d H) H2) by reflexivity.
-assert (forall (H : Ω) (d: door) (H2 : unit),
-     doors_o_callee2 H unit (Toggle d) H2 = true) by reflexivity.
-clear H5 H8 H4 H6 equ_cond H7.
-specialize H1 with ω' d false. rewrite Hyp in H1. 
+Proof. scope. clear - H9 Hyp. (* verit. *)
 
- timeout 30 verit. admit. admit. (* Pourquoi verit n'a pas pu résoudre le but ??? *)
+specialize (H9 ω' d). specialize (H9 false). unfold is_true in Hyp.
+rewrite Hyp in H9. clear - H9. verit. admit. admit.
+ (* Pourquoi verit n'a pas pu résoudre le but ??? *)
 Admitted.  
 
 
 End airlock1. 
 
 Section airlock2. 
-Variable ix : interface.
-Variable i1 i2 : interface.
+Variable ix : Type.
+Variable i1 i2 : Type.
 Variable MayProvide
-     : interface -> interface -> Type.
-Variable Provide : forall ix i : interface, MayProvide ix i -> Type.
+     : Type -> Type -> Type.
+Variable Provide : forall ix i : Type, MayProvide ix i -> Type.
 
 Variable Distinguish
-     : forall (ix i j : interface) (H : MayProvide ix i), Provide ix i H -> MayProvide ix j -> Prop.
+     : forall (ix i j : Type) (H : MayProvide ix i), Provide ix i H -> MayProvide ix j -> Prop.
 
 Variable StrictProvide2
-     : forall (ix i1 i2 : interface) (H : MayProvide ix i1) (H0 : Provide ix i1 H)
+     : forall (ix i1 i2 : Type) (H : MayProvide ix i1) (H0 : Provide ix i1 H)
          (H1 : MayProvide ix i2) (H2 : Provide ix i2 H1),
        Distinguish ix i1 i2 H H0 H1 -> Distinguish ix i2 i1 H1 H2 H-> Prop.
-Inductive STORE (s : Type) : Type -> Type :=  Get : STORE s s | Put : s -> STORE s unit.
+Inductive STORE : Type :=  Get : Type -> STORE | Put : STORE.
 
 Variable H : MayProvide ix DOORS.
 Variable H0 : Provide ix DOORS H.
-Variable H1 : MayProvide ix (STORE nat).
-Variable H2 : Provide ix (STORE nat) H1.
-Variable H3 : Distinguish ix DOORS (STORE nat) H H0 H1.
-Variable H4 : Distinguish ix (STORE nat) DOORS H1 H2 H.
+Variable H1 : MayProvide ix (STORE).
+Variable H2 : Provide ix (STORE) H1.
+Variable H3 : Distinguish ix DOORS (STORE) H H0 H1.
+Variable H4 : Distinguish ix (STORE) DOORS H1 H2 H.
 
 
 
 Variable contract
-     : interface -> Type -> Type.
+     : Type -> Type -> Type.
 Variable component
-     : interface -> interface -> Type.
+     : Type -> Type -> Type.
 Variable no_contract
-     : forall i : interface, contract i unit.
+     : forall i : Type, contract i unit.
 Variable doors_contract
      : contract DOORS Ω.
-Variable correct_component: forall jx j : interface,
+Variable correct_component: forall jx j : Type,
        MayProvide jx j ->
-       forall i : interface,
+       forall i : Type,
        component i jx ->
        forall Ωi : Type,
        contract i Ωi -> forall Ωj : Type, contract j Ωj -> (Ωi -> Ωj -> Prop) -> Prop.
-Inductive CONTROLLER : interface :=  Tick : CONTROLLER unit | RequestOpen : door -> CONTROLLER unit.
-Inductive iplus (i j : interface) (α : Type) : Type :=
-    in_left : i α -> iplus i j α | in_right : j α -> iplus i j α.
+Inductive CONTROLLER : Type :=  Tick : CONTROLLER | RequestOpen : door -> CONTROLLER.
+Inductive iplus (i j : Type) : Type :=
+    in_left : i -> iplus i j | in_right : j -> iplus i j.
 
 Variable controller
-     : component CONTROLLER (iplus (STORE nat) DOORS). (* TODO *)
+     : component CONTROLLER (iplus (STORE) DOORS). (* TODO *)
 Record hoare (Σ α : Type) : Type := mk_hoare { pre : Σ -> Prop;  post : Σ -> α -> Σ -> Prop }.
 
 Notation "m '~>' n" := (forall (α : Type) (_ : m α), n α) (at level 50).
-Inductive impure (i : interface) (α : Type) : Type :=
+
+Inductive impure (i : Type) (α : Type) : Type :=
     local : α -> impure i α | request_then : forall β : Type, i β -> (β -> impure i α) -> impure i α.
-Variable to_hoare : forall ix i : interface,
+Variable to_hoare : forall ix i : Type,
        MayProvide ix i -> forall Ω : Type, contract i Ω -> impure ix ~> hoare Ω.
 
 Variable ωc : unit.
 Variable ωd : Ω.
 Variable close_door : 
-forall (ix : interface) (H : MayProvide ix DOORS), Provide ix DOORS H -> door -> impure ix unit.
-Variable open_door : forall (ix : interface) 
+forall (ix : Type) (H : MayProvide ix DOORS), Provide ix DOORS H -> door -> impure ix unit.
+Variable open_door : forall (ix : Type) 
 (H : MayProvide ix DOORS), Provide ix DOORS H -> door -> impure ix unit.
 
 
@@ -220,9 +221,9 @@ Admitted.
 Variable a : Type.
 Variable e : CONTROLLER a.
 Variable callee_obligation
-     : forall (i : interface) (Ω : Type), contract i Ω -> Ω -> forall α : Type, i α -> α -> Prop.
+     : forall (i : Type) (Ω : Type), contract i Ω -> Ω -> forall α : Type, i α -> α -> Prop.
 Variable controller2 :
-    forall (ix : interface) (H : MayProvide ix DOORS),
+    forall (ix : Type) (H : MayProvide ix DOORS),
        Provide ix DOORS H ->
        forall H1 : MayProvide ix (STORE nat), Provide ix (STORE nat) H1 -> component CONTROLLER ix.
 
