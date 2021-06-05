@@ -907,7 +907,7 @@ Print disj_codom3_no_param.
 
 
 Ltac codom_disj_discr B f g lAf lAg p:=
-  let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
+  let toto := fresh "H" in (pose_unquote_term_hnf (new_codom_disj B f g lAf lAg p) toto);
   assert toto; [unfold toto ; intros ;
   try discriminate | .. ] ; subst toto. 
 
