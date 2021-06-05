@@ -626,10 +626,13 @@ Print t2.
 Print lift0.
 
 Definition cutEvar (t: term) :=
+  (* perhaps a bit naive *)
   match t with 
-  | tApp t u => t 
+  | tApp t' ((tEvar _ _ ) :: u) =>  t'
   | _ => t
   end.
+
+
     
    
 Fixpoint new_inj_aux (B f : term ) (lA : list term) (p : nat) (l1 l2 : list term ) :=
@@ -896,74 +899,82 @@ Print disj_codom2.
 MetaCoq Unquote Definition dcodu2 := (new_codom_disj (tApp list_reif [tRel 0]) nil_reif cons_reif   [Set_reif ] [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1).
 Print dcodu2.
 
-  
+Example disj_codom3_no_param := Eval compute in (new_codom_disj list_nat_reif nil_nat_reif  cons_nat_reif   (@nil term) [ nat_reif ; list_nat_reif ] 0).
+Print disj_codom3_no_param.
+MetaCoq Unquote Definition dcodu3 := disj_codom3_no_param.
+Print disj_codom3_no_param.  
 
 
-Ltac codom_disj_discr B f g lAf lAg :=
+
+Ltac codom_disj_discr B f g lAf lAg p:=
   let toto := fresh "H" in (pose_unquote_term_hnf (codom_disj B f g lAf lAg) toto);
-assert toto; [unfold toto ; intros ;
-                            try discriminate | .. ] ; subst toto. 
+  assert toto; [unfold toto ; intros ;
+  try discriminate | .. ] ; subst toto. 
 
-                    
+      
+                            
 
 Goal 2 + 2 = 4.
 Proof.
-  codom_disj_discr list_nat_reif nil_nat_reif  cons_nat_reif  (@nil term) [ nat_reif ; list_nat_reif ]. 
-reflexivity. Qed.
+  codom_disj_discr list_nat_reif nil_nat_reif  cons_nat_reif  (@nil term) [ nat_reif ; list_nat_reif ] 0. 
+reflexivity. Abort.
 
-Example disj_codom1 := codom_disj list_nat_reif nil_nat_reif nil_nat_reif [ ] [].
-MetaCoq Unquote Definition d_cod_u1 := disj_codom1.
-(* Set Printing All. *)
-(* Print d_cod_u1. *)
 
-Example disj_codom2 := Eval cbn in codom_disj list_nat_reif cons_nat_reif cons_nat_reif [nat_reif ; list_nat_reif ] [nat_reif ; list_nat_reif ].
-MetaCoq Unquote Definition d_cod_u2 := disj_codom2. 
+Goal 2 + 2 = 4.
+Proof. 
+  codom_disj_discr list_nat_reif nil_nat_reif  cons_nat_reif  (@nil term) [ nat_reif ; list_nat_reif ] 0. 
+Abort. 
+
+
+Example disj_codom4 := Eval cbn in new_codom_disj list_nat_reif cons_nat_reif cons_nat_reif [nat_reif ; list_nat_reif ] [nat_reif ; list_nat_reif ] 0.
+MetaCoq Unquote Definition d_cod_u4 := disj_codom4. 
 (* Print d_cod_u2. *)
 
 
-Example disj_codom3 := codom_disj list_nat_reif nil_nat_reif  cons_nat_reif  [] [ nat_reif ; list_nat_reif ].
-MetaCoq Unquote Definition d_cod_u3 := disj_codom3.
-(* Print d_cod_u3. *)
 
-Fixpoint pairw_disj_codom ( B : term) (lf : list term) (lA : list (list term)) :=
+Fixpoint pairw_disj_codom ( B : term) (lf : list term) (lA : list (list term)) (p : nat) :=
   let fix pairw_aux (B f : term) (lAf lf : list term)  (lA : list (list term)) :=
       match (lf , lA) with
         | ([] , []) => True_reif
-        | (f1 :: tllf , A1 :: tllA ) => mkAnd (codom_disj B f f1 lAf A1) (pairw_aux B f lAf tllf tllA)
+        | (f1 :: tllf , A1 :: tllA ) => mkAnd (new_codom_disj B f f1 lAf A1 p) (pairw_aux B f lAf tllf tllA)
         | _ => False_reif   
       end        
       in 
   match (lf , lA)  with
   | ([] , [] ) => True_reif
-  | (f1 :: tllf  , A1 :: tllA ) => mkAnd (pairw_aux B f1 A1 tllf tllA) (pairw_disj_codom B tllf tllA)
+  | (f1 :: tllf  , A1 :: tllA ) => mkAnd (pairw_aux B f1 A1 tllf tllA) (pairw_disj_codom B tllf tllA p)
   | _ => False_reif                                     
   end.
 
 
-Ltac pairw_aux B f lAf lf lA :=
+Ltac pairw_aux B f lAf lf lA p :=
      lazymatch constr:((lf , lA)) with
         | ([] , []) => idtac 
-        | (?f1 :: ?tllf , ?A1 :: ?tllA ) => codom_disj_discr B f f1 lAf A1 ; pairw_aux B f lAf tllf tllA
+        | (?f1 :: ?tllf , ?A1 :: ?tllA ) => codom_disj_discr B f f1 lAf A1 p  ; pairw_aux B f lAf tllf tllA p
         | _ => idtac "wrong branch pairw_aux"  ; fail                                             
       end.
 
 Goal 2 + 2 = 4.
   Proof.
-      pairw_aux list_nat_reif nil_nat_reif  (@nil term) [cons_nat_reif]  [ [nat_reif; list_nat_reif]].
+      pairw_aux list_nat_reif nil_nat_reif  (@nil term) [cons_nat_reif]  [ [nat_reif; list_nat_reif]] 0.
       reflexivity. Abort. 
  
     
-Ltac pairw_disj_codom_tac B  lf  lA  :=
+Ltac pairw_disj_codom_tac B  lf  lA p :=
   match constr:((lf , lA))  with
   | ([] , [] ) => idtac 
-  | (?f1 :: ?tllf  , ?A1 :: ?tllA ) => ltac:(pairw_aux B f1 A1 tllf tllA) ; ltac:(pairw_disj_codom_tac B tllf tllA)
+  | (?f1 :: ?tllf  , ?A1 :: ?tllA ) => ltac:(pairw_aux B f1 A1 tllf tllA p) ; ltac:(pairw_disj_codom_tac B tllf tllA p)
   | _ => idtac "wrong branch pair_disj_codom_tac"                                
   end.
 
 Goal nat -> 2 + 2 = 4.
 Proof.
- pairw_disj_codom_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].  
+ pairw_disj_codom_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0.  
 reflexivity. Abort.
+
+Goal nat -> 2 + 2 = 4.
+Proof.
+  pairw_disj_codom_tac (tApp list_reif [tRel 0])  [nil_reif ;  cons_reif]   [[Set_reif ]  ;[Set_reif; tRel 0 ; tApp list_reif [tRel 1] ]]  1.
 
 Example pwdc1 := pairw_disj_codom list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].
 MetaCoq Unquote Definition pwdcu1 := pwdc1.
