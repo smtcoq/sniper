@@ -157,11 +157,15 @@ Variable H3 : Distinguish ix DOORS (STORE) H H0 H1.
 Variable H4 : Distinguish ix (STORE) DOORS H1 H2 H.
 
 
+Notation "m '~>' n" := (forall (α : Type) (_ : m α), n α) (at level 50).
+
+Inductive impure (i : Type) (α : Type) : Type :=
+    local : α -> impure i α | request_then : forall β : Type, i -> (β -> impure i α) -> impure i α.
 
 Variable contract
      : Type -> Type -> Type.
-Variable component
-     : Type -> Type -> Type.
+Definition component :=
+    fun i j : Type => i -> j.
 Variable no_contract
      : forall i : Type, contract i unit.
 Variable doors_contract
@@ -180,10 +184,9 @@ Variable controller
      : component CONTROLLER (iplus (STORE) DOORS). (* TODO *)
 Record hoare (Σ α : Type) : Type := mk_hoare { pre : Σ -> Prop;  post : Σ -> α -> Σ -> Prop }.
 
-Notation "m '~>' n" := (forall (α : Type) (_ : m α), n α) (at level 50).
 
-Inductive impure (i : Type) (α : Type) : Type :=
-    local : α -> impure i α | request_then : forall β : Type, i β -> (β -> impure i α) -> impure i α.
+
+(*  Corresponds to return and bind *)
 Variable to_hoare : forall ix i : Type,
        MayProvide ix i -> forall Ω : Type, contract i Ω -> impure ix ~> hoare Ω.
 
@@ -196,7 +199,8 @@ Variable open_door : forall (ix : Type)
 
 
 Goal pre Ω unit (@to_hoare ix DOORS H Ω doors_contract unit (close_door ix H H0 left)) ωd.
-Proof. (* interp_alg_types_context_goal. *) (* bug de la tactique de Pierre *)
+Proof.
+(* interp_alg_types_context_goal. *) (* bug de la tactique de Pierre *)
 def_fix_and_pattern_matching.
 Fail timeout 30 verit.
 Admitted.
@@ -219,13 +223,13 @@ Goal pre Ω unit (to_hoare ix DOORS H Ω doors_contract unit (open_door ix H H0 
 Admitted.
 
 Variable a : Type.
-Variable e : CONTROLLER a.
+Variable e : CONTROLLER.
 Variable callee_obligation
-     : forall (i : Type) (Ω : Type), contract i Ω -> Ω -> forall α : Type, i α -> α -> Prop.
+     : forall (i : Type) (Ω : Type), contract i Ω -> Ω -> forall α : Type, i -> α -> Prop.
 Variable controller2 :
     forall (ix : Type) (H : MayProvide ix DOORS),
        Provide ix DOORS H ->
-       forall H1 : MayProvide ix (STORE nat), Provide ix (STORE nat) H1 -> component CONTROLLER ix.
+       forall H1 : MayProvide ix (STORE), Provide ix (STORE) H1 -> component CONTROLLER ix.
 
 Variable hpre : pre Ω a (to_hoare ix DOORS H Ω doors_contract a (controller2 ix H H0 H1 H2)) ωd.
 Variable req : caller_obligation CONTROLLER unit (no_contract CONTROLLER) ωc a e. *)
