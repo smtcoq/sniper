@@ -42,9 +42,14 @@ Metacoq is available through the `coq-released` opam repository:
 opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
-Snipe requires this version of metacoq:
+SMTCoq is available through the `coq-extra-dev` opam repository:
 ```
-opam install coq-metacoq.1.0~beta2+8.13
+opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+```
+
+Snipe requires thess versions of MetaCoq and SMTCoq:
+```
+opam install coq-metacoq.1.0~beta2+8.13 coq-smtcoq.dev+8.13
 ```
 
 Smtcoq is available through the `coq-extra-dev` opam repository:
