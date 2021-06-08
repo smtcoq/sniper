@@ -230,9 +230,10 @@ Variable controller2 :
     forall (ix : Type) (H : MayProvide ix DOORS),
        Provide ix DOORS H ->
        forall H1 : MayProvide ix (STORE), Provide ix (STORE) H1 -> component CONTROLLER ix.
-
+Variable caller_obligation
+     : forall (i : Type) (Ω : Type), contract i Ω -> Ω -> i -> Prop.
+Variable req : caller_obligation CONTROLLER unit (no_contract CONTROLLER) ωc e.
 Variable hpre : pre Ω a (to_hoare ix DOORS H Ω doors_contract a (controller2 ix H H0 H1 H2)) ωd.
-Variable req : caller_obligation CONTROLLER unit (no_contract CONTROLLER) ωc a e. *)
 Goal and (pre Ω a (to_hoare ix DOORS H Ω doors_contract a (controller2 ix H H0 H1 H2 a e)) ωd)
   (forall (x : a) (ωj' : Ω)
      (_ : post Ω a (@to_hoare ix DOORS H Ω doors_contract a (controller2 ix H H0 H1 H2 a e)) ωd x
