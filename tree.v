@@ -186,4 +186,4 @@ Arguments is_empty {_} _.
 
 
 
-Hint Resolve tree_compdec : typeclass_instances.
+#[export] Hint Resolve tree_compdec : typeclass_instances.

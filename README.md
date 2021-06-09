@@ -31,14 +31,10 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-The version of metacoq that we use requires ocaml < 4.10 and >= 4.09:
+The version of metacoq that we use requires OCaml 4.07.1:
 ```
-opam switch create 4.09.1
-```
-
-Snipe requires coq 8.11:
-```
-opam install coqide.8.11.2
+opam switch create 4.07.1
+eval $(opam env)
 ```
 
 Metacoq is available through the `coq-released` opam repository:
@@ -46,15 +42,19 @@ Metacoq is available through the `coq-released` opam repository:
 opam repo add coq-released https://coq.inria.fr/opam/released
 ```
 
-Snipe requires this version of metacoq:
-```
-opam install coq-metacoq.1.0~beta2+8.11
-```
-
-Smtcoq is available through the `coq-extra-dev` opam repository:
+SMTCoq is available through the `coq-extra-dev` opam repository:
 ```
 opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install coq-smtcoq
+```
+
+Snipe requires these versions of MetaCoq and SMTCoq:
+```
+opam install coq-metacoq.1.0~beta2+8.13 coq-smtcoq.dev+8.13
+```
+
+If you want to use Coqide to edit Coq files:
+```
+opam install coqide.8.13.1
 ```
 
 Sources of the veriT SMT solver are distributed
