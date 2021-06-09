@@ -1,6 +1,17 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 Require Import SMTCoq.SMTCoq.
 Require Import Bool OrderedType OrderedTypeEx.
-Require Import Structures.
 
 Section tree.
 
@@ -175,4 +186,4 @@ Arguments is_empty {_} _.
 
 
 
-Hint Resolve tree_compdec : typeclass_instances.
+#[export] Hint Resolve tree_compdec : typeclass_instances.
