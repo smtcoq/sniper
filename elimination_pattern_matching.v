@@ -93,7 +93,7 @@ match l with
 end.
 
 
-
+(* warning : flattened terms only *)
 Definition type_no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
@@ -146,7 +146,7 @@ end.
 
 
 
-Fixpoint get_info_inductive (I : term) := 
+Definition get_info_inductive (I : term) := 
 let p := type_no_app I in match p.1 with
 | tInd ind inst => Some ((ind, inst), p.2)
 | _ => None

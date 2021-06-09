@@ -109,7 +109,7 @@ dans le corps de la fonction? *)
 
 
 Definition foo2 := (forall (n : nat) (x : A) (ls1' : ilist n) (H1 : nat) (H2 : ilist H1),
-     app (S n) (Cons n x ls1') H1 H2 = Cons (n + H1) x (app n ls1' H1 H2)).
+     app _ (Cons n x ls1') H1 H2 = Cons (n + H1) x (app n ls1' H1 H2)).
 
 MetaCoq Quote Definition foo2_reif:= 
 (forall (n : nat) (x : A) (ls1' : ilist _) (H1 : nat) (H2 : ilist H1),
