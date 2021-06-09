@@ -52,9 +52,9 @@ Snipe requires these versions of MetaCoq and SMTCoq:
 opam install coq-metacoq.1.0~beta2+8.13 coq-smtcoq.dev+8.13
 ```
 
-If you want to use Coqide to edit Coq files:
+If you want to use Coqide to edit Coq files, replace the previous line with:
 ```
-opam install coqide.8.13.1
+opam install coq-metacoq.1.0~beta2+8.13 coq-smtcoq.dev+8.13 coqide
 ```
 
 Sources of the veriT SMT solver are distributed
