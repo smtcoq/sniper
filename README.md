@@ -47,15 +47,9 @@ SMTCoq is available through the `coq-extra-dev` opam repository:
 opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 ```
 
-Snipe requires thess versions of MetaCoq and SMTCoq:
+Snipe requires these versions of MetaCoq and SMTCoq:
 ```
 opam install coq-metacoq.1.0~beta2+8.13 coq-smtcoq.dev+8.13
-```
-
-Smtcoq is available through the `coq-extra-dev` opam repository:
-```
-opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install coq-smtcoq
 ```
 
 If you want to use Coqide to edit Coq files:
