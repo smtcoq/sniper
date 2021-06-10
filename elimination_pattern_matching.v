@@ -65,7 +65,7 @@ end
 end.
 
 
-
+(* get the type of a constructor *)
 Definition get_type_constructor (c : term):=
 match c with
 | tConstruct ind _ _ => let kn := ind.(inductive_mind) in 
@@ -75,32 +75,16 @@ end.
 
 
 
-(* does not work for mutual inductives *)
-Ltac list_ctors_and_types I :=
-run_template_program (tmQuoteRec I) ltac:(fun t => 
-let x := eval compute in (get_decl_inductive t.2 t.1) in match x with
-| Some (?y::_) => let z := eval compute in y.(ind_ctors) in pose z
-| None => fail
-end).
 
-(*  in the type of the constructor we need to susbtitute the free variables by the corresponding inductive type *)
-
-Fixpoint subst_type_constructor_list' (l : list ((string × term) × nat)) (p : term) :=
-
-match l with 
-| nil => nil
-| ((_, Ty), _):: l' => (subst10 p Ty)  :: (subst_type_constructor_list' l' p)
-end.
-
-
-(* warning : flattened terms only *)
-Definition type_no_app t := match t with
+(* warning : flattened terms only : returns a pair of a term and the list to which it is applied *)
+Definition no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
 end.
 
 
-(* beta reduction *)
+
+(* Implements beta reduction *)
 Fixpoint typing_prod_list (T : term) (args : list term) := 
 match T with
 | tProd _ A U => match args with 
@@ -110,67 +94,109 @@ match T with
 | _ => T
 end.
 
-
-Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) (n : nat) :=
+(* As the constructor contains a free variable to represent the inductive type, this fonction substitutes the given 
+inductive type and the parameters in the list of the type of the constructors *)
+Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) :=
 let T := p.1 in 
 let args := p.2 in
 match l with 
 | nil => nil
-| ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p n)
+| ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
 end.
 
-(* t is a term recursively quoted *)
+(* Given a term recursively quoted, gives the list of the type of each of its constructor *)
 Definition list_types_of_each_constructor t :=
-let v := (type_no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
+let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
 let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
-let n := get_npar_inductive v.1 t.1 in  (* numbers of parameters *)
 match x with
 | Some y => match y with 
           | nil => nil
           | cons y' _ => let z := y'.(ind_ctors) in let u := 
-subst_type_constructor_list z v n in u 
+subst_type_constructor_list z v in u
           end
 | None => nil
 end.
 
 
+(* Does the same, but does not handle parameters *)
+Definition list_types_of_each_constructor_no_subst t :=
+let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
+let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
+match x with
+| Some y => match y with 
+          | nil => nil
+          | cons y' _ => let z := y'.(ind_ctors) in List.map (fun p => subst10 v.1 p.1.2) z
+          end
+| None => nil
+end.
 
-Ltac unquote_list l :=
-match constr:(l) with
-| nil => idtac
-| cons ?x ?xs => unquote_term x ; unquote_list xs
+
+Fixpoint codomain (t : term) := match t with 
+| tProd _ _ u => codomain u 
+| _ => t 
 end.
 
 
 
+
+(* Build the list of constructors and their types applied to the parameters *)
+Definition build_ctor_ty_ctor_applied_to_parameters (args_in_statement : list term) (p : term * term) := let ctor := p.1 in let ty_ctor := p.2 in 
+let ty_args := (no_app (codomain ty_ctor)).2
+in let fix aux args_in_statement ty_args ctor ty_ctor := match args_in_statement, ty_args with
+| nil, _ => (ctor, ty_ctor)
+| _, nil => (ctor, ty_ctor)
+| x_in_statement :: args_in_statement', x_in_ty :: ty_args' =>  match x_in_ty with 
+        | tRel k => aux args_in_statement' ty_args' (tApp ctor [x_in_statement]) (tApp ty_ctor [x_in_statement])
+        | _ => aux args_in_statement' ty_args' ctor ty_ctor
+        end 
+end
+in aux args_in_statement ty_args ctor ty_ctor.
+        
 
 
 
 Definition get_info_inductive (I : term) := 
-let p := type_no_app I in match p.1 with
+let p := no_app I in match p.1 with
+| tInd ind inst => Some (ind, inst)
+| _ => None
+end.
+
+Definition get_info_inductive_args (I : term) := 
+let p := no_app I in match p.1 with
 | tInd ind inst => Some ((ind, inst), p.2)
 | _ => None
 end.
 
-
 Fixpoint get_list_of_rel (i : nat) := match i with
 | 0 => []
-| S n => (get_list_of_rel n) ++ [tRel n] (* n *)
+| S n => ((get_list_of_rel n) ++ [tRel n])%list (* n *)
 end.
 
 
-
-
-(* gets the list of constructors given an inductive recursively quoted and the number of its constructors *)
-Definition get_list_ctors_tConstruct I n := 
-let I' := get_info_inductive I in match I' with
-| Some J => let ind := J.1.1 in let inst := J.1.2 in let args := J.2 in let 
+(* gets the list of constructors applied to their parameters
+ given an inductive recursively quoted and the number of its constructors *)
+Definition get_list_ctors_tConstruct_applied I n := 
+let I' := get_info_inductive_args I in match I' with
+| Some J => let ind := J.1.1 in let inst := J.1.2 in let args := J.2 in let
 fix aux n' ind' inst' args :=
 match n' with 
 | 0 => []
 | S m =>  (aux m ind' inst' args) ++ [tApp (tConstruct ind' m inst') args]
 end
 in aux n J.1.1 J.1.2 J.2
+| None => []
+end.
+
+(* gets the list of constructors given an inductive recursively quoted and the number of its constructors *)
+Definition get_list_ctors_tConstruct I n := 
+let I' := get_info_inductive I in match I' with
+| Some J => let ind := J.1 in let inst := J.2 in let 
+fix aux n' ind' inst' :=
+match n' with 
+| 0 => []
+| S m =>  ((aux m ind' inst') ++ [tConstruct ind' m inst'])%list
+end
+in aux n J.1 J.2
 | None => []
 end.
 
@@ -181,18 +207,6 @@ let fix aux t (acc : list term) := match t with
 | tProd _ ty s => aux s (ty :: acc)
 | _ => acc 
 end in aux t [].
-
-
-
-Ltac prove_hypothesis H :=
-repeat match goal with
-  | H' := ?x : ?P |- _ =>  lazymatch P with 
-                | Prop => let def := fresh in assert (def : x) by 
-(intros; rewrite H; auto) ;  clear H'
-          end
-end.
-
-
 
 
 
@@ -237,27 +251,15 @@ type of the prenex quantification in the hypothesis, E is the environment *)
 let n := Datatypes.length l in
 prenex_quantif_list l' (prenex_quantif_list l (subst [tApp (lift n 0 c) (rev (get_list_of_rel n))] 0 (lift n 1 E))).
 
-Definition get_equalities (E : term) (l_ctors : list term) (l_ty_ctors  : list term) (l_ty : list term) :=
-let fix aux (E : term) (l_ctors : list term) (l_ty_ctors  : list term) (l_ty : list term) acc :=
-match (l_ctors, l_ty_ctors) with
-| (nil, _) | (_ , nil) => acc
-| (x :: xs, y :: ys) => aux E xs ys l_ty
+Definition get_equalities (E : term) (l_ctors_and_ty_ctors : list (term * term))  (l_ty : list term) := 
+
+let fix aux (E : term) l_ctors_and_ty_ctors (l_ty : list term) acc :=
+match l_ctors_and_ty_ctors  with
+| nil => acc
+| (x, y):: xs => aux E xs l_ty
 ((prenex_quantif_list_ctor x (list_of_args y) l_ty E) :: acc)
 end
-in aux E l_ctors l_ty_ctors l_ty [].
-
-
-Ltac prove_list_hypothesis H l := match constr:(l) with 
-| [] => idtac 
-| cons ?x ?xs => run_template_program (tmUnquote x) (fun x => let y := eval cbv in x.(my_projT2) in 
-assert y by (rewrite H ; reflexivity) ; prove_list_hypothesis H constr:(xs))
-end.
-
-Ltac count_prenex_forall H :=
-  match H with
-| forall _ : _, ?A => constr:(S ltac:(count_prenex_forall A))
-| _ => constr:(0)
-end.
+in aux E l_ctors_and_ty_ctors l_ty [].
 
 
 Ltac eliminate_pattern_matching H :=
@@ -291,8 +293,9 @@ let l := eval cbv in prod.1.1 in
 let A := eval cbv in prod.2 in
 let l_ty_ctors := eval cbv in (list_types_of_each_constructor (e, A)) in
 let n := eval cbv in (Datatypes.length l_ty_ctors) in
-let l_ctors := eval cbv in (get_list_ctors_tConstruct A n) in
-let list_of_hyp := eval cbv in (get_equalities E l_ctors l_ty_ctors l) in
+let l_ctors := eval cbv in (get_list_ctors_tConstruct_applied A n) in 
+let l_ctor_and_ty_ctor := eval cbv in (combine l_ctors l_ty_ctors) in
+let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
  unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
 
 
