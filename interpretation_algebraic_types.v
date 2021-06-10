@@ -400,6 +400,8 @@ Definition mkNot (A :term) := mkImpl A False_reif.
 
 Definition mkAnd (A B : term) := tApp and_reif [A ; B]. 
 
+Definition mkOr (A B : term) := tApp or_reif [A ; B].
+
 Fixpoint and_nary_reif (l : list term):=
   match l with
   | [] => False_reif      
@@ -899,6 +901,12 @@ Print disj_codom2.
 MetaCoq Unquote Definition dcodu2 := (new_codom_disj (tApp list_reif [tRel 0]) nil_reif cons_reif   [Set_reif ] [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1).
 Print dcodu2.
 
+Example disj_codom2' := Eval compute in new_codom_disj (tApp list_reif [tRel 2])  cons_reif nil_reif   [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] [Set_reif ] 1.
+Print disj_codom2'.
+MetaCoq Unquote Definition dcodu2' := disj_codom2'.
+Print dcodu2'.
+
+
 Example disj_codom3_no_param := Eval compute in (new_codom_disj list_nat_reif nil_nat_reif  cons_nat_reif   (@nil term) [ nat_reif ; list_nat_reif ] 0).
 Print disj_codom3_no_param.
 MetaCoq Unquote Definition dcodu3 := disj_codom3_no_param.
@@ -974,9 +982,10 @@ reflexivity. Abort.
 
 Goal nat -> 2 + 2 = 4.
 Proof.
-  pairw_disj_codom_tac (tApp list_reif [tRel 0])  [nil_reif ;  cons_reif]   [[Set_reif ]  ;[Set_reif; tRel 0 ; tApp list_reif [tRel 1] ]]  1.
+  pairw_disj_codom_tac (tApp list_reif [tRel 0])  [nil_reif ;  cons_reif]   [[Set_reif ]  ;[Set_reif; tRel 0 ; tApp list_reif [tRel 1] ]] 1.
+Abort. 
 
-Example pwdc1 := pairw_disj_codom list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]].
+Example pwdc1 := pairw_disj_codom list_nat_reif [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0.
 MetaCoq Unquote Definition pwdcu1 := pwdc1.
 (* Print pwdcu1. *)
 
@@ -1027,7 +1036,139 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
 
 (* Print ex_reif.
 Print ex. *)
- 
+
+Fixpoint new_is_in_codom (B t f: term ) (lA : list term) (p : nat) :=
+  (* if t : A and f : Pi lx lA . A, tells when t is in the codomain of f: returns exist vecx : lA, f vecx = t  *)
+  match (p, lA) with
+  | (_,[]) => 0 (* tApp eq_reif [B ; t ; f] *)
+  | (0,A :: tllA) => 0 
+  | (S p , A :: ttlA) =>  0
+  end.
+  
+Print List.map.
+Print List.length.
+Check List.map.
+Check List.length.
+
+Definition sq (n : nat ) := n * n.
+Definition msq := List.map sq.
+Check msq.
+
+
+Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
+  let lD' := List.map (fun l => (@List.skipn term p l)) lD in 
+  let lLen := List.map  (fun l => (@List.length term l) ) lD' in 
+  let fix aux0 k i l  :=
+    (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
+    match k with
+    | 0 => l
+    | S k => aux0 k (i + 1) (tRel i :: l)
+    end
+  in
+  let fix aux1 lArev t :=
+    match lArev with
+    | [] => t 
+    | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x") (lift0 1 A) t])
+    end 
+  in 
+  let aux2 B f lA k := aux1 (List.rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
+  let fix aux3 lB lf lD lLen t := 
+    match (((lB, lf) , lD), lLen )  with
+    | ((([], []),[]),[]) => t
+   (* | ([f], [lA],[d]) => aux2  lA f d  ??? *)
+    | (((B :: lB, f:: lf), lA :: lD), d :: lLen) => aux3 lB lf lD lLen (mkOr (aux2 B (cutEvar f) lA d) t)
+    | _ => True_reif (* this case should not happen *)
+    end in 
+    let lExist := 
+      aux3 lB lf lD' lLen True_reif in 
+    let fix aux4 l p  l':= 
+      match (l,p) with
+      (* taks [A_1,...,A_n], outputs [A_p,...,A_1]*)
+      | (_, 0 ) => l' 
+      | ( [], _) => l'
+      | (A :: l,S p ) => aux4 l p (A :: l')
+      end in 
+      let lAforall := match lD with
+      | [] => []
+      | lA :: lD => aux4 lA p []
+      end
+      in 
+      let fix aux5 lA t := 
+        match lA with
+        | [] => t
+        | A :: lA => aux5 lA (tProd (mkNamed "x") A t)
+        end
+        in (*  lExist.  *) (* *aux2 (tApp list_reif [tRel 0]) (cutEvar nil_reif) [] 0. *)    aux2   (tApp list_reif [tRel 2] ) (cutEvar cons_reif) [tRel 0 ; tApp list_reif [tRel 1]] 2.        
+       (* aux2 [] (cutEvar nil_reif) 0. *)
+        (*  lExist. *)  (* aux5 lAforall lExist *)
+
+(* 
+Definition union_direct_total (B : term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
+  let lLen := List.map  (fun l => (@List.length term l -p) ) lD in 
+  let fix aux0 k i l  :=
+    (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
+    match k with
+    | 0 => l
+    | S k => aux0 k (i + 1) (tRel i :: l)
+    end
+  in
+  let fix aux1 lArev t :=
+    match lArev with
+    | [] => t 
+    | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x") (lift0 1 A) t])
+    end 
+  in 
+  let aux2 lA f k := aux1 (List.rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
+  let fix aux3 lf lD lLen t := 
+    match ((lf , lD), lLen )  with
+    | (([],[]),[]) => t
+   (* | ([f], [lA],[d]) => aux2  lA f d  ??? *)
+    | ((f:: lf, lA :: lD), d :: lLen) => aux3 lf lD lLen (mkOr (aux2 lA (cutEvar f) d) t)
+    | _ => True_reif (* this case should not happen *)
+    end in 
+    let lExist := 
+      aux3 lf lD lLen True_reif in 
+    let fix aux4 l p  l':= 
+      match (l,p) with
+      (* taks [A_1,...,A_n], outputs [A_p,...,A_1]*)
+      | (_, 0 ) => l' 
+      | ( [], _) => l'
+      | (A :: l,S p ) => aux4 l p (A :: l')
+      end in 
+      let lAforall := match lD with
+      | [] => []
+      | lA :: lD => aux4 lA p []
+      end
+      in 
+      let fix aux5 lA t := 
+        match lA with
+        | [] => t
+        | A :: lA => aux5 lA (tProd (mkNamed "x") A t)
+        end
+        in  (* aux2  [tRel 0; tApp list_reif [tRel 1] ]  (cutEvar cons_reif) 2 *)         
+        aux2 [] (cutEvar nil_reif) 0.
+        (*  lExist. *)  (* aux5 lAforall lExist *)
+*) 
+
+MetaCoq Quote Definition nut1_check := (forall (A : Set) (l : list A), l = nil \/ (exists x l0, l = x :: l0)).
+Print nut1_check.
+
+
+Example nut1 := Eval compute in union_direct_total [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [(cutEvar nil_reif) ; (cutEvar cons_reif) ] [ [Set_reif ] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1] ]] 1.
+Print nut1.
+Print ex.
+
+
+Fail MetaCoq Unquote Definition nut1u := nut1.
+
+
+
+
+
+
+(* p (forall)  1 (forall) d_1 (exist) (d_2) 
+                           +1          1+ d_1 etc
+*)
 
 Print list_env_reif.
 
