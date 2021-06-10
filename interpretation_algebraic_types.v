@@ -786,12 +786,15 @@ MetaCoq Unquote Definition is_inj_cons_nat := (is_inj list_nat_reif cons_nat_rei
 
 Goal forall (n: nat), 2 + 2 = 4.
 Proof.
-  ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif]. reflexivity. Abort.
+  ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif].  reflexivity. Abort.
 
 
 Goal forall (n: nat), 2 + 2 = 4.
 Proof.
-  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 0. reflexivity. Abort.
+  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 0.
+  new_ctor_is_inj_tac nat_reif O_reif (@nil term) 0.
+  ctor_is_inj_tac nat_reif O_reif (@nil term).
+  reflexivity. Abort.
                                                                                                 
 
 
@@ -1034,25 +1037,6 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
   end.
 (* base case : f is 0-ary and  t is just f *)
 
-(* Print ex_reif.
-Print ex. *)
-
-Fixpoint new_is_in_codom (B t f: term ) (lA : list term) (p : nat) :=
-  (* if t : A and f : Pi lx lA . A, tells when t is in the codomain of f: returns exist vecx : lA, f vecx = t  *)
-  match (p, lA) with
-  | (_,[]) => 0 (* tApp eq_reif [B ; t ; f] *)
-  | (0,A :: tllA) => 0 
-  | (S p , A :: ttlA) =>  0
-  end.
-  
-Print List.map.
-Print List.length.
-Check List.map.
-Check List.length.
-
-Definition sq (n : nat ) := n * n.
-Definition msq := List.map sq.
-Check msq.
 
 
 Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
@@ -1080,7 +1064,7 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
     | _ => True_reif (* this case should not happen *)
     end in 
     let lExist := 
-      aux3 lB lf lD' lLen True_reif in 
+      aux3 lB lf lD' lLen False_reif in 
     let fix aux4 l p  l':= 
       match (l,p) with
       (* taks [A_1,...,A_n], outputs [A_p,...,A_1]*)
@@ -1088,9 +1072,13 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
       | ( [], _) => l'
       | (A :: l,S p ) => aux4 l p (A :: l')
       end in 
-      let lAforall := match lD with
+      let lAforall :=
+      match lB with
       | [] => []
-      | lA :: lD => aux4 lA p []
+      | B :: lB => match lD with
+      | [] => []
+      | lA :: lD => B :: (aux4 lA p [])
+      end
       end
       in 
       let fix aux5 lA t := 
@@ -1098,57 +1086,9 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
         | [] => t
         | A :: lA => aux5 lA (tProd (mkNamed "x") A t)
         end
-        in (*  lExist.  *) (* *aux2 (tApp list_reif [tRel 0]) (cutEvar nil_reif) [] 0. *)    aux2   (tApp list_reif [tRel 2] ) (cutEvar cons_reif) [tRel 0 ; tApp list_reif [tRel 1]] 2.        
-       (* aux2 [] (cutEvar nil_reif) 0. *)
-        (*  lExist. *)  (* aux5 lAforall lExist *)
+        in aux5 lAforall lExist.
 
-(* 
-Definition union_direct_total (B : term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
-  let lLen := List.map  (fun l => (@List.length term l -p) ) lD in 
-  let fix aux0 k i l  :=
-    (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
-    match k with
-    | 0 => l
-    | S k => aux0 k (i + 1) (tRel i :: l)
-    end
-  in
-  let fix aux1 lArev t :=
-    match lArev with
-    | [] => t 
-    | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x") (lift0 1 A) t])
-    end 
-  in 
-  let aux2 lA f k := aux1 (List.rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
-  let fix aux3 lf lD lLen t := 
-    match ((lf , lD), lLen )  with
-    | (([],[]),[]) => t
-   (* | ([f], [lA],[d]) => aux2  lA f d  ??? *)
-    | ((f:: lf, lA :: lD), d :: lLen) => aux3 lf lD lLen (mkOr (aux2 lA (cutEvar f) d) t)
-    | _ => True_reif (* this case should not happen *)
-    end in 
-    let lExist := 
-      aux3 lf lD lLen True_reif in 
-    let fix aux4 l p  l':= 
-      match (l,p) with
-      (* taks [A_1,...,A_n], outputs [A_p,...,A_1]*)
-      | (_, 0 ) => l' 
-      | ( [], _) => l'
-      | (A :: l,S p ) => aux4 l p (A :: l')
-      end in 
-      let lAforall := match lD with
-      | [] => []
-      | lA :: lD => aux4 lA p []
-      end
-      in 
-      let fix aux5 lA t := 
-        match lA with
-        | [] => t
-        | A :: lA => aux5 lA (tProd (mkNamed "x") A t)
-        end
-        in  (* aux2  [tRel 0; tApp list_reif [tRel 1] ]  (cutEvar cons_reif) 2 *)         
-        aux2 [] (cutEvar nil_reif) 0.
-        (*  lExist. *)  (* aux5 lAforall lExist *)
-*) 
+
 
 MetaCoq Quote Definition nut1_check := (forall (A : Set) (l : list A), l = nil \/ (exists x l0, l = x :: l0)).
 Print nut1_check.
@@ -1159,7 +1099,10 @@ Print nut1.
 Print ex.
 
 
-Fail MetaCoq Unquote Definition nut1u := nut1.
+MetaCoq Unquote Definition nut1u := nut1.
+Print nut1u.
+
+
 
 
 
@@ -1312,18 +1255,30 @@ Ltac ctor_ex_case :=
   end.
 (* too much backtracking *)
 
-
-
+(*
 Ltac codom_union_total_tac B lf lA :=
-  let toto := fresh "H" in pose_unquote_term_hnf (codom_union_total B lf lA) toto ; assert toto; unfold toto ;[ (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. (* \Q pq ctor_ex_case ; subst toto n'élimine-t-il pas toto ? *)
+  let toto := fresh "H" in pose_unquote_term_hnf (codom_union_total B lf lA) toto ; assert toto; unfold toto ;[ (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. *) 
+  (* \Q pq ctor_ex_case ; subst toto n'élimine-t-il pas toto ? *)
 
+
+Ltac dotac n t :=
+  match constr:(n) with
+  | 0 => idtac
+  | S ?k => t ; dotac k t
+  end.
+
+
+
+Ltac codom_union_total_tac lB lf lD p :=
+  let toto := fresh "H" in pose_unquote_term_hnf (union_direct_total lB lf lD p) toto ; assert toto; unfold toto ;[ dotac p intro ; (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. 
 
 (*    let h := fresh "x" in revert h  ; (let e' := intro h ; e ; exists h in revert_intro_ex_tac_aux n e')
   end.           
  *) 
 Goal 2 + 2 = 4.
 Proof.   
-  codom_union_total_tac list_nat_reif [nil_nat_reif ; cons_nat_reif ] [ [] ; [nat_reif; list_nat_reif]].
+  codom_union_total_tac [list_nat_reif ; list_nat_reif ] [nil_nat_reif ; cons_nat_reif ] [ [] ; [nat_reif; list_nat_reif]] 0.
+  codom_union_total_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [(cutEvar nil_reif) ; (cutEvar cons_reif) ] [ [Set_reif ] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1] ]] 1.
   reflexivity. 
 Qed.
 
@@ -1339,8 +1294,8 @@ Qed.
 Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.
 
-Ltac inj_disj_tac B lf lA   :=
-    ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA .
+Ltac inj_disj_tac lB lf lA p  :=
+    ctors_are_inj_tac lB lf lA p  (**;  pairw_disj_codom_tac B lf lA p *).
 
 
 Ltac inj_ctor_tac f :=
@@ -1369,20 +1324,22 @@ end.
 
 Goal 2+ 2 = 4.
 Proof.
-inj_total_disj_tac nat_reif [zero_reif ; S_reif] [ [] ; [nat_reif]].
+  inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0. 
+  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1).
+  inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  [] ; [nat_reif]] 0.  
 reflexivity.
 Abort.
 
 
 Goal 2 + 2 = 4.
 Proof.
-inj_total_disj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]].
+Fail inj_total_disj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]].
   reflexivity.
 Abort.
 
 Goal 2 + 2 = 4.
 Proof.
-  inj_total_disj_tac Nforest_reif [Nleaf_reif ; Ncons_reif] [[nat_reif] ; [Ntree_reif ; Nforest_reif]].
+  Fail inj_total_disj_tac Nforest_reif [Nleaf_reif ; Ncons_reif] [[nat_reif] ; [Ntree_reif ; Nforest_reif]].
 reflexivity.
 Abort.
 
