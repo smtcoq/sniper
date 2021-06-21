@@ -25,6 +25,22 @@ Ltac unquote_term t_reif :=
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
 let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
 
+
+Ltac unquote_list l :=
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => unquote_term x ; unquote_list xs
+end.
+
+Ltac prove_hypothesis H :=
+repeat match goal with
+  | H' := ?x : ?P |- _ =>  lazymatch P with 
+                | Prop => let def := fresh in assert (def : x) by 
+(intros; rewrite H; auto) ;  clear H'
+          end
+end.
+
+
 (* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
 Ltac inverse_tactic tactic := try (tactic; fail 1).
 

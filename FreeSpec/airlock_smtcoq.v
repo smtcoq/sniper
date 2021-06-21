@@ -71,7 +71,7 @@ end. *)
 
 
 Definition get_info_inductive (I : term) := 
-let p := type_no_app I in match p.1 with
+let p := no_app I in match p.1 with
 | tInd ind inst => Some (ind, inst)
 | _ => None
 end.
@@ -82,7 +82,19 @@ Fixpoint get_list_of_rel (i : nat) := match i with
 | S n => ((get_list_of_rel n) ++ [tRel n])%list (* n *)
 end.
 
-
+(* gets the list of constructors applied to the parameters of an inductive
+given an inductive recursively quoted and the number of its constructors *)
+Definition get_list_ctors_tConstruct_app I n := 
+let I' := get_info_inductive I in match I' with
+| Some J => let ind := J.1.1 in let inst := J.1.2 in let args := J.2 in let 
+fix aux n' ind' inst' args :=
+match n' with 
+| 0 => []
+| S m =>  (aux m ind' inst' args) ++ [tApp (tConstruct ind' m inst') args]
+end
+in aux n J.1.1 J.1.2 J.2
+| None => []
+end.
 
 
 (* gets the list of constructors given an inductive recursively quoted and the number of its constructors *)
@@ -105,18 +117,6 @@ let fix aux t (acc : list term) := match t with
 | tProd _ ty s => aux s (ty :: acc)
 | _ => acc 
 end in aux t [].
-
-
-
-Ltac prove_hypothesis H :=
-repeat match goal with
-  | H' := ?x : ?P |- _ =>  lazymatch P with 
-                | Prop => let def := fresh in assert (def : x) by 
-(intros; rewrite H; auto) ;  clear H'
-          end
-end.
-
-
 
 
 
@@ -170,19 +170,6 @@ match l_ctors_and_ty_ctors  with
 ((prenex_quantif_list_ctor x (list_of_args y) l_ty E) :: acc)
 end
 in aux E l_ctors_and_ty_ctors l_ty [].
-
-
-Ltac prove_list_hypothesis H l := match constr:(l) with 
-| [] => idtac 
-| cons ?x ?xs => run_template_program (tmUnquote x) (fun x => let y := eval cbv in x.(my_projT2) in 
-assert y by (rewrite H ; reflexivity) ; prove_list_hypothesis H constr:(xs))
-end.
-
-Ltac count_prenex_forall H :=
-  match H with
-| forall _ : _, ?A => constr:(S ltac:(count_prenex_forall A))
-| _ => constr:(0)
-end.
 
 
 
