@@ -152,7 +152,7 @@ Definition list_of_args (t : term) := let fix aux acc t n := match t with
   | 0 => aux (t1 :: acc) t2 n
   | S m => aux acc t2 m
 end
-| tApp u l => aux acc u (Datatypes.length l)
+| tApp u l => aux acc u (n + Datatypes.length l)
 | _ => acc
 end in aux [] t 0.
 
@@ -163,19 +163,35 @@ Definition prenex_quantif_list_ctor (c : term) (l : list term) (l' : list term) 
 (* c is the constructor reified, l is the list of the type of its arguments, l' is the list of the 
 type of the prenex quantification in the hypothesis, E is the environment *)
 let n := Datatypes.length l in
-prenex_quantif_list l' (prenex_quantif_list l (subst [tApp (lift n 0 c) (rev (get_list_of_rel n))] 0 (lift n 1 E))).
+prenex_quantif_list l' 
+(prenex_quantif_list l (subst [tApp (lift 1 0 c) (rev (get_list_of_rel n))] 0 (lift n 1 E))).
+
+
+
+Fixpoint lift_list (l: list term) (n : nat) := match l with
+| nil => nil
+| cons x xs => lift n 0 x :: lift_list xs n
+end.
+
+Definition prenex_quantif_list_ctor' (c : term) (l : list term) (l' : list term) (E : term) :=
+(* c is the constructor reified, l is the list of the type of its arguments, l' is the list of the 
+type of the prenex quantification in the hypothesis, E is the environment *)
+let n := Datatypes.length l in let n' := Datatypes.length l' in
+prenex_quantif_list l' 
+(prenex_quantif_list (lift_list l 1) (subst [tApp (lift 1 0 c) (rev (get_list_of_rel n))] 0 (lift n 1 E))).
 
 Definition get_equalities (E : term) (l_ctors_and_ty_ctors : list (term * term))  (l_ty : list term) := 
-
+let n := Datatypes.length l_ty in
 let fix aux (E : term) l_ctors_and_ty_ctors (l_ty : list term) acc :=
 match l_ctors_and_ty_ctors  with
 | nil => acc
 | (x, y):: xs => aux E xs l_ty
-((prenex_quantif_list_ctor x (list_of_args y) l_ty E) :: acc)
+((prenex_quantif_list_ctor' (lift 1 0 x) (list_of_args y) l_ty E) :: acc)
 end
 in aux E l_ctors_and_ty_ctors l_ty [].
 
-
+(* TODO : j'ai lifté de 1 la liste des arguments du constructeur et le constructeur lui-même. Comprendre pourquoi. 
+Probablement lié au fait que l'on prend le constructeur déjà appliqué *)
 
 Ltac eliminate_pattern_matching_test H :=
 
@@ -204,7 +220,7 @@ let T := eval cbv in Env.2 in
 let e := eval cbv in Env.1 in
 let prod := eval cbv in (get_env T n) in clear n ;
 let E := eval cbv in prod.1.2 in
-let l := eval cbv in prod.1.1 in
+let l := eval cbv in prod.1.1 in pose l ;
 let A := eval cbv in prod.2 in
 let l_ty_ctors := eval cbv in (list_types_of_each_constructor_no_subst (e, A)) in
 pose l_ty_ctors as l_ty_ct;
@@ -244,6 +260,73 @@ end) -> True).
 Proof.
 intros H. 
 eliminate_pattern_matching_test H.
+let l := constr:(tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+         (tSort
+            {|
+              Universe.t_set :=
+                {|
+                  UnivExprSet.this := [(Level.Level "Sniper.FreeSpec.handle_indexes.1379", 0)];
+                  UnivExprSet.is_ok :=
+                    UnivExprSet.Raw.singleton_ok (Level.Level "Sniper.FreeSpec.handle_indexes.1379", 0)
+                |};
+              Universe.t_ne := eq_refl
+            |})
+         (tProd {| binder_name := nAnon; binder_relevance := Relevant |} (tRel 0)
+            (tProd {| binder_name := nAnon; binder_relevance := Relevant |} 
+               (tRel 1)
+               (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
+                  (tApp
+                     (tInd
+                        {|
+                          inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                          inductive_ind := 0
+                        |} []) [tRel 2])
+                  (tApp
+                     (tInd
+                        {|
+                          inductive_mind := (MPfile ["Logic"; "Init"; "Coq"], "eq"); inductive_ind := 0
+                        |} [])
+                     [tRel 3;
+                     tApp (tConst (MPfile ["List"; "Lists"; "Coq"], "hd") [])
+                       [tRel 3; tRel 2;
+                       tApp
+                         (tApp
+                            (tConstruct
+                               {|
+                                 inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                                 inductive_ind := 0
+                               |} 1 []) [tRel 3]) [tRel 1; tRel 0]];
+                     tCase
+                       ({|
+                          inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                          inductive_ind := 0
+                        |}, 1, Relevant)
+                       (tLambda {| binder_name := nNamed "l"; binder_relevance := Relevant |}
+                          (tApp
+                             (tInd
+                                {|
+                                  inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                                  inductive_ind := 0
+                                |} []) [tRel 3]) (tRel 4))
+                       (tApp
+                          (tApp
+                             (tConstruct
+                                {|
+                                  inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                                  inductive_ind := 0
+                                |} 1 []) [tRel 3]) [tRel 1; tRel 0])
+                       [(0, tRel 2);
+                       (2,
+                       tLambda {| binder_name := nNamed "y"; binder_relevance := Relevant |} 
+                         (tRel 3)
+                         (tLambda {| binder_name := nNamed "ys"; binder_relevance := Relevant |}
+                            (tApp
+                               (tInd
+                                  {|
+                                    inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                                    inductive_ind := 0
+                                  |} []) [tRel 4]) (tRel 1)))]]))))) in run_template_program (tmUnquote l) ltac:(fun t => 
+let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
 let l := eval unfold l in l in unquote_list l.
 expand_fun min1.
 expand_fun hd.
