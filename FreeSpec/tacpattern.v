@@ -1,6 +1,5 @@
 Require Import sniper.
 From MetaCoq Require Import All.
-Require Import Strings.String.
 
 Ltac metacoq_get_value p :=
   let id := fresh in
@@ -22,6 +21,7 @@ let x := metacoq_get_value (tmQuoteConstant "n" true) in idtac x.
 let x := metacoq_get_value (tmQuoteConstant "n" false) in idtac x. *)
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
+Abort.
 
 Print lookup_env.
 Print Ast.
