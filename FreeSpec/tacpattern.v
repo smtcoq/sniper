@@ -1,6 +1,27 @@
 Require Import sniper.
 From MetaCoq Require Import All.
+Require Import Strings.String.
 
+Ltac metacoq_get_value p :=
+  let id := fresh in
+  let _ := match goal with _ => run_template_program p
+  (fun t => pose (id := t)) end in
+  let x := eval cbv delta [id] in id in
+  let _ := match goal with _ => clear id end in
+  x.
+
+Lemma n : nat.
+exact 0.
+Qed.
+
+Goal True.
+let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
+let x := metacoq_get_value (tmQuote bool) in idtac x.
+(* let x := metacoq_get_value (tmQuoteInductive "bool") in idtac x. 
+let x := metacoq_get_value (tmQuoteConstant "n" true) in idtac x.
+let x := metacoq_get_value (tmQuoteConstant "n" false) in idtac x. *)
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
 
 Print lookup_env.
 Print Ast.
