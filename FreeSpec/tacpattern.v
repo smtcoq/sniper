@@ -8,6 +8,10 @@ Ltac metacoq_get_value p :=
   let x := eval cbv delta [id] in id in
   let _ := match goal with _ => clear id end in
   x.
+Print kername.
+
+MetaCoq Quote Definition bool_reif := bool.
+Print bool_reif.
 
 Lemma n : nat.
 exact 0.
@@ -16,8 +20,8 @@ Qed.
 Goal True.
 let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
 let x := metacoq_get_value (tmQuote bool) in idtac x.
-(* let x := metacoq_get_value (tmQuoteInductive "bool") in idtac x. 
-let x := metacoq_get_value (tmQuoteConstant "n" true) in idtac x.
+let x := metacoq_get_value (tmQuoteInductive (MPfile ["Datatypes"; "Init"; "Coq"], "bool")) in idtac x. 
+(* let x := metacoq_get_value (tmQuoteConstant "n" true) in idtac x.
 let x := metacoq_get_value (tmQuoteConstant "n" false) in idtac x. *)
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
@@ -72,6 +76,21 @@ let H := fresh in get_nb_constructors_tac bool H.
 Abort.
 
 
+Ltac create_evars_for_each_constructor i := 
+let y := metacoq_get_value (tmQuoteRec i) in 
+let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let rec tac_rec u := match constr:(u) with 
+      | 0 => idtac
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
+end in tac_rec n.
+
+Goal True.
+
+create_evars_for_each_constructor bool.
+create_evars_for_each_constructor unit.
+create_evars_for_each_constructor nat.
+Abort.
+
 
 
 Ltac eliminate_pattern_matching H :=
@@ -88,10 +107,8 @@ Ltac eliminate_pattern_matching H :=
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
                                     | S ?p => instantiate (n_evar := p) ; let T := type of x in 
-run_template_program (tmQuoteRec T) ltac:(fun T_reif_rec => 
-let n := eval cbv in (get_nb_constructors T_reif_rec.2 T_reif_rec.1) in 
-)
-                                        end
+create_evars_for_each_constructor m
+                                    end
       | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
     end 
