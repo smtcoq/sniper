@@ -91,6 +91,18 @@ create_evars_for_each_constructor unit.
 create_evars_for_each_constructor nat.
 Abort.
 
+Ltac create_evars_and_inst n k := 
+let rec tac_rec n l :=
+match constr:(n) with 
+| 0 => idtac 
+| S ?m => let H := fresh in let H_evar := fresh in epose 
+(H := ?[H_evar] : nat) ; tac_rec m constr:(H :: l) ; k l end in tac_rec n (@nil nat).
+
+Goal True.
+create_evars_and_inst 4 ltac:( fun l => repeat match goal with 
+| x : nat |- _ => instantiate (x := 1)
+end). (* comportement super bizarre quand on enlève le repeat *)
+exact I. 
 
 
 Ltac eliminate_pattern_matching H :=
@@ -107,7 +119,12 @@ Ltac eliminate_pattern_matching H :=
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
                                     | S ?p => instantiate (n_evar := p) ; let T := type of x in 
-create_evars_for_each_constructor m
+let y := metacoq_get_value (tmQuoteRec T) in 
+let nconst:= eval cbv in (get_nb_constructors y.2 y.1) in
+let rec tac_rec_constr u := match constr:(u) with 
+      | 0 => idtac
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec_constr m
+end in tac_rec nconst
                                     end
       | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
