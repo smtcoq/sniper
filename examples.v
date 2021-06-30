@@ -10,7 +10,7 @@
 (**************************************************************************)
 
 
-Require Import sniper.
+Require Import Sniper.
 Require Import tree.
 Require Import Bool.
 Require Import Coq.Lists.List.
