@@ -5,6 +5,5 @@
 *.vos
 *.glob
 .lia.cache
-Makefile
 Makefile.conf
 *~

@@ -77,11 +77,6 @@ This command adds the tools installed by opam to PATH
 eval $(opam env)
 ```
 
-We generate the makefile for snipe:
-```
-coq_makefile -f _CoqProject -o Makefile
-```
-
 We build snipe:
 ```
 make
