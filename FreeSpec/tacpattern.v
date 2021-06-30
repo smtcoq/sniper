@@ -91,17 +91,24 @@ create_evars_for_each_constructor unit.
 create_evars_for_each_constructor nat.
 Abort.
 
-Ltac create_evars_and_inst n k := 
-let rec tac_rec n l :=
+Ltac create_evars_and_inst_rec n l := 
 match constr:(n) with 
-| 0 => idtac 
-| S ?m => let H := fresh in let H_evar := fresh in epose 
-(H := ?[H_evar] : nat) ; tac_rec m constr:(H :: l) ; k l end in tac_rec n (@nil nat).
+| 0 => l
+| S ?m => let H := fresh in 
+let H_evar := fresh in 
+let _ := match goal with _ => epose (H := ?[H_evar] : nat) end in 
+create_evars_and_inst_rec m constr:(H :: l) end.
+
 
 Goal True.
-create_evars_and_inst 4 ltac:( fun l => repeat match goal with 
-| x : nat |- _ => instantiate (x := 1)
-end). (* comportement super bizarre quand on enlève le repeat *)
+
+let l:= (create_evars_and_inst_rec 4 (@nil nat)) in pose l. (* comportement super bizarre quand on enlève le repeat *) 
+
+Ltac create_evars_and_inst n := 
+create_evars_and_inst_rec n (@nil nat).
+
+
+let l:= (create_evars_and_inst 4) in pose l. (* comportement super bizarre quand on enlève le repeat *)
 exact I. 
 
 
