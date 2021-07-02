@@ -31,7 +31,7 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-The version of metacoq that we use requires OCaml between 4.07 and 4.10:
+It requires OCaml between 4.07 and 4.10:
 ```
 opam switch create 4.07.1
 eval $(opam env)
