@@ -1,10 +1,10 @@
-# sniper
+# Sniper
 
-`sniper` is a Coq plugin that provides a new Coq tactic, `snipe`, that
+`Sniper` is a Coq plugin that provides a new Coq tactic, `snipe`, that
 provides general proof automation.
 
 This plugin is an extension of [SMTCoq](https://smtcoq.github.io), a
-plugin to safely call external SMT solvers from Coq. `sniper` extends
+plugin to safely call external SMT solvers from Coq. `Sniper` extends
 SMTCoq by translating (a subset) of Coq goals into first-order logic
 before calling SMTCoq.
 
@@ -31,34 +31,26 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-The version of metacoq that we use requires ocaml < 4.10 and >= 4.09:
+It requires OCaml between 4.07 and 4.10:
 ```
-opam switch create 4.09.1
-```
-
-Snipe requires coq 8.11:
-```
-opam install coqide.8.11.2
+opam switch create 4.07.1
+eval $(opam env)
 ```
 
-Metacoq is available through the `coq-released` opam repository:
+You need to add two opam repositories:
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
-```
-
-Snipe requires this version of metacoq:
-```
-opam install coq-metacoq.1.0~beta2+8.11
-```
-
-Smtcoq is available through the `coq-extra-dev` opam repository:
-```
 opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
-opam install coq-smtcoq
 ```
 
-Sources of the veriT SMT solver are distributed
-[here](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
+Then simply install `Sniper`:
+```
+opam install coq-sniper
+```
+
+It can be used with Coq 8.11 to 8.13.
+
+You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
 ```
 cd veriT9f48a98
@@ -72,24 +64,19 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-This command adds the tools installed by opam to PATH
-```
-eval $(opam env)
-```
+You can see examples in the
+[examples.v](https://github.com/smtcoq/sniper/blob/master/examples.v)
+file. Have fun!
 
-We build snipe:
-```
-make
-```
 
-Now you can run the examples in coqide:
-```
-coqide examples.v
-```
-
-Have fun!
+## Companion paper
+[General automation in Coq through modular transformations](https://pxtp.gitlab.io/2021/papers/Blot-et-al_Automation-modular-transformation.pdf), at PxTP'21
 
 
 ## License
-As an extension of SMTCoq, `sniper` is released under the same license
+As an extension of SMTCoq, `Sniper` is released under the same license
 as SMTCoq: CeCILL-C. See the file LICENSE for details.
+
+
+## Authors
+See the file [AUTHORS](https://github.com/smtcoq/sniper/blob/master/AUTHORS).
