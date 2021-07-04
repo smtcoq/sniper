@@ -91,6 +91,22 @@ create_evars_for_each_constructor unit.
 create_evars_for_each_constructor nat.
 Abort.
 
+Lemma dummy_length : forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end.
+intros. destruct l; simpl;  reflexivity. Qed.
+
+Lemma test_match: (False -> forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end) 
+/\ True.
+Proof. create_evars_for_each_constructor list. split.
+intros Hfalse A l. case l; try clear l; revert A; 
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end.
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; apply dummy_length) ; clear u end.
+exact I. 
+Qed. 
+ 
+
+
 Ltac create_evars_and_inst_rec n l := 
 match constr:(n) with 
 | 0 => l
@@ -98,6 +114,8 @@ match constr:(n) with
 let H_evar := fresh in 
 let _ := match goal with _ => epose (H := ?[H_evar] : nat) end in 
 create_evars_and_inst_rec m constr:(H :: l) end.
+
+
 
 
 Goal True.
