@@ -94,7 +94,7 @@ Abort.
 Lemma dummy_length : forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end.
 intros. destruct l; simpl;  reflexivity. Qed.
 
-Lemma test_match: (False -> forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end) 
+Lemma test_length: (False -> forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end) 
 /\ True.
 Proof. create_evars_for_each_constructor list. split.
 intros Hfalse A l. case l; try clear l; revert A; 
@@ -104,8 +104,56 @@ repeat match goal with
 | u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; apply dummy_length) ; clear u end.
 exact I. 
 Qed. 
- 
 
+Definition interface := Type -> Type.
+Definition Ω := (bool * bool)%type.
+Inductive door : Set :=  left : door | right : door.
+Inductive DOORS : interface :=
+| IsOpen : door -> DOORS bool
+| Toggle : door -> DOORS unit.
+
+Definition sel : door -> Ω -> bool := fun d : door => match d with
+                      | left => fst
+                      | right => snd
+                      end
+.
+
+Definition doors_o_callee2 :  Ω -> forall (a : Type) (D :  DOORS a), (match D with 
+| IsOpen _ =>  bool 
+| Toggle _ => unit
+end) -> bool :=
+fun ω a D => match D with
+| IsOpen d => fun x => Bool.eqb (sel d ω) x
+| Toggle d => fun x => true
+end.
+
+Lemma dummy_doors : 
+doors_o_callee2 =
+fun ω a D => match D with
+| IsOpen d => fun x => Bool.eqb (sel d ω) x
+| Toggle d => fun x => true
+end.
+unfold doors_o_callee2. reflexivity. Qed.
+
+
+Lemma test_door : (False -> forall (ω: Ω) (a : Type) (D :  DOORS a) (u: match D with 
+| IsOpen _ =>  bool 
+| Toggle _ => unit
+end), doors_o_callee2 ω a D = match D with
+| IsOpen d => fun x => Bool.eqb (sel d ω) x
+| Toggle d => fun x => true
+end) /\ True.
+create_evars_for_each_constructor DOORS; split. intro Hfalse. intros. case D ;
+try clear D; revert a D u.   
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end.
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end.
+
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; try (apply dummy_doors); reflexivity); clear u end.
+
+exact I. Abort. 
 
 Ltac create_evars_and_inst_rec n l := 
 match constr:(n) with 
