@@ -169,14 +169,18 @@ match constr:(n) with
 end.
 
 
-Ltac intro_and_tuple n l := 
+Ltac intro_and_tuple_rec n l := 
 match constr:(n) with
 | 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, l))
-| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_tuple m (H, l)
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_tuple_rec m (H, l)
 end.
 
+Ltac intro_and_tuple n :=
+intro_and_tuple_rec n unit.
+
+
 Lemma test_intro_and_tuple :  forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
-let p := intro_and_tuple 4 unit in pose (p0 := p). reflexivity. Qed.
+let p := intro_and_tuple 4 in pose (p0 := p). reflexivity. Qed.
 
 
 Ltac create_evars_and_inst n := 
@@ -205,13 +209,21 @@ let n := constr:(4)  in let id := intro_and_return_last_ident n in idtac id. ref
 
 Ltac revert_tuple p := 
 lazymatch constr:(p) with
-| (?x, ?y) => revert y; revert_tuple x 
-| _ => revert p
+| (?x, ?y) => try (revert y); revert_tuple x 
+| _ => try (revert p)
+end.
+
+Definition head_tuple (A B : Type) (x : A*B) := match x with
+|(y, z) => y
+end.
+
+Definition tail_tuple (A B : Type) (x : A*B) := match x with
+|(y, z) => z
 end.
 
 
 Lemma test_revert_tuple : forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
-intros. revert_tuple (A, B, C, n0, n', x). reflexivity. Qed.
+intros. revert_tuple (A, B, C, n0, n', x, unit). reflexivity. Qed. (*  unit in first *)
 
 
 Ltac eliminate_pattern_matching H :=
@@ -228,7 +240,15 @@ Ltac eliminate_pattern_matching H :=
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
                                     | S ?p => instantiate (n_evar := p) ; let Indu := type of x in 
-create_evars_for_each_constructor Indu
+create_evars_for_each_constructor Indu ; assert 
+(False -> H) ; [let Hfalse' := fresh in intro Hfalse' ; 
+let t := intro_and_tuple p in 
+let var_match := eval cbv in (head_tuple t) in
+let var_to_revert := eval cbv in (tail_tuple t) in
+case var_match ; try (clear var_match) ; revert_tuple var_to_revert ;
+repeat match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end] ; repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; try (apply H); reflexivity); clear u end
                                     end
       | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
@@ -236,17 +256,12 @@ create_evars_for_each_constructor Indu
 in
     tac_rec 0 ltac:(fresh) ;
     destruct HFalse
-  | clear H' ;
-run_template_program (tmQuoteRec T) (fun Env => 
-let T := eval cbv in Env.2 in
-let e := eval cbv in Env.1 in
-let prod := eval cbv in (get_env T n) in clear n ;
-let E := eval cbv in prod.1.2 in
-let l := eval cbv in prod.1.1 in 
-let A := eval cbv in prod.2 in
-let l_ty_ctors := eval cbv in (list_types_of_each_constructor (e, A)) in
-let n := eval cbv in (Datatypes.length l_ty_ctors) in
-let l_ctors := eval cbv in (get_list_ctors_tConstruct_applied A n) in 
-let l_ctor_and_ty_ctor := eval cbv in (combine l_ctors l_ty_ctors) in
-let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
- unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
+  | clear H' ] ; clear H.
+
+
+
+Goal False.
+get_def length. expand_hyp length_def. eliminate_fix_hyp H. 
+eliminate_pattern_matching H0.
+
+
