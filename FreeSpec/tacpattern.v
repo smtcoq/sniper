@@ -168,6 +168,17 @@ match constr:(n) with
 | S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_return_last_ident m
 end.
 
+
+Ltac intro_and_tuple n l := 
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, l))
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_tuple m (H, l)
+end.
+
+Lemma test_intro_and_tuple :  forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
+let p := intro_and_tuple 4 unit in pose (p0 := p). reflexivity. Qed.
+
+
 Ltac create_evars_and_inst n := 
 create_evars_and_inst_rec n (@nil nat).
 
@@ -189,8 +200,18 @@ end in tac_rec n. revert H2 H1. revert H0 H. (* type dépendant = revert un par 
 
 
 
-let n := constr:(4)  in let id := intro_and_return_last_ident n in idtac id.
-intro A. intro B. intro C at top. reflexivity. Qed. (* intro at top : just after the dependencies *) 
+let n := constr:(4)  in let id := intro_and_return_last_ident n in idtac id. reflexivity.  Qed.
+
+
+Ltac revert_tuple p := 
+lazymatch constr:(p) with
+| (?x, ?y) => revert y; revert_tuple x 
+| _ => revert p
+end.
+
+
+Lemma test_revert_tuple : forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
+intros. revert_tuple (A, B, C, n0, n', x). reflexivity. Qed.
 
 
 Ltac eliminate_pattern_matching H :=
