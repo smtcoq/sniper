@@ -17,12 +17,15 @@ Lemma n : nat.
 exact 0.
 Qed.
 
+MetaCoq Quote Definition n_reif := n.
+Print n_reif.
+
 Goal True.
 let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
 let x := metacoq_get_value (tmQuote bool) in idtac x.
 let x := metacoq_get_value (tmQuoteInductive (MPfile ["Datatypes"; "Init"; "Coq"], "bool")) in idtac x. 
-(* let x := metacoq_get_value (tmQuoteConstant "n" true) in idtac x.
-let x := metacoq_get_value (tmQuoteConstant "n" false) in idtac x. *)
+let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n") true) in idtac x.
+let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n") false) in idtac x. 
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
 Abort.
@@ -118,7 +121,7 @@ Definition sel : door -> Ω -> bool := fun d : door => match d with
                       end
 .
 
-Definition doors_o_callee2 :  Ω -> forall (a : Type) (D :  DOORS a), (match D with 
+Definition doors_o_callee2 : forall (ω :  Ω) (a : Type) (D :  DOORS a), (match D with 
 | IsOpen _ =>  bool 
 | Toggle _ => unit
 end) -> bool :=
@@ -143,14 +146,10 @@ end), doors_o_callee2 ω a D = match D with
 | IsOpen d => fun x => Bool.eqb (sel d ω) x
 | Toggle d => fun x => true
 end) /\ True.
-create_evars_for_each_constructor DOORS; split. intro Hfalse. intros. case D ;
-try clear D; revert a D u.   
+create_evars_for_each_constructor DOORS; split. intro Hfalse. intros ω a D u ; case D ;
+try clear D; revert a D u; 
 match goal with 
-| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end.
-match goal with 
-| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end.
-
-repeat match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse end; repeat match goal with 
 | u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; try (apply dummy_doors); reflexivity); clear u end.
 
 exact I. Abort. 
@@ -163,19 +162,35 @@ let H_evar := fresh in
 let _ := match goal with _ => epose (H := ?[H_evar] : nat) end in 
 create_evars_and_inst_rec m constr:(H :: l) end.
 
-
-
-
-Goal True.
-
-let l:= (create_evars_and_inst_rec 4 (@nil nat)) in pose l. (* comportement super bizarre quand on enlève le repeat *) 
+Ltac intro_and_return_last_ident n := 
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in u
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_return_last_ident m
+end.
 
 Ltac create_evars_and_inst n := 
 create_evars_and_inst_rec n (@nil nat).
 
+Goal True.
 
-let l:= (create_evars_and_inst 4) in pose l. (* comportement super bizarre quand on enlève le repeat *)
+let l:= (create_evars_and_inst_rec 4 (@nil nat)) in pose l. (* comportement super bizarre quand on enlève le repeat *) 
+let l:= (create_evars_and_inst 4) in pose l.
+repeat match goal with | u : nat |-_ => instantiate (u := 0) end. 
+(* comportement super bizarre quand on enlève le repeat, une variable n'est jamais instanciée *)
 exact I. 
+Abort.
+
+Lemma test_intros : forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
+Proof.
+let n := constr:(3) in let rec tac_rec n := match n with
+| 0 => let u := fresh in intro u
+| S ?m => let H := fresh in intro H ; tac_rec m
+end in tac_rec n. revert H2 H1. revert H0 H. (* type dépendant = revert un par un, automatiser le revert peut-être *)
+
+
+
+let n := constr:(4)  in let id := intro_and_return_last_ident n in idtac id.
+intro A. intro B. intro C at top. reflexivity. Qed. (* intro at top : just after the dependencies *) 
 
 
 Ltac eliminate_pattern_matching H :=
@@ -191,13 +206,8 @@ Ltac eliminate_pattern_matching H :=
         match goal with
       | |- context C[match x with _ => _ end] =>  match constr:(m) with
                                     | 0 => fail
-                                    | S ?p => instantiate (n_evar := p) ; let T := type of x in 
-let y := metacoq_get_value (tmQuoteRec T) in 
-let nconst:= eval cbv in (get_nb_constructors y.2 y.1) in
-let rec tac_rec_constr u := match constr:(u) with 
-      | 0 => idtac
-      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec_constr m
-end in tac_rec nconst
+                                    | S ?p => instantiate (n_evar := p) ; let Indu := type of x in 
+create_evars_for_each_constructor Indu
                                     end
       | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail
