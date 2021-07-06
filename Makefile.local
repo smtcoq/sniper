@@ -2,5 +2,11 @@ examples: examples.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
+tests: tests.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+test: examples tests
+
 clean::
-	rm examples.glob examples.vo examples.vok examples.vos
+	rm -f examples.glob examples.vo examples.vok examples.vos tests.glob tests.vo tests.vok tests.vos
