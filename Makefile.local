@@ -1,0 +1,6 @@
+examples: examples.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+clean::
+	rm examples.glob examples.vo examples.vok examples.vos

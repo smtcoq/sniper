@@ -9,4 +9,3 @@ elimination_fixpoints.v
 interpretation_algebraic_types.v
 tree.v
 Sniper.v
-examples.v
