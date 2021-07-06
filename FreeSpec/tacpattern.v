@@ -13,19 +13,19 @@ Print kername.
 MetaCoq Quote Definition bool_reif := bool.
 Print bool_reif.
 
-Lemma n : nat.
+Lemma n' : nat.
 exact 0.
 Qed.
 
-MetaCoq Quote Definition n_reif := n.
-Print n_reif.
+MetaCoq Quote Definition n'_reif := n'.
+Print n'_reif.
 
 Goal True.
 let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
 let x := metacoq_get_value (tmQuote bool) in idtac x.
 let x := metacoq_get_value (tmQuoteInductive (MPfile ["Datatypes"; "Init"; "Coq"], "bool")) in idtac x. 
-let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n") true) in idtac x.
-let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n") false) in idtac x. 
+let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n'") true) in idtac x.
+let x := metacoq_get_value (tmQuoteConstant (MPfile ["tacpattern"; "FreeSpec"; "Sniper"], "n'") false) in idtac x. 
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
 let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
 Abort.
@@ -87,11 +87,20 @@ let rec tac_rec u := match constr:(u) with
       | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
 end in tac_rec n.
 
+Ltac create_evars_for_each_constructor_test i := 
+let y := metacoq_get_value (tmQuoteRec i) in 
+let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let rec tac_rec u := match constr:(u) with 
+      | 0 => idtac
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; idtac H' ; tac_rec m
+end in tac_rec n.
+
 Goal True.
 
 create_evars_for_each_constructor bool.
 create_evars_for_each_constructor unit.
 create_evars_for_each_constructor nat.
+create_evars_for_each_constructor_test nat.
 Abort.
 
 Lemma dummy_length : forall A (l : list A), length l = match l with | nil => 0 | cons x xs => S (length xs) end.
@@ -213,9 +222,13 @@ lazymatch constr:(p) with
 | _ => try (revert p)
 end.
 
-Definition head_tuple (A B : Type) (x : A*B) := match x with
+Definition head_tuple (A B : Type) (x : A×B) := match x with
 |(y, z) => y
 end.
+
+Print head_tuple.
+Compute head_tuple _ _ (1, tt).
+
 
 Definition tail_tuple (A B : Type) (x : A*B) := match x with
 |(y, z) => z
@@ -223,45 +236,154 @@ end.
 
 
 Lemma test_revert_tuple : forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
-intros. revert_tuple (A, B, C, n0, n', x, unit). reflexivity. Qed. (*  unit in first *)
+intros. revert_tuple (A, B, C, n'0, n', x, unit). reflexivity. Qed. (*  unit in first *)
+
+Ltac detect_var_match H :=
+
+let T := type of H in 
+let H' := fresh in 
+assert (H' : False -> T) by
+(match goal with | |-context C[match ?x with _ => _ end] => idtac x end; let Hfalse := fresh in 
+intro Hfalse; destruct Hfalse) ; clear H' ; idtac.
+
+
+(* tac H n analyse l'hypothèse H qui doit être de la forme
+     forall x0, forall x1, ... forall x(k-1), E[match xi with _ end]
+   et définit une constante entière nommée n de valeur i *)
+Ltac tac H n :=
+  (* tac_rec n x k renvoie k n si le but contient un match x with _ end,
+     sinon elle introduit si elle peut une variable dans le contexte et
+     s'appelle récursivement en incrémentant n,
+     et sinon échoue *)
+  let rec tac_rec n x k :=
+    match goal with
+        (* ça réussit *)
+      | |- context[match x with _ => _ end] => k n
+        (* on introduit une variable et on appelle récursivement avec
+           le nom de cette variable et en incrémentant le premier paramètre *)
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S n) y k
+      | _ => fail
+    end in
+  (* cette evar sert à transmettre un resultat dans l'autre but qui sera généré *)
+  evar (n : nat);
+  let A := type of H in
+  let H' := fresh in
+  (* on crée artificiellement un but trivial à partir de l'hypothèse *)
+  assert (H' : False -> A);
+  [ let HFalse := fresh in
+    intro HFalse;
+    (* on appelle tac_rec avec 0, une variable fraîche (qui ne peut donc
+       pas apparaître dans H) et une continuation bien choisie *)
+    tac_rec 0 ltac:(fresh) ltac:(fun m =>
+      match constr:(m) with
+          (* ce cas ne peut pas arriver car on a passé une variable fraîche à tac_rec *)
+        | 0 => fail
+          (* c'est le cas qui réussit, on instantie alors n *)
+        | S ?p => instantiate (n := p)
+      end);
+    destruct HFalse (* on ferme le premier sous-but *)
+  | clear H' (* on efface l'hypothèse qui a été rajoutée *) ].
+
+Goal (forall (a : nat) (b : nat) (c : nat), match a with 0 => a | S _ => c end = 0) -> True.
+intro H.
+tac H n. (* n = 0 *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), match b with 0 => a | S _ => c end = 0) -> True.
+intro H.
+tac H n. (* n = 1 *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), match c with 0 => a | S _ => c end = 0) -> True.
+intro H.
+tac H n. (* n = 2 *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), match 3 + 4 with 0 => a | S _ => c end = 0) -> True.
+intro H.
+Fail tac H n. (* le match n'est pas sur une variable *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), match b + c with 0 => a | S _ => c end = 0) -> True.
+intro H.
+Fail tac H n. (* le match n'est pas sur une variable *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), 0 = 0) -> True.
+intro H.
+Fail tac H n. (* il n'y a pas de match *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), (forall d : nat, match d with 0 => a | S _ => c end = 0) -> False) -> True.
+intro H.
+Fail tac H n. (* le match est sur une variable qui n'est pas quantifiée de manière prénexe *)
+exact I.
+Qed.
+
+Goal (forall (a : nat) (b : nat) (c : nat), (forall d : nat, match b with 0 => a | S _ => c end = 0) -> False) -> True.
+intro H.
+tac H n. (* n = 1 *)
+exact I.
+Qed.
+
+Goal forall x : nat, (forall (a : nat) (b : nat) (c : nat), match x with 0 => a | S _ => c end = 0) -> True.
+intros x H.
+Fail tac H n. (* le match est sur une variable qui n'est pas quantifiée de manière prénexe *)
+exact I.
+Qed.
 
 
 Ltac eliminate_pattern_matching H :=
 
   let n := fresh "n" in 
-  epose (n := ?[n_evar] : nat);
-  let T := type of H in
+  let T := fresh "T" in 
+  epose (n := ?[n_evar] : nat) ;
+  epose (T := ?[T_evar] : Type) ;
+  let U := type of H in
   let H' := fresh in
-  assert (H' : False -> T);
+  assert (H' : False -> U);
   [ let HFalse := fresh in
     intro HFalse;
     let rec tac_rec m x :=
         match goal with
-      | |- context C[match x with _ => _ end] =>  match constr:(m) with
-                                    | 0 => fail
-                                    | S ?p => instantiate (n_evar := p) ; let Indu := type of x in 
-create_evars_for_each_constructor Indu ; assert 
-(False -> H) ; [let Hfalse' := fresh in intro Hfalse' ; 
-let t := intro_and_tuple p in 
-let var_match := eval cbv in (head_tuple t) in
-let var_to_revert := eval cbv in (tail_tuple t) in
-case var_match ; try (clear var_match) ; revert_tuple var_to_revert ;
-repeat match goal with 
-| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end] ; repeat match goal with 
-| u : Prop |-_ => let u' := eval unfold u in u in assert u' by ( intros; try (apply H); reflexivity); clear u end
-                                    end
-      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
-      | _ => fail
-    end 
+      | |- context C[match x with _ => _ end] => idtac "1" ; match constr:(m) with
+                                    | 0 => idtac "2" ; fail
+                                    | S ?p => idtac "3" ; instantiate (n_evar := p) ; let T' := type of x in idtac T' ; instantiate (T_evar := T')
+                                     end 
+      | |- forall _, _ => idtac "4" ; let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
 in
     tac_rec 0 ltac:(fresh) ;
     destruct HFalse
-  | clear H' ] ; clear H.
+  | clear H' ; let indu := eval unfold T in T in 
+create_evars_for_each_constructor indu ; let foo := fresh in assert 
+(foo : False -> U) by 
+(let Hfalse' := fresh in intro Hfalse' ; 
+let nb_var := eval unfold n in n in
+let t := intro_and_tuple nb_var in 
+let var_match := eval cbv in (head_tuple _ _ t) in idtac var_match ;
+let var_to_revert := eval cbv in (tail_tuple _ _ t) in idtac var_to_revert ;
+case var_match ; try (clear var_match) ; revert_tuple var_to_revert ;
+repeat match goal with 
+| u : Prop |- ?G => idtac "5"; instantiate (u := G) ; destruct Hfalse' end)
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => idtac "6" ; let u' := eval unfold u in u in assert u' by ( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
+clear n; clear T.
 
 
-
+(* TODO : le résultat du type de x est appliqué, retrouver l'inductif initial *) 
 Goal False.
-get_def length. expand_hyp length_def. eliminate_fix_hyp H. 
-eliminate_pattern_matching H0.
+get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.  
+
+ eliminate_pattern_matching H2. 
 
 
