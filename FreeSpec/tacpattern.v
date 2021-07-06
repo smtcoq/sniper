@@ -338,13 +338,23 @@ Fail tac H n. (* le match est sur une variable qui n'est pas quantifiée de mani
 exact I.
 Qed.
 
+Ltac remove_app t :=
+lazymatch constr:(t) with 
+| ?u ?v => remove_app u 
+| _ => t
+end.
+
+Goal forall (A : Type) (x: list A), x = x.
+Proof. intros. let T := type of x in let T' := remove_app T in idtac T'.
+reflexivity.
+Qed.
 
 Ltac eliminate_pattern_matching H :=
 
   let n := fresh "n" in 
   let T := fresh "T" in 
   epose (n := ?[n_evar] : nat) ;
-  epose (T := ?[T_evar] : Type) ;
+  epose (T := ?[T_evar]) ;
   let U := type of H in
   let H' := fresh in
   assert (H' : False -> U);
@@ -352,9 +362,10 @@ Ltac eliminate_pattern_matching H :=
     intro HFalse;
     let rec tac_rec m x :=
         match goal with
-      | |- context C[match x with _ => _ end] => idtac "1" ; match constr:(m) with
-                                    | 0 => idtac "2" ; fail
-                                    | S ?p => idtac "3" ; instantiate (n_evar := p) ; let T' := type of x in idtac T' ; instantiate (T_evar := T')
+      | |- context C[match x with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => idtac "3" ; instantiate (n_evar := p) ; let Ty := type of x in let T' := remove_app Ty in
+ instantiate (T_evar := T') ; idtac "foo"
                                      end 
       | |- forall _, _ => idtac "4" ; let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail 
@@ -382,8 +393,9 @@ clear n; clear T.
 (* TODO : le résultat du type de x est appliqué, retrouver l'inductif initial *) 
 Goal False.
 get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
-get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.  
-
- eliminate_pattern_matching H2. 
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1. eliminate_pattern_matching H2.
+eliminate_pattern_matching H0.
+get_def doors_o_callee2. expand_hyp doors_o_callee2_def.
+eliminate_fix_hyp H0. eliminate_pattern_matching H2. Abort. 
 
 
