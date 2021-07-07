@@ -187,9 +187,20 @@ end.
 Ltac intro_and_tuple n :=
 intro_and_tuple_rec n unit.
 
+Ltac intro_and_tuple' n :=
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, unit))
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in let l:= intro_and_tuple' m in
+constr:((H, l))
+
+end.
+
 
 Lemma test_intro_and_tuple :  forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
-let p := intro_and_tuple 4 in pose (p0 := p). reflexivity. Qed.
+let p := intro_and_tuple 4 in pose (p0 := p). clear p0. revert H H0 H1 H2 H3.
+let p := intro_and_tuple' 4 in pose p.
+
+ reflexivity. Qed.
 
 
 Ltac create_evars_and_inst n := 
@@ -218,8 +229,18 @@ let n := constr:(4)  in let id := intro_and_return_last_ident n in idtac id. ref
 
 Ltac revert_tuple p := 
 lazymatch constr:(p) with
-| (?x, ?y) => try (revert y); revert_tuple x 
+| (?x, ?y) => revert_tuple y ; revert_tuple x 
 | _ => try (revert p)
+end.
+
+Ltac revert_tuple_clear p indu :=
+lazymatch constr:(p) with
+| (?x, ?y) => match indu with 
+          | context [x] => clear x
+          | _ => revert x
+           end 
+; revert_tuple_clear y indu
+| unit => idtac
 end.
 
 Definition head_tuple (A B : Type) (x : A×B) := match x with
@@ -364,10 +385,11 @@ Ltac eliminate_pattern_matching H :=
         match goal with
       | |- context C[match x with _ => _ end] => match constr:(m) with
                                     | 0 => fail
-                                    | S ?p => idtac "3" ; instantiate (n_evar := p) ; let Ty := type of x in let T' := remove_app Ty in
- instantiate (T_evar := T') ; idtac "foo"
+                                    | S ?p => instantiate (n_evar := p) ; 
+                                              let Ty := type of x in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
                                      end 
-      | |- forall _, _ => idtac "4" ; let y := fresh in intro y; tac_rec (S m) y 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
       | _ => fail 
       end
 in
@@ -382,20 +404,244 @@ let t := intro_and_tuple nb_var in
 let var_match := eval cbv in (head_tuple _ _ t) in idtac var_match ;
 let var_to_revert := eval cbv in (tail_tuple _ _ t) in idtac var_to_revert ;
 case var_match ; try (clear var_match) ; revert_tuple var_to_revert ;
-repeat match goal with 
-| u : Prop |- ?G => idtac "5"; instantiate (u := G) ; destruct Hfalse' end)
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
 ; clear foo ; 
 repeat match goal with 
-| u : Prop |-_ => idtac "6" ; let u' := eval unfold u in u in assert u' by ( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
+( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
+clear n; clear T.
+
+Ltac eliminate_pattern_matching_destruct H :=
+
+  let n := fresh "n" in 
+  let T := fresh "T" in 
+  epose (n := ?[n_evar] : nat) ;
+  epose (T := ?[T_evar]) ;
+  let U := type of H in
+  let H' := fresh in
+  assert (H' : False -> U);
+  [ let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match x with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => instantiate (n_evar := p) ; 
+                                              let Ty := type of x in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
+                                     end 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse
+  | clear H' ; let indu := eval unfold T in T in 
+create_evars_for_each_constructor indu ; let foo := fresh in assert 
+(foo : False -> U) by 
+(let Hfalse' := fresh in intro Hfalse' ; 
+let nb_var := eval unfold n in n in
+let t := intro_and_tuple nb_var in idtac t ;
+let var_match := eval cbv in (head_tuple _ _ t) in
+let var_to_revert := eval cbv in (tail_tuple _ _ t) in
+destruct var_match ; revert_tuple var_to_revert ; 
+repeat match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
+( intros; now (eapply H; reflexivity)); clear u end] ; clear H ; 
+clear n; clear T.
+
+Print binder_name.
+
+Definition mkProdName na T u :=
+tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
+
+Check mkProdName.
+
+
+
+MetaCoq Quote Definition eq_reif_nat := (@eq nat).
+
+
+MetaCoq Quote Definition toto := (forall (x: nat), x = x).
+
+
+
+Definition foo := mkProdName "x" nat_reif (mkProdName "x" nat_reif (tApp eq_reif_nat [tRel 0; tRel 1]) ) .
+
+Eval compute in toto.
+Eval compute in foo.
+
+MetaCoq Unquote Definition bar := foo.
+
+Print bar.
+
+Print toto.
+
+
+Ltac revert_count := 
+let rec revert_count_rec n :=
+match goal with
+| H : _ |- _ => let _ := match goal with _ => revert H end in revert_count_rec (S n)
+| _ => n
+end in revert_count_rec 0.
+
+
+Goal True -> True -> False -> True -> False.
+intros.
+let n := revert_count in pose n.
+auto. Qed.
+
+Ltac hyps := 
+match goal with
+| H : _ |- _ => let _ := match goal with _ => revert H end in let acc := hyps in 
+let _ := match goal with _ => intro H end in constr:((H, acc))
+| _ => constr:(unit)
+end.
+
+Goal True -> True -> False -> True -> False.
+intros. let k := hyps in idtac k.
+Abort.
+
+Ltac clear_if_in_term p t := 
+match p with 
+| (?x, ?y) => match t with 
+              | context [x] => try (clear x) 
+              | _ => idtac end ; clear_if_in_term y t 
+| unit => idtac
+end.
+
+Ltac eliminate_pattern_matching_case H :=
+
+  let n := fresh "n" in 
+  let T := fresh "T" in 
+  epose (n := ?[n_evar] : nat) ;
+  epose (T := ?[T_evar]) ;
+  let U := type of H in
+  let H' := fresh in
+  assert (H' : False -> U);
+  [ let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match x with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => instantiate (n_evar := p) ; 
+                                              let Ty := type of x in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
+                                     end 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse
+  | clear H' ; let indu := eval unfold T in T in 
+create_evars_for_each_constructor indu ; let foo := fresh in assert 
+(foo : False -> U) by 
+(let Hfalse' := fresh in intro Hfalse' ; 
+let nb_var := eval unfold n in n in
+let t := intro_and_tuple nb_var in 
+let var_match := eval cbv in (head_tuple _ _ t) in idtac var_match ;
+let var_to_revert := eval cbv in (tail_tuple _ _ t) in idtac var_to_revert ;
+case var_match ; 
+let indu' := type of var_match in clear var_match ; 
+revert_tuple_clear var_to_revert indu' ;
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
+( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
 clear n; clear T.
 
 
-(* TODO : le résultat du type de x est appliqué, retrouver l'inductif initial *) 
-Goal False.
+Goal True.
 get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
-get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1. eliminate_pattern_matching H2.
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
+
+
+
+eliminate_pattern_matching_case H2.
+
 eliminate_pattern_matching H0.
 get_def doors_o_callee2. expand_hyp doors_o_callee2_def.
-eliminate_fix_hyp H0. eliminate_pattern_matching H2. Abort. 
+eliminate_fix_hyp H0.
+clear - H2. eliminate_pattern_matching_case H2. 
+Abort. 
+
+
+
+
+Goal True.
+get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
+
+  epose (n' := ?[n_evar] : nat).
+  epose (T' := ?[T_evar]).
+
+
+  let U := type of H2 in
+  assert (H' : False -> U).
+let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match x with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => instantiate (n_evar := p) ; 
+                                              let Ty := type of x in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
+                                     end 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse.
+  clear H'. let indu := eval unfold T' in T' in 
+create_evars_for_each_constructor indu. 
+let U := type of H2 in
+assert 
+(foo : False -> U). 
+intro Hfalse'.
+let nb_var := eval unfold n' in n' in
+let t := intro_and_tuple nb_var in 
+let var_match := eval cbv in (head_tuple _ _ t) in
+let var_to_revert := eval cbv in (tail_tuple _ _  t) in
+destruct var_match ; revert_tuple var_to_revert.
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end.
+
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end.
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
+( intros; now (eapply H; reflexivity)); clear u end] ; clear H ; 
+clear n; clear T
+
+
+
+
+eliminate_pattern_matching_destruct H2.
+
+
+
+eliminate_pattern_matching H2.
+
+eliminate_pattern_matching H0.
+get_def doors_o_callee2. expand_hyp doors_o_callee2_def.
+eliminate_fix_hyp H0.
+let T := type of H2 in assert (False -> T). intros Hfalse' o T d. destruct d.
+revert d o. intros ; now (eapply H2 ; eauto).
+intros ; now (eapply H2 ; eauto). revert d o.
+
+
+
+ eliminate_pattern_matching H2. Abort. 
 
 

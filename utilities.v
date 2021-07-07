@@ -94,6 +94,9 @@ Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 Definition mkProd T u :=
 tProd {| binder_name := nAnon; binder_relevance := Relevant |} T u.
 
+Definition mkProdName na T u :=
+tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
+
 Definition mkApp t u :=
 tApp t [u].
 
