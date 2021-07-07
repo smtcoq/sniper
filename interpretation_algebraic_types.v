@@ -1,7 +1,7 @@
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
-Require Import utilities.
+(* Require Import utilities. *)
 Require Import ZArith.
 
 
@@ -1295,25 +1295,10 @@ Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.
 
 Ltac inj_disj_tac lB lf lA p  :=
-    ctors_are_inj_tac lB lf lA p  (**;  pairw_disj_codom_tac B lf lA p *).
-
-
-Ltac inj_ctor_tac f :=
-  let idf := fresh "qt" in pose_quote_term f idf ;
-  let ty := (type of f) in
-  let idty := fresh "qty" in
-  pose_quote_term ty idty ;
-  let lAB := constr:(dom_and_codom_sim idty)
-  in lazymatch eval hnf in lAB with
-     | (?x, ?y) => let lA := (eval cbv in x) in  let B := eval cbv in y in ctor_is_inj_tac B idf lA ; clear idf ; clear idty
-  end.
- 
-
-
-Goal 2 + 2 = 4.
-Proof.
-inj_ctor_tac cons_nat.
-reflexivity. Abort.
+  lazymatch eval hnf in lB with
+   | ?B :: ?tlB => 
+    ctors_are_inj_tac lB lf lA p  ; idtac "kikoo2" ;  pairw_disj_codom_tac B lf lA p ; idtac "kikoo3"  
+    end.
 
 
 Ltac goal_inj_total_tac :=
@@ -1325,7 +1310,7 @@ end.
 Goal 2+ 2 = 4.
 Proof.
   inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0. 
-  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1).
+  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est prouvée, contrairement à nil_nat *)
   inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  [] ; [nat_reif]] 0.  
 reflexivity.
 Abort.
@@ -1333,7 +1318,7 @@ Abort.
 
 Goal 2 + 2 = 4.
 Proof.
-Fail inj_total_disj_tac list_nat_reif [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]].
+Fail inj_total_disj_tac [list_nat_reif] [nil_nat_reif ; cons_nat_reif] [ [] ; [nat_reif ; list_nat_reif ]].
   reflexivity.
 Abort.
 
@@ -1355,15 +1340,18 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   | ((idc , ty) , n ) :: tlctor => list_lctor  tlctor  (ty :: acc) 
   end in  List.rev (list_lctor oind.(ind_ctors) []).
   
-Definition dom_list_oind ( oind : one_inductive_body ) := (* unused, delete *)
+(* Definition dom_list_oind ( oind : one_inductive_body ) := (* unused, delete *)
   let fix dllaux ( l : list ((ident × term) × nat )) acc :=
   match l with
   | [] => acc
   | ((_ ,tc), n) :: tlctor => let dom_ctor := dom_list_f tc n in dllaux tlctor (dom_ctor :: acc)
   end
-  in List.rev (dllaux oind.(ind_ctors) []) . 
+  in List.rev (dllaux oind.(ind_ctors) []) .  *)
 
- 
+(* Check dom_list_oind. *)
+  
+Definition ctor_info_oind ( oind : one_inductive_body ) :=
+    0.
 
 
 Definition list_nat_oind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). 
@@ -1382,7 +1370,6 @@ Definition nat_oind' :=
 
 Definition even_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedInductives"], "odd"); inductive_ind := 1 |}.
 
-
 Definition even_oind := ltac:(let s :=  fresh "s" in pose_oind_tac even 0 s; exact s). 
 
 
@@ -1390,6 +1377,7 @@ Definition switch_inductive ( indu : inductive) (i : nat) :=
   match indu with 
   | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
 end.
+
  
 
 (* Print list_env_reif. *)
@@ -1496,6 +1484,7 @@ MetaCoq Unquote Definition cons_dbm_unquote := cons_dbm_try.
 (* Print cons_dbm_unquote. *)
 
 
+
 Definition get_ctors_and_types_i (indu : inductive) (p: nat) (n: nat) (i : nat) (u : Instance.t) (lA : list term) (oind : one_inductive_body ) :=
               (* n: nb of oind *)
               (* i: indice of oind in the mutual inductive block *)
@@ -1508,10 +1497,11 @@ let indui := switch_inductive indu i in
       ( (tApp  (tConstruct indui j u) lA )   :: tll1 , (dom_list_f (debruijn_mess_aux indui p p n u 0 lA typc) nc) :: tll2 ) 
     end in let oind_split := treat_ctor_oind_aux indu n 0  oind.(ind_ctors)  in (oind_split.1 , oind_split.2).
 
-
+Check get_ctors_and_types_i.
 
 
 Goal forall (l : list_nat), (l = [] ) \/ (exists n l0, l = n :: l0).
+
 Proof.  
   intros. destruct l.
   - (* congruence fails *) left. reflexivity.
@@ -1526,10 +1516,7 @@ Abort.
 
 (* MetaCoq Unquote Definition tclo_nat1' := (Eval cbn in (2+4)). *)
 
-(* Definition bid := (3,4).
-Definition bid' := let (a,_) := bid in a.
-Eval cbv in bid'.
-Print bid'. *)
+
 
 Definition hd' := hd imposs_mark.
 Definition hd'' := hd [imposs_mark].
@@ -1537,10 +1524,10 @@ Definition hd'' := hd [imposs_mark].
 
 Definition gctt_ex1 := (let (a,b) := (get_ctors_and_types_i  nat_indu 0 1 0 [] [] nat_oind)  in  hd' (hd'' (tl b))). 
 Eval cbn in gctt_ex1.
-(* Print gctt_ex1. *)
+Print gctt_ex1. 
 
 MetaCoq Unquote Definition tclo_nat1' := gctt_ex1.
-(* Print tclo_nat1'. *)
+Print tclo_nat1'. 
 
 Definition list_oind := ltac:(let s := fresh "s" in pose_oind_tac list 0 s ; exact s).
   
@@ -1566,6 +1553,7 @@ Eval cbn in gct_list_unquote3.
 (* Print gct_list_unquote3.  *)
 (* nil nat as expected*)
 
+Example list_get_ctors_types_4 := let (a,b) := get_cotrs_and_types_i 
 
 Definition Ntree_indu := {| inductive_mind := (MPfile ["pxtp_pierre"], "Ntree"); inductive_ind := 1 |}.
 (* Print Ncons_env_reif. *)
@@ -1586,15 +1574,14 @@ Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
   (* n: number of oind *)
   (* i: is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
- in let B := constr:(tApp (tInd indui u) lA)
+ in let lB := constr:([tApp (tInd indui u) lA]) (* \todo : lB n'est pas un singleton, même si ça ne devrait pas compter pour pairw_disj... *)
  in  let gct :=
-  constr:(get_ctors_and_types_i indu  p n i u lA oind) 
+  constr:(get_ctors_and_types_i indu p n i u lA oind) 
   in lazymatch eval cbv in gct with 
-  | (?lf,?lA) =>
-  statement B lf lA
+  | (?lf,?lA) => statement lB lf lA p 
   end.
 
-Ltac treat_ctor_list_oind_tac_i :=  treat_ctor_list_oind_tac_i_gen inj_total_disj_tac.
+Ltac treat_ctor_list_oind_tac_i indu p n i u lA oind:=  treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u lA oind p.
 
 Ltac interpretation_alg_types_oind_i :=  treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
@@ -1627,7 +1614,7 @@ Ltac treat_ctor_mind_tac_gen statement indu p n u lA mind
 :=  let loind := constr:(mind.(ind_bodies)) in 
 treat_ctor_mind_aux_tac_gen statement indu p n u mind 0  lA loind. 
    
-Ltac treat_ctor_mind_tac := treat_ctor_mind_tac_gen inj_total_disj_tac.
+Ltac treat_ctor_mind_tac indu p n u lA mind := treat_ctor_mind_tac_gen inj_total_disj_tac p n u la mind p.
 
 Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
 
