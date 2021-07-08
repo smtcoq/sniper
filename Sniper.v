@@ -25,7 +25,7 @@ Require Export utilities.
 Require Export definitions.
 Require Export elimination_fixpoints.
 Require Export expand.
-Require Export tacpattern. 
+Require Export elimination_pattern_matching. 
 Require Export elimination_polymorphism.
 Require Export interpretation_algebraic_types.
 
@@ -33,13 +33,13 @@ Require Export interpretation_algebraic_types.
 
 Ltac def_and_pattern_matching := 
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
-eliminate_pattern_matching_case H')).
+eliminate_dependent_pattern_matching H')).
 
 
 Ltac def_fix_and_pattern_matching :=
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
-try (eliminate_pattern_matching_case H'')))).
+try (eliminate_dependent_pattern_matching H'')))).
 
 
 Ltac def_and_pattern_matching_mono :=

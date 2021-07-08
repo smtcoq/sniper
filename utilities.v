@@ -114,6 +114,51 @@ Definition is_type (t : term) := match t with
 
 
 
+(* Allows to use MetaCoq without continuations *)
+Ltac metacoq_get_value p :=
+  let id := fresh in
+  let _ := match goal with _ => run_template_program p
+  (fun t => pose (id := t)) end in
+  let x := eval cbv delta [id] in id in
+  let _ := match goal with _ => clear id end in
+  x.
+
+(* Examples for metacoq_get_value *)
+Goal True.
+let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
+let x := metacoq_get_value (tmQuote bool) in idtac x.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
+Abort.
+
+
+(* Get the nb of construcots of a reified inductive type if we have the reified global environment *)
+Definition get_nb_constructors i Σ := 
+match i with 
+| tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
+                | Some (InductiveDecl decl) => match ind_bodies decl with 
+                          | nil => 0
+                          | x :: _ => Datatypes.length (ind_ctors x)
+                          end
+                | _ => 0
+end
+| _ => 0
+end.
+
+Ltac get_nb_constructors_tac i id :=
+run_template_program (tmQuoteRec i) ltac:(fun i_reif_rec => let n := 
+eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
+pose (id := n)).
+
+(* Returns the tuple of hypothesis in a local context *)
+Ltac hyps := 
+match goal with
+| H : _ |- _ => let _ := match goal with _ => revert H end in let acc := hyps in 
+let _ := match goal with _ => intro H end in constr:((H, acc))
+| _ => constr:(unit)
+end.
+
+
 
 
 

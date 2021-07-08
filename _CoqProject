@@ -4,7 +4,6 @@ utilities.v
 definitions.v
 elimination_polymorphism.v
 elimination_pattern_matching.v
-tacpattern.v
 expand.v
 elimination_fixpoints.v
 interpretation_algebraic_types.v

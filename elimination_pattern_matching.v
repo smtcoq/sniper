@@ -298,6 +298,195 @@ let l_ctor_and_ty_ctor := eval cbv in (combine l_ctors l_ty_ctors) in
 let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
  unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
 
+Ltac create_evars_for_each_constructor i := 
+let y := metacoq_get_value (tmQuoteRec i) in 
+let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let rec tac_rec u := match constr:(u) with 
+      | 0 => idtac
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
+end in tac_rec n.
+
+Ltac create_evars_for_each_constructor_test i := 
+let y := metacoq_get_value (tmQuoteRec i) in 
+let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let rec tac_rec u := match constr:(u) with 
+      | 0 => idtac
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; idtac H' ; tac_rec m
+end in tac_rec n.
+
+Goal True.
+create_evars_for_each_constructor bool.
+create_evars_for_each_constructor unit.
+create_evars_for_each_constructor nat.
+create_evars_for_each_constructor_test nat.
+Abort.
+
+
+
+Ltac create_evars_and_inst_rec n l := 
+match constr:(n) with 
+| 0 => l
+| S ?m => let H := fresh in 
+let H_evar := fresh in 
+let _ := match goal with _ => epose (H := ?[H_evar] : nat) end in 
+create_evars_and_inst_rec m constr:(H :: l) end.
+
+Ltac intro_and_return_last_ident n := 
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in u
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_return_last_ident m
+end.
+
+
+Ltac intro_and_tuple_rec n l := 
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, l))
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_tuple_rec m (H, l)
+end.
+
+Ltac intro_and_tuple n :=
+intro_and_tuple_rec n unit.
+
+Ltac intro_and_tuple' n :=
+match constr:(n) with
+| 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, unit))
+| S ?m => let H := fresh in let _ := match goal with _ => intro H end in let l:= intro_and_tuple' m in
+constr:((H, l))
+
+end.
+
+
+Lemma test_intro_and_tuple :  forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
+let p := intro_and_tuple 4 in pose (p0 := p). clear p0. revert H H0 H1 H2 H3.
+let p := intro_and_tuple' 4 in pose p.
+reflexivity. Qed.
+
+
+Ltac create_evars_and_inst n := 
+create_evars_and_inst_rec n (@nil nat).
+
+
+
+Ltac revert_tuple p := 
+lazymatch constr:(p) with
+| (?x, ?y) => revert_tuple y ; revert_tuple x 
+| _ => try (revert p)
+end.
+
+Ltac revert_tuple_clear p indu :=
+lazymatch constr:(p) with
+| (?x, ?y) => match indu with 
+          | context [x] => clear x
+          | _ => revert x
+           end 
+; revert_tuple_clear y indu
+| unit => idtac
+end.
+
+Definition head_tuple (A B : Type) (x : A×B) := match x with
+|(y, z) => y
+end.
+
+Print head_tuple.
+Compute head_tuple _ _ (1, tt).
+
+
+Definition tail_tuple (A B : Type) (x : A*B) := match x with
+|(y, z) => z
+end.
+
+
+Lemma test_revert_tuple : forall (A B : Type) (C : A) (n n' : nat) (x : bool), x = x.
+intros. revert_tuple (A, B, C, n, n', x, unit). reflexivity. Qed. (*  unit in first *)
+
+Ltac detect_var_match H :=
+
+let T := type of H in 
+let H' := fresh in 
+assert (H' : False -> T) by
+(match goal with | |-context C[match ?x with _ => _ end] => idtac x end; let Hfalse := fresh in 
+intro Hfalse; destruct Hfalse) ; clear H' ; idtac.
+
+
+Ltac remove_app t :=
+lazymatch constr:(t) with 
+| ?u ?v => remove_app u 
+| _ => t
+end.
+
+Goal forall (A : Type) (x: list A), x = x.
+Proof. intros. let T := type of x in let T' := remove_app T in idtac T'.
+reflexivity.
+Qed.
+
+
+Ltac revert_count := 
+let rec revert_count_rec n :=
+match goal with
+| H : _ |- _ => let _ := match goal with _ => revert H end in revert_count_rec (S n)
+| _ => n
+end in revert_count_rec 0.
+
+
+Ltac hyps := 
+match goal with
+| H : _ |- _ => let _ := match goal with _ => revert H end in let acc := hyps in 
+let _ := match goal with _ => intro H end in constr:((H, acc))
+| _ => constr:(unit)
+end.
+
+Ltac clear_if_in_term p t := 
+match p with 
+| (?x, ?y) => match t with 
+              | context [x] => try (clear x) 
+              | _ => idtac end ; clear_if_in_term y t 
+| unit => idtac
+end.
+
+Ltac eliminate_dependent_pattern_matching H :=
+
+  let n := fresh "n" in 
+  let T := fresh "T" in 
+  epose (n := ?[n_evar] : nat) ;
+  epose (T := ?[T_evar]) ;
+  let U := type of H in
+  let H' := fresh in
+  assert (H' : False -> U);
+  [ let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match x with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => instantiate (n_evar := p) ; 
+                                              let Ty := type of x in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
+                                     end 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse
+  | clear H' ; let indu := eval unfold T in T in 
+create_evars_for_each_constructor indu ; let foo := fresh in assert 
+(foo : False -> U) by 
+(let Hfalse' := fresh in intro Hfalse' ; 
+let nb_var := eval unfold n in n in
+let t := intro_and_tuple nb_var in 
+let var_match := eval cbv in (head_tuple _ _ t) in 
+let var_to_revert := eval cbv in (tail_tuple _ _ t) in 
+case var_match ; 
+let indu' := type of var_match in clear var_match ; 
+revert_tuple_clear var_to_revert indu' ;
+match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
+( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
+clear n; clear T.
+
 
 Section tests.
 
@@ -366,6 +555,40 @@ intro H.
 eliminate_fix_hyp H.
 eliminate_pattern_matching H0.
 Abort.
+
+Definition interface := Type -> Type.
+Definition Ω := (bool * bool)%type.
+Inductive door : Set :=  left : door | right : door.
+Inductive DOORS : interface :=
+| IsOpen : door -> DOORS bool
+| Toggle : door -> DOORS unit.
+
+Definition sel : door -> Ω -> bool := fun d : door => match d with
+                      | left => fst
+                      | right => snd
+                      end
+.
+
+Definition doors_o_callee : forall (ω :  Ω) (a : Type) (D :  DOORS a), (match D with 
+| IsOpen _ =>  bool 
+| Toggle _ => unit
+end) -> bool :=
+fun ω a D => match D with
+| IsOpen d => fun x => Bool.eqb (sel d ω) x
+| Toggle d => fun x => true
+end.
+
+
+Goal True.
+get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
+eliminate_dependent_pattern_matching H2.
+eliminate_dependent_pattern_matching H0.
+get_def doors_o_callee. expand_hyp doors_o_callee_def.
+eliminate_fix_hyp H0.
+clear - H2. eliminate_dependent_pattern_matching H2. 
+Abort. 
+
 
 End tests.
 
