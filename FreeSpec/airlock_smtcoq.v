@@ -24,7 +24,7 @@ Print DOORS_ind_reif.
 
 MetaCoq Quote Recursively Definition DOORS_reif := DOORS.
 
-Compute list_types_of_each_constructor_no_subst DOORS_reif.
+
 Inductive foo : interface := bar1 : foo A | bar2 : foo B.
 Definition sel : door -> Ω -> bool := fun d : door => match d with
                       | left => fst
@@ -76,7 +76,7 @@ du tuple soit bien Prop *)
 
 Goal doors_o_caller ω bool (IsOpen d).
 Proof. 
-scope req_is_open. 
+
 Abort.
 
 Goal forall x: DOORS bool, x = IsOpen left.
@@ -94,32 +94,7 @@ exact I. Qed.
 
 Goal forall H d x, doors_o_callee2 H bool (IsOpen d) x = Bool.eqb (sel d ω) x.
 Proof. 
-scope. clear -H1. 
-
-
-
-assert (H2 : forall (H : Ω) (H0 : Type) (H1 : DOORS H0)
-       (H2 : match H1 with
-             | IsOpen _ => bool
-             | Toggle _ => unit
-             end),
-     doors_o_callee2 H H0 H1 H2 =
-     match
-       H1 as D in (DOORS T) return (match D with
-                                    | IsOpen _ => bool
-                                    | Toggle _ => unit
-                                    end -> bool)
-     with
-     | IsOpen d => fun x : bool => (sel d H <---> x)%bool
-     | Toggle _ => fun _ : unit => true
-     end H2).
-intros H0 H2 H3. case H3. clear H3. revert H0 H2. (* processus pour récupérer le but que l'on cherche *)
-intros. apply H1. 
-
-
-
-
- Abort.
+scope. Abort.
 
 Goal doors_o_caller2 ω (IsOpen d).
 Proof. snipe. admit. admit. admit. Admitted.
