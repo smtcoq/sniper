@@ -15,7 +15,6 @@ Require Export SMTCoq.SMTCoq.
 From MetaCoq Require Export All.
 Require Export MetaCoq.Template.All.
 Require Export MetaCoq.Template.Universes.
-Require Export MetaCoq.PCUIC.PCUICEquality.
 Require Export MetaCoq.PCUIC.PCUICSubstitution.
 Require Export MetaCoq.Template.All.
 Require Export String.
