@@ -1,3 +1,9 @@
+
+
+
+
+
+
 (**************************************************************************)
 (*                                                                        *)
 (*     Sniper                                                             *)
@@ -36,10 +42,11 @@ Definition list_of_args_and_codomain (t : term) := let fix aux acc t := match t 
 | _ => (acc, t)
 end in aux [] t.
 
+Open Scope string_scope.
 Fixpoint gen_eq (l : list term) (B : term) (t : term) (u : term) {struct l} := 
 match l with
 | [] => mkEq B t u
-| A :: l' => mkProd A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
+| A :: l' => mkProdName "x" A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
 end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
@@ -89,6 +96,7 @@ end.
 
 Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.
+
 
 
 Section tests.

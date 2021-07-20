@@ -125,10 +125,10 @@ Ltac metacoq_get_value p :=
 
 (* Examples for metacoq_get_value *)
 Goal True.
-let x := metacoq_get_value (tmQuoteRec bool) in idtac x.
-let x := metacoq_get_value (tmQuote bool) in idtac x.
-let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in idtac y.
-let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in idtac y.
+let x := metacoq_get_value (tmQuoteRec bool) in pose x.
+let x := metacoq_get_value (tmQuote bool) in pose x.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in pose y.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in pose y.
 Abort.
 
 
