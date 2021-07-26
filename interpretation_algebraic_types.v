@@ -62,22 +62,9 @@ Proof.
 
 Definition MonProjT1 t := ret (my_projT1 t).
 
-(* Print TemplateMonad.
-Print typed_term.
-Print Monad. *)
-(* Record Monad (m : Type -> Type) : Type := Build_Monad
-  { ret : forall t : Type, t -> m t;  bind : forall t u : Type, m t -> (t -> m u) -> m u } *)
-(* Print ret. *)
-(* ret@{d c} = 
-fun (m : Type -> Type) (Monad0 : Monad m) => let (ret, _) := Monad0 in ret
-     : forall m : Type -> Type, Monad m -> forall t : Type, t -> m t *)
-
-
-
 Ltac mpT2ltac0 t :=  constr:(my_projT2 t).
 Ltac mpT2ltac1 t :=  pose (my_projT2 t) as kik1.
 Ltac mpT2ltac2 t :=  pose (my_projT2 t) as kik ; pose ((?kik * ?kik)%nat) as sq.
-(* remarque: enlever %nat ne change rien à l'erreur ci-dessous *)
  
 
 
@@ -115,17 +102,7 @@ Fixpoint get_decl (I : term) (e : global_env) :=
     end.
 
 
-(* Definition list_ctors_mind I :=
-  let fix list_ctors_aux l :=
-  match l with
-  | [] => []
-  | oind :: l' =>
-  end
-  in list_ctors_aux I.(ind_bodies). *)
-
-
 Ltac list_ctors_and_types I :=
-  (* inachevé: get_ctors_and_types fait le travail, en utilisant MetaCoq *)
   let Ier := fresh "Ier" in rec_quote_term I Ier
   ; let bod := constr:(fst Ier)  in let Iq := constr:(snd Ier)
   in let blut := constr:(get_decl Iq bod) in let res := fresh "res" in pose blut as res; hnf in res.
@@ -418,7 +395,7 @@ MetaCoq Quote Recursively  Definition evenS_env_reif := evenS.
 (*** Useful operators ***)
 
 
-Definition mkImpl A B := tProd mkNAnon A (lift0 1 B). (*vérifier si lift ok *)
+Definition mkImpl A B := tProd mkNAnon A (lift0 1 B). 
 
 
 
@@ -641,7 +618,7 @@ end.
 
  
 
-Fixpoint is_inj (B f: term) (lA : list term) :=
+Definition is_inj (B f: term) (lA : list term) :=
 let fix inj_aux (B f1 f2: term) (lA : list term) (n: nat) := 
   match lA with
   | [] => (fun (t : term) => t, f1 , f2 , True_reif )
@@ -909,7 +886,7 @@ MetaCoq Unquote Definition in_codom_unreif'4 := in_codom'4.
 
 
 
-Fixpoint codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
+Definition codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
 (* lf is a list of function [f1;...;fn] whose return type is B, lA = [lA1 ; ...; lAn] is the list of the list of the types of the fi, e.g. lA1 is the list of argument types of lA *)
   let fix arg_org (B  t : term) (lf : list term) (lA: list (list term)) :=
       match (lf , lA)  with
@@ -936,7 +913,7 @@ MetaCoq Unquote Definition cdu_u3 := cdu3.
 
 
 Example cdu_4 := codom_union_total Prop_reif [evenS_reif] [[nat_reif (* ; reif de even n*)  ]].
-(* should tell that what ???? *) 
+
 Fail MetaCoq Unquote Definition cdu_u4 := cdu_4.
 
 

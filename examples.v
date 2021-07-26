@@ -53,7 +53,6 @@ induction l1.
   reflexivity.
 Qed.
 
-Search app.
 
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.

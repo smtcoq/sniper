@@ -1,3 +1,9 @@
+
+
+
+
+
+
 (**************************************************************************)
 (*                                                                        *)
 (*     Sniper                                                             *)
@@ -35,28 +41,28 @@ Definition list_of_args_and_codomain (t : term) := let fix aux acc t := match t 
 | _ => (acc, t)
 end in aux [] t.
 
+Open Scope string_scope.
 Fixpoint gen_eq (l : list term) (B : term) (t : term) (u : term) {struct l} := 
 match l with
 | [] => mkEq B t u
-| A :: l' => mkProd A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
+| A :: l' => mkProdName "x" A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
 end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
-Ltac expand_hyp H := 
+
+Ltac expand_hyp H :=
 lazymatch type of H with 
-| @eq ?A ?t ?u => 
-let H' := fresh in quote_term A ltac:(fun A =>
-quote_term t ltac:(fun t =>
-quote_term u ltac:(fun u =>
+| @eq ?A ?t ?u => let A := metacoq_get_value (tmQuote A) in
+let t := metacoq_get_value (tmQuote t) in
+let u := metacoq_get_value (tmQuote u) in
 let p := eval cbv in (list_of_args_and_codomain A) in 
 let l := eval cbv in (rev p.1) in 
 let B := eval cbv in p.2 in 
 let eq := eval cbv in (gen_eq l B t u)
-in run_template_program (tmUnquote eq) 
-ltac:(fun z => 
-let u := eval hnf in (z.(my_projT2)) 
-in assert (H': u) by (intros ; rewrite H; reflexivity)))))
-| _ => fail "not an equality" 
+in let z := metacoq_get_value (tmUnquote eq) in
+let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
+(assert (H': u) by (intros ; rewrite H; reflexivity))
+| _ => fail "not an equality"
 end.
 
 
@@ -64,18 +70,17 @@ end.
 
 Ltac expand_hyp_cont H := fun k =>
 lazymatch type of H with 
-| @eq ?A ?t ?u => quote_term A ltac:(fun A =>
-quote_term t ltac:(fun t =>
-quote_term u ltac:(fun u =>
+| @eq ?A ?t ?u => let A := metacoq_get_value (tmQuote A) in
+let t := metacoq_get_value (tmQuote t) in
+let u := metacoq_get_value (tmQuote u) in
 let p := eval cbv in (list_of_args_and_codomain A) in 
 let l := eval cbv in (rev p.1) in 
 let B := eval cbv in p.2 in 
 let eq := eval cbv in (gen_eq l B t u)
-in run_template_program (tmUnquote eq) 
-ltac:(fun z => 
+in let z := metacoq_get_value (tmUnquote eq) in
 let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
 (assert (H': u) by (intros ; rewrite H; reflexivity) ; 
-k H'))))) 
+k H')
 | _ => fail "not an equality"
 end.
 
@@ -88,6 +93,7 @@ end.
 
 Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.
+
 
 
 Section tests.

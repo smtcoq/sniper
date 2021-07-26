@@ -57,7 +57,7 @@ match l with
 | (na, T):: xs => create_forall (tProd na T t) xs
 end.
 
-Fixpoint params_eq (t : term) := match t with 
+Definition params_eq (t : term) := match t with 
 | tApp u l => match l with 
             | [x1; x2; x3] => (u, (x1, x2, x3))
             | _ => (u, (u, u, u))
@@ -67,7 +67,7 @@ end.
 
 
 (* Returns the definition in a fixpoint *)
-Fixpoint get_def_in_fix (f: term) := 
+Definition get_def_in_fix (f: term) := 
 match f with 
 | tFix l _ => match l with 
           | [] => f

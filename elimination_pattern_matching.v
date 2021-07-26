@@ -310,7 +310,7 @@ let y := metacoq_get_value (tmQuoteRec i) in
 let n:= eval cbv in (get_nb_constructors y.2 y.1) in
 let rec tac_rec u := match constr:(u) with 
       | 0 => idtac
-      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; idtac H' ; tac_rec m
+      | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
 end in tac_rec n.
 
 Goal True.
@@ -386,10 +386,6 @@ Definition head_tuple (A B : Type) (x : A×B) := match x with
 |(y, z) => y
 end.
 
-Print head_tuple.
-Compute head_tuple _ _ (1, tt).
-
-
 Definition tail_tuple (A B : Type) (x : A*B) := match x with
 |(y, z) => z
 end.
@@ -403,7 +399,7 @@ Ltac detect_var_match H :=
 let T := type of H in 
 let H' := fresh in 
 assert (H' : False -> T) by
-(match goal with | |-context C[match ?x with _ => _ end] => idtac x end; let Hfalse := fresh in 
+(match goal with | |-context C[match ?x with _ => _ end] => idtac end; let Hfalse := fresh in 
 intro Hfalse; destruct Hfalse) ; clear H' ; idtac.
 
 
@@ -414,7 +410,7 @@ lazymatch constr:(t) with
 end.
 
 Goal forall (A : Type) (x: list A), x = x.
-Proof. intros. let T := type of x in let T' := remove_app T in idtac T'.
+Proof. intros. let T := type of x in let T' := remove_app T in pose T'.
 reflexivity.
 Qed.
 
