@@ -15,6 +15,7 @@ Require Import SMTCoq.SMTCoq.
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Universes.
+Require Import MetaCoq.PCUIC.PCUICEquality.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import utilities.
@@ -84,8 +85,7 @@ end.
 
 (* replace an anonymous fix by its definition *)
 Ltac eliminate_fix_hyp H := 
-let T := type of H in
-quote_term T ltac:(fun T =>
+let T := type of H in let T := metacoq_get_value (tmQuote T) in
 let p := eval cbv in (under_forall T) in 
 let eq := eval cbv in p.1 in
 let list_quantif := eval cbv in p.2 in
@@ -100,15 +100,15 @@ let def := eval cbv in prod.1.1 in
 let u_no_app := eval cbv in prod.1.2 in 
 let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in
 let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif) in
-run_template_program (tmUnquote eq_no_fix) 
-ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2) 
+let z := metacoq_get_value (tmUnquote eq_no_fix) in
+let H' := fresh in let w := eval hnf in z.(my_projT2) 
 in assert (H' :w) 
-by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) )).
+by (repeat (let x := fresh in intro x ; try (destruct x ; auto))).
 
 
 Ltac eliminate_fix_ho H := fun k =>
 let T := type of H in
-quote_term T ltac:(fun T =>
+let T := metacoq_get_value (tmQuote T) in
 let p := eval cbv in (under_forall T) in 
 let eq := eval cbv in p.1 in
 let list_quantif := eval cbv in p.2 in
@@ -122,11 +122,11 @@ let args := eval cbv in prod.2 in (* the arguments of u *)
 let def := eval cbv in prod.1.1 in 
 let u_no_app := eval cbv in prod.1.2 in 
 let u_no_fix := eval cbv in (replace_tFix_by_def u_no_app def) in 
-let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif)
-in run_template_program (tmUnquote eq_no_fix) 
-ltac:(fun z => let H' := fresh in let w := eval hnf in z.(my_projT2)
+let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list_quantif) in
+let z := metacoq_get_value (tmUnquote eq_no_fix) in
+let H' := fresh in let w := eval hnf in z.(my_projT2)
 in assert (H' :w) 
-by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear H)).
+by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear H.
 
 
 
