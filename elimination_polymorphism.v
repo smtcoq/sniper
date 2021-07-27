@@ -62,8 +62,8 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
 
 
 (* Reifies a term and calls is_type *)
-Ltac is_type_quote t := let t' := eval hnf in t in
-quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_type T))).
+Ltac is_type_quote t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
 
 (* instanciates a polymorphic quantified hypothesis with all suitable subterms in the context *)
 Ltac instanciate_type H := let P := type of H  in let P':= type of P in constr_eq P' Prop ; lazymatch P with
