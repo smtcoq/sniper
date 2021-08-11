@@ -436,17 +436,17 @@ Definition get_kn_term (t: term) :=
   end. 
 
 Definition dom_list_f ( B  :  term) (n : nat)  :=
-  (* takes a type B := Prod A1 ... An . B'  and outputs [A1; ... ; An], at least if no dependencies *)
+  (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
   (* does not handle debruijn indices *)
   let fix dlaux B n acc :=
   match n with
-  | 0 => acc 
+  | 0 => (B,List.rev acc) 
   | S n => match B with
-          | tProd na A f' =>  dlaux f' n (A :: acc)
-          | _ => [] (* this case shouldn't happen *)
+          | tProd na A B' =>  dlaux B' n (A :: acc)
+          | _ => (B,[]) (* this case shouldn't happen *)
           end            
   end
-  in List.rev (dlaux B n []).
+  in dlaux B n [].
 
 
 Example dlf1 := Eval cbn in dom_list_f cons_nat_type_reif 2.
@@ -1297,7 +1297,7 @@ Ltac inj_total_disj_tac B lf lA   :=
 Ltac inj_disj_tac lB lf lA p  :=
   lazymatch eval hnf in lB with
    | ?B :: ?tlB =>
-    ctors_are_inj_tac lB lf lA p  ; idtac "kikoo2"   (* ;pairw_disj_codom_tac B lf lA p ;  idtac "kikoo3"  *)
+    ctors_are_inj_tac lB lf lA p  ; idtac "kikoo2"   ;pairw_disj_codom_tac B lf lA p ;  idtac "kikoo3"  
     end ; idtac "kikoo4".
 
 
@@ -1476,7 +1476,7 @@ Example cons_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 1 1 [] 0  [nat
                                      (Universe.from_kernel_repr
                                         (Level.Level "Coq.Init.Datatypes.60",
                                         false) []))
-                                  (tProd mkNAnon (tRel 0)
+                                  (tProd mkNAnon  (tRel 0)
                                      (tProd mkNAnon 
                                         (tApp (tRel 2) [tRel 1])
                                         (tApp (tRel 3) [tRel 2]))))
@@ -1492,10 +1492,10 @@ Definition get_ctors_and_types_i (indu : inductive) (p: nat) (n: nat) (i : nat) 
 let indui := switch_inductive indu i in 
   let fix treat_ctor_oind_aux (indu : inductive) (n : nat) (j: nat)   (l : list ((ident * term) * nat  ))  :=
     match l with
-      | [] => ( [] , [])
-      | ctor :: tll => let '((idc , typc) , nc ) := ctor in 
-      let (tll1,tll2) := (treat_ctor_oind_aux indu  n (j+1)  tll) in
-      ( (tApp  (tConstruct indui j u) lA )   :: tll1 , (dom_list_f (debruijn_mess_aux indui p p n u 0 lA typc) nc) :: tll2 ) 
+      | [] => ([], [] , [])
+      | ctor :: tll => let '((_ , typc) , nc ) := ctor in 
+      let '((tll1,tll2),tll3) := (treat_ctor_oind_aux indu  n (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn_mess_aux indui p p n u 0 lA typc) nc in
+      (B_ctor :: tll1, (tApp  (tConstruct indui j u) lA )   :: tll2 , lA_ctor :: tll3 ) 
     end in let oind_split := treat_ctor_oind_aux indu n 0  oind.(ind_ctors)  in (oind_split.1 , oind_split.2).
 
 Check get_ctors_and_types_i.
@@ -1521,9 +1521,9 @@ Abort.
 
 Definition hd' := hd imposs_mark.
 Definition hd'' := hd [imposs_mark].
+(* il faut un hd en plus pour les B *)
 
-
-Definition gctt_ex1 := (let (a,b) := (get_ctors_and_types_i  nat_indu 0 1 0 [] [] nat_oind)  in  hd' (hd'' (tl b))). 
+Definition gctt_ex1 := (let '((c,a),b) := (get_ctors_and_types_i  nat_indu 0 1 0 [] [] nat_oind)  in  hd' (hd'' (tl b))). 
 Eval cbn in gctt_ex1.
 Print gctt_ex1. 
 
@@ -1541,16 +1541,17 @@ MetaCoq Unquote Definition gct_list_unquote1 := list_get_ctors_types1.
 Eval cbn in gct_list_unquote1.
 (* Print gct_list_unquote1.  *)
 
-
+(*
 Example list_get_ctors_types2 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' (tl a).
 MetaCoq Unquote Definition gct_list_unquote2 := list_get_ctors_types2.
 Eval cbn in gct_list_unquote2.
-Print gct_list_unquote2. 
+Print gct_list_unquote2.  *)
 (* cons nat as expected*)
 
+(* 
 Example list_get_ctors_types3 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' a.
 MetaCoq Unquote Definition gct_list_unquote3 := list_get_ctors_types3.
-Eval cbn in gct_list_unquote3.
+Eval cbn in gct_list_unquote3. *)
 (* Print gct_list_unquote3.  *)
 (* nil nat as expected*)
 
@@ -1575,14 +1576,14 @@ Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
   (* n: number of oind *)
   (* i: is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
- in  idtac "kikoo5" ; let lB := constr:([tApp (tInd indui u) lA]) (* \todo : lB n'est pas un singleton, même si ça ne devrait pas compter pour pairw_disj... *)
  in  idtac "kikoo6" ; let gct :=
   constr:(get_ctors_and_types_i indu p n i u lA oind) 
  in idtac "kikoo7" ; lazymatch eval cbv in gct with 
-  | (?lf,?lA) =>  idtac lB (* statement lB lf lA p *)
-  end .
+  | (?lBf,?lA) =>  idtac "kikoo8" ; lazymatch eval cbv in lBf with
+  | (?lB,?lf) => idtac "kikoo9bis" ; statement lB lf lA p 
+  end end .
 
-Ltac treat_ctor_list_oind_tac_i indu p n i u lA oind :=  idtac "kikoo8" ; treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u lA oind.
+Ltac treat_ctor_list_oind_tac_i indu p n i u lA oind :=  idtac "kikoo9" ; treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u lA oind.
 
 Ltac interpretation_alg_types_oind_i :=   treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
@@ -1597,7 +1598,8 @@ Ltac interpretation_alg_types_oind_i :=   treat_ctor_list_oind_tac_i_gen inj_dis
 
 Goal False.
 Proof.
-  treat_ctor_list_oind_tac_i  list_indu 1 1 0 ([] : Instance.t) [nat_reif] list_oind.
+  treat_ctor_list_oind_tac_i  list_indu 1 1 0 ([] : Instance.t) [[Set_reif];[Set_reif ; tRel 0 ;tApp list_reif [tRel 1]] ] list_oind.
+  (* problème: pas disj_cons pour list. Sans doute un pb de param ?*)
 Abort.
 
 
