@@ -1296,9 +1296,9 @@ Ltac inj_total_disj_tac B lf lA   :=
 
 Ltac inj_disj_tac lB lf lA p  :=
   lazymatch eval hnf in lB with
-   | ?B :: ?tlB => 
-    ctors_are_inj_tac lB lf lA p  ; idtac "kikoo2" ;  pairw_disj_codom_tac B lf lA p ; idtac "kikoo3"  
-    end.
+   | ?B :: ?tlB =>
+    ctors_are_inj_tac lB lf lA p  ; idtac "kikoo2"   (* ;pairw_disj_codom_tac B lf lA p ;  idtac "kikoo3"  *)
+    end ; idtac "kikoo4".
 
 
 Ltac goal_inj_total_tac :=
@@ -1309,12 +1309,12 @@ end.
 
 Goal 2+ 2 = 4.
 Proof.
-  inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0. 
-  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est prouvée, contrairement à nil_nat *)
+  inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0.
+  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est affirmée et prouvée, contrairement à nil_nat *)
   inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  [] ; [nat_reif]] 0.  
 reflexivity.
-Abort.
 
+Abort.
 
 Goal 2 + 2 = 4.
 Proof.
@@ -1351,10 +1351,11 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
 (* Check dom_list_oind. *)
   
 Definition ctor_info_oind ( oind : one_inductive_body ) :=
-    0.
+    0. (* \todo : censé faire quoi ?*)
 
 
-Definition list_nat_oind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). 
+Definition list_nat_mind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). 
+
 
 Inductive tutu : nat -> Type :=
 | Tutu : tutu (let fix toto (n:nat) := match n with O => O | S p => p end in toto 17).
@@ -1544,7 +1545,7 @@ Eval cbn in gct_list_unquote1.
 Example list_get_ctors_types2 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' (tl a).
 MetaCoq Unquote Definition gct_list_unquote2 := list_get_ctors_types2.
 Eval cbn in gct_list_unquote2.
-(* Print gct_list_unquote2. *)
+Print gct_list_unquote2. 
 (* cons nat as expected*)
 
 Example list_get_ctors_types3 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' a.
@@ -1553,7 +1554,7 @@ Eval cbn in gct_list_unquote3.
 (* Print gct_list_unquote3.  *)
 (* nil nat as expected*)
 
-Example list_get_ctors_types_4 := let (a,b) := get_cotrs_and_types_i 
+(* Example list_get_ctors_types_4 := let (a,b) := get_cotrs_and_types_i  *)
 
 Definition Ntree_indu := {| inductive_mind := (MPfile ["pxtp_pierre"], "Ntree"); inductive_ind := 1 |}.
 (* Print Ncons_env_reif. *)
@@ -1569,27 +1570,27 @@ Definition Nforest_oind :=
   ltac:(let s:= fresh "s" in pose_oind_tac Ntree 1 s ; exact s ).
 
 
-
+(* problème: lB singleton et probablement mal calculé quand paramètres *)
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i  u lA oind  :=
   (* n: number of oind *)
   (* i: is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
- in let lB := constr:([tApp (tInd indui u) lA]) (* \todo : lB n'est pas un singleton, même si ça ne devrait pas compter pour pairw_disj... *)
- in  let gct :=
+ in  idtac "kikoo5" ; let lB := constr:([tApp (tInd indui u) lA]) (* \todo : lB n'est pas un singleton, même si ça ne devrait pas compter pour pairw_disj... *)
+ in  idtac "kikoo6" ; let gct :=
   constr:(get_ctors_and_types_i indu p n i u lA oind) 
-  in lazymatch eval cbv in gct with 
-  | (?lf,?lA) => statement lB lf lA p 
-  end.
+ in idtac "kikoo7" ; lazymatch eval cbv in gct with 
+  | (?lf,?lA) =>  idtac lB (* statement lB lf lA p *)
+  end .
 
-Ltac treat_ctor_list_oind_tac_i indu p n i u lA oind:=  treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u lA oind p.
+Ltac treat_ctor_list_oind_tac_i indu p n i u lA oind :=  idtac "kikoo8" ; treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u lA oind.
 
-Ltac interpretation_alg_types_oind_i :=  treat_ctor_list_oind_tac_i_gen inj_disj_tac.
+Ltac interpretation_alg_types_oind_i :=   treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
 
   
   Goal 2+ 2 = 4.
   Proof.
-    treat_ctor_list_oind_tac_i  nat_indu 0 1 0 ([] : Instance.t) ([] : list term) nat_oind.
+    treat_ctor_list_oind_tac_i nat_indu 0 1 0 ([] : Instance.t) ([] : list term) nat_oind.
   reflexivity.
   Abort.
   
