@@ -1,7 +1,7 @@
 (**************************************************************************)
 (*                                                                        *)
 (*     Sniper                                                             *)
-(*     Copyright (C) 2021                                                 *)
+(*     Copyfalse (C) 2021                                                 *)
 (*                                                                        *)
 (*     See file "AUTHORS" for the list of authors                         *)
 (*                                                                        *)
@@ -483,7 +483,7 @@ repeat match goal with
 clear n; clear T.
 
 
-Section tests.
+Module Tests.
 
 
 Definition min1 (x : nat) := match x with
@@ -551,26 +551,24 @@ eliminate_fix_hyp H.
 eliminate_pattern_matching H0.
 Abort.
 
-Definition interface := Type -> Type.
-Definition Ω := (bool * bool)%type.
-Inductive door : Set :=  left : door | right : door.
-Inductive DOORS : interface :=
-| IsOpen : door -> DOORS bool
-| Toggle : door -> DOORS unit.
+Definition bool_pair := (bool * bool)%type.
+Inductive dep_type : Type -> Type :=
+| ToBool : bool -> dep_type bool
+| ToUnit : bool -> dep_type unit.
 
-Definition sel : door -> Ω -> bool := fun d : door => match d with
-                      | left => fst
-                      | right => snd
+Definition dep_fun : bool -> bool_pair -> bool := fun d : bool => match d with
+                      | true => fst
+                      | false => snd
                       end
 .
 
-Definition doors_o_callee : forall (ω :  Ω) (a : Type) (D :  DOORS a), (match D with 
-| IsOpen _ =>  bool 
-| Toggle _ => unit
+Definition dep_match : forall (ω :  bool_pair) (a : Type) (D :  dep_type a), (match D with 
+| ToBool _ =>  bool 
+| ToUnit _ => unit
 end) -> bool :=
 fun ω a D => match D with
-| IsOpen d => fun x => Bool.eqb (sel d ω) x
-| Toggle d => fun x => true
+| ToBool d => fun x => Bool.eqb (dep_fun d ω) x
+| ToUnit d => fun x => true
 end.
 
 
@@ -579,13 +577,13 @@ get_def length. expand_hyp length_def. eliminate_fix_hyp H.
 get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
 eliminate_dependent_pattern_matching H2.
 eliminate_dependent_pattern_matching H0.
-get_def doors_o_callee. expand_hyp doors_o_callee_def.
+get_def dep_match. expand_hyp dep_match_def.
 eliminate_fix_hyp H0.
 clear - H2. eliminate_dependent_pattern_matching H2. 
 Abort. 
 
 
-End tests.
+End Tests.
 
 
 
