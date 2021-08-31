@@ -1,10 +1,20 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 Require Import SMTCoq.SMTCoq.
 
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Universes.
-Require Import MetaCoq.PCUIC.PCUICEquality.
-Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
@@ -40,7 +50,7 @@ Definition prod_of_symb := (unit, Zplus,
          orb,
          implb,
          xorb,
-         eqb,
+         Bool.eqb,
          iff,
          @BITVECTOR_LIST.bv_eq,
          @BITVECTOR_LIST.bv_and,
@@ -55,7 +65,8 @@ Definition prod_of_symb := (unit, Zplus,
          @BITVECTOR_LIST.bv_shr,
          @FArray.select,
          @FArray.diff,
-         is_true).
+         is_true,
+         @eqb_of_compdec).
 
 
 

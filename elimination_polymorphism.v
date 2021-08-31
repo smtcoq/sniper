@@ -1,3 +1,15 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 Require Import SMTCoq.SMTCoq.
 
 From MetaCoq Require Import All.
@@ -50,8 +62,8 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
 
 
 (* Reifies a term and calls is_type *)
-Ltac is_type_quote t := let t' := eval hnf in t in
-quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_type T))).
+Ltac is_type_quote t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
 
 (* instanciates a polymorphic quantified hypothesis with all suitable subterms in the context *)
 Ltac instanciate_type H := let P := type of H  in let P':= type of P in constr_eq P' Prop ; lazymatch P with
@@ -147,14 +159,12 @@ end.
 
 Ltac instanciate_type_tuple t := match t with
 | pair ?a ?b => instanciate_type b ; instanciate_type_tuple a 
-| ?x => instanciate_type x
-| ?y => fail 100 "Wrong parameter" y
+| ?x => try (instanciate_type x)
 end.
 
 Ltac instanciate_type_tuple_all t := match t with
-| pair ?a ?b => instanciate_type_all b ; instanciate_type_tuple_all a 
-| ?x => instanciate_type_all x
-| ?y => fail 100 "Wrong parameter" y
+| pair ?a ?b => try (instanciate_type_all b) ; instanciate_type_tuple_all a 
+| ?x => try (instanciate_type_all x)
 end.
 
 
@@ -176,10 +186,11 @@ Tactic Notation "inst_clear_all" constr(t) := instanciate_type_tuple_all t ; spe
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
-Proof. intros H. inst_clear app_length.
+Proof. intros H. inst_clear_all False. inst_clear app_length.
+
 Abort.
 
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
 inst pair_equal_spec. clear pair_equal_spec_nat.
-inst_clear_all pair_equal_spec.
+inst_clear_all (pair_equal_spec, false, app_length).
 Abort.
