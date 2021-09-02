@@ -838,9 +838,9 @@ Fixpoint codom_disj (B f g: term)  (lAf lAg : list term)  : term :=
   | A1 :: tllAf => tProd mkNAnon A1 (codom_disj B (tApp (lift0 1 f) [tRel 0] )   (lift0 1 g) tllAf lAg  ) 
   end.
 
-  Fixpoint new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
-    let (n,n') := (List.length lAf , List.length lAg) in 
-    let (d,d') := ( n - p, n' - p) in 
+Fixpoint new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
+  let (n,n') := (List.length lAf , List.length lAg) in 
+   let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
       match (p, l)  with
       | (0 , _) => List.rev (lAf ++ List.map (lift0 d) l) 
@@ -1260,9 +1260,10 @@ MetaCoq Quote Definition C_reif := C.
 
 Goal False.
 Proof.
-assert (blut :=ltac:(  
-ctors_are_inj_tac [mt_reif; mt_reif ; mt_reif ] [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0)).
+(* assert (blut :=ltac:(  
+ctors_are_inj_tac [mt_reif; mt_reif ; mt_reif ] [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0)). *)
 assert (blut' := ltac:(pairw_disj_codom_tac mt_reif [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0 )).
+ 
 Abort.
 
 Ltac inj_total_disj_tac B lf lA   :=
