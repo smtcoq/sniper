@@ -670,7 +670,7 @@ Inductive list' (A : Type) : Type :=
 MetaCoq Quote Definition cons_reif' := cons'.
 
 
-
+(* 
 
 Definition truc' := Eval cbv in forall (A: Type) (x1 x2 : A) (x3 x4: list A), True.
 MetaCoq Quote Definition trucu' := (forall (A: Type) (x1 x2 : A) (x3 x4: list A), True).
@@ -682,7 +682,7 @@ MetaCoq Quote Definition cons_inj_reif :=
 MetaCoq Quote Definition cons_typ_reif := (forall (A : Type), A -> list A -> list A).
 Print cons_typ_reif.
 (* tProd A Type_reif tProd _ O tProd _ (tApp list_reif 1) (tApp list_reif 2)*) 
-Print cons_inj_reif.
+Print cons_inj_reif. *)
 (* 
 (tProd A Set_reif 
   (tProd x1 0 
@@ -740,6 +740,9 @@ subst H
 
 Print True.
 
+Print one_inductive_body.
+
+
  Ltac new_ctor_is_inj_tac' B f lA  p :=
   let Hu := fresh "H"  in  (* lazymatch eval hnf in lA with
   | [] => exact unit
@@ -753,9 +756,6 @@ Print True.
 
   
 
-
-
-
 MetaCoq Unquote Definition is_inj_cons :=
 (new_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1).
 Print is_inj_cons.
@@ -763,7 +763,9 @@ Print is_inj_cons.
 
 
 Goal 2+ 2 = 4.
-Proof.   assert (x : 2 + 3 = 5). reflexivity. assert (try1 :=  ltac:(new_ctor_is_inj_tac' (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_reif [tRel 1]]  1 )).
+Proof.   assert (x : 2 + 3 = 5). reflexivity. 
+assert (try1 := ltac:(new_ctor_is_inj_tac' nat_reif O_reif (@nil term) 0)).
+assert (try2 :=  ltac:(new_ctor_is_inj_tac' (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_reif [tRel 1]]  1 )).
 Abort.
 
 
@@ -1292,11 +1294,10 @@ Proof.
   assert (blut1 := ltac:(  inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  (@nil term) ; [nat_reif]] 0)).   
   idtac "NEW TEST 2".
 assert (blut2 := ltac:(inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0)).
-idtac "NEW TEST 3".  
-(inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est affirmée et prouvée, contrairement à nil_nat *)
-  inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  [] ; [nat_reif]] 0.  
-reflexivity.
-
+idtac "before NEW TEST 3".
+(* pairw_disj_codom_tac (tApp list_reif [tRel 0])  [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1. *)
+ idtac "NEW TEST 3".  
+assert (blut3 := ltac:(inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1)). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est affirmée et prouvée, contrairement à nil_nat *)
 Abort.
 
 Goal 2 + 2 = 4.
@@ -1349,7 +1350,9 @@ Definition nat_indu :=
 
 
 Definition nat_oind' := 
-  ltac:(let s := fresh "s" in pose_mind_tac (nat) s ; exact s).  
+  ltac:(let s := fresh "s" in pose_mind_tac (nat) s ; exact s). 
+Eval compute in nat_oind'.
+Print nat_oind'.
 
 
 Definition even_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedInductives"], "odd"); inductive_ind := 1 |}.
@@ -1527,7 +1530,7 @@ MetaCoq Unquote Definition tclo_nat1' := gctt_ex1.
 Print tclo_nat1'. 
 
 Definition list_oind := ltac:(let s := fresh "s" in pose_oind_tac list 0 s ; exact s).
-  
+
 
 Definition list_mind :=  ltac:(let s := fresh "s" in pose_mind_tac list s ; simpl in s; exact s).
 
