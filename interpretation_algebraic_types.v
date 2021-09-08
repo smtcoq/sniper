@@ -928,7 +928,7 @@ MetaCoq Unquote Definition d_cod_u4 := disj_codom4.
 Ltac pairw_aux B f lAf lf lA p :=
      lazymatch constr:((lf , lA)) with
         | ([] , []) => exact 0 
-        | (?f1 :: ?tllf , ?A1 :: ?tllA ) => let Hnew := fresh "H" in assert (H := ltac:(codom_disj_discr B f f1 lAf A1 p))  ; let Hacc := fresh "H" in assert( Hacc := ltac:(pairw_aux B f lAf tllf tllA p)) ; let res := fresh "H"  in assert (res := (Hnew,Hacc)) ; exact res
+        | (?f1 :: ?tllf , ?A1 :: ?tllA ) => let Hnew := fresh "H" in assert (Hnew := ltac:(codom_disj_discr B f f1 lAf A1 p))  ; let Hacc := fresh "H" in assert( Hacc := ltac:(pairw_aux B f lAf tllf tllA p)) ; let res := fresh "H"  in assert (res := (Hnew,Hacc)) ; exact res
         | _ => idtac "wrong branch pairw_aux"  ; fail                               
       end.
 
@@ -938,11 +938,12 @@ assert (blut := ltac:(pairw_aux list_nat_reif nil_nat_reif  (@nil term) [cons_na
       reflexivity. Abort. 
  
     
-Ltac pairw_disj_codom_tac B  lf  lA p :=   idtac lf ; idtac lA ;
-  match constr:((lf , lA)) with
-  | ([] , [] ) => exact 0
-  | (?f1 :: ?tllf  , ?A1 :: ?tllA ) => let Hnew := fresh "J" in assert (Hnew := ltac:(pairw_aux B f1 A1 tllf tllA p)) ; idtac "kikoo6" ; let Hacc := fresh "J" in assert (Hacc := ltac:(pairw_disj_codom_tac B tllf tllA p)) ; idtac "kikoo7" ; let res := fresh "J" in assert (res := (Hnew,Hacc)) ; exact res
-  | _ => idtac lf ; idtac lA ;  assert (bidule := (lf , lA)) ;  idtac "wrong branch pair_disj_codom_tac"     
+Ltac pairw_disj_codom_tac B  lf  lA p :=   idtac "machin"; idtac lf ; idtac lA ; lazymatch eval hnf in lf with
+  | [] => exact 0 
+  | ?f1 :: ?tllf => lazymatch eval hnf in lA with 
+    ?A1 :: ?tllA  => let Hnew := fresh "J" in assert (Hnew := ltac:(pairw_aux B f1 A1 tllf tllA p)) ; idtac "kikoo6" ; let Hacc := fresh "J" in assert (Hacc := ltac:(pairw_disj_codom_tac B tllf tllA p)) ; idtac "kikoo7" ; let res := fresh "J" in assert (res := (Hnew,Hacc)) ; exact res
+  | _ => idtac lf ; idtac "mmh" ; idtac lA ;  idtac "wrong branch pair_disj_codom_tac"  
+  end
   end.
 
 Goal nat -> 2 + 2 = 4.
@@ -1260,10 +1261,10 @@ MetaCoq Quote Definition C_reif := C.
 
 Goal False.
 Proof.
-(* assert (blut :=ltac:(  
-ctors_are_inj_tac [mt_reif; mt_reif ; mt_reif ] [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0)). *)
+assert (blut :=ltac:(  
+ctors_are_inj_tac [mt_reif; mt_reif ; mt_reif ] [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0)). (* marche*) 
 assert (blut' := ltac:(pairw_disj_codom_tac mt_reif [A_reif ; B_reif ; C_reif ] [[] ; [mt_reif] ; [mt_reif] ] 0 )).
- 
+assert (blut'' := ltac:(pairw_disj_codom_tac (tApp list_reif [tRel 0])  [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1)).
 Abort.
 
 Ltac inj_total_disj_tac B lf lA   :=
@@ -1273,7 +1274,7 @@ Ltac inj_disj_tac lB lf lA p  := match goal with
 | [ _ : _ |- _ : ?B] =>
   lazymatch eval hnf in lB with
    | ?B :: ?tlB => let Hinj := fresh "H" in 
- assert (Hinj := ltac:(ctors_are_inj_tac lB lf lA p)) ; idtac "kikoo1" ; idtac B; let Hdisj := fresh "H" in  assert (Hdisj :=  ltac:(pairw_disj_codom_tac B lf lA p)) ; idtac "kikoo2" ; let res := fresh "res" in assert (res := (Hinj,Hdisj)) ; idtac "kikoo3" ; exact res 
+ assert (Hinj := ltac:(ctors_are_inj_tac lB lf lA p)) ; idtac "entre les deux tactiques" ; idtac B; let Hdisj := fresh "H" in  assert (Hdisj :=  ltac:(pairw_disj_codom_tac B lf lA p)) ; idtac "après les deux tactiques" ; let res := fresh "res" in assert (res := (Hinj,Hdisj)) ; idtac "le résultat est stocké" ; exact res 
     end end.
 
 
@@ -1289,8 +1290,10 @@ Proof.
   assert (blut0 := ltac:( pairw_disj_codom_tac nat_reif[O_reif  ; S_reif] [  [] ; [nat_reif]] 0  ) ).
   idtac "NEW TEST 1".
   assert (blut1 := ltac:(  inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  (@nil term) ; [nat_reif]] 0)).   
+  idtac "NEW TEST 2".
 assert (blut2 := ltac:(inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] 0)).
-  (inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est affirmée et prouvée, contrairement à nil_nat *)
+idtac "NEW TEST 3".  
+(inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] 1). (* \todo : probleme, le fait qu'il y ait un paramètre fait que l'injectivité de nil est affirmée et prouvée, contrairement à nil_nat *)
   inj_disj_tac  [nat_reif  ; nat_reif] [O_reif  ; S_reif] [  [] ; [nat_reif]] 0.  
 reflexivity.
 
