@@ -743,18 +743,27 @@ Print True.
 Print one_inductive_body.
 
 
- Ltac new_ctor_is_inj_tac' B f lA  p :=
-  let Hu := fresh "H"  in  (* lazymatch eval hnf in lA with
-  | [] => exact unit
-  | ?x :: ?tlA => *)
+ Ltac new_ctor_is_inj_tac' B f lA  p n :=
+  let Hu := fresh "H"  in  
   (pose_unquote_term_hnf (new_is_inj B f lA  p) Hu ); let t := fresh "t" in assert (t:Hu)   ; [  unfold Hu ; intros ;
  match goal with  
  | h : _ = _ |- _ => inversion h    
  end  ; 
- repeat split  | ..]   ; simpl ;   exact t 
-(* end *).
+ repeat split  | ..]   ; simpl ;   exact t.
+
+(*
+Ltac metacoq_get_value p :=
+  let id := fresh in
+  let _ := match goal with _ => run_template_program p
+  (fun t => pose (id := t)) end in
+  let x := eval cbv delta [id] in id in
+  let _ := match goal with _ => clear id end in
+  x. 
 
   
+  let x := (metacoq_get_value (tmQuoteRec bool)) in assert (y := x).
+  *)
+
 
 MetaCoq Unquote Definition is_inj_cons :=
 (new_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1).
@@ -762,7 +771,7 @@ Print is_inj_cons.
 
 
 
-Goal 2+ 2 = 4.
+Goal 2 + 2 = 4.
 Proof.   assert (x : 2 + 3 = 5). reflexivity. 
 assert (try1 := ltac:(new_ctor_is_inj_tac' nat_reif O_reif (@nil term) 0)).
 assert (try2 :=  ltac:(new_ctor_is_inj_tac' (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_reif [tRel 1]]  1 )).
