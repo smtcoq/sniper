@@ -741,11 +741,11 @@ pairw_aux list_nat_reif nil_nat_reif  (@nil term) [cons_nat_reif]  [ [nat_reif; 
       reflexivity. Abort. 
  
     
-Ltac pairw_disj_codom_tac B lf  lA p :=   idtac "machin"; idtac lf ; idtac lA ; lazymatch eval hnf in lf with
+Ltac pairw_disj_codom_tac B lf  lA p := lazymatch eval hnf in lf with
   | [] => idtac  
   | ?f1 :: ?tllf => lazymatch eval hnf in lA with 
-    ?A1 :: ?tllA  => pairw_aux B f1 A1 tllf tllA p ; idtac "kikoo6" ; pairw_disj_codom_tac B tllf tllA p ; idtac "kikoo7" 
-  | _ => idtac lf ; idtac "mmh" ; idtac lA ;  idtac "wrong branch pair_disj_codom_tac"  
+    ?A1 :: ?tllA  => pairw_aux B f1 A1 tllf tllA p  ; pairw_disj_codom_tac B tllf tllA p 
+  | _ =>   idtac "wrong branch pair_disj_codom_tac"  
   end
   end.
 
@@ -1056,7 +1056,7 @@ Ltac goal_inj_total_tac :=
     | [ _ : _ |- _ : ?B] => fail                    
 end.     
 
-
+(*
 Goal 2+ 2 = 4.
 Proof. 
   idtac "NEW TEST 1".
@@ -1065,6 +1065,7 @@ Proof.
 inj_disj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [[] ; [nat_reif; list_nat_reif]] [0; 2] 0.
 inj_disj_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] [0;2] 1. 
 Abort.
+
 
 Goal 2 + 2 = 4.
 Proof.
@@ -1077,7 +1078,7 @@ Proof.
   Fail inj_total_disj_tac Nforest_reif [Nleaf_reif ; Ncons_reif] [[nat_reif] ; [Ntree_reif ; Nforest_reif]].
 reflexivity.
 Abort.
-
+*)
 
 
 
@@ -1343,19 +1344,18 @@ Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
   (* n: number of oind *)
   (* i: is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
- in  idtac "kikoo6" ; let gct :=
+ in  let gct :=
   constr:(get_ctors_and_types_i indu p n i u  oind) 
- in idtac "kikoo7" ; lazymatch eval hnf in gct with 
+ in  lazymatch eval hnf in gct with 
   | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
-    | (?lBf,?lA) =>  idtac "kikoo8" ; 
-      lazymatch eval cbv in lBf with
-      | (?lB,?lf) => idtac "kikoo9bis" ; statement lB lf lA ln p 
+    | (?lBf,?lA) =>  lazymatch eval cbv in lBf with
+      | (?lB,?lf) =>  statement lB lf lA ln p 
       end
     end
   end.
 (* todo : supprimer le /\ True inutile dans l'injectivité *)
 
-Ltac treat_ctor_list_oind_tac_i indu p n i u oind :=  idtac "kikoo9" ; treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u oind.
+Ltac treat_ctor_list_oind_tac_i indu p n i u oind := treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u oind.
 
 Ltac interpretation_alg_types_oind_i := treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
@@ -1533,9 +1533,9 @@ Definition is_sort (t : term) := match t with
                                  | tSort _ => true
                                  |_ => false
                                   end.
-                                  
+
 Ltac is_sort_quote t := let t' := eval hnf in t in
-quote_term t' ltac:(fun T => Òif_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
+quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
 
 
 
