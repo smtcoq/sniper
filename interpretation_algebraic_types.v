@@ -13,7 +13,7 @@
 From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
-(* Require Import utilities. *)
+Require Import utilities. 
 Require Import ZArith.
 
 
@@ -1596,10 +1596,10 @@ Abort.
 
 Goal 2+2 = 4.
 Proof.
-fo_prop_of_cons_tac (list nat).
+(* fo_prop_of_cons_tac (list nat). *)
 clear. interp_alg_types (list nat).
-fo_prop_of_cons_tac nat. 
-fo_prop_of_cons_tac Ntree.  
+(* fo_prop_of_cons_tac nat. 
+fo_prop_of_cons_tac Ntree.   *)
 reflexivity.
 Abort.
 
