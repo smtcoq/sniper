@@ -27,14 +27,11 @@ Ltac pose_quote_term c idn :=
   let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
 
 
+(*
 Goal False.
   pose_quote_term nat nat_reif.
 Abort.  
-
-
-
-
-
+*)
 
 Ltac unquote_type t idn e := (run_template_program (r <- tmUnquote t ;; ret (my_projT1 r)) (fun x => pose  x as idn)) ; e t.
 
@@ -52,34 +49,6 @@ Ltac unquote_type_cbv1 t idn := unquote_type1 t idn ltac:(fun t => hnf in idn).
 Ltac unquote_type_cbv2 t idn := unquote_type2 t idn ltac:(cbn in idn).
  
 
-
-Definition MonProjT1 t := ret (my_projT1 t).
-
-Ltac mpT2ltac0 t :=  constr:(my_projT2 t).
-Ltac mpT2ltac1 t :=  pose (my_projT2 t) as kik1.
-Ltac mpT2ltac2 t :=  pose (my_projT2 t) as kik ; pose ((?kik * ?kik)%nat) as sq.
- 
-
-
-Definition tmqnat := tmQuote nat.
-Definition ttz : typed_term  := {| my_projT1 := nat ; my_projT2 := 0|}.
-
-Ltac preqt t idn := (run_template_program (tmUnquote t ) (fun x => pose x as idn)). 
-Ltac unquote_type3 t idn := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT1 x) as idn))); cbv in idn.
-
-
-Goal 2+2 = 4.
-Proof.
-Fail mpT2ltac0 ttz. (* Expression does not evaluate to a tactic. *)
-mpT2ltac1 ttz. (* marche *)
-Fail mpT2ltac2 tt2. (* Error: Variable t should be bound to a term but is bound to a intropattern. *)
-pose_quote_term nat nat_reif.
-preqt nat_reif try_preqt'.
-unquote_type3  nat_reif sdjkl.
-pose_quote_term 0 zero_reif.
-unquote_type3 zero_reif nat_hopefully. (* yes *)
-reflexivity.
-Qed.
 
 
 Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t ) ltac:(fun x =>  (pose  x as idn))).
@@ -110,34 +79,6 @@ Ltac assert_unquote_term_hnf t  idn := (run_template_program (tmUnquote t ) ltac
 Ltac unquote_term_cbv' t idn  := unquote_term t idn ltac:(fun x => cbv in x).
 
 
-
-Goal 2 + 2 = 4.
-Proof.
-pose_quote_term 0 zero_reif.
-pose_unquote_term_hnf zero_reif zero_hopefully.
-unquote_term_cbv' zero_reif zero_hopefully'.
-reflexivity.
-Qed.
-
-
-(* Ltac uqt t idn := (run_template_program (tmUnquote t ) (fun x => pose  x as blut)); 
- pose (mpT2ltac blut) as idn. *)
-
-
-Goal 2 + 2 = 4.
-Proof.
-pose_quote_term 2 nat_reif.  
-
-  reflexivity.
-  Qed.
-
-  
-Ltac uqt t idn ty := (run_template_program (r <- tmUnquote t  ;; @ret TemplateMonad ty (my_projT1 r)) (fun x => pose  x as idn)).
-
- Goal 2+ 2 = 4.
-  pose_quote_term 0 zero_reif. unquote_type_cbv' zero_reif nat_type.
-  reflexivity.
-  Qed.
 
 
 
@@ -192,6 +133,8 @@ MetaCoq Quote Definition cons_nat_reif := cons_nat.
 MetaCoq Quote Definition nat_reif := nat.
 MetaCoq Unquote Definition nat_unreif := nat_reif.
 MetaCoq Quote Recursively Definition nat_env_reif := nat.
+
+
 
 
 Definition nat_oind := {|
@@ -431,15 +374,24 @@ MetaCoq Quote Definition imposs_mark :=  impossible_type  .
 Definition get_ind_ident (kerna : kername) := let (mdp , idind) := kerna in idind.
 
 
-Ltac get_ind_param t idn := idtac "kikoo0" ;
-    let tq := fresh "t_q" in pose_quote_term t tq ; idtac "kikoo1" ;
+Ltac get_ind_param t idn := 
+    let tq := fresh "t_q" in pose_quote_term t tq ;
     lazymatch eval hnf in tq with
      | tApp ?iu ?lA =>  
        (lazymatch eval hnf in iu with
        | tInd ?indu ?u => pose (indu,lA) as idn ; clear tq
        end )
-     | tInd ?indu ?u => idtac "kikoo2" ; pose (indu,([]: list term)) as idn ; idtac "kikoo3" ; clear tq
+     | tInd ?indu ?u =>  pose (indu,([]: list term)) as idn  ; clear tq
      end.
+
+
+Ltac pose_inductive_tac t idn := let s := fresh "s" in get_ind_param t s ; pose (fst s) as idn ;  simpl in idn ; clear s.
+
+(* 
+Goal False.
+Proof. let blut := fresh "blut" in pose_inductive_tac (list nat)  blut. Check blut.
+Abort.
+*)
 
 Ltac get_env_ind_param t idn := 
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
@@ -453,12 +405,14 @@ Ltac get_env_ind_param t idn :=
      end
      end.
 
+(* 
 Goal False.
 Proof.
 let s1 := fresh "s1" in get_env_ind_param (list nat) s1.
 get_env_ind_param list foo.
 let s2 := fresh "s2" in get_ind_param nat s2.
 Abort.
+*)
 
 
 
@@ -490,8 +444,11 @@ Ltac pose_mind_tac t idn :=   (* factoriser code !*)
     .
 
 
-    Ltac get_mind_tac t  :=  
-      let rqt := fresh "rqt" in rec_quote_term t rqt ; 
+
+
+
+Ltac get_mind_tac t  :=  
+    let rqt := fresh "rqt" in rec_quote_term t rqt ; 
       lazymatch eval hnf in rqt with
        | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
        | tApp ?iu ?lA =>   
@@ -513,10 +470,13 @@ Ltac pose_mind_tac t idn :=   (* factoriser code !*)
  
 
 Ltac pose_oind_tac t i idn := let s := fresh "s" in pose_mind_tac t s ; pose (nth i s.(ind_bodies)  nat_oind) as idn; simpl in idn ; clear s.
+(*  the tactic uses nat_oind as the defaut value for nth *)
 
+(*
 Goal False.
 Proof. let blut := fresh "blut" in pose_oind_tac (list nat) 0 blut.
 Abort.
+*)
 
 
 
@@ -530,9 +490,11 @@ Abort.
 
 (* tests subst*)
 
+(*
 Definition t1 := tApp (tRel 0) [tRel 1 ; tRel 2].
 Definition t2 := Eval cbv in subst0 [True_reif] t1.
 Print t2.
+*)
 (* subst makes the dB indice decrease *)
 
 Print lift0.
@@ -545,7 +507,7 @@ Definition cutEvar (t: term) :=
   end.
 
 
-Definition new_inj_aux (B f : term ) (lA : list term) (p : nat) (* l1 l2 : list term *) :=
+Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
   let n := List.length lA in 
   let d := n - p in let f' := cutEvar f in 
   let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
@@ -570,130 +532,38 @@ Definition new_inj_aux (B f : term ) (lA : list term) (p : nat) (* l1 l2 : list 
       | [] => t
       |  A :: l1 => aux3 l1 (tProd (mkNamed "x") A t)
       end in aux3 l1 (tProd mkNAnon (mkEq (lift0 d B) (tApp f' dB1) (tApp f' dB2)) andeq)   
-    . (* manque l'application des constructeurs à leur types*)
+    . 
+
+(* 
+Definition inj_test1 := Eval compute in (is_inj  (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]   1  ).
+Print inj_test1.
+MetaCoq Unquote Definition inj_test1_u := inj_test1. 
+Print inj_test1_u.
+
+*)
+
 (*
-
-Fixpoint new_inj_aux (B f : term ) (lA : list term) (p : nat) (l1 l2 : list term ) :=
-  let n := List.length lA in 
-  let d := n - p in let f' := cutEvar f in 
-  let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
-    match (lA , p ) with 
-    | ([], _) =>   (l1 , l2)  
-    | (A :: lA, 0) => let A' := lift0 i A in let A'' := lift0 j A' in 
-    aux1 lA 0 (i+1) (j-2) (((lift0 1 A') :: A' :: l1) ) (A'' :: l2) 
-    | (A :: lA, S p) =>   aux1 lA  p i j (A :: l1) l2
-    end in let (l1, l2) := aux1 lA p 0 (S(2 * d)) [] [] in let d' := 2 * d - 2 in 
-  let fix aux2 (k i  : nat) (l2 dB1 dB2 : list term) (andeq : term) :=
-    match (k , l2) with 
-    | (0, _) =>  (dB1 , dB2 , andeq )  
-    | (S k, []) => aux2 k (i+1) [] ((tRel i) :: dB1 ) ((tRel i) :: dB2) andeq
-    | (S k, A' :: l2) =>  aux2 k (i + 2)  l2 ( (tRel (i+1)) :: dB1 ) ((tRel i) :: dB2 ) (mkAnd (mkEq  A' (tRel (S (S i))) (tRel (S i) )) andeq) (* manque cas où l2' singleton pour éliminer True_reif *)
-    end in let '((dB1 , dB2), andeq) := aux2 n 0 l2 [] [] True_reif in 
-    let fix aux3 l1 t :=
-      match l1 with 
-      | [] => t
-      |  A :: l1 => aux3 l1 (tProd (mkNamed "x") A t)
-      end in (* mkEq (lift0 d B) (tApp (cutEvar f) dB1) (tApp (cutEvar f) dB2) *)   aux3 l1 (tProd mkNAnon (mkEq (lift0 d B) (tApp f' dB1) (tApp f' dB2)) andeq)   
-    .
-*)
-
-
-Definition truc := Eval compute in (new_inj_aux  (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]   1 (* [] [] *)  ).
-Print truc.
-MetaCoq Unquote Definition trucu := truc. 
-Print trucu.
-
-Definition new_is_inj B f lA  p := new_inj_aux B f lA  p (* [] [] *).
-Check new_is_inj.
-
-
-
-Inductive list' (A : Type) : Type :=
- | nil' : list' A 
- | cons' : A -> list' A -> list' A
-.
-
-MetaCoq Quote Definition cons_reif' := cons'.
-
-
-(* 
-
-Definition truc' := Eval cbv in forall (A: Type) (x1 x2 : A) (x3 x4: list A), True.
-MetaCoq Quote Definition trucu' := (forall (A: Type) (x1 x2 : A) (x3 x4: list A), True).
-Print trucu'.
-
-MetaCoq Quote Definition cons_inj_reif :=
-  (forall (A: Set) (x1 x2: A) (l1 l2: list A), x1 :: l1 = x2 :: l2 -> ((x1 = x2) /\ (l1 = l2))).
-  Check cons.
-MetaCoq Quote Definition cons_typ_reif := (forall (A : Type), A -> list A -> list A).
-Print cons_typ_reif.
-(* tProd A Type_reif tProd _ O tProd _ (tApp list_reif 1) (tApp list_reif 2)*) 
-Print cons_inj_reif. *)
-(* 
-(tProd A Set_reif 
-  (tProd x1 0 
-    (tProd x2 1 
-      (tProd l1 (tApp list_reif [2]))
-        (tProd l2 (tApp list_reif [3])) 
-           tProd nAnon (eq_reif [list_reif [4] ]
-              (cons_reif [4, 3, 1]  )
-              (cons_reif) [4, 2 , 0]
-             ))))
-             and_reif [eq_reif [5, 4 , 3]] ] [eq_reif [tApp list_reif 5, 2 1]]
-
-
-*)
-
- 
-
-
-
-Definition S_inj_reif :=  (new_is_inj nat_reif S_reif [nat_reif] 0).
+Definition S_inj_reif :=  (is_inj nat_reif S_reif [nat_reif] 0).
 
 MetaCoq Unquote Definition really_S_inj_reif := S_inj_reif.
 Print really_S_inj_reif.
 
-MetaCoq Unquote Definition O_inj := (new_is_inj nat_reif O_reif [] 0).
+MetaCoq Unquote Definition O_inj := (is_inj nat_reif O_reif [] 0).
 Print O_inj.
 
 
-MetaCoq Unquote Definition really_cons_nat_inj_reif := (new_is_inj list_nat_reif cons_nat_reif  [nat_reif; list_nat_reif] 0).
+MetaCoq Unquote Definition really_cons_nat_inj_reif := (is_inj list_nat_reif cons_nat_reif  [nat_reif; list_nat_reif] 0).
 Print really_cons_nat_inj_reif. 
+*)
 
 
 
-Ltac just_cbv t := cbv in t.
 
-Goal 2 + 2 = 4.
-Proof.  pose ( String.append "hello " "world") as H. just_cbv H.
-reflexivity. Qed.
-
-
-
-(* 
-
- Ltac new_ctor_is_inj_tac B f lA  p :=
-  let H := fresh "H" in lazymatch eval hnf in lA with
-  | [] => idtac 
-  | ?x :: ?tlA => let H := fresh "H" in
-  (pose_unquote_term_hnf (new_is_inj B f lA  p) H );  assert H   ; [  unfold H ; intros ;
- match goal with  
- | h : _ = _ |- _ => inversion h    
- end  ; 
- repeat split  | .. ]  ; 
-subst H                                
- end  .  *)
-
-Print True.
-
-Print one_inductive_body.
-
-
- Ltac new_ctor_is_inj_tac B f lA  n p := 
+Ltac ctor_is_inj B f lA  n p := 
    match n with
    | 0 => idtac 
    | S _ => let Hu := fresh "H"  in  
-  (pose_unquote_term_hnf (new_is_inj B f lA  p) Hu ); let t := fresh "H" in assert (t:Hu)   ; [  unfold Hu ; intros ;
+  (pose_unquote_term_hnf (is_inj B f lA  p) Hu ); let t := fresh "H" in assert (t:Hu)   ; [  unfold Hu ; intros ;
  match goal with  
  | h : _ = _ |- _ => inversion h    
  end  ; 
@@ -713,20 +583,20 @@ Ltac metacoq_get_value p :=
   let x := (metacoq_get_value (tmQuoteRec bool)) in assert (y := x).
   *)
 
-
+(*
 MetaCoq Unquote Definition is_inj_cons :=
-(new_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1).
+(is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]  1).
 Print is_inj_cons.
 
 
 
 Goal 2 + 2 = 4.
 Proof.   assert (x : 2 + 3 = 5). reflexivity. 
-new_ctor_is_inj_tac (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_reif [tRel 1]]  1 2.
-  new_ctor_is_inj_tac list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 0 2. clear.
- new_ctor_is_inj_tac nat_reif O_reif (@nil term) 0 0 .
+ctor_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_reif [tRel 1]]  1 2.
+  ctor_is_inj list_nat_reif cons_nat_reif [nat_reif ; list_nat_reif] 0 2. clear.
+ ctor_is_inj nat_reif O_reif (@nil term) 0 0 .
  Abort.
-                                                                                                
+  *)                                                                                              
 
 
 Definition nilterm := @nil term.
@@ -749,7 +619,7 @@ Ltac ctors_are_inj_tac lB lf lA ln p :=
         match ln with
         | nil => idtac "Wrong branch ctors_are_inj"
         | ?n1 :: ?tln  => let Hnew := fresh "H" in 
-   new_ctor_is_inj_tac B1 f1 A1 n1 p ;  
+   ctor_is_inj B1 f1 A1 n1 p ;  
    ctors_are_inj_tac tlB tlf tlA tln p 
          end
       end      
@@ -757,19 +627,20 @@ Ltac ctors_are_inj_tac lB lf lA ln p :=
   end.
   
 
+(*  
 Goal 2 + 2 = 4.
 Proof.  
 ctors_are_inj_tac [list_nat_reif ; list_nat_reif] [nil_nat_reif ; cons_nat_reif] [(@nil term) ; [nat_reif; list_nat_reif]] [0 ; 2] 0. 
 ctors_are_inj_tac [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [ nil_reif ; cons_reif] [ [Set_reif] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]]] [0 ; 1] 1. 
 Abort.
-                                                                
+*)                                                                
     
   
 (*** Disjoints codomains ***)
 
 
 
-Fixpoint new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
+Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
   let (n,n') := (List.length lAf , List.length lAg) in 
    let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
@@ -796,13 +667,14 @@ Fixpoint new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
       | A' :: l => aux3 l (tProd (mkNamed "x") A' t)
       end in   aux3 lQ (mkNot (mkEq (lift0 d' B) (tApp (cutEvar f) l1) (tApp (cutEvar g) l2))).  
      
-
+(* 
 Example disj_codom1 := new_codom_disj list_nat_reif nil_nat_reif nil_nat_reif [ ] [] 0.
   (* MetaCoq Unquote Definition dcodu1 := disj_codom1. 
   Print dcodu1. *)
 
 MetaCoq Quote Definition disj_cons_cons := (forall (A : Set) (x1 : A) (l1 : list A) (x2 : A) (l2 : list A), x1 :: l1 <> x2 :: l2) .  
 Print disj_cons_cons.
+
 
 Example disj_cons_cons2 := Eval compute in new_codom_disj (tApp list_reif [tRel 2]) cons_reif cons_reif  [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ]    [Set_reif; tRel 0 ; tApp list_reif [tRel 1] ] 1.
 Print disj_cons_cons2. 
@@ -827,7 +699,7 @@ Example disj_codom3_no_param := Eval compute in (new_codom_disj list_nat_reif ni
 Print disj_codom3_no_param.
 MetaCoq Unquote Definition dcodu3 := disj_codom3_no_param.
 Print disj_codom3_no_param.  
-
+*)
 
 
 Ltac codom_disj_discr B f g lAf lAg p:=
@@ -1144,7 +1016,7 @@ Proof.
   codom_union_total_tac [list_nat_reif ; list_nat_reif ] [nil_nat_reif ; cons_nat_reif ] [ [] ; [nat_reif; list_nat_reif]] 0.
   codom_union_total_tac  [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [(cutEvar nil_reif) ; (cutEvar cons_reif) ] [ [Set_reif ] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1] ]] 1.
   reflexivity. 
-Qed.
+Abort.
 
   
 
@@ -1220,28 +1092,24 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   
 
 
-
+(*
 Definition list_nat_mind := ltac:(let s := fresh "s" in pose_mind_tac (list nat) s ; exact s). 
 
 
-Inductive tutu : nat -> Type :=
-| Tutu : tutu (let fix toto (n:nat) := match n with O => O | S p => p end in toto 17).
+Definition nat_indu := ltac:(let s := fresh "s" in pose_inductive_tac nat s; exact s).
+Print nat_indu.
+Eval compute in nat_indu.
+Print nat_indu.
 
 
-Definition nat_indu := 
-  {| inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat"); inductive_ind := 0 |}.
 
 
-Definition nat_oind' := 
-  ltac:(let s := fresh "s" in pose_mind_tac (nat) s ; exact s). 
-Eval compute in nat_oind'.
-Print nat_oind'.
 
-
-Definition even_indu := {| inductive_mind := (MPfile ["tinkeringwithReifiedInductives"], "odd"); inductive_ind := 1 |}.
+Definition even_indu := ltac:(let s := fresh "s" in pose_inductive_tac even s; exact s).
+Eval compute in even_indu.  
 
 Definition even_oind := ltac:(let s :=  fresh "s" in pose_oind_tac even 0 s; exact s). 
-
+*)
 
 Definition switch_inductive ( indu : inductive) (i : nat) :=
   match indu with 
@@ -1261,7 +1129,7 @@ end.
 
 
 (* old version: takes lA a list of parameters and outputs the expected type*)
-Fixpoint debruijn_mess_aux' (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u : Instance.t)  (k: nat) (lA : list term) (B: term):=
+(* Fixpoint debruijn_mess_aux' (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u : Instance.t)  (k: nat) (lA : list term) (B: term):=
   match B with 
     | tRel j  =>
     match (Nat.leb (j + 1) (k - p), Nat.leb (j+1) k)  with
@@ -1276,7 +1144,7 @@ Fixpoint debruijn_mess_aux' (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u 
   | tLetIn na def def_ty body => tLetIn na (debruijn_mess_aux' indu p sp n  u  k lA def  ) (debruijn_mess_aux' indu p sp n u  k lA def_ty) (debruijn_mess_aux' indu p sp n u  (k+1) lA body ) 
   | tApp f lg => tApp (debruijn_mess_aux' indu p sp n u  k lA f ) (map (debruijn_mess_aux' indu p sp n u k lA) lg)                      
   | _ => B  (* tVar, tEvar, tCast, tSort, tFix, tCofix,tCase  *) 
-  end.
+  end. *)
 
   Fixpoint debruijn_mess_aux (indu : inductive )  (n : nat) (u : Instance.t)  (k: nat)  (B: term):=
     match B with 
@@ -1296,8 +1164,9 @@ Fixpoint debruijn_mess_aux' (indu : inductive ) (p: nat) (sp: nat) (n : nat) (u 
 
 (* Check debruijn_mess_aux. *)
 
+(* 
 Example dbmaO :=  Eval cbn in (debruijn_mess_aux nat_indu  1 []  0  (tRel 0)).
-(* tRel 0 : décla de O dans nat_oind *)
+(* tRel 0 corresponds to O in the declaration of nat_oind *)
 Print dbmaO. 
 
 (* Print nat_indu.
@@ -1337,16 +1206,18 @@ Example dbmaevenS := Eval cbn in (debruijn_mess_aux even_indu 2 [] 0
                                              {|
                                              inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
                                              inductive_ind := 0 |} 1 []) [tRel 1]])))).
+
+*)                                              
 (* Print dbmaevenS. *)
 (* tProd nat_reif tProd (odd_reif (Rel 0)) . (even_reif (S_reif (Rel 1)))  *)
 (* Print evenS. *)
 (* evenS forall n : nat, odd n -> even (S n) *) 
 
 
+(*
+Definition list_indu := ltac:(let s := fresh in  pose_inductive_tac list s ; exact s).
+  
 
-Definition list_indu := {|
-inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-inductive_ind := 0 |}.
 
 Example nil_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 [] 0 
 (tProd (mkNamed "A") Set_reif  
@@ -1354,10 +1225,14 @@ Example nil_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 [] 0
  
      
 Print nil_dbm_try.
-     
+  
+
+
 MetaCoq Unquote Definition nil_dbm_unquote := nil_dbm_try.
+*)
 (* Print nil_dbm_unquote. *)
 
+(*
 Example cons_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 [] 0 
 (tProd (mkNamed "A")
                                   Set_reif
@@ -1367,6 +1242,7 @@ Example cons_dbm_try := Eval cbn in debruijn_mess_aux list_indu 1 [] 0
                                         (tApp (tRel 3) [tRel 2]))))
 .
 MetaCoq Unquote Definition cons_dbm_unquote := cons_dbm_try.
+*)
 (* Print cons_dbm_unquote. *)
 
 
@@ -1397,11 +1273,11 @@ Proof.
   - right. (* congruence fails *) exists n. exists l. reflexivity. 
 Abort.
 
-
+(*
 Definition hd0 := hd 0.
 Definition hd' := hd imposs_mark.
 Definition hd'' := hd [imposs_mark].
-(* il faut un hd en plus pour les B *)
+
 
 Definition gctt_ex1 := (let '(((a,b),c),d) := (get_ctors_and_types_i  nat_indu 0 0 1  []  nat_oind)  in  hd' (hd'' (tl c))). 
 Eval compute in gctt_ex1.
@@ -1409,6 +1285,7 @@ Print gctt_ex1.
 
 MetaCoq Unquote Definition tclo_nat1' := gctt_ex1.
 Print tclo_nat1'. 
+
 
 Definition list_oind := ltac:(let s := fresh "s" in pose_oind_tac list 0 s ; exact s).
 
@@ -1418,10 +1295,12 @@ Definition list_mind :=  ltac:(let s := fresh "s" in pose_mind_tac list s ; simp
 
 Example list_get_ctors_types1 := Eval compute in let '(((a,b),c),d) := get_ctors_and_types_i list_indu 1 1 1  []  list_oind in hd' (tl (hd'' (tl c))).
 Print list_get_ctors_types1.
+*)
 
 (* MetaCoq Unquote Definition gct_list_unquote1 := list_get_ctors_types1.
 Eval cbn in gct_list_unquote1.
 Print gct_list_unquote1.   *)
+
 
 (*
 Example list_get_ctors_types2 := let (a,b) := get_ctors_and_types_i list_indu 1 1 0 [] [nat_reif] list_oind in hd' (tl a).
@@ -1480,21 +1359,21 @@ Ltac treat_ctor_list_oind_tac_i indu p n i u oind :=  idtac "kikoo9" ; treat_cto
 
 Ltac interpretation_alg_types_oind_i := treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
-
-  
-  Goal 2+ 2 = 4.
+(*
+Goal 2+ 2 = 4.
   Proof.
     treat_ctor_list_oind_tac_i nat_indu 0 1 0 ([] : Instance.t)   nat_oind.
   reflexivity.
   Abort.
-  
+ *) 
 
+(*
 Goal False.
 Proof.
   treat_ctor_list_oind_tac_i  list_indu 1 1 0 ([] : Instance.t) list_oind.
   (* problème: pas disj_cons pour list. Sans doute un pb de param ?*)
 Abort.
-
+*)
 
 
 Ltac treat_ctor_mind_aux_tac_gen statement indu p n  u  mind  i  loind :=
@@ -1512,19 +1391,20 @@ treat_ctor_mind_aux_tac_gen statement indu p n u mind 0   loind.
    
 (* Ltac treat_ctor_mind_tac indu p n u  mind := treat_ctor_mind_tac_gen inj_total_disj_tac indu p n u  mind p. *)
 
-Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
 
+Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
 
 Goal False.
 Proof.
   interpretation_alg_types_mind_tac Ntree_indu 0 2 ([] : Instance.t)   Ntree_mind. 
 Abort.
 
+(*
 Goal False.
 Proof.
   interpretation_alg_types_mind_tac list_indu 1 1 ([] : Instance.t)   list_mind.
 Abort.
-
+*)
 
 Ltac fo_prop_of_cons_tac_gen statement t := 
     let geip := fresh "geip" in get_env_ind_param t geip ; 
@@ -1560,9 +1440,6 @@ Abort.
 
 Check List.In. (* arrive dans Prop *)
 
-Print nat_indu.
-
-Print List.nth.
 
 Definition eqb_ind (indu indu': inductive ) := true.
 Definition eqb_term (t t': term) := true. (* nécessaires ?*)
@@ -1656,8 +1533,9 @@ Definition is_sort (t : term) := match t with
                                  | tSort _ => true
                                  |_ => false
                                   end.
+                                  
 Ltac is_sort_quote t := let t' := eval hnf in t in
-quote_term t' ltac:(fun T => if_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
+quote_term t' ltac:(fun T => Òif_else_ltac idtac fail ltac:(eval compute in (is_sort T))).
 
 
 
@@ -1723,6 +1601,6 @@ clear. interp_alg_types (list nat).
 fo_prop_of_cons_tac nat. 
 fo_prop_of_cons_tac Ntree.  
 reflexivity.
-Qed.
+Abort.
 
 
