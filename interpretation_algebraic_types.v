@@ -497,7 +497,6 @@ Print t2.
 *)
 (* subst makes the dB indice decrease *)
 
-Print lift0.
 
 Definition cutEvar (t: term) :=
   (* perhaps a bit naive *)
@@ -601,9 +600,9 @@ ctor_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ;  tApp list_
 
 Definition nilterm := @nil term.
 
-Check nil.
+(* Check nil. *)
 MetaCoq Quote Definition nil_type_reif := (forall (A : Set), list A).
-Print nil_type_reif.
+(* Print nil_type_reif. *)
 
 
 Ltac ctors_are_inj_tac lB lf lA ln p :=  
@@ -852,9 +851,9 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
         in aux5 lAforall lExist.
 
 
-
+(* 
 MetaCoq Quote Definition nut1_check := (forall (A : Set) (l : list A), l = nil \/ (exists x l0, l = x :: l0)).
-Print nut1_check.
+Print nut1_check. 
 
 
 Example nut1 := Eval compute in union_direct_total [tApp list_reif [tRel 0] ; tApp list_reif [tRel 2]] [(cutEvar nil_reif) ; (cutEvar cons_reif) ] [ [Set_reif ] ; [Set_reif ; tRel 0 ; tApp list_reif [tRel 1] ]] 1.
@@ -897,7 +896,7 @@ MetaCoq Unquote Definition in_codom_unreif4 := in_codom4.
 Example in_codom'4 := Eval cbn in (tProd (mkNamed "y") list_nat_reif ( is_in_codom list_nat_reif (tRel 0) cons_nat_reif [nat_reif ; list_nat_reif])).
 MetaCoq Unquote Definition in_codom_unreif'4 := in_codom'4.
 (* Print in_codom_unreif'4. *)
-
+*)
 
 
 Definition codom_union_total (B : term) (lf : list term) (lA : list (list term)) :=
@@ -911,7 +910,7 @@ Definition codom_union_total (B : term) (lf : list term) (lA : list (list term))
   in tProd (mkNamed "x") B  (or_nary_reif (arg_org B (tRel 0)  lf lA)).
 
 
-
+(* 
 Example cdu1 := codom_union_total list_nat_reif  [nil_nat_reif ; nil_nat_reif ] [ [] ; [] ].
 MetaCoq Unquote Definition cdu_u1 := cdu1.
 (* Print cdu_u1. *)
@@ -942,7 +941,7 @@ Example cdu'2 := codom_union_total list_nat_reif [nil_nat_reif ; cons_nat_reif ]
 MetaCoq Unquote Definition cdu_u'2 := cdu'2.
 (* Print cdu_u'2. *)
 
-
+*)
 
 Ltac revert_intro_ex_tac_aux e :=
     match goal with
@@ -967,12 +966,6 @@ Ltac right_k_n k n :=
       end
   end.
 
-Ltac righter_tac1 t n :=
-  n_right n ; idtac ; first [left ; t  ; righter_tac1 t constr:(S n) | t ].
-
-                         
-Ltac blut := let e := revert_intro_ex_tac; reflexivity in 
-  righter_tac1 e 0.
 
 (* Ltac incr_subg t  := let i:= 0 in destruct t ;    *)
 
@@ -1045,7 +1038,7 @@ Abort.
 Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.
 
-Ltac inj_disj_tac lB lf lA ln p  := 
+Ltac inj_disj_tac lB lf lA ln p  :=  
   lazymatch eval hnf in lB with
    | ?B :: ?tlB => ctors_are_inj_tac lB lf lA ln p ; pairw_disj_codom_tac B lf lA  p
     end.
@@ -1261,18 +1254,16 @@ let indui := switch_inductive indu i in
       (B_ctor :: tll1,  (tConstruct indui j u)     :: tll2 , lA_ctor :: tll3 , nc :: tll4) 
     end in  treat_ctor_oind_aux indu n 0  oind.(ind_ctors).
 
-(* todo: write the function which outputs (lB , lc, lA, ln *)
+(* Check get_ctors_and_types_i. *)
 
-Check get_ctors_and_types_i.
-
-
+(* 
 Goal forall (l : list_nat), (l = [] ) \/ (exists n l0, l = n :: l0).
-
 Proof.  
   intros. destruct l.
   - (* congruence fails *) left. reflexivity.
   - right. (* congruence fails *) exists n. exists l. reflexivity. 
 Abort.
+*) 
 
 (*
 Definition hd0 := hd 0.
@@ -1319,8 +1310,9 @@ Eval cbn in gct_list_unquote3. *)
 
 (* Example list_get_ctors_types_4 := let (a,b) := get_cotrs_and_types_i  *)
 
-Definition Ntree_indu := {| inductive_mind := (MPfile ["interpretation_algebraic_types"], "Ntree"); inductive_ind := 1 |}.
-(* Print Ncons_env_reif. *)
+
+Definition Ntree_indu :=  ltac:(let s := fresh "s" in pose_inductive_tac Ntree s ; exact s).
+
 
 Definition Ntree_mind :=  ltac:(let s:= fresh "s" in pose_mind_tac Ntree s ; exact s ).
 
@@ -1331,13 +1323,6 @@ Definition Ntree_oind :=
 
 Definition Nforest_oind :=
   ltac:(let s:= fresh "s" in pose_oind_tac Ntree 1 s ; exact s ).
-
-
-Goal 2 + 2 = 4.
-Proof.
-  assert (A := nat). assert (H := fun (x: A) => x).   assert (H' := fun (x : A -> A) => x). specialize (H' H) as H''. 
-Abort.
-
 
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
@@ -1394,9 +1379,11 @@ treat_ctor_mind_aux_tac_gen statement indu p n u mind 0   loind.
 
 Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
 
+
 Goal False.
 Proof.
-  interpretation_alg_types_mind_tac Ntree_indu 0 2 ([] : Instance.t)   Ntree_mind. 
+assert (blut := nth 3 [] Level.lSet).  
+interpretation_alg_types_mind_tac Ntree_indu 0 2 ([] : Instance.t)   Ntree_mind. 
 Abort.
 
 (*
@@ -1438,18 +1425,21 @@ interp_alg_types (list nat).
 interp_alg_types list.
 Abort.
 
-Check List.In. (* arrive dans Prop *)
 
-
+(* 
+(* Todo: use CompDec term  *)
 Definition eqb_ind (indu indu': inductive ) := true.
 Definition eqb_term (t t': term) := true. (* nécessaires ?*)
 Definition eqb_list_term (t t': list term) := true.
+
 
 Fixpoint In_ind (indu : inductive ) l :=
   match l with
   | [] => false 
   | x :: l => orb (eqb_ind indu x)  (In_ind indu l)
   end.
+
+
 
 Fixpoint In_term (t : term ) l :=
     match l with
@@ -1467,7 +1457,7 @@ Fixpoint get_rank_term  (t : term) (l : list term) k :=
   match l with
   | [] => k
   | x :: l => if eqb_term t x then 0 else get_rank_term t l (S k)
-  end.
+  end. 
 
 Fixpoint get_rank_ind  (t : inductive ) l acc :=
   match l with
@@ -1525,7 +1515,7 @@ Ltac smart_interp_alg_types_gen statement t lI lT lP  :=
    end 
    end
   .  
-
+*)
 
 
 (* Check is a MetaCoq term is a sort *)
