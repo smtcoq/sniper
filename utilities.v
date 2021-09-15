@@ -52,11 +52,6 @@ lazymatch constr:(p) with
 | _ => constr_neq p z 
 end.
 
-Ltac unquote_env_aux e := match e with 
-| [] => idtac
-| ?x :: ?xs => unquote_term x ; unquote_env_aux xs
-end.
-
 
 (* Nothing about inductives for now *)
 Fixpoint get_decl (e : global_env) := match e with 
@@ -70,11 +65,6 @@ Fixpoint get_decl (e : global_env) := match e with
       end
 end.
 
-
-
-Ltac unquote_env e := let e' := constr:(fst e) in 
-let l := constr:(get_decl e') in let l':= eval compute in l in 
-unquote_env_aux l'.
 
 Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
 
@@ -155,8 +145,6 @@ match goal with
 let _ := match goal with _ => intro H end in constr:((H, acc))
 | _ => constr:(unit)
 end.
-
-
 
 
 

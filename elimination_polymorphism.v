@@ -22,7 +22,6 @@ Require Import utilities.
 Import ListNotations.
 
 
-
 (* Instanciate a hypothesis with the parameter x *)
 Ltac instanciate H x :=
   let T := type of H in
@@ -58,9 +57,6 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
 
 
 
-
-
-
 (* Reifies a term and calls is_type *)
 Ltac is_type_quote t := let t' := eval hnf in t in let T :=
 metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
@@ -84,6 +80,53 @@ Y in is_type_quote Y' ; instanciate_all H y
           end
 end.
 
+
+Ltac test t := 
+      repeat match goal with
+      |- context C[?y] => idtac y ; is_not_in_tuple constr:(t) y ; test (t, y)
+end.
+
+Ltac is_not_in_context x := 
+repeat match goal with 
+| y := x |- _ => fail 2
+| _ => idtac
+end.
+
+Goal True.
+pose (y := 1). Fail is_not_in_context 1. is_not_in_context 2.
+exact I. Qed.
+
+
+Ltac get_subterms_in_goal := 
+      repeat match goal with 
+          |- context C[?y] =>
+               (* let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; *)
+    is_not_in_context y ; let u := fresh in pose (u:= y) ; let acc := get_subterms_in_goal in  constr:((y, acc))
+end.
+
+Ltac get_subterms_in_goal2 := 
+        match goal with 
+          |- context C[?y] =>
+                let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; let u := get_subterms_in_goal2 in
+idtac u ;
+    is_not_in_tuple constr:(u) y ; constr:((u, y))
+    end.
+
+Goal forall (x: nat) (y : bool), x= x -> y = y.
+let u:= get_subterms_in_goal in pose u.
+
+Ltac instanciate_tuple H t := match t with
+| (?x, ?t') => instanciate H t ; instanciate_tuple H t'
+| unit => idtac
+end.
+
+Ltac instanciate_all_hyp_tuple h t := match h with
+| (?H, ?h') => instanciate_tuple H t ; instanciate_all_hyp_tuple h' t
+| unit => idtac
+end.
+
+Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.                                                                                              
+let u := get_subterms_in_goal tt in pose u.
 
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat.
