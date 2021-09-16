@@ -98,11 +98,14 @@ exact I. Qed.
 
 
 Ltac get_subterms_in_goal := 
-      repeat match goal with 
-          |- context C[?y] =>
-               (* let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; *)
-    is_not_in_context y ; let u := fresh in pose (u:= y) ; let acc := get_subterms_in_goal in  constr:((y, acc))
+      match goal with 
+          |- context C[?y] => 
+                let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; 
+    is_not_in_context y ; let u := fresh in pose (u:= y) ; let acc := get_subterms_in_goal in idtac acc ; constr:((y, acc))
 end.
+
+Goal forall (b: bool) (x: nat) (u : list unit), x = x -> b = b -> u = u.
+let u := get_subterms_in_goal in pose u.
 
 Ltac get_subterms_in_goal2 := 
         match goal with 
