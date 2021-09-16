@@ -1044,11 +1044,6 @@ Ltac inj_disj_tac lB lf lA ln p  :=
     end.
 
 
-Ltac goal_inj_total_tac :=
-  match goal with
-    | [ _ : _ |- _ : ?B] => fail                    
-end.     
-
 (*
 Goal 2+ 2 = 4.
 Proof. 
