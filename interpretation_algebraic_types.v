@@ -1567,7 +1567,6 @@ let p := eval unfold prod_types in prod_types in
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
 (* interp_alg_types_goal. *)
-
 interp_alg_types_context_goal.
 Abort.
 
