@@ -1536,22 +1536,34 @@ Ltac interp_alg_types_context_aux p :=
 match goal with 
 | |- context C[?y] => let Y := type of y in
 tryif (
-is_not_in_tuple p Y ;
+is_not_in_tuple p Y ; idtac p "1" ;
 interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple p y ; 
+(is_not_in_tuple p y ; idtac p "2" ;
 interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
 | _ : context C[?y] |- _ => let Y := type of y in
 tryif (
-is_not_in_tuple p Y ;
+is_not_in_tuple p Y ; idtac p "3" ;
 interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple p y ; 
+(is_not_in_tuple p y ; idtac p "4" ;
 interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
+| _ => idtac
+end.
+
+Ltac interp_alg_types_context_aux' p :=
+match goal with 
+| |- context C[?y] =>
+is_not_in_tuple p y ; idtac y "1" ;
+interp_alg_types y ;
+interp_alg_types_context_aux' (p, y)
+| _ : context C[?y] |- _ =>
+is_not_in_tuple p y ; idtac p "3" y ;
+interp_alg_types y ; interp_alg_types_context_aux' (p, y)
 | _ => idtac
 end.
 
@@ -1562,7 +1574,7 @@ Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
 interp_alg_types_goal_aux p.
 Ltac interp_alg_types_context_goal := 
 let p := eval unfold prod_types in prod_types in
-(interp_alg_types_context_aux p).
+(interp_alg_types_context_aux' p).
 
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
@@ -1575,6 +1587,30 @@ intros.
 interp_alg_types_context_goal.
 
 Abort.
+
+MetaCoq Quote Recursively Definition barkik := list. 
+Print barkik.
+MetaCoq Quote Recursively Definition barkik' := list.
+Print barkik'. 
+
+MetaCoq Quote Definition nil_reif1 := nil.
+MetaCoq Quote Definition nil_reif2 := nil.
+Print nil_reif1.
+Print nil_reif2.
+
+
+
+
+Section Test. 
+Variable A : Type. 
+Lemma hd_error_tl_repr : forall l (a:A) r,
+   hd_error l = Some a /\ tl l = r <-> l = a :: r.
+  Proof.
+intros l a r. interp_alg_types (and).
+
+
+ interp_alg_types_context_goal.
+
 
 
 
