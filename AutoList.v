@@ -91,37 +91,26 @@ Section Lists.
   Proof.
  scope.
 
-destruct l as [ | x xs] ; verit. (* TODO Chantal *)
+destruct l as [ | x xs]. verit.
+ verit. Admitted. (* TODO Chantal ?*)
 
-
-
-
-
- intros.
- destruct l as [ | x xs]; simpl.
-verit disc_constr_option disc_constr_list. 
-Fail verit inj_constr_option. (* veriT returns 'unknown' => incompleteness of veriT *)
-split.
-Fail verit inj_constr_option. (*TODO Chantal *)
- intros (H1, H2). inversion H1; subst. reflexivity.
-intros H. inversion H ; subst. easy. Qed.
 
 
   Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
-  verit disc_constr_option disc_constr_list hd_error_def_nil hd_error_def_cons.
-Qed.
+  snipe.
+   Qed.
 
   Fixpoint length (l : list A) :=  match l with
       | [] => 0
       | x :: xs => 1 + length xs
     end.
 
-  Hypothesis def_length_nil : Z.eqb 0 (Z.of_nat (length nil)).
+ (*  Hypothesis def_length_nil : Z.eqb 0 (Z.of_nat (length nil)).
   Hypothesis Z_to_nat : forall (n : nat), Z.leb 0 (Z.of_nat n).
-  Hypothesis def_length_cons : forall x xs, Z.eqb (Z.of_nat (length (x :: xs))) (1 + Z.of_nat (length xs)).
+  Hypothesis def_length_cons : forall x xs, Z.eqb (Z.of_nat (length (x :: xs))) (1 + Z.of_nat (length xs)). *)
 
-Require Import
+(* Require Import
         Bool ZArith BVList Logic BVList FArray
         SMT_classes SMT_classes_instances ReflectFacts.
 Import BVList.BITVECTOR_LIST. 
@@ -135,25 +124,21 @@ Import BVList.BITVECTOR_LIST.
 
 
 
-Local Open Scope Z_scope.
+Local Open Scope Z_scope. *)
+
 
 
   Theorem length_zero_iff_nil (l : list A):
-   Z.of_nat (length l) =? 0 <->  eqb_of_compdec HlA l nil.
-  Proof.  destruct l as [ | x xs]. split.
-    verit def_length_nil def_length_cons disc_constr_list.
-verit def_length_nil def_length_cons disc_constr_list.
-
-split.
-Fail verit def_length_cons arith_Z. simpl. intros H. discriminate H.
-verit disc_constr_list.
-  Qed.
+   length l <> 0 <-> l <> nil.
+  Proof.  destruct l as [ | x xs]. 
+  - scope. Fail verit. intuition. (* TODO : Fail verit => no matching clauses for match *)
+  - scope. Fail verit. Admitted.
 
   (** *** Head and tail *)
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
 Proof.
-verit hd_error_def_nil.
+snipe.
   Qed.
 
 
@@ -166,40 +151,37 @@ verit hd_error_def_nil.
 
   Theorem in_eq : forall (a:A) (l:list A), Lists.In a (a :: l) = true.
   Proof.
-(*  Fail verit in_def_cons. *)
-    intros. simpl. verit.
+  scope. (* TODO Fail verit *) clear -HA. verit.
   Qed.
 
   Theorem in_cons : forall (a b:A) (l:list A), Lists.In b l = true -> Lists.In b (a :: l) = true.
   Proof.
-  (* Fail verit in_def_cons. *)
-    simpl. verit.
+  snipe. (* TODO: si je commente l'hypothèse CompDec de option verit passe mais pas si j'enlève le commentaire *)
   Qed.
 
   Theorem not_in_cons (x a : A) (l : list A):
     ~ Lists.In x (a::l) = true <-> x<>a /\ ~ Lists.In x l = true.
   Proof.
-    simpl. verit. 
+   (* TODO : de nouveau problème avec conj *) 
+  def_fix_and_pattern_matching. interp_alg_types (list A). inst_clear. verit.
   Qed.
 
   Theorem in_nil : forall a:A, ~ Lists.In a nil.
   Proof.
-    simpl. verit.
+    snipe.
   Qed.
 
   Theorem in_split : forall x (l:list A), Lists.In x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
-  induction l. intros H. simpl in H. discriminate H.
-  intros H. simpl in H. unfold "||" in H. destruct (eqb_of_compdec HA x a) eqn: E.
-  exists [], l. simpl. verit E. apply IHl in H. destruct H as (l1, (l2, H1)).
-  exists (a::l1), l2; simpl. Fail verit inj_constr_list. apply f_equal. auto.
-  Qed.
+  induction l. 
+  - scope. Fail verit. inversion H.
+  - scope. admit. (* Existentials so not handled by verit *)
+Admitted.
 
   (** Inversion *)
   Lemma in_inv : forall (a b:A) (l:list A), Lists.In b (a :: l) -> a = b \/ Lists.In b l.
   Proof.
-
-    intros a b l. simpl. verit.
+  snipe.
   Qed.
 
 
@@ -209,81 +191,73 @@ verit hd_error_def_nil.
   (**************************)
 Print app.
 
-  Hypothesis app_def_nil : forall (m : list A), eqb_of_compdec HlA (app nil m) m.
-  Hypothesis app_def_cons : forall (l m : list A) (a : A), eqb_of_compdec HlA (app (a :: l) m) 
-(a :: (app l m)).
+
   (** Discrimination *)
-  Theorem app_cons_not_nil : forall (x y:list A) (a:A), negb (eqb_of_compdec HlA nil ((a :: y) ++ x)).
+  Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> ((a :: y) ++ x).
   Proof.
-    verit app_def_cons disc_constr_list.
+    snipe.
 
   Qed.
 
 
   (** Concat with [nil] *)
-  Theorem app_nil_l : forall l:list A, eqb_of_compdec HlA ([] ++ l) l.
+  Theorem app_nil_l : forall l:list A, [] ++ l = l.
   Proof.
-    verit app_def_nil.
+    snipe.
   Qed.
 
-  Theorem app_nil_r : forall l:list A, eqb_of_compdec HlA (l ++ []) l.
+  Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l.
-    verit app_def_nil.
-    verit IHl app_def_cons.
+    induction l; snipe.
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
-  Theorem app_nil_end : forall (l:list A), eqb_of_compdec HlA l (l ++ []).
-  Proof. intros l. verit app_nil_r. Qed.
+  Theorem app_nil_end : forall (l:list A), l = l ++ [].
+  Proof. scope. Fail verit. Admitted.  (* TODO : fail selon un sens d'égalité et pas un autre ... ? *)
 
 
 
   (** [app] is associative *)
-  Theorem app_assoc : forall l m n:list A, eqb_of_compdec HlA (l ++ m ++ n) ((l ++ m) ++ n).
+  Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
     
-    intros l m n; induction l.
-    - verit app_def_nil.
-    - verit app_def_cons IHl. 
+    intros l ; induction l ; snipe.
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
-  Theorem app_assoc_reverse : forall l m n:list A, eqb_of_compdec HlA ((l ++ m) ++ n) (l ++ m ++ n).
+  Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     verit app_assoc.
-  Qed.
+     Fail snipe app_assoc.
+Abort. 
   Hint Resolve app_assoc_reverse : core.
   (* end hide *)
 
   (** [app] commutes with [cons] *)
-  Theorem app_comm_cons : forall (x y:list A) (a:A), eqb_of_compdec HlA (a :: (x ++ y)) ((a :: x) ++ y).
+  Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
   Proof.
-    verit app_assoc_reverse app_def_cons.
+    snipe.
   Qed.
 
   (** Facts deduced from the result of a concatenation *)
 
   Theorem app_eq_nil : forall l l':list A, 
-eqb_of_compdec HlA (l ++ l') nil ---> (andb (eqb_of_compdec HlA l nil) (eqb_of_compdec HlA l' nil)).
+(l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
     destruct l. destruct l'.
-    verit app_def_nil.
-    verit app_def_cons disc_constr_list app_nil_l.
-    verit app_def_cons disc_constr_list app_nil_r.
-  Qed.
+    def_fix_and_pattern_matching. inst_clear. verit.
+    def_fix_and_pattern_matching. inst_clear. verit.
+    def_fix_and_pattern_matching. intros. symmetry in H. apply app_cons_not_nil in H. destruct H.
+  Qed. (* TODO : Ici, on ne peut pas instancier les lemmes car on n'a des variables de section, 
+il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramètres mais pas seulement polymorphes *)
 
 
-(*
-  Theorem app_eq_unit :
+   Theorem app_eq_unit :
     forall (x y:list A) (a:A),
-      eqb_of_compdec HlA (x ++ y) (cons a nil) ---> 
-orb (andb (eqb_of_compdec HlA x nil) (eqb_of_compdec HlA y (cons a nil))) 
-(andb (eqb_of_compdec HlA x (cons a nil)) (eqb_of_compdec HlA y nil)).
+      x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-    destruct x. destruct y.
+    destruct x. destruct y. scope.
     verit app_def_nil disc_constr_list.
     verit app_def_nil app_def_cons. Search "app_cons_not_nil".
 
@@ -298,7 +272,7 @@ orb (andb (eqb_of_compdec HlA x nil) (eqb_of_compdec HlA y (cons a nil)))
     assert ([] = l ++ a0 :: l0) by auto.
     apply app_cons_not_nil in H1 as [].
   Qed.
-
+(* 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.

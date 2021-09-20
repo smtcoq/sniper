@@ -1563,20 +1563,29 @@ interp_alg_types_context_aux (p, y))
 | _ => idtac
 end.
 
+Ltac contains_not_eq t := let u := eval cbv in t in 
+match u with 
+| ?x = ?y => fail 1
+| _ => idtac
+end.
+
+Goal True.
+Fail contains_not_eq (1=1). contains_not_eq (fun x: nat => x). exact I. Qed.
+
 Ltac interp_alg_types_context_aux' p :=
 match goal with 
 | |- context C[?y] =>
-is_not_in_tuple p y ; idtac y "1" ;
+is_not_in_tuple p y ; idtac y "1" ; contains_not_eq y ;
 interp_alg_types y ;
 interp_alg_types_context_aux' (p, y)
 | _ : context C[?y] |- _ =>
-is_not_in_tuple p y ; idtac p "3" y ;
+is_not_in_tuple p y ; idtac p "3" y ; contains_not_eq y ;
 interp_alg_types y ; interp_alg_types_context_aux' (p, y)
 | _ => idtac
 end.
 
 
-Definition prod_types := (Z, bool, True, False, and, or).
+Definition prod_types := (Z, bool, True, False, and, or, iff).
 
 Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
 interp_alg_types_goal_aux p.
@@ -1613,12 +1622,9 @@ Section Test.
 Variable A : Type. 
 Lemma hd_error_tl_repr : forall l (a:A) r,
    hd_error l = Some a /\ tl l = r <-> l = a :: r.
-  Proof.
-intros l a r. interp_alg_types (and).
-
-
- interp_alg_types_context_goal.
-
+  Proof. intros l.
+interp_alg_types_context_goal.
+Abort.
 
 
 
@@ -1630,5 +1636,6 @@ clear. interp_alg_types (list nat).
 fo_prop_of_cons_tac Ntree.   *)
 reflexivity.
 Abort.
+End Test.
 
 
