@@ -1305,8 +1305,8 @@ Eval cbn in gct_list_unquote3. *)
 
 (* Example list_get_ctors_types_4 := let (a,b) := get_cotrs_and_types_i  *)
 
-
-Definition Ntree_indu :=  ltac:(let s := fresh "s" in pose_inductive_tac Ntree s ; exact s).
+(*
+Definition Ntree_indu) :=  ltac:(let s := fresh "s" in pose_inductive_tac Ntree s ; exact s).
 
 
 Definition Ntree_mind :=  ltac:(let s:= fresh "s" in pose_mind_tac Ntree s ; exact s ).
@@ -1318,7 +1318,7 @@ Definition Ntree_oind :=
 
 Definition Nforest_oind :=
   ltac:(let s:= fresh "s" in pose_oind_tac Ntree 1 s ; exact s ).
-
+*)
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
   (* n: number of oind *)
@@ -1374,12 +1374,13 @@ treat_ctor_mind_aux_tac_gen statement indu p n u mind 0   loind.
 
 Ltac interpretation_alg_types_mind_tac := treat_ctor_mind_tac_gen inj_disj_tac.
 
-
+(*
 Goal False.
 Proof.
-assert (blut := nth 3 [] Level.lSet).  
-interpretation_alg_types_mind_tac Ntree_indu 0 2 ([] : Instance.t)   Ntree_mind. 
-Abort.
+ assert (blut := nth 3 [] Level.lSet).   
+ interpretation_alg_types_mind_tac Ntree_indu 0 2 ([] : Instance.t)   Ntree_mind.  
+Abort. 
+*)
 
 (*
 Goal False.
@@ -1414,10 +1415,17 @@ Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 
 Ltac interp_alg_types := fo_prop_of_cons_tac_gen inj_disj_tac.
 
+(* 
+Inductive vec A : nat -> Type :=
+  |nilVec  : vec A 0
+  |consVec : forall (h:A) (n:nat), vec A n -> vec A (S n).
+*)
+
 Goal False.
 interp_alg_types nat.
 interp_alg_types (list nat). 
 interp_alg_types list.
+(* interp_alg_types (list (vec bool)). *)
 Abort.
 
 
