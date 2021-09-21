@@ -162,8 +162,7 @@ snipe.
   Theorem not_in_cons (x a : A) (l : list A):
     ~ Lists.In x (a::l) = true <-> x<>a /\ ~ Lists.In x l = true.
   Proof.
-   (* TODO : de nouveau problème avec conj *) 
-  def_fix_and_pattern_matching. interp_alg_types (list A). inst_clear. verit.
+  snipe.
   Qed.
 
   Theorem in_nil : forall a:A, ~ Lists.In a nil.
@@ -174,7 +173,7 @@ snipe.
   Theorem in_split : forall x (l:list A), Lists.In x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l. 
-  - scope. Fail verit. inversion H.
+  -  scope. Fail verit. inversion H.
   - scope. admit. (* Existentials so not handled by verit *)
 Admitted.
 
@@ -245,9 +244,7 @@ Abort.
   Theorem app_eq_nil : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    destruct l. destruct l'. 
-    def_fix_and_pattern_matching. inst_clear. verit.
-    def_fix_and_pattern_matching. inst_clear. verit.
+    destruct l. destruct l'. snipe. snipe. 
     def_fix_and_pattern_matching. intros. symmetry in H. apply app_cons_not_nil in H. destruct H.
   Qed. (* TODO : Ici, on ne peut pas instancier les lemmes car on n'a des variables de section, 
 il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramètres mais pas seulement polymorphes *)

@@ -624,7 +624,7 @@ Ltac ctor_is_inj B f lA  n p :=
    | S _ => let Hu := fresh "H"  in  
   (pose_unquote_term_hnf (is_inj B f lA  p) Hu ); let t := fresh "H" in assert (t:Hu)   ; [  unfold Hu ; intros ;
  match goal with  
- | h : _ = _ |- _ => inversion h    
+ | h : _ = _ |- _ => progress (inversion h)   
  end  ; 
  repeat split  | ..]   ; subst Hu
    end.
