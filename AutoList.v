@@ -264,24 +264,8 @@ il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramè
     def_fix_and_pattern_matching.
     inst_clear. intros. right. rewrite H2_A in H. rewrite app_nil_r in H. easy.
     def_fix_and_pattern_matching.
-    inst_clear. intros.  interp_alg_types (list A). inst_clear. assert (Hcopy : (a :: x) ++ a0 :: l = [a1]). 
-assumption.
-    apply H3_A0 in H. subst. rewrite H2_A in Hcopy. 
+    inst_clear. intros. inversion H. apply app_eq_nil in H4. destruct H4 as [H5 H6]. inversion H6. Qed.
 
-    verit app_def_nil disc_constr_list. 
-    verit app_def_nil app_def_cons. 
-
-    verit app_nil_r app_def_cons app_cons_not_nil app_def_nil.
-    left; split; auto.
-    right; split; auto.
-    generalize H.
-    generalize (app_nil_r l); intros E.
-    rewrite -> E; auto.
-    intros.
-    injection H as [= H H0].
-    assert ([] = l ++ a0 :: l0) by auto.
-    apply app_cons_not_nil in H1 as [].
-  Qed.
 (* 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
