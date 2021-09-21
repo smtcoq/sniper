@@ -505,6 +505,39 @@ Definition cutEvar (t: term) :=
   | _ => t
   end.
 
+(* save 20 sept. 2021
+
+efinition is_inj (B f : term ) (lA : list term) (p : nat)  :=
+  let n := List.length lA in 
+  let d := n - p in let f' := cutEvar f in 
+  let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
+    match (lA , p ) with 
+    | ([], _) =>   (l1 , l2)  
+    | (A :: lA, 0) => let A' := lift0 i A in
+     let A'' := lift0 j A' in 
+     aux1 lA 0 (i+1) (j - 2) (((lift0 1 A') :: A' :: l1) ) (A'' :: l2) 
+    | (A :: lA, S p) =>   aux1 lA  p i j (A :: l1) l2
+    end 
+  in let (l1, l2) := aux1 lA p 0 (S(2 * d)) [] [] in 
+  let d' := 2 * d - 2 in 
+  let fix aux2 (k i  : nat) (l2 dB1 dB2 : list term) (andeq : term) :=
+    match (k , l2) with 
+    | (0, _) =>  (dB1 , dB2 , andeq )  
+    | (S k, []) => aux2 k (i+1) [] ((tRel i) :: dB1 ) ((tRel i) :: dB2) andeq
+    | (S k, [A'] ) => aux2 k (i + 2) [] (tRel (i+1) :: dB1)  ((tRel i) :: dB2)  (mkEq  A' (tRel (S (S i))) (tRel (S i) )) 
+    | (S k, A' :: l2) =>  aux2 k (i + 2)  l2 ( (tRel (i+1)) :: dB1 ) ((tRel i) :: dB2 ) (mkAnd (mkEq  A' (tRel (S (S i))) (tRel (S i) )) andeq) 
+    end in let '((dB1 , dB2), andeq) := aux2 n 0 l2 [] [] True_reif in 
+    let fix aux3 l1 t :=
+      match l1 with 
+      | [] => t
+      |  A :: l1 => aux3 l1 (tProd (mkNamed "x") A t)
+      end in aux3 l1 (tProd mkNAnon (mkEq (lift0 d B) (tApp f' dB1) (tApp f' dB2)) andeq)   
+    . 
+
+
+*)
+
+
 
 Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
   let n := List.length lA in 
@@ -523,9 +556,19 @@ Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
     match (k , l2) with 
     | (0, _) =>  (dB1 , dB2 , andeq )  
     | (S k, []) => aux2 k (i+1) [] ((tRel i) :: dB1 ) ((tRel i) :: dB2) andeq
-    | (S k, [A'] ) => aux2 k (i + 2) [] (tRel (i+1) :: dB1)  ((tRel i) :: dB2)  (mkEq  A' (tRel (S (S i))) (tRel (S i) ))
-    | (S k, A' :: l2) =>  aux2 k (i + 2)  l2 ( (tRel (i+1)) :: dB1 ) ((tRel i) :: dB2 ) (mkAnd (mkEq  A' (tRel (S (S i))) (tRel (S i) )) andeq) (* manque cas où l2' singleton pour éliminer True_reif *)
-    end in let '((dB1 , dB2), andeq) := aux2 n 0 l2 [] [] True_reif in 
+   (* | (S k, [A'] ) => aux2 k (i + 2) [] (tRel (i+1) :: dB1)  ((tRel i) :: dB2)  (mkEq  A' (tRel (S (S i))) (tRel (S i) )) *) 
+    | (S k, A' :: l2) =>  aux2 k (i + 2)  l2 ( (tRel (i+1)) :: dB1 ) ((tRel i) :: dB2 ) (mkAnd (mkEq  A' (tRel (S (S i))) (tRel (S i) )) andeq) 
+    end in 
+    (* let '((dB1 , dB2), andeq) := aux2 n 0 l2 [] [] True_reif in *)
+    let '((dB1 , dB2), andeq) := 
+    let '(((((n',i'),l2'),dB1'),dB2'),andeq') := 
+    match (n,l2) with 
+    | (S n',[]) => (((((n,1),[]),[]),[]),True_reif) 
+    | (S n', A' :: l2') =>  (n',2,l2',[tRel 1 ], [tRel 0] , (mkEq  A' (tRel 2) (tRel 1 )))
+    | (0, _) => (0,0,l2,[],[],True_reif)
+    end 
+    in aux2 n' i' l2' dB1' dB2' andeq'  
+    in 
     let fix aux3 l1 t :=
       match l1 with 
       | [] => t
@@ -540,6 +583,24 @@ MetaCoq Unquote Definition inj_test1_u := inj_test1.
 Print inj_test1_u.
 
 *)
+
+(* 
+Inductive and_Set (A B : Set ) : Set:= conj_Set : A -> B -> and_Set A B.
+MetaCoq Quote Definition and_Set_reif := and_Set.
+MetaCoq Quote Definition conj_Set_reif := conj_Set.
+*)
+
+
+(* 
+Goal False.
+Proof. 
+  pose_unquote_term_hnf (is_inj (list_nat_reif) cons_nat_reif [nat_reif ; list_nat_reif ] 0) blutt.
+  pose_unquote_term_hnf (is_inj Prop_reif and_reif [Prop_reif ; Prop_reif ] 0) blut.
+  pose_unquote_term_hnf (is_inj Set_reif and_Set_reif [Set_reif ; Set_reif ] 0) blut'. clear.
+
+Check conj_Set. (* forall A B : Set, A -> B -> and_Set A B *)
+pose_unquote_term_hnf (is_inj (tApp and_Set_reif [tRel 3 ; tRel 2]) conj_Set_reif [Set_reif ; Set_reif  ; tRel 1; tRel 1 ] 2) conjblut. 
+Abort. *)
 
 (*
 Definition S_inj_reif :=  (is_inj nat_reif S_reif [nat_reif] 0).
@@ -557,7 +618,6 @@ Print really_cons_nat_inj_reif.
 
 
 
-
 Ltac ctor_is_inj B f lA  n p := 
    match n with
    | 0 => idtac 
@@ -568,6 +628,29 @@ Ltac ctor_is_inj B f lA  n p :=
  end  ; 
  repeat split  | ..]   ; subst Hu
    end.
+   
+Print list.
+(* nductive list (A : Type) : Type :=
+	nil : list A | cons : A -> list A -> list A *)
+Print and.
+(* Inductive and (A B : Prop) : Prop :=  conj : A -> B -> A /\ B *)
+(* MetaCoq Quote Definition blutblutblut := (forall A B : Set, A -> B -> and_Set A B).
+Print blutblutblut. *)
+
+Goal False.
+Proof.   ctor_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]] 2 1.
+ctor_is_inj (list_nat_reif) cons_nat_reif [nat_reif ; list_nat_reif ] 2 0. clear.
+assert (blutcons : forall (x x' : nat) (l l' : list nat), x :: l = x' :: l' -> x = x' /\ l = l').
+intros. inversion H. split. split. split.  
+(* assert (blut : forall (A A' B B' : Set), conj_Set A B = conj_Set A' B' -> A = A' /\ B = B').
+intros. inversion H. *)
+(* assert (kik : forall (x x0 : Set) (x1 x2 : x) (x3 x4 : x0),
+            conj_Set x x0 x1 x3 = conj_Set x x0 x2 x4 -> x1 = x2 /\ x3 = x4 ). 
+            intros. inversion H. split. split. split.
+assert (blut := is_inj Set_reif and_Set_reif [Set_reif ; Set_reif ]  0).
+ctor_is_inj Set_reif and_Set_reif [Set_reif ; Set_reif ] 2 0.
+ctor_is_inj Prop_reif and_reif [Prop_reif ; Prop_reif ] 2 0.*)
+Abort.
 
 (*
 Ltac metacoq_get_value p :=
@@ -1425,6 +1508,7 @@ Goal False.
 interp_alg_types nat.
 interp_alg_types (list nat). 
 interp_alg_types list.
+(* interp_alg_types and_Set. *)
 (* interp_alg_types (list (vec bool)). *)
 Abort.
 
