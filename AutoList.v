@@ -245,7 +245,7 @@ Abort.
   Theorem app_eq_nil : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    destruct l. destruct l'.
+    destruct l. destruct l'. 
     def_fix_and_pattern_matching. inst_clear. verit.
     def_fix_and_pattern_matching. inst_clear. verit.
     def_fix_and_pattern_matching. intros. symmetry in H. apply app_cons_not_nil in H. destruct H.
@@ -263,36 +263,28 @@ il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramè
     inst_clear. verit.
     def_fix_and_pattern_matching.
     inst_clear. intros. right. rewrite H2_A in H. rewrite app_nil_r in H. easy.
-    def_fix_and_pattern_matching.
-    inst_clear. intros. inversion H. apply app_eq_nil in H4. destruct H4 as [H5 H6]. inversion H6. Qed.
+    def_fix_and_pattern_matching. interp_alg_types (list A).
+    inst_clear. intros. inversion H. apply app_eq_nil in H6. inversion H6. inversion H7. Qed.
 
-(* 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
     induction x as [| x l IHl];
-      [ destruct y as [| a l] | destruct y as [| a l0] ];
-      simpl; auto.
-    - intros a b [= ].
-      auto.
-    - intros a0 b [= H1 H0].
-      apply app_cons_not_nil in H0 as [].
-    - intros a b [= H1 H0].
-      assert ([] = l ++ [a]) by auto.
-      apply app_cons_not_nil in H as [].
-    - intros a0 b [= <- H0].
-      destruct (IHl l0 a0 b H0) as (<-,<-).
-      split; auto.
-  Qed.
-
+      [ destruct y as [| a l] | destruct y as [| a l0] ].
+     - interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear. verit. (* TODO : encore des compdec *)
+      admit.
+    - interp_alg_types (list). def_fix_and_pattern_matching. admit.
+    -  interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear. admit.
+    - interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear.  verit. admit. admit. admit. admit.
+Admitted.
 
   (** Compatibility with other operations *)
 
   Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
-    induction l; simpl; auto.
+    induction l; scope. 
   Qed.
-
+(*
   Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> In a l \/ In a m.
   Proof.
     intros l m a.
