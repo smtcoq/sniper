@@ -96,6 +96,28 @@ Goal True.
 pose (y := 1). Fail is_not_in_context 1. is_not_in_context 2.
 exact I. Qed.
 
+Print term.
+
+Print fst.
+
+
+
+Fixpoint list_of_subterms (t: term) : list term := match t with
+| tLambda _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tProd _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tLetIn _ u v w => t :: (list_of_subterms u) ++ (list_of_subterms v) ++ (list_of_subterms w)
+| tCast t1 _ t2 => t :: (list_of_subterms t1) ++ (list_of_subterms t2)
+| tApp u l => t :: (list_of_subterms u) ++ (List.flat_map list_of_subterms l)
+| tCase _ t1 t2 l => t:: (list_of_subterms t1) ++ (list_of_subterms t2) ++ 
+(List.flat_map (fun x => list_of_subterms (snd x)) l)
+| tFix _ _  => [t]
+| tCoFix _ _ => [t]
+| _ => [t]
+end
+(* with list_of_subterms_list (l : list term) : list term := match l with
+| [] => nil
+| x :: xs => list_of_subterms x ++ (list_of_subterms_list xs)
+end *).
 
 Ltac get_subterms_in_goal := 
       match goal with 
