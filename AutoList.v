@@ -257,9 +257,19 @@ il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramè
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-    destruct x. destruct y. scope.
-    verit app_def_nil disc_constr_list.
-    verit app_def_nil app_def_cons. Search "app_cons_not_nil".
+    destruct x ; destruct y eqn:E. (* TODO : scope. *) def_fix_and_pattern_matching.
+    inst_clear. verit.
+    def_fix_and_pattern_matching.
+    inst_clear. verit.
+    def_fix_and_pattern_matching.
+    inst_clear. intros. right. rewrite H2_A in H. rewrite app_nil_r in H. easy.
+    def_fix_and_pattern_matching.
+    inst_clear. intros.  interp_alg_types (list A). inst_clear. assert (Hcopy : (a :: x) ++ a0 :: l = [a1]). 
+assumption.
+    apply H3_A0 in H. subst. rewrite H2_A in Hcopy. 
+
+    verit app_def_nil disc_constr_list. 
+    verit app_def_nil app_def_cons. 
 
     verit app_nil_r app_def_cons app_cons_not_nil app_def_nil.
     left; split; auto.
