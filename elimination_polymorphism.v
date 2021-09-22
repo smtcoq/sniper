@@ -40,7 +40,7 @@ Ltac instanciate_all H x :=
  lazymatch T  with
   | forall (y : ?A), _ => let H':= fresh H in pose (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x); try (instanciate_all H' x)
-  | _ => idtac "did not work"
+  | _ => fail
       end.
 
 
@@ -52,8 +52,13 @@ Ltac instanciate_ident H x :=
   | forall (y : ?A), _ => let H':= fresh H in 
 let _ := match goal with _ => pose (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
-  | _ => idtac "did not work"
+  | _ => fail
       end.
+
+Goal (forall (A : Type) (B : Type), A = A /\ B = B) ->  forall (x : nat) (y : bool), x=x /\ y= y.
+intro H.
+let H' := instanciate_ident H bool in instanciate H' bool.
+Abort.
 
 
 
@@ -131,7 +136,13 @@ let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l.
 Require Import String.
 
 Ltac instanciate_tuple t x := match t with
-| (?H, ?t') => instanciate H x ; instanciate_tuple t' x
+| (?H, ?t') => tryif (let H' := instanciate_ident H x in instanciate_tuple (H', t') x)
+then idtac else (instanciate_tuple t' x)
+| unit => idtac
+end.
+
+Ltac clear_tuple t := match t with
+| (?H, ?t') => try (clear H) ; clear_tuple t'
 | unit => idtac
 end.
 
@@ -145,15 +156,17 @@ tryif
 (let T := type of w in is_type_quote T ; instanciate_tuple h w) then aux xs (w, acc) else aux xs acc end
 in aux l unit.
 
-Ltac instanciate_all_hyps_with_reif l := let h := hyps in instanciate_tuple_terms_of_type_type h l.
+Ltac instanciate_all_hyps_with_reif l :=  repeat (let h := hyps in instanciate_tuple_terms_of_type_type h l).
 (* TODO : écrire une tactique qui unquote une liste de terme clos et renvoie un tuple de termes Coq *) 
 
-Goal (forall (A : Type) (B : Type), A = A /\ B = B) ->  forall (x : nat) (y : bool), x=x /\ y= y.
+Goal (forall (A B C : Type), A = A /\ B = B /\ C=C) ->  forall (x : nat) (y : bool), x=x /\ y= y.
 intros H.
 let h := hyps in idtac h.
 let l' := (get_list_of_closed_subterms (forall (x : nat) (y : bool), x = x /\ y = y))
 in instanciate_all_hyps_with_reif l'.
 Abort.
+
+
 
 
 Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.                                                                                              
