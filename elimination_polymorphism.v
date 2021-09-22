@@ -119,6 +119,23 @@ end
 | x :: xs => list_of_subterms x ++ (list_of_subterms_list xs)
 end *).
 
+Print closedn.
+Print filter.
+
+Definition filter_closed (l: list term) := List.filter (closedn 0) l.
+
+
+Ltac get_list_of_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
+let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in pose l.
+
+Require Import String.
+
+(* TODO : écrire une tactique qui unquote une liste de terme clos et renvoie un tuple de termes Coq *) 
+
+Goal forall (x : nat) (y : bool), x=x /\ y= y.
+get_list_of_subterms (forall (x : nat) (y : bool), x = x /\ y = y).
+let l' := eval cbv in l in unquote_list l'. 
+
 Ltac get_subterms_in_goal := 
       match goal with 
           |- context C[?y] => 
