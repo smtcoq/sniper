@@ -125,47 +125,36 @@ Print filter.
 Definition filter_closed (l: list term) := List.filter (closedn 0) l.
 
 
-Ltac get_list_of_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
-let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in pose l.
+Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
+let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l.
 
 Require Import String.
 
+Ltac instanciate_tuple t x := match t with
+| (?H, ?t') => instanciate H x ; instanciate_tuple t' x
+| unit => idtac
+end.
+
+Ltac instanciate_tuple_terms_of_type_type h l := 
+let rec aux l acc :=
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in 
+tryif 
+(let T := type of w in is_type_quote T ; instanciate_tuple h w) then aux xs (w, acc) else aux xs acc end
+in aux l unit.
+
+Ltac instanciate_all_hyps_with_reif l := let h := hyps in instanciate_tuple_terms_of_type_type h l.
 (* TODO : écrire une tactique qui unquote une liste de terme clos et renvoie un tuple de termes Coq *) 
 
-Goal forall (x : nat) (y : bool), x=x /\ y= y.
-get_list_of_subterms (forall (x : nat) (y : bool), x = x /\ y = y).
-let l' := eval cbv in l in unquote_list l'. 
+Goal (forall (A : Type) (B : Type), A = A /\ B = B) ->  forall (x : nat) (y : bool), x=x /\ y= y.
+intros H.
+let h := hyps in idtac h.
+let l' := (get_list_of_closed_subterms (forall (x : nat) (y : bool), x = x /\ y = y))
+in instanciate_all_hyps_with_reif l'.
+Abort.
 
-Ltac get_subterms_in_goal := 
-      match goal with 
-          |- context C[?y] => 
-                let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; 
-    is_not_in_context y ; let u := fresh in pose (u:= y) ; let acc := get_subterms_in_goal in idtac acc ; constr:((y, acc))
-end.
-
-Goal forall (b: bool) (x: nat) (u : list unit), x = x -> b = b -> u = u.
-let u := get_subterms_in_goal in pose u.
-
-Ltac get_subterms_in_goal2 := 
-        match goal with 
-          |- context C[?y] =>
-                let Y := type of y in let Y' := eval hnf in Y in is_type_quote Y' ; let u := get_subterms_in_goal2 in
-idtac u ;
-    is_not_in_tuple constr:(u) y ; constr:((u, y))
-    end.
-
-Goal forall (x: nat) (y : bool), x= x -> y = y.
-let u:= get_subterms_in_goal in pose u.
-
-Ltac instanciate_tuple H t := match t with
-| (?x, ?t') => instanciate H t ; instanciate_tuple H t'
-| unit => idtac
-end.
-
-Ltac instanciate_all_hyp_tuple h t := match h with
-| (?H, ?h') => instanciate_tuple H t ; instanciate_all_hyp_tuple h' t
-| unit => idtac
-end.
 
 Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.                                                                                              
 let u := get_subterms_in_goal tt in pose u.
