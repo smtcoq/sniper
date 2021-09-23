@@ -66,6 +66,10 @@ Abort.
 Ltac is_type_quote t := let t' := eval hnf in t in let T :=
 metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
 
+
+Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in constr:(is_type T).
+
 (* instanciates a polymorphic quantified hypothesis with all suitable subterms in the context *)
 Ltac instanciate_type H := let P := type of H  in let P':= type of P in constr_eq P' Prop ; lazymatch P with
     | forall (x : ?A), _ =>
@@ -147,14 +151,13 @@ Ltac clear_tuple t := match t with
 end.
 
 Ltac instanciate_tuple_terms_of_type_type h l := 
-let rec aux l acc :=
 match constr:(l) with
 | nil => idtac
 | cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
 let u := constr:(y.(my_projT2)) in let w := eval hnf in u in 
-tryif 
-(let T := type of w in is_type_quote T ; instanciate_tuple h w) then aux xs (w, acc) else aux xs acc end
-in aux l unit.
+try (let T := type of w in is_type_quote T ; instanciate_tuple h w) ; 
+instanciate_tuple_terms_of_type_type h xs
+end.
 
 Ltac instanciate_all_hyps_with_reif l :=  repeat (let h := hyps in instanciate_tuple_terms_of_type_type h l).
 (* TODO : écrire une tactique qui unquote une liste de terme clos et renvoie un tuple de termes Coq *) 
@@ -166,11 +169,62 @@ let l' := (get_list_of_closed_subterms (forall (x : nat) (y : bool), x = x /\ y 
 in instanciate_all_hyps_with_reif l'.
 Abort.
 
+Ltac return_unquote_tuple_terms l := 
+let rec aux l acc :=
+match constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
+tryif (let T := type of w in is_type_quote T  
+) then (aux xs (pair w acc)) else aux xs acc
+end
+in constr:(aux l unit).
+
+Ltac toto := false.
+
+
+Ltac aux l acc :=
+match constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs => 
+  let y := metacoq_get_value (tmUnquote x) in 
+  let u := constr:(y.(my_projT2)) in 
+  let w := eval hnf in u in
+  let T := type of w in 
+  let b0 := ltac:(is_type_quote_bool T) in 
+  let b := eval hnf in b0 in
+    match b with 
+    | true => (aux xs (pair w acc)) 
+    | false => aux xs acc
+    end
+end.
+
+(* Ltac aux l acc :=
+match constr:(l) with
+| nil => acc
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
+let Tyu := constr:(y.(my_projT1)) in let Tyw := eval hnf in u 
+in let n := fresh "n" in 
+  epose (n := ?[n_evar]) ;
+tryif (constr_eq Tyw Type 
+) then (instantiate (n_evar := ltac:(aux xs (pair w acc)))) else (instantiate (n_evar := ltac:(aux xs acc))) ; 
+let nb_var := eval unfold n in n in nb_var
+end. *)
 
 
 
-Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.                                                                                              
-let u := get_subterms_in_goal tt in pose u.
+Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
+Check (@pair (forall A : Type, A -> A -> Prop) (forall A : Type, A -> A -> Prop) (@eq) (@eq)). 
+let l := (get_list_of_closed_subterms 
+(forall (A : Type) (x : nat) (y : bool) (z : list A), y = y -> z = z -> x = x)) in pose l.
+pose (x :=   [tInd
+       {|
+         inductive_mind :=
+           (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "bool"%string);
+         inductive_ind := 0
+       |} []]).    let l' := eval unfold l in l in                                                                                     
+let u := aux l' unit in pose u.
 
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat.
