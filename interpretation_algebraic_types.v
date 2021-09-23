@@ -642,19 +642,15 @@ Ltac ctor_is_inj B f lA  n p :=
    | S _ => let Hu := fresh "H"  in  
   (pose_unquote_term_hnf (is_inj B f lA  p) Hu ); let t := fresh "H" in assert (t:Hu)   ; [  unfold Hu ; intros ;
  match goal with  
- | h : _ = _ |- _ => progress (inversion h)   
+ | h : _ = _ |- _ =>  progress (inversion h)   
  end  ; 
  repeat split  | ..]   ; subst Hu
    end.
    
-Print list.
-(* nductive list (A : Type) : Type :=
-	nil : list A | cons : A -> list A -> list A *)
-Print and.
-(* Inductive and (A B : Prop) : Prop :=  conj : A -> B -> A /\ B *)
-(* MetaCoq Quote Definition blutblutblut := (forall A B : Set, A -> B -> and_Set A B).
-Print blutblutblut. *)
 
+(* MetaCoq Quote Definition and_Set_reif := (forall A B : Set, A -> B -> and_Set A B). *)
+
+(* 
 Goal False.
 Proof.   ctor_is_inj (tApp list_reif [tRel 2]) cons_reif [Set_reif ; tRel 0 ; tApp list_reif [tRel 1]] 2 1.
 ctor_is_inj (list_nat_reif) cons_nat_reif [nat_reif ; list_nat_reif ] 2 0. clear.
@@ -669,6 +665,7 @@ assert (blut := is_inj Set_reif and_Set_reif [Set_reif ; Set_reif ]  0).
 ctor_is_inj Set_reif and_Set_reif [Set_reif ; Set_reif ] 2 0.
 ctor_is_inj Prop_reif and_reif [Prop_reif ; Prop_reif ] 2 0.*)
 Abort.
+*)
 
 (*
 Ltac metacoq_get_value p :=
@@ -1491,6 +1488,10 @@ Abort.
 *)
 
 Ltac fo_prop_of_cons_tac_gen statement t := 
+  let ty := type of t in lazymatch ty with
+  | Prop => fail
+  | _ => idtac 
+  end ; 
     let geip := fresh "geip" in get_env_ind_param t geip ; 
     lazymatch eval hnf in geip with
     | (?Sigma,?induu) => lazymatch eval hnf in induu with
@@ -1506,7 +1507,6 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
      end
     .
 
-  
 
 
 
@@ -1524,6 +1524,7 @@ Goal False.
 interp_alg_types nat.
 Fail interp_alg_types (list nat). 
 interp_alg_types list.
+Fail interp_alg_types and.
 (* interp_alg_types and_Set. *)
 (* interp_alg_types (list (vec bool)). *)
 Abort.
@@ -1704,16 +1705,6 @@ intros.
 interp_alg_types_context_goal.
 
 Abort.
-
-MetaCoq Quote Recursively Definition barkik := list. 
-Print barkik.
-MetaCoq Quote Recursively Definition barkik' := list.
-Print barkik'. 
-
-MetaCoq Quote Definition nil_reif1 := nil.
-MetaCoq Quote Definition nil_reif2 := nil.
-Print nil_reif1.
-Print nil_reif2.
 
 
 
