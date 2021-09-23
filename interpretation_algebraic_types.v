@@ -373,7 +373,7 @@ MetaCoq Quote Definition imposs_mark :=  impossible_type  .
 
 Definition get_ind_ident (kerna : kername) := let (mdp , idind) := kerna in idind.
 
-
+(* 
 Ltac get_ind_param t idn := 
     let tq := fresh "t_q" in pose_quote_term t tq ;
     lazymatch eval hnf in tq with
@@ -383,6 +383,14 @@ Ltac get_ind_param t idn :=
        end )
      | tInd ?indu ?u =>  pose (indu,([]: list term)) as idn  ; clear tq
      end.
+*) 
+
+Ltac get_ind_param t idn := 
+    let tq := fresh "t_q" in pose_quote_term t tq ;
+    lazymatch eval hnf in tq with
+     | tInd ?indu ?u =>  pose (indu,u) as idn  ; clear tq
+     end.
+
 
 
 Ltac pose_inductive_tac t idn := let s := fresh "s" in get_ind_param t s ; pose (fst s) as idn ;  simpl in idn ; clear s.
@@ -397,6 +405,15 @@ Ltac get_env_ind_param t idn :=
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
      | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
+     | tInd ?indu ?u => pose (Sigma,(indu,u)) as idn ; clear rqt
+     end
+     end.
+
+(*
+Ltac get_env_ind_param t idn := 
+    let rqt := fresh "rqt" in rec_quote_term t rqt ; 
+    lazymatch eval hnf in rqt with
+     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
      | tApp ?iu ?lA =>  
        (lazymatch eval hnf in iu with
        | tInd ?indu ?u => pose (Sigma,((indu,u),lA)) as idn ; clear rqt
@@ -404,6 +421,7 @@ Ltac get_env_ind_param t idn :=
      | tInd ?indu ?u => pose (Sigma,((indu,u),([]: list term))) as idn ; clear rqt
      end
      end.
+*) 
 
 (* 
 Goal False.
@@ -1475,8 +1493,7 @@ Abort.
 Ltac fo_prop_of_cons_tac_gen statement t := 
     let geip := fresh "geip" in get_env_ind_param t geip ; 
     lazymatch eval hnf in geip with
-    | (?Sigma,?t_reif) => lazymatch eval hnf in t_reif with
-      | (?induu,?lA) => lazymatch eval hnf in induu with
+    | (?Sigma,?induu) => lazymatch eval hnf in induu with
       | (?indu,?u) =>      let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
        lazymatch eval cbv in lkup  with
        | Some ?d =>    
@@ -1484,7 +1501,6 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
             let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u  mind ; clear geip
          end       
-       end
        end         
      end
      end
@@ -1506,7 +1522,7 @@ Inductive vec A : nat -> Type :=
 
 Goal False.
 interp_alg_types nat.
-interp_alg_types (list nat). 
+Fail interp_alg_types (list nat). 
 interp_alg_types list.
 (* interp_alg_types and_Set. *)
 (* interp_alg_types (list (vec bool)). *)
@@ -1715,7 +1731,7 @@ Abort.
 Goal 2+2 = 4.
 Proof.
 (* fo_prop_of_cons_tac (list nat). *)
-clear. interp_alg_types (list nat).
+clear. Fail interp_alg_types (list nat).
 (* fo_prop_of_cons_tac nat. 
 fo_prop_of_cons_tac Ntree.   *)
 reflexivity.
