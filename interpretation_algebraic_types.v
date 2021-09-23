@@ -629,10 +629,8 @@ Ltac ctor_is_inj B f lA  n p :=
  repeat split  | ..]   ; subst Hu
    end.
    
-Print list.
 (* nductive list (A : Type) : Type :=
 	nil : list A | cons : A -> list A -> list A *)
-Print and.
 (* Inductive and (A B : Prop) : Prop :=  conj : A -> B -> A /\ B *)
 (* MetaCoq Quote Definition blutblutblut := (forall A B : Set, A -> B -> and_Set A B).
 Print blutblutblut. *)
