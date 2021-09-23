@@ -1487,11 +1487,31 @@ Proof.
 Abort.
 *)
 
+ 
+Ltac  checkProp t :=  (* improve this function *)
+  let blut := fresh in assert (False -> t) as blut ; [ let H := fresh in intro H; intros 
+  ; lazymatch goal with
+  | [  |- Prop] => fail
+  | _ => idtac
+  end ; elim H 
+  |clear blut]. 
+
+  (*  lazymatch t with 
+  | Prop => fail 
+  | forall x , ?H   => checkProp H 
+(*  | forall x , @?H x  => checkProp (H x) *)
+  | _ =>  idtac 17 
+  end . *)
+
+
+  Goal True.
+  checkProp (forall n, even n -> nat).
+  Fail checkProp (forall n, even n -> Prop).
+Abort.
+
 Ltac fo_prop_of_cons_tac_gen statement t := 
-  let ty := type of t in lazymatch ty with
-  | Prop => fail
-  | _ => idtac 
-  end ; 
+  let ty := type of t in 
+  let _ := match goal with  _ => checkProp ty end in
     let geip := fresh "geip" in get_env_ind_param t geip ; 
     lazymatch eval hnf in geip with
     | (?Sigma,?induu) => lazymatch eval hnf in induu with
@@ -1504,7 +1524,7 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
          end       
        end         
      end
-     end
+     end 
     .
 
 
@@ -1524,7 +1544,8 @@ Goal False.
 interp_alg_types nat.
 Fail interp_alg_types (list nat). 
 interp_alg_types list.
-Fail interp_alg_types and.
+(* interp_alg_types and. *)
+Fail interp_alg_types True.
 (* interp_alg_types and_Set. *)
 (* interp_alg_types (list (vec bool)). *)
 Abort.

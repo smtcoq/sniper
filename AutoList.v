@@ -131,8 +131,9 @@ Local Open Scope Z_scope. *)
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
   Proof.  destruct l as [ | x xs]. 
-  - scope. Fail verit. intuition. (* TODO : Fail verit => no matching clauses for match *)
-  - scope. Fail verit. Admitted.
+  - scope. verit.  (* TODO : Fail verit => no matching clauses for match *)
+  - scope. verit. 
+  Qed.
 
   (** *** Head and tail *)
 
