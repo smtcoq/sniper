@@ -69,7 +69,7 @@ Fixpoint maxdepth s :=
   Lemma  tree_eqb_spec : forall (t t' : tree), tree_eqb t t' = true <-> t = t'.
   Proof.
     induction t as [ |t1 IHt1 a t2 IHt2]; intros [ |t1' b t2']; simpl; split; try discriminate; auto.
-    - rewrite andb_true_iff. intros [H1 H2]. Search eqb_of_compdec.
+    - rewrite andb_true_iff. intros [H1 H2].
 destruct (eqb_of_compdec HA a b) eqn:E. rewrite Typ.eqb_compdec_spec in E.
 simpl in H1. rewrite IHt1 in H1. rewrite IHt2 in H2. now subst.
 inversion H1.
@@ -135,7 +135,6 @@ Qed.
   Instance tree_ord : OrdType (tree) :=
     Build_OrdType _ _ tree_lt_trans tree_lt_not_eq.
 
-Print Compare.
   Definition tree_compare : forall (x y : tree), Compare tree_lt Logic.eq x y.
   Proof.
     induction x as [ |x1 IHx1 a x2 IHx2]; intros [ |y1 b y2]; simpl.
