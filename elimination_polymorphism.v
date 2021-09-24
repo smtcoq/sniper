@@ -169,21 +169,7 @@ let l' := (get_list_of_closed_subterms (forall (x : nat) (y : bool), x = x /\ y 
 in instanciate_all_hyps_with_reif l'.
 Abort.
 
-Ltac return_unquote_tuple_terms l := 
-let rec aux l acc :=
-match constr:(l) with
-| nil => constr:(acc)
-| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
-let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
-tryif (let T := type of w in is_type_quote T  
-) then (aux xs (pair w acc)) else aux xs acc
-end
-in constr:(aux l unit).
-
-Ltac toto := false.
-
-
-Ltac aux l acc :=
+Ltac return_unquote_tuple_terms l := let rec aux l acc :=
 match constr:(l) with
 | nil => constr:(acc)
 | cons ?x ?xs => 
@@ -197,38 +183,32 @@ match constr:(l) with
     | true => (aux xs (pair w acc)) 
     | false => aux xs acc
     end
+end
+in aux l unit.
+
+Ltac return_tuple_subterms_of_type_type := match goal with
+|- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l
 end.
-
-(* Ltac aux l acc :=
-match constr:(l) with
-| nil => acc
-| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
-let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
-let Tyu := constr:(y.(my_projT1)) in let Tyw := eval hnf in u 
-in let n := fresh "n" in 
-  epose (n := ?[n_evar]) ;
-tryif (constr_eq Tyw Type 
-) then (instantiate (n_evar := ltac:(aux xs (pair w acc)))) else (instantiate (n_evar := ltac:(aux xs acc))) ; 
-let nb_var := eval unfold n in n in nb_var
-end. *)
-
 
 
 Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
-Check (@pair (forall A : Type, A -> A -> Prop) (forall A : Type, A -> A -> Prop) (@eq) (@eq)). 
-let l := (get_list_of_closed_subterms 
-(forall (A : Type) (x : nat) (y : bool) (z : list A), y = y -> z = z -> x = x)) in pose l.
-pose (x :=   [tInd
-       {|
-         inductive_mind :=
-           (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "bool"%string);
-         inductive_ind := 0
-       |} []]).    let l' := eval unfold l in l in                                                                                     
-let u := aux l' unit in pose u.
+let t := return_tuple_subterms_of_type_type in pose t.
+Abort.
 
+Ltac instanciate_tuple_terms H t := match t with
+| (?x, ?t') => try (let H' := instanciate_ident H x in let u := type of H' in idtac u
+; instanciate_tuple_terms H' t) ; try (instanciate_tuple_terms H t')
+| unit => idtac
+end.
 
-Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat.
-intros.
+Ltac instanciate_tuple_terms_goal H := let t0 := return_tuple_subterms_of_type_type in 
+let t := eval cbv in t0 in instanciate_tuple_terms H t.
+
+Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
+intros H.
+let p := return_tuple_subterms_of_type_type in pose p.
+
+instanciate_tuple_terms_goal H.
 instanciate_all H nat. clear H0 H1 H2.
 instanciate_type_all H.
 Abort.
