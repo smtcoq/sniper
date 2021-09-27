@@ -52,39 +52,42 @@ def_fix_and_pattern_matching ; inst t.
 
 
 
-Ltac scope_param t :=
+Ltac scope_param_nat t :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert).
 (* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
 hypothèses dans nat et ensuite verit se met à peiner *)
 
-Ltac scope_no_param :=
+Ltac scope_no_param_nat :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst ; try nat_convert).
 
-Ltac scope_param_no_nat_convert t :=
+Ltac scope_param_no_nat t :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t).
 (* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
 hypothèses dans nat et ensuite verit se met à peiner *)
 
-Ltac scope_no_param_no_nat_convert :=
+Ltac scope_no_param_no_nat :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst).
 
-Ltac snipe_param t := 
-scope_param t ; verit.
+Ltac snipe_param_nat t := 
+scope_param_nat t ; verit.
 
-Ltac snipe_no_param := 
-scope_no_param ; verit.
+Ltac snipe_no_param_nat := 
+scope_no_param_nat ; verit.
 
 Ltac snipe_param_no_nat t :=
-scope_param_no_nat_convert t ; verit.
+scope_param_no_nat t ; verit.
 
 Ltac snipe_no_param_no_nat :=
-scope_no_param_no_nat_convert ; verit.
+scope_no_param_no_nat ; verit.
 
-Tactic Notation "snipe_no_nat" constr(t) := snipe_param_no_nat t.
-Tactic Notation "snipe_no_nat" := snipe_no_param_no_nat.
+Tactic Notation "snipe" constr(t) := snipe_param_no_nat t.
+Tactic Notation "snipe" := snipe_no_param_no_nat.
 
-Tactic Notation "scope" constr(t) := scope_param t.
-Tactic Notation "scope" := scope_no_param.
+Tactic Notation "scope" constr(t) := scope_param_no_nat t.
+Tactic Notation "scope" := scope_no_param_no_nat.
 
-Tactic Notation "snipe" constr(t) := snipe_param t.
-Tactic Notation "snipe" := snipe_no_param.
+Tactic Notation "scope_nat" constr(t) := scope_param_nat t.
+Tactic Notation "scope_nat" := scope_no_param_nat.
+
+Tactic Notation "snipe_nat" constr(t) := snipe_param_nat t.
+Tactic Notation "snipe_nat" := snipe_no_param_nat.
