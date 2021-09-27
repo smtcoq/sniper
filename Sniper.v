@@ -43,12 +43,12 @@ try (eliminate_dependent_pattern_matching H'')))).
 
 
 Ltac def_and_pattern_matching_mono :=
-def_and_pattern_matching ; inst_clear.
+def_and_pattern_matching ; inst.
 
 Ltac def_and_pattern_matching_mono_param t :=
-def_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
+def_and_pattern_matching ; inst t.
 Ltac def_fix_and_pattern_matching_mono_param t :=
-def_fix_and_pattern_matching ; instanciate_type_tuple t ; specialize_context_clear.
+def_fix_and_pattern_matching ; inst t.
 
 
 
@@ -58,7 +58,7 @@ try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param 
 hypothèses dans nat et ensuite verit se met à peiner *)
 
 Ltac scope_no_param :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst_clear ; try nat_convert).
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst ; try nat_convert).
 
 Ltac scope_param_no_nat_convert t :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t).
@@ -66,7 +66,7 @@ try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param 
 hypothèses dans nat et ensuite verit se met à peiner *)
 
 Ltac scope_no_param_no_nat_convert :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst_clear).
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst).
 
 Ltac snipe_param t := 
 scope_param t ; verit.
