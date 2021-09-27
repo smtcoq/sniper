@@ -22,7 +22,6 @@ Require Import utilities.
 Import ListNotations.
 
 
-
 (* Instanciate a hypothesis with the parameter x *)
 Ltac instanciate H x :=
   let T := type of H in
@@ -41,7 +40,7 @@ Ltac instanciate_all H x :=
  lazymatch T  with
   | forall (y : ?A), _ => let H':= fresh H in pose (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x); try (instanciate_all H' x)
-  | _ => idtac "did not work"
+  | _ => fail
       end.
 
 
@@ -53,17 +52,23 @@ Ltac instanciate_ident H x :=
   | forall (y : ?A), _ => let H':= fresh H in 
 let _ := match goal with _ => pose (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
-  | _ => idtac "did not work"
+  | _ => fail
       end.
 
-
-
+Goal (forall (A : Type) (B : Type), A = A /\ B = B) ->  forall (x : nat) (y : bool), x=x /\ y= y.
+intro H.
+let H' := instanciate_ident H bool in instanciate H' bool.
+Abort.
 
 
 
 (* Reifies a term and calls is_type *)
 Ltac is_type_quote t := let t' := eval hnf in t in let T :=
 metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
+
+
+Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in constr:(is_type T).
 
 (* instanciates a polymorphic quantified hypothesis with all suitable subterms in the context *)
 Ltac instanciate_type H := let P := type of H  in let P':= type of P in constr_eq P' Prop ; lazymatch P with
@@ -84,6 +89,142 @@ Y in is_type_quote Y' ; instanciate_all H y
           end
 end.
 
+
+Ltac test t := 
+      repeat match goal with
+      |- context C[?y] => idtac y ; is_not_in_tuple constr:(t) y ; test (t, y)
+end.
+
+Ltac is_not_in_context x := 
+repeat match goal with 
+| y := x |- _ => fail 2
+| _ => idtac
+end.
+
+Goal True.
+pose (y := 1). Fail is_not_in_context 1. is_not_in_context 2.
+exact I. Qed.
+
+Print term.
+
+Print fst.
+
+
+
+Fixpoint list_of_subterms (t: term) : list term := match t with
+| tLambda _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tProd _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tLetIn _ u v w => t :: (list_of_subterms u) ++ (list_of_subterms v) ++ (list_of_subterms w)
+| tCast t1 _ t2 => t :: (list_of_subterms t1) ++ (list_of_subterms t2)
+| tApp u l => t :: (list_of_subterms u) ++ (List.flat_map list_of_subterms l)
+| tCase _ t1 t2 l => t:: (list_of_subterms t1) ++ (list_of_subterms t2) ++ 
+(List.flat_map (fun x => list_of_subterms (snd x)) l)
+| tFix _ _  => [t]
+| tCoFix _ _ => [t]
+| _ => [t]
+end
+(* with list_of_subterms_list (l : list term) : list term := match l with
+| [] => nil
+| x :: xs => list_of_subterms x ++ (list_of_subterms_list xs)
+end *).
+
+Print closedn.
+Print filter.
+
+Definition filter_closed (l: list term) := List.filter (closedn 0) l.
+
+
+Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
+let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l.
+
+Require Import String.
+
+Ltac instanciate_tuple t x := match t with
+| (?H, ?t') => tryif (let H' := instanciate_ident H x in instanciate_tuple (H', t') x)
+then idtac else (instanciate_tuple t' x)
+| unit => idtac
+end.
+
+Ltac clear_tuple t := match t with
+| (?H, ?t') => try (clear H) ; clear_tuple t'
+| unit => idtac
+end.
+
+Ltac instanciate_tuple_terms_of_type_type h l := 
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in 
+try (let T := type of w in is_type_quote T ; instanciate_tuple h w) ; 
+instanciate_tuple_terms_of_type_type h xs
+end.
+
+Ltac instanciate_all_hyps_with_reif l :=  repeat (let h := hyps in instanciate_tuple_terms_of_type_type h l).
+(* TODO : écrire une tactique qui unquote une liste de terme clos et renvoie un tuple de termes Coq *) 
+
+Goal (forall (A B C : Type), A = A /\ B = B /\ C=C) ->  forall (x : nat) (y : bool), x=x /\ y= y.
+intros H.
+let h := hyps in idtac h.
+let l' := (get_list_of_closed_subterms (forall (x : nat) (y : bool), x = x /\ y = y))
+in instanciate_all_hyps_with_reif l'.
+Abort.
+
+Ltac return_unquote_tuple_terms l := 
+let rec aux l acc :=
+match constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
+tryif (let T := type of w in is_type_quote T  
+) then (aux xs (pair w acc)) else aux xs acc
+end
+in constr:(aux l unit).
+
+Ltac toto := false.
+
+
+Ltac aux l acc :=
+match constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs => 
+  let y := metacoq_get_value (tmUnquote x) in 
+  let u := constr:(y.(my_projT2)) in 
+  let w := eval hnf in u in
+  let T := type of w in 
+  let b0 := ltac:(is_type_quote_bool T) in 
+  let b := eval hnf in b0 in
+    match b with 
+    | true => (aux xs (pair w acc)) 
+    | false => aux xs acc
+    end
+end.
+
+(* Ltac aux l acc :=
+match constr:(l) with
+| nil => acc
+| cons ?x ?xs => let y := metacoq_get_value (tmUnquote x) in 
+let u := constr:(y.(my_projT2)) in let w := eval hnf in u in
+let Tyu := constr:(y.(my_projT1)) in let Tyw := eval hnf in u 
+in let n := fresh "n" in 
+  epose (n := ?[n_evar]) ;
+tryif (constr_eq Tyw Type 
+) then (instantiate (n_evar := ltac:(aux xs (pair w acc)))) else (instantiate (n_evar := ltac:(aux xs acc))) ; 
+let nb_var := eval unfold n in n in nb_var
+end. *)
+
+
+
+Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
+Check (@pair (forall A : Type, A -> A -> Prop) (forall A : Type, A -> A -> Prop) (@eq) (@eq)). 
+let l := (get_list_of_closed_subterms 
+(forall (A : Type) (x : nat) (y : bool) (z : list A), y = y -> z = z -> x = x)) in pose l.
+pose (x :=   [tInd
+       {|
+         inductive_mind :=
+           (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string], "bool"%string);
+         inductive_ind := 0
+       |} []]).    let l' := eval unfold l in l in                                                                                     
+let u := aux l' unit in pose u.
 
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat.
