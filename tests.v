@@ -42,5 +42,13 @@ def_and_pattern_matching_mono.
 verit.
 Qed.
 
+(* Test polymorphism *) 
+Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : nat) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
+intro H. inst. split. assumption. split. assumption. assumption.
+Qed. 
 
 End tests.
