@@ -137,10 +137,14 @@ Ltac instanciate_tuple_terms_tuple_hyp t terms := match t with
 end.
 
 
-Ltac instanciate_tuple_terms_tuple_hyp_no_unit t terms := match t with 
+Ltac instanciate_tuple_terms_tuple_hyp_no_unit t terms := lazymatch t with 
 | (?t1, ?t2 ) => instanciate_tuple_terms_tuple_hyp_no_unit t1 terms ; 
 instanciate_tuple_terms_tuple_hyp_no_unit t2 terms
-| ?H => try (instanciate_tuple_terms H terms)
+| ?H => let T := type of H in 
+     match T with 
+  | forall (y : ?A), _ => constr_eq A Type ; try (instanciate_tuple_terms H terms)
+  | _ => try (let U := type of T in constr_eq U Prop ; notHyp H ; let H0 := fresh H in assert (H0 : T) by exact H)
+  end
 end.
 
 Ltac elimination_polymorphism t0 := 
@@ -167,6 +171,16 @@ Proof. intros H. inst app_length.
 
 Abort.
 
+Section test.
+
+Variable A : Type. 
+ Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
+  Proof.
+    intros. unfold "<>". intro H. inversion H.
+  Qed.
+
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
-inst (pair_equal_spec, app_length).
+inst (pair_equal_spec, app_length, nil_cons, app_comm_cons).
 Abort.
+
+End test.

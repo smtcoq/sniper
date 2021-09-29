@@ -152,7 +152,7 @@ snipe.
 
   Theorem in_eq : forall (a:A) (l:list A), Lists.In a (a :: l) = true.
   Proof.
-  scope. (* TODO Fail verit *) clear -HA. verit.
+ snipe.
   Qed.
 
   Theorem in_cons : forall (a b:A) (l:list A), Lists.In b l = true -> Lists.In b (a :: l) = true.
@@ -174,7 +174,7 @@ snipe.
   Theorem in_split : forall x (l:list A), Lists.In x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l. 
-  -  scope. Fail verit. inversion H.
+  - scope. intros. rewrite H5 in H. inversion H.
   - scope. admit. (* Existentials so not handled by verit *)
 Admitted.
 
@@ -196,7 +196,6 @@ Print app.
   Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> ((a :: y) ++ x).
   Proof.
     snipe.
-
   Qed.
 
 
@@ -206,7 +205,7 @@ Print app.
     snipe.
   Qed.
 
-  Theorem app_nil_r : forall l:list A, l ++ [] = l.
+  Theorem app_nil_r' : forall l:list A, l ++ [] = l.
   Proof.
     induction l; snipe.
   Qed.
@@ -220,8 +219,7 @@ Print app.
 
   (** [app] is associative *)
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
-  Proof.
-    
+  Proof.  
     intros l ; induction l ; snipe.
   Qed.
 
@@ -229,8 +227,8 @@ Print app.
   (* Deprecated *)
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     Fail snipe app_assoc.
-Abort. 
+    snipe app_assoc. Abort. (* TODO : souci avec les variables de sections *)
+
   Hint Resolve app_assoc_reverse : core.
   (* end hide *)
 
@@ -242,46 +240,37 @@ Abort.
 
   (** Facts deduced from the result of a concatenation *)
 
-  Theorem app_eq_nil : forall l l':list A, 
+  Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    destruct l. destruct l'. snipe. snipe. 
-    def_fix_and_pattern_matching. intros. symmetry in H. apply app_cons_not_nil in H. destruct H.
-  Qed. (* TODO : Ici, on ne peut pas instancier les lemmes car on n'a des variables de section, 
-il faudrait penser à écrire une tactique snipe qui prend des lemmes en paramètres mais pas seulement polymorphes *)
-
+    destruct l. destruct l'. snipe. snipe. snipe app_cons_not_nil. Abort.
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-    destruct x ; destruct y eqn:E. (* TODO : scope. *) def_fix_and_pattern_matching.
-    inst_clear. verit.
-    def_fix_and_pattern_matching.
-    inst_clear. verit.
-    def_fix_and_pattern_matching.
-    inst_clear. intros. right. rewrite H2_A in H. rewrite app_nil_r in H. easy.
-    def_fix_and_pattern_matching. interp_alg_types (list A).
-    inst_clear. intros. inversion H. apply app_eq_nil in H6. inversion H6. inversion H7. Qed.
+    destruct x ; destruct y eqn:E. scope. verit.
+    scope. verit. scope app_nil_r. verit. 
+  scope app_eq_nil. verit. admit. admit. Admitted.
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
     induction x as [| x l IHl];
       [ destruct y as [| a l] | destruct y as [| a l0] ].
-     - interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear. verit. (* TODO : encore des compdec *)
+     - scope. verit. (* TODO : encore des compdec *)
       admit.
-    - interp_alg_types (list). def_fix_and_pattern_matching. admit.
-    -  interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear. admit.
-    - interp_alg_types (list A). def_fix_and_pattern_matching. inst_clear.  verit. admit. admit. admit. admit.
+    - scope. admit.
+    - scope. admit.
+    - scope. verit. admit. admit. admit. admit.
 Admitted.
 
   (** Compatibility with other operations *)
 
   Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
-    induction l; scope. 
-  Qed.
+    induction l; snipe app_comm_cons. Qed.
+
 (*
   Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> In a l \/ In a m.
   Proof.
