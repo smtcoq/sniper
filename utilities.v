@@ -141,7 +141,8 @@ pose (id := n)).
 (* Returns the tuple of hypothesis in a local context *)
 Ltac hyps := 
 match goal with
-| H : _ |- _ => let _ := match goal with _ => revert H end in let acc := hyps in 
+| H : _ |- _ => let _ := match goal with _ => let T := type of H in let U := type of T in
+constr_eq U Prop ; revert H end in let acc := hyps in 
 let _ := match goal with _ => intro H end in constr:((H, acc))
 | _ => constr:(unit)
 end.

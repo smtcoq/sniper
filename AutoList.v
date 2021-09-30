@@ -157,7 +157,7 @@ snipe.
 
   Theorem in_cons : forall (a b:A) (l:list A), Lists.In b l = true -> Lists.In b (a :: l) = true.
   Proof.
-  snipe. (* TODO: si je commente l'hypothèse CompDec de option verit passe mais pas si j'enlève le commentaire *)
+  snipe. 
   Qed.
 
   Theorem not_in_cons (x a : A) (l : list A):
@@ -219,15 +219,20 @@ Print app.
 
   (** [app] is associative *)
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
-  Proof.  
+  Proof.
     intros l ; induction l ; snipe.
-  Qed.
+  Qed. 
 
   (* begin hide *)
   (* Deprecated *)
+Require Import String.
+Local Open Scope string_scope.
+Local Open Scope list_scope.
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-    snipe app_assoc. Abort. (* TODO : souci avec les variables de sections *)
+
+     snipe app_assoc. 
+    Qed.
 
   Hint Resolve app_assoc_reverse : core.
   (* end hide *)

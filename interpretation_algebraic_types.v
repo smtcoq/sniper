@@ -1666,20 +1666,20 @@ Ltac interp_alg_types_context_aux p :=
 match goal with 
 | |- context C[?y] => let Y := type of y in
 tryif (
-is_not_in_tuple p Y ; idtac p "1" ;
+is_not_in_tuple p Y ;
 interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple p y ; idtac p "2" ;
+(is_not_in_tuple p y ;
 interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
 | _ : context C[?y] |- _ => let Y := type of y in
 tryif (
-is_not_in_tuple p Y ; idtac p "3" ;
+is_not_in_tuple p Y ;
 interp_alg_types Y) then 
 (
 interp_alg_types_context_aux (p, Y)) else 
-(is_not_in_tuple p y ; idtac p "4" ;
+(is_not_in_tuple p y ;
 interp_alg_types y ; 
 interp_alg_types_context_aux (p, y))
 | _ => idtac
@@ -1697,11 +1697,11 @@ Fail contains_not_eq (1=1). contains_not_eq (fun x: nat => x). exact I. Qed.
 Ltac interp_alg_types_context_aux' p :=
 match goal with 
 | |- context C[?y] =>
-is_not_in_tuple p y ; idtac y "1" ; contains_not_eq y ;
+is_not_in_tuple p y ;contains_not_eq y ;
 interp_alg_types y ;
 interp_alg_types_context_aux' (p, y)
 | _ : context C[?y] |- _ =>
-is_not_in_tuple p y ; idtac p "3" y ; contains_not_eq y ;
+is_not_in_tuple p y ; contains_not_eq y ;
 interp_alg_types y ; interp_alg_types_context_aux' (p, y)
 | _ => idtac
 end.

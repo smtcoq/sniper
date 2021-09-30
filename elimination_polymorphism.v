@@ -26,8 +26,8 @@ Import ListNotations.
 Ltac instanciate H x :=
   let T := type of H in
  lazymatch T  with
-  | forall (y : ?A), _ => tryif (let H':= fresh H "_" x in pose (H':= H) ; 
-let U := type of (H' x) in notHyp U ; specialize (H' x)) then idtac else (let H':= fresh H in pose (H':= H) ; 
+  | forall (y : ?A), _ => tryif (let H':= fresh H "_" x in assert (H':= H) ; 
+let U := type of (H' x) in notHyp U ; specialize (H' x)) then idtac else (let H':= fresh H in assert (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x))
   | _ => fail
       end.
@@ -38,7 +38,7 @@ Ltac instanciate_ident H x :=
   let T := type of H in
  lazymatch T  with
   | forall (y : ?A), _ => let H':= fresh H in 
-let _ := match goal with _ => pose (H':= H) ; 
+let _ := match goal with _ => assert (H':= H) ; 
 let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
   | _ => fail
       end.
@@ -156,9 +156,25 @@ let h := eval cbv in h0 in
 instanciate_tuple_terms_tuple_hyp_no_unit t terms ; 
 instanciate_tuple_terms_tuple_hyp h terms.
 
+Ltac test t0 := 
+let t := eval cbv in t0 in 
+let h0 := hyps in 
+let h := eval cbv in h0 in
+let x := constr:((nat, (bool, unit))) in 
+instanciate_tuple_terms_tuple_hyp_no_unit t x ; 
+instanciate_tuple_terms_tuple_hyp h x.
+
+Ltac test2 t0 :=
+let h0 := hyps in
+let t := eval cbv in t0 in 
+let x := constr:((nat, (bool, unit))) in
+instanciate_tuple_terms_tuple_hyp_no_unit t0 x.
+
+
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
 intro.
 elimination_polymorphism (rev_involutive, unit).
+
 Abort.
 
 
@@ -182,5 +198,10 @@ Variable A : Type.
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
 inst (pair_equal_spec, app_length, nil_cons, app_comm_cons).
 Abort.
+
+
+Goal True -> forall (x:A) (l:list A), [] <> x :: l.
+intros.
+test2 nil_cons. apply nil_cons0. Qed.
 
 End test.
