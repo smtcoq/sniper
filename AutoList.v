@@ -225,9 +225,7 @@ Print app.
 
   (* begin hide *)
   (* Deprecated *)
-Require Import String.
-Local Open Scope string_scope.
-Local Open Scope list_scope.
+
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
 
