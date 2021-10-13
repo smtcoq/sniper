@@ -263,3 +263,37 @@ Admitted.
   Lemma app_length : forall l l' : list' A, length (l++l') = length l + length l'.
   Proof.
     induction l; hammer. Qed.
+
+  Lemma in_or_app : forall (l m:list' A) (a:A), In a l \/ In a m -> In a (l ++ m).
+  Proof.
+    intros l ; induction l ; hammer.
+  Qed.
+
+  Lemma in_app_or : forall (l m:list' A) (a:A), In a (l ++ m) -> or (In a l) (In a m).
+  Proof.
+  intros l ; induction l ; hammer.
+  Qed.
+
+    Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> In a l \/ In a l'.
+  Proof.
+    hammer.
+  Qed.
+
+  Lemma app_inv_head:
+   forall l l1 l2 : list' A, l ++ l1 = l ++ l2 -> l1 = l2.
+  Proof.
+    induction l ; hammer. Qed.
+
+  Lemma app_inv_tail:
+    forall l l1 l2 : list' A, l1 ++ l = l2 ++ l -> l1 = l2.
+  Proof.
+    intros l l1 l2; revert l1 l2 l. 
+    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2].
+    - hammer.
+    - intros l H. symmetry in H. simpl in H. rewrite app_comm_cons in H. admit.
+    - admit.
+    - hammer. 
+  Admitted.
+
+
+

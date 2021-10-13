@@ -275,55 +275,43 @@ Admitted.
   Proof.
     induction l; snipe app_comm_cons. Qed.
 
-  Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) ---> orb (In a l) (In a m).
+  Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> or (In a l) (In a m).
   Proof.
     scope.
     intros l m a. induction l. 
     - verit.
-    -(*  verit. *) (* TODO *) Admitted.
-(* 
-  Lemma in_or_app : forall (l m:list A) (a:A), In a l \/ In a m -> In a (l ++ m).
+    - (*  verit. *) (* TODO *) Admitted.
+
+  Lemma in_or_app : forall (l m:list A) (a:A), or (In a l) (In a m) -> In a (l ++ m).
   Proof.
-    intros l m a.
-    elim l; simpl; intro H.
-    now_show (In a m).
-    elim H; auto; intro H0.
-    now_show (In a m).
-    elim H0. (* subProof completed *)
-    intros y H0 H1.
-    now_show (H = a \/ In a (y ++ m)).
-    elim H1; auto 4.
-    intro H2.
-    now_show (H = a \/ In a (y ++ m)).
-    elim H2; auto.
+    intros l ; induction l ; snipe.
   Qed.
 
-  Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> In a l \/ In a l'.
+  Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> or (In a l) (In a l').
   Proof.
-    split; auto using in_app_or, in_or_app.
-  Qed.
+   scope (in_app_or, in_or_app). split.
+  - apply in_app_or0.
+  - apply in_or_app0.
+  Qed. (* TODO Pourquoi on ne peut pas complètement automatiser ?? *) 
 
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l; simpl; auto; injection 1; auto.
-  Qed.
+    induction l ; snipe. admit. Admitted.
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
-    intros l l1 l2; revert l1 l2 l.
-    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2];
-     simpl; auto; intros l H.
-    absurd (length (x2 :: l2 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite <- H; auto with arith.
-    absurd (length (x1 :: l1 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite H; auto with arith.
-    injection H as [= H H0]; f_equal; eauto.
-  Qed.
+    intros l l1 l2; revert l1 l2 l. 
+    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2].
+    - snipe.
+    - scope app_length. admit.
+    - scope app_length. admit.
+    - scope app_length. verit. admit. admit.
+  Admitted.
 
+
+(* 
 End Facts.
 
 Hint Resolve app_assoc app_assoc_reverse: datatypes.
