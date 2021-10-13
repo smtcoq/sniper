@@ -246,7 +246,7 @@ Print app.
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    destruct l. destruct l'. snipe. snipe. snipe app_cons_not_nil. Abort.
+    destruct l ; destruct l' ; snipe app_cons_not_nil. Qed. 
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
@@ -264,7 +264,8 @@ Print app.
      - scope. verit. (* TODO : encore des compdec *)
       admit.
     - scope. admit.
-    - scope. admit.
+    - scope (app_nil_l, app_eq_nil'). intros a b H. rewrite app_nil_l0 in H. rewrite H2 in H. apply H1 in H. destruct H as 
+[H' H'']. apply app_eq_nil'0 in H''. destruct H''. symmetry in H0. apply H5 in H0. destruct H0.
     - scope. verit. admit. admit. admit. admit.
 Admitted.
 
@@ -274,19 +275,13 @@ Admitted.
   Proof.
     induction l; snipe app_comm_cons. Qed.
 
-(*
-  Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> In a l \/ In a m.
+  Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) ---> orb (In a l) (In a m).
   Proof.
-    intros l m a.
-    elim l; simpl; auto.
-    intros a0 y H H0.
-    now_show ((a0 = a \/ In a y) \/ In a m).
-    elim H0; auto.
-    intro H1.
-    now_show ((a0 = a \/ In a y) \/ In a m).
-    elim (H H1); auto.
-  Qed.
-
+    scope.
+    intros l m a. induction l. 
+    - verit.
+    -(*  verit. *) (* TODO *) Admitted.
+(* 
   Lemma in_or_app : forall (l m:list A) (a:A), In a l \/ In a m -> In a (l ++ m).
   Proof.
     intros l m a.
