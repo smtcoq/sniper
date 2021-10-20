@@ -150,7 +150,7 @@ Local Open Scope Z_scope. *)
 Proof. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
 scope. 
-specialize (H l). destruct H as [H' | H''] ; verit. Qed.  
+specialize (H l). verit. Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
 
   (** *** Head and tail *)
 
