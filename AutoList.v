@@ -94,7 +94,17 @@ Section Lists.
 destruct l as [ | x xs]. verit.
  verit. Admitted. (* TODO Chantal ?*)
 
+Variable a : A.
 
+Definition p1 := fun (l : list A) => match l with
+| nil => a
+| cons y _ => y
+end.
+
+Definition p2 := fun (l : list A) => match l with 
+| nil => nil
+| cons x xs => xs
+end.
 
   Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
@@ -134,6 +144,13 @@ Local Open Scope Z_scope. *)
   - scope. verit.  (* TODO : Fail verit => no matching clauses for match *)
   - scope. verit. 
   Qed.
+
+  Theorem length_zero_iff_nil' (l : list A):
+   length l <> 0 <-> l <> nil. 
+Proof. 
+assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+scope. 
+specialize (H l). destruct H as [H' | H''] ; verit. Qed.  
 
   (** *** Head and tail *)
 
