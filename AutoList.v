@@ -106,7 +106,7 @@ Definition p2 := fun (l : list A) => match l with
 | cons x xs => xs
 end.
 
-  Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
+ Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
   snipe.
    Qed.
@@ -134,7 +134,7 @@ Import BVList.BITVECTOR_LIST.
 
 
 
-Local Open Scope Z_scope. *)
+Local Open Scope Z_scope. *) 
 
 
 
@@ -149,8 +149,8 @@ Local Open Scope Z_scope. *)
    length l <> 0 <-> l <> nil. 
 Proof. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-scope. 
-specialize (H l). verit. Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
+scope. verit. clear H12 H14. verit.
+(* specialize (H l). verit. *) Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
 
   (** *** Head and tail *)
 
@@ -177,7 +177,7 @@ snipe.
   snipe. 
   Qed.
 
-  Theorem not_in_cons (x a : A) (l : list A):
+  Theorem not_in_cons (x b : A) (l : list A):
     ~ Lists.In x (a::l) = true <-> x<>a /\ ~ Lists.In x l = true.
   Proof.
   snipe.
@@ -263,27 +263,28 @@ Print app.
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    destruct l ; destruct l' ; snipe app_cons_not_nil. Qed. 
+    assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+    snipe app_cons_not_nil. Qed.
+    
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-    destruct x ; destruct y eqn:E. scope. verit.
+    assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+   scope. verit. admit. admit. Admitted.
+    (* destruct x ; destruct y eqn:E. scope. verit.
     scope. verit. scope app_nil_r. verit. 
-  scope app_eq_nil. verit. admit. admit. Admitted.
+  scope app_eq_nil. verit. admit. admit. Admitted. *)
+
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
-    induction x as [| x l IHl];
-      [ destruct y as [| a l] | destruct y as [| a l0] ].
-     - scope. verit. (* TODO : encore des compdec *)
-      admit.
+    induction x as [| x l IHl].
+assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+     - scope. timeout 10 verit. admit. (* TODO : encore des compdec *)
     - scope. admit.
-    - scope (app_nil_l, app_eq_nil'). intros a b H. rewrite app_nil_l0 in H. rewrite H2 in H. apply H1 in H. destruct H as 
-[H' H'']. apply app_eq_nil'0 in H''. destruct H''. symmetry in H0. apply H5 in H0. destruct H0.
-    - scope. verit. admit. admit. admit. admit.
 Admitted.
 
   (** Compatibility with other operations *)
@@ -295,7 +296,7 @@ Admitted.
   Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> or (In a l) (In a m).
   Proof.
     scope.
-    intros l m a. induction l. 
+    intros l m b. induction l. 
     - verit.
     - (*  verit. *) (* TODO *) Admitted.
 
@@ -314,14 +315,15 @@ Admitted.
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l ; snipe. admit. Admitted.
+    induction l ; snipe. admit. Admitted. *)
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
     intros l l1 l2; revert l1 l2 l. 
-    induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2].
-    - snipe.
+    induction l1 as [ | x1 l1]. 
+assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+    - scope. clear H8 H10. intros l2 l. verit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
     - scope app_length. admit.
     - scope app_length. admit.
     - scope app_length. verit. admit. admit.
