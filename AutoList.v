@@ -140,16 +140,18 @@ Local Open Scope Z_scope. *)
 
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
-  Proof.  destruct l as [ | x xs]. 
-  - scope. verit.  (* TODO : Fail verit => no matching clauses for match *)
-  - scope. verit. 
+  Proof. 
+  assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+  scope.
+  clear H12 H14.
+  verit.
   Qed.
 
   Theorem length_zero_iff_nil' (l : list A):
    length l <> 0 <-> l <> nil. 
 Proof. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-scope. verit. clear H12 H14. verit.
+scope. clear H12 H14. verit.
 (* specialize (H l). verit. *) Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
 
   (** *** Head and tail *)
@@ -206,7 +208,7 @@ Admitted.
   (**************************)
   (** *** Facts about [app] *)
   (**************************)
-Print app.
+
 
 
   (** Discrimination *)
@@ -222,7 +224,7 @@ Print app.
     snipe.
   Qed.
 
-  Theorem app_nil_r' : forall l:list A, l ++ [] = l.
+  Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
     induction l; snipe.
   Qed.
@@ -283,8 +285,8 @@ Print app.
   Proof.
     induction x as [| x l IHl].
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-     - scope. timeout 10 verit. admit. (* TODO : encore des compdec *)
-    - scope. admit.
+     - snipe. admit. (* TODO : encore des compdec *)
+     - scope. admit.
 Admitted.
 
   (** Compatibility with other operations *)
@@ -298,7 +300,7 @@ Admitted.
     scope.
     intros l m b. induction l. 
     - verit.
-    - (*  verit. *) (* TODO *) Admitted.
+    - scope. (*  verit. *) (* TODO *) Admitted.
 
   Lemma in_or_app : forall (l m:list A) (a:A), or (In a l) (In a m) -> In a (l ++ m).
   Proof.
@@ -315,7 +317,7 @@ Admitted.
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l ; snipe. admit. Admitted. *)
+    induction l ; snipe. admit. Admitted.
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
@@ -323,15 +325,11 @@ Admitted.
     intros l l1 l2; revert l1 l2 l. 
     induction l1 as [ | x1 l1]. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-    - scope. clear H8 H10. intros l2 l. verit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
+    - scope. clear H8 H10. intros l2 l. admit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
     - scope app_length. admit.
-    - scope app_length. admit.
-    - scope app_length. verit. admit. admit.
   Admitted.
 
 
-(* 
-End Facts.
 
 Hint Resolve app_assoc app_assoc_reverse: datatypes.
 Hint Resolve app_comm_cons app_cons_not_nil: datatypes.
@@ -347,7 +345,6 @@ Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes.
 
 Section Elts.
 
-  Variable A : Type.
 
   (*****************************)
   (** ** Nth element of a list *)
@@ -368,7 +365,7 @@ Section Elts.
       | S m, [] => false
       | S m, x :: t => nth_ok m t default
     end.
-
+(* 
   Lemma nth_in_or_default :
     forall (n:nat) (l:list A) (d:A), {In (nth n l d) l} + {nth n l d = d}.
   Proof.
