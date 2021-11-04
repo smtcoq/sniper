@@ -143,7 +143,7 @@ Local Open Scope Z_scope. *)
   Proof. 
   assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
   scope.
-  clear H12 H14.
+  clear H13 H15.
   verit.
   Qed.
 
@@ -151,7 +151,7 @@ Local Open Scope Z_scope. *)
    length l <> 0 <-> l <> nil. 
 Proof. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-scope. clear H12 H14. verit.
+scope. clear H13 H15. verit.
 (* specialize (H l). verit. *) Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
 
   (** *** Head and tail *)
@@ -193,7 +193,7 @@ snipe.
   Theorem in_split : forall x (l:list A), Lists.In x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l. 
-  - scope. intros. rewrite H5 in H. inversion H.
+  - scope. intros. rewrite H6 in H. inversion H.
   - scope. admit. (* Existentials so not handled by verit *)
 Admitted.
 
@@ -247,7 +247,6 @@ Admitted.
 
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-
      snipe app_assoc. 
     Qed.
 
@@ -379,9 +378,7 @@ Section Elts.
     forall (n:nat) (l:list A) (d a:A),
       In (nth n l d) l -> In (nth (S n) (a :: l) d) (a :: l).
   Proof.
-    scope. get_def nth. expand_hyp nth_def. eliminate_fix_hyp H. eliminate_pattern_matching H2.
-    simpl; auto.
-  Qed.
+    snipe. Qed. 
 
   Fixpoint nth_error (l:list A) (n:nat) {struct n} : option A :=
     match n, l with
@@ -399,10 +396,21 @@ Section Elts.
   Lemma nth_default_eq :
     forall n l (d:A), nth_default d l n = nth n l d.
   Proof.
-    unfold nth_default; induction n; intros [ | ] ?; simpl; auto.
-  Qed.
+    scope.
+    assert (forall (x : A) (x0 : list A) (x1 : nat) (x2 : A), nth_error x0 x1 = Some x2 ->
+ nth_default x x0 x1 = x2). 
+  assert (forall (x : A) (x0 : list A) (x1 : nat) (x2 : A), nth_error x0 x1 = None ->
+ nth_default x x0 x1 = x).
+
+intros. rewrite H4. rewrite H. reflexivity. 
+intros. rewrite H4. rewrite H2. reflexivity.
+intros. destruct l ; destruct n. 
+  (* TODO : the pattern matching is not on a variable ! *)
+  Admitted.
 
   (** Results about [nth] *)
+
+(*
 
   Lemma nth_In :
     forall (n:nat) (l:list A) (d:A), n < length l -> In (nth n l d) l.
