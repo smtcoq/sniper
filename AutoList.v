@@ -331,11 +331,11 @@ assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l'
 
 
 
-Hint Resolve app_assoc app_assoc_reverse: datatypes.
+(* Hint Resolve app_assoc app_assoc_reverse: datatypes.
 Hint Resolve app_comm_cons app_cons_not_nil: datatypes.
 Hint Immediate app_eq_nil: datatypes.
 Hint Resolve app_eq_unit app_inj_tail: datatypes.
-Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes.
+Hint Resolve in_eq in_cons in_inv in_nil in_app_or in_or_app: datatypes. *)
 
 
 
@@ -365,21 +365,21 @@ Section Elts.
       | S m, [] => false
       | S m, x :: t => nth_ok m t default
     end.
-(* 
+
   Lemma nth_in_or_default :
     forall (n:nat) (l:list A) (d:A), {In (nth n l d) l} + {nth n l d = d}.
   Proof.
     intros n l d; revert n; induction l.
     - right; destruct n; trivial.
     - intros [|n]; simpl.
-      * left; auto.
-      * destruct (IHl n); auto.
-  Qed.
+      * left; auto. snipe. Admitted.
+   
 
   Lemma nth_S_cons :
     forall (n:nat) (l:list A) (d a:A),
       In (nth n l d) l -> In (nth (S n) (a :: l) d) (a :: l).
   Proof.
+    scope. get_def nth. expand_hyp nth_def. eliminate_fix_hyp H. eliminate_pattern_matching H2.
     simpl; auto.
   Qed.
 
