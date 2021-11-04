@@ -78,7 +78,7 @@ Definition filter_closed (l: list term) := List.filter (closedn 0) l.
 
 
 Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
-let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l.
+let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l. 
 
 
 Ltac return_unquote_tuple_terms l := let rec aux l acc :=
