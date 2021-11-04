@@ -478,8 +478,8 @@ match goal with
 | u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
 ; clear foo ; 
 repeat match goal with 
-| u : Prop |-_ => let u' := eval unfold u in u in assert u' by 
-( intros; try (apply H); reflexivity); clear u end] ; clear H ; 
+| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u') by 
+( intros; try (rewrite H); reflexivity); clear u ; try (eliminate_dependent_pattern_matching H0)end] ; clear H ; 
 clear n; clear T.
 
 
@@ -582,6 +582,19 @@ eliminate_fix_hyp H0.
 clear - H2. eliminate_dependent_pattern_matching H2. 
 Abort. 
 
+ Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
+    match n, l with
+      | O, x :: l' => x
+      | O, other => default
+      | S m, [] => default
+      | S m, x :: t => nth m t default
+    end.
+
+Goal False.
+get_def @nth. expand_hyp nth_def. 
+eliminate_fix_hyp H.  
+eliminate_dependent_pattern_matching H0.
+Abort.
 
 End Tests.
 
