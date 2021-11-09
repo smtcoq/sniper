@@ -17,6 +17,8 @@ Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.Template.All.
 
+Require Import String. 
+
 MetaCoq Quote Definition unit_reif := unit.
 
 Ltac unquote_term t_reif := 
@@ -120,7 +122,7 @@ let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteT
 Abort.
 
 
-(* Get the nb of construcots of a reified inductive type if we have the reified global environment *)
+(* Get the nb of construcors of a reified inductive type if we have the reified global environment *)
 Definition get_nb_constructors i Σ := 
 match i with 
 | tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
@@ -147,6 +149,141 @@ let _ := match goal with _ => intro H end in constr:((H, acc))
 | _ => constr:(unit)
 end.
 
+Fixpoint get_constructors_inductive (I : term) (e : global_env) :=
+match I with 
+| tInd ind _ => match ind.(inductive_mind) with
+          | (file, ident) => match e with 
+                      | [] => None 
+                      | (na,d) :: e' => 
+                                (match d with
+                                  | InductiveDecl mind => if (String.eqb
+ident na.2) then let loind := ind_bodies mind in let list_ctors_opt := match loind with 
+| nil => None
+| x :: xs => Some (x.(ind_ctors))
+end in list_ctors_opt else get_constructors_inductive I e'
+                                  | _ => get_constructors_inductive I e'
+                               end)    
+    end
+end
+| _ => None
+end.
 
+
+(* Get the pair of the number of parameters of an inductive and the list of their types *)
+Fixpoint get_info_params_inductive (I : term) (e : global_env) :=
+match I with 
+| tInd ind _ => match ind.(inductive_mind) with
+          | (file, ident) => match e with 
+                      | [] => None 
+                      | (na,d) :: e' => 
+                                (match d with
+                                  | InductiveDecl mind => if (String.eqb
+ident na.2) then let prod := (ind_npars mind, List.map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
+                                  | _ => get_info_params_inductive I e'
+                               end)    
+    end
+end
+| _ => None
+end.
+
+Fixpoint get_decl_inductive (I : term) (e : global_env) :=
+match I with 
+| tInd ind _ => match ind.(inductive_mind) with
+          | (file, ident) => match e with 
+                      | [] => None 
+                      | (na,d) :: e' => 
+                                (match d with
+                                  | InductiveDecl mind => if (String.eqb
+ident na.2) then let loind := ind_bodies mind in Some loind else get_decl_inductive I e'
+                                  | _ => get_decl_inductive I e'
+                               end)    
+    end
+end
+| _ => None
+end.
+
+Definition no_prod (t: term) := match t with 
+  | tProd _ _ _ => false 
+  | _ => true
+end.
+
+Fixpoint no_prod_after_params (t : term) (npars : nat) := match t with
+   | tProd _ _ u => match npars with 
+                   | 0 => false 
+                   | S n' => no_prod_after_params u n'
+                  end
+  | _ => true
+end.
+ 
+Definition find_index_constructor_of_arity_zero (o : option (list ((ident × term) × nat))) := match o with
+  | None => None
+  | Some l => let fix aux l' acc := 
+      match l' with 
+        | nil => None
+        | x :: xs => if Nat.eqb (x.2) 0 then (Some acc) else aux xs (acc + 1)
+      end in aux l 0
+  end.
+
+Definition no_app t := match t with
+| tApp u l => (u, l)
+| _ => (t, [])
+end.
+
+Definition get_info_inductive (I : term) := 
+let p := no_app I in match p.1 with
+| tInd ind inst => Some (ind, inst)
+| _ => None
+end.
+
+Inductive impossible_term :=.
+MetaCoq Quote Definition impossible_term_reif := impossible_term.
+
+Ltac remove_option o := match o with
+| Some ?x => constr:(x)
+| None => fail "None"
+end.
+
+Definition get_nth_constructor (I : term) (n : nat) : term := 
+let g := get_info_inductive I in match g with 
+  | None => impossible_term_reif
+  | Some (ind, inst) => tConstruct ind n inst
+end. 
+
+Definition mkApp_list (u : term) (l : list term) :=
+tApp u l.
+
+
+(* Implements beta reduction *)
+Fixpoint typing_prod_list (T : term) (args : list term) := 
+match T with
+| tProd _ A U => match args with 
+        | nil => T
+        | x :: xs => typing_prod_list (subst10 x U) xs
+        end
+| _ => T
+end.
+
+(* As the constructor contains a free variable to represent the inductive type, this fonction substitutes the given 
+inductive type and the parameters in the list of the type of the constructors *)
+Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) :=
+let T := p.1 in 
+let args := p.2 in
+match l with 
+| nil => nil
+| ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
+end.
+
+(* Given a term recursively quoted, gives the list of the type of each of its constructor *)
+Definition list_types_of_each_constructor t :=
+let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
+let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
+match x with
+| Some y => match y with 
+          | nil => nil
+          | cons y' _ => let z := y'.(ind_ctors) in let u := 
+subst_type_constructor_list z v in u
+          end
+| None => nil
+end.
 
 
