@@ -1,5 +1,19 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+
 Require Import utilities. 
-From MetaCoq Require Import All. 
+Require Import MetaCoq.Template.All.
+Require Import MetaCoq.Template.Universes.
+Require Import MetaCoq.Template.All.
 
 Require Import String.
 Require Import List.
@@ -426,7 +440,7 @@ match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
        let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
 | S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) in 
-            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in 
+            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in
             let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
             get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
 end.
@@ -441,10 +455,10 @@ match n with
 | S ?n' => let prod := eval cbv in (nth n' list_args (nil, 0)) in
            let nbproj := eval cbv in (prod.2) in 
            let c_reif := eval cbv in (nth n' list_constructors_reif impossible_term_reif) in
-           let nb_args_previous_construct := eval cbv in (total_args - nb) in
+           let nb_args_previous_construct := eval cbv in (nb - nbproj) in
           let x :=
           get_eliminators_one_constructor_return nbproj I ty_pars I_app I_indu npars n list_args nb_args_previous_construct total_args lpars c_reif in
-          get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb constr:(x::list_eq)
+          get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
 Ltac prove_by_blind_destruct := 
@@ -514,6 +528,7 @@ Goal False.
 get_eliminators_st nat. clear.
 get_eliminators_st list. clear.
 get_eliminators_st Ind_test. clear.
+get_eliminators_st Ind_test2. clear.
 Abort.
 
 End tests_eliminator.
