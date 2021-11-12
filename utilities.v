@@ -286,4 +286,28 @@ subst_type_constructor_list z v in u
 | None => nil
 end.
 
+Definition get_list_of_rel (n : nat) :=  let fix aux n k acc :=
+match n with 
+| 0 => acc
+| S n' => aux n' (k + 1) ((tRel k) :: acc)
+end in aux n 0 nil.
+
+Definition get_list_of_rel_lifted (n l : nat) := let fix aux n k acc :=
+match n with 
+| 0 => acc
+| S n' => aux n' (k + 1) ((tRel (k + l)) :: acc)
+end in aux n 0 nil.
+
+
+Fixpoint flatten_aux {A} (l : list (list A)) (acc : list A) := 
+match l with 
+| nil => acc
+| x :: xs => let fix aux l acc' := match l with
+              | nil => acc'
+              | y :: ys => aux ys (acc' ++ [y]) end in
+              flatten_aux xs (acc ++ (aux x []))
+end.
+
+Definition flatten {A} (l : list (list A)) := flatten_aux l  [].
+
 
