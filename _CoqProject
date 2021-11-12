@@ -7,5 +7,6 @@ elimination_pattern_matching.v
 expand.v
 elimination_fixpoints.v
 interpretation_algebraic_types.v
+eliminators.v
 tree.v
 Sniper.v
