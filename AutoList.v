@@ -224,13 +224,13 @@ Admitted.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l; snipe.
+    induction l ; snipe.
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. scope. Fail verit. Admitted.  (* TODO : fail selon un sens d'égalité et pas un autre ... ? *)
+  Proof. snipe app_nil_r. Qed. 
 
 
 
@@ -297,7 +297,7 @@ Admitted.
     scope.
     intros l m b. induction l. 
     - verit.
-    - scope. (*  verit. *) (* TODO *) Admitted.
+    - scope. (*  verit. *) (* TODO Chantal *) Admitted.
 
   Lemma in_or_app : forall (l m:list A) (a:A), or (In a l) (In a m) -> In a (l ++ m).
   Proof.
@@ -306,15 +306,28 @@ Admitted.
 
   Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> or (In a l) (In a l').
   Proof.
-   scope (in_app_or, in_or_app). split.
-  - apply in_app_or0.
-  - apply in_or_app0.
-  Qed. (* TODO Pourquoi on ne peut pas complètement automatiser ?? *) 
+   scope (in_app_or, in_or_app). verit. (* TODO Chantal *) Abort.
 
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l ; snipe. admit. Admitted.
+    induction l ; snipe. (* TODO Chantal *)
+ Admitted.
+
+ Lemma app_inv_tail:
+    forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
+  Proof.
+    intros l l1 l2; revert l1 l2 l.
+    intro l1; induction l1 as [ | x1 l1]; intro l2; destruct l2 as [ | x2 l2];
+     simpl; auto; intros l H. (* TODO *) 
+    absurd (length (x2 :: l2 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite <- H; auto with arith.
+    absurd (length (x1 :: l1 ++ l) <= length l).
+    simpl; rewrite app_length; auto with arith.
+    rewrite H; auto with arith.
+    injection H as [= H H0]; f_equal; eauto.
+  Qed.
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
@@ -322,7 +335,7 @@ Admitted.
     intros l l1 l2; revert l1 l2 l. 
     induction l1 as [ | x1 l1]. 
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-    - scope. clear H8 H10. intros l2 l. admit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
+    - scope. clear H8 H10. intros l2 l. destruct (H l). verit. verit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
     - scope app_length. admit.
   Admitted.
 
