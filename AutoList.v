@@ -1,5 +1,6 @@
 Add Rec LoadPath "/home/louise/github.com/louiseddp/sniper" as Sniper.
 Require Import Sniper.Sniper.
+Require Import Sniper.eliminators.
 
 Require Setoid.
 Require Import BinInt.
@@ -89,10 +90,7 @@ Section Lists.
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof.
- scope.
-
-destruct l as [ | x xs]. verit.
- verit. Admitted. (* TODO Chantal ?*)
+ get_eliminators_st list. scope. verit. Qed.
 
 Variable a : A.
 
@@ -141,8 +139,8 @@ Local Open Scope Z_scope. *)
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
   Proof. 
-  assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-  scope.
+  get_eliminators_st list.
+  scope. verit.
   clear H13 H15.
   verit.
   Qed.
