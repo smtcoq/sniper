@@ -82,8 +82,8 @@ Section Lists.
 
   Theorem destruct_list : forall l : list A, {x:A & {tl:list A | l = x::tl}}+{l = []}.
   Proof.
-    induction l as [ |a tail]. 
-    right; reflexivity. (* TODO : interp_alg_types_context_goal boucle ? *) 
+    induction l as [ |a tail]. scope.
+    right; reflexivity.
     left; exists a, tail; reflexivity.
   Qed.
 
@@ -134,24 +134,21 @@ Import BVList.BITVECTOR_LIST.
 
 Local Open Scope Z_scope. *) 
 
-
-
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
   Proof. 
   get_eliminators_st list.
-  scope. verit.
-  clear H13 H15.
+  scope. clear H H0 H14 H18 H19 H12 H21 H22. specialize (H5 a). 
+(* TODO Louise : habitant et clears *)
   verit.
   Qed.
 
   Theorem length_zero_iff_nil' (l : list A):
    length l <> 0 <-> l <> nil. 
 Proof. 
-assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-scope. clear H13 H15. verit.
-(* specialize (H l). verit. *) Qed. (* TODO : pourquoi veriT ne trouve pas l'instance ? *)  
-
+get_eliminators_st list.
+scope. clear H14 H18 H19 H12 H21 H22. specialize (H5 a). verit. Qed.
+(* TODO Louise *)
   (** *** Head and tail *)
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
@@ -271,10 +268,7 @@ Admitted.
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
     assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-   scope. verit. admit. admit. Admitted.
-    (* destruct x ; destruct y eqn:E. scope. verit.
-    scope. verit. scope app_nil_r. verit. 
-  scope app_eq_nil. verit. admit. admit. Admitted. *)
+   scope. verit. Qed.
 
 
   Lemma app_inj_tail :
@@ -282,8 +276,8 @@ Admitted.
   Proof.
     induction x as [| x l IHl].
 assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-     - snipe. admit. (* TODO : encore des compdec *)
-     - scope. admit.
+     - snipe.
+     - scope. Fail verit.
 Admitted.
 
   (** Compatibility with other operations *)
@@ -297,7 +291,7 @@ Admitted.
     scope.
     intros l m b. induction l. 
     - verit.
-    - scope. (*  verit. *) (* TODO Chantal *) Admitted.
+    - (*  verit. *) (* TODO Chantal *) Admitted.
 
   Lemma in_or_app : forall (l m:list A) (a:A), or (In a l) (In a m) -> In a (l ++ m).
   Proof.
@@ -306,14 +300,12 @@ Admitted.
 
   Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> or (In a l) (In a l').
   Proof.
-   scope (in_app_or, in_or_app). verit. (* TODO Chantal *) Abort.
+   scope (in_app_or, in_or_app). verit. Qed.
 
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l ; snipe. (* TODO Chantal *)
- Admitted.
-
+    induction l ; snipe. Qed.
  Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
