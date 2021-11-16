@@ -310,4 +310,64 @@ end.
 
 Definition flatten {A} (l : list (list A)) := flatten_aux l  [].
 
+(* Reifies a term and calls is_type *)
+Ltac is_type_quote t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
+
+
+Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in constr:(is_type T).
+
+
+Fixpoint list_of_subterms (t: term) : list term := match t with
+| tLambda _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tProd _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
+| tLetIn _ u v w => t :: (list_of_subterms u) ++ (list_of_subterms v) ++ (list_of_subterms w)
+| tCast t1 _ t2 => t :: (list_of_subterms t1) ++ (list_of_subterms t2)
+| tApp u l => t :: (list_of_subterms u) ++ (List.flat_map list_of_subterms l)
+| tCase _ t1 t2 l => t:: (list_of_subterms t1) ++ (list_of_subterms t2) ++ 
+(List.flat_map (fun x => list_of_subterms (snd x)) l)
+| tFix l _  => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
+| tCoFix l _ => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
+| _ => [t]
+end.
+
+
+Definition filter_closed (l: list term) := List.filter (closedn 0) l.
+
+
+Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
+let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l. 
+
+
+Ltac return_unquote_tuple_terms l := let rec aux l acc :=
+match constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs => 
+  let y := metacoq_get_value (tmUnquote x) in 
+  let u := constr:(y.(my_projT2)) in 
+  let w := eval hnf in u in
+  let T := type of w in 
+  let b0 := ltac:(is_type_quote_bool T) in 
+  let b := eval hnf in b0 in
+    match b with 
+    | true => (aux xs (pair w acc)) 
+    | false => aux xs acc
+    end
+end
+in aux l unit.
+
+Ltac return_tuple_subterms_of_type_type := match goal with
+|- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l
+end.
+
+
+Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
+let t := return_tuple_subterms_of_type_type in pose t.
+Abort.
+
+Goal forall (A : Type) (l : list A), Datatypes.length l = 0 -> l = nil.
+let t := return_tuple_subterms_of_type_type in pose t.
+Abort.
+
 
