@@ -89,8 +89,8 @@ Section Lists.
 
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
-  Proof.
- scope. get_eliminators_st_default list. verit. Qed.
+  Proof. get_eliminators_st_default list.
+ scope.  verit. Qed.
 
 Variable a : A.
 

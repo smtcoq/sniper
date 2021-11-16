@@ -14,6 +14,7 @@ Require Import utilities.
 Require Import definitions.
 Require Import expand.
 Require Import elimination_pattern_matching.
+Require Import elimination_polymorphism.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.Template.All.
@@ -423,7 +424,7 @@ let u := metacoq_get_value (tmUnquote p) in
 let x := eval cbv in u.(my_projT2) in
 let name := fresh "proj_" I in let _ := match goal with _ =>
 pose (name := x) ; let H0 := get_def_cont name in expand_hyp_cont H0 ltac:(fun H => 
-eliminate_pattern_matching H (nbconstruct -1)) end in
+eliminate_pattern_matching_cont H (nbconstruct -1) ltac:(fun H => instantiate_tuple_terms_goal H)) ; clear H0 end in
 let elim := metacoq_get_value (tmQuote name) in 
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
 constr:((elim, db)).

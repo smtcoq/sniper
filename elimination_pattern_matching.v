@@ -155,7 +155,6 @@ match l_ctors_and_ty_ctors  with
 end
 in aux E l_ctors_and_ty_ctors l_ty [].
 
-Print nth.
 
 
 Ltac eliminate_pattern_matching H k :=
@@ -194,6 +193,44 @@ let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
 let st_quoted := eval cbv in (nth k (rev list_of_hyp) unit_reif) in
 let st0 := metacoq_get_value (tmUnquote st_quoted) in 
 let st := eval hnf in (my_projT2 st0) in assert st by (intros; apply H))] ; clear H.
+
+Ltac eliminate_pattern_matching_cont H k cont :=
+  let n := fresh "n" in 
+  epose (n := ?[n_evar] : nat);
+  let T := type of H in
+  let H' := fresh in
+  assert (H' : False -> T);
+  [ let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match x with _ => _ end] =>  match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => instantiate (n_evar := p) 
+                                        end
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail
+    end 
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse
+  | clear H' ;
+run_template_program (tmQuoteRec T) (fun Env => 
+let T := eval cbv in Env.2 in
+let e := eval cbv in Env.1 in
+let prod := eval cbv in (get_env T n) in clear n ;
+let E := eval cbv in prod.1.2 in
+let l := eval cbv in prod.1.1 in 
+let A := eval cbv in prod.2 in
+let l_ty_ctors := eval cbv in (list_types_of_each_constructor (e, A)) in
+let n := eval cbv in (Datatypes.length l_ty_ctors) in
+let l_ctors := eval cbv in (get_list_ctors_tConstruct_applied A n) in 
+let l_ctor_and_ty_ctor := eval cbv in (combine l_ctors l_ty_ctors) in
+let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
+let st_quoted := eval cbv in (nth k (rev list_of_hyp) unit_reif) in
+let st0 := metacoq_get_value (tmUnquote st_quoted) in 
+let st := eval hnf in (my_projT2 st0) in let name := fresh in 
+assert (name : st) by (intros; apply H) ; cont name)] ; clear H.
 
 Ltac create_evars_for_each_constructor i := 
 let y := metacoq_get_value (tmQuoteRec i) in 
