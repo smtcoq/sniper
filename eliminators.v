@@ -18,6 +18,8 @@ Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 
+Require Import SMTCoq.SMTCoq.
+
 
 Definition get_nth_constructor (I : term) (n : nat) : term := 
 let g := get_info_inductive I in match g with 
@@ -54,20 +56,8 @@ let nb := remove_option opt1 in
 let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
 construct_reif.
 
-
 Ltac find_inhabitant_context t := 
-first[
-let t_reif_rec := metacoq_get_value (tmQuoteRec t) in 
-let p := eval cbv in (no_app t_reif_rec.2) in
-let t_reif_no_app := eval cbv in p.1 in
-let params := eval cbv in p.2 in
-let opt1 := eval cbv in 
-(find_index_constructor_of_arity_zero (get_constructors_inductive t_reif_no_app (t_reif_rec.1))) in
-let nb := remove_option opt1 in 
-let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
-let construct0 := metacoq_get_value (tmUnquote construct_reif) in 
-let construct := eval cbv in construct0.(my_projT2) in
-exact construct | epose (inhab := ?[t_evar] : t)]. 
+first[ assumption | constructor | apply Inh | epose (inhab := ?[t_evar] : t)]. 
 
 Section test_inhabitants.
 Variable A : Type. 
@@ -355,9 +345,7 @@ match opt with
                     let u := metacoq_get_value (tmUnquote p) in
                     let x := eval cbv in u.(my_projT2) in
                     let name := fresh "proj_" I in
-                    pose (name := x) ;
-                    let Heq := fresh in
-                    assert (Heq : name = x) by reflexivity
+                    pose (name := x)
   | _ => fail
 | None => fail
 end
@@ -368,9 +356,7 @@ let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_d
 let u := metacoq_get_value (tmUnquote p) in
 let x := eval cbv in u.(my_projT2) in
 let name := fresh "proj_" I in
-pose (name := x) ;
-let Heq := fresh in
-assert (Heq : name = x) by reflexivity.
+pose (name := x).
 
 
 Ltac get_eliminators_one_constructor n I ty_pars I_app I_indu npars nbconstruct list_args :=
@@ -428,9 +414,7 @@ let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_d
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
 let name := fresh "proj_" I in let _ := match goal with _ =>
-pose (name := x) ;
-let Heq := fresh in 
-assert (Heq : name = x) by reflexivity end in
+pose (name := x) end in
 let elim := metacoq_get_value (tmQuote name) in 
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
 constr:((elim, db)).
@@ -494,6 +478,36 @@ match opt with
 end
 end.
 
+Ltac get_eliminators_st_return I := 
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+let I_rec_term := eval cbv in (I_rec.2) in
+let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
+match opt with 
+| Some (?npars, ?ty_pars) =>
+  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
+  let list_args_len := eval cbv in (rev (get_args_list_with_length list_ty npars)) in 
+  let list_args := eval cbv in (split list_args_len).1 in 
+  let list_ty_default0 := eval cbv in (flatten list_args) in
+  let list_ty_default := eval cbv in (lift_rec_rev list_ty_default0) in 
+  let nbconstruct := eval cbv in (Datatypes.length list_args) in
+  let list_constructors_reif := eval cbv in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
+  let total_args := eval cbv in (total_arg_constructors list_args_len) in
+  let list_of_pars_rel := eval cbv in ((get_list_of_rel_lifted npars (total_args + 1))) in
+  let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
+  let I_lifted := eval cbv in (lift (total_args) 0 I_app) in
+        match I_rec_term with
+        | tInd ?I_indu _ =>
+                      let x := get_eliminators_aux_st nbconstruct I ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
+                      let t := eval cbv in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
+    I_lifted (mkOr x)))) in
+                      let u := metacoq_get_value (tmUnquote t) in 
+                      let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
+assert (Helim : u') by (prove_by_blind_destruct) end in Helim
+        | _ => fail
+| None => fail
+end
+end.
+
 Section tests_eliminator.
 
 Inductive Ind_test (A B : Type) :=
@@ -532,6 +546,53 @@ get_eliminators_st Ind_test2. clear.
 Abort.
 
 End tests_eliminator.
+
+Ltac instantiate_ident H x :=
+  let T := type of H in
+ lazymatch T  with
+  | forall (y : ?A), _ => let H':= fresh H in 
+let _ := match goal with _ => assert (H':= H) ; 
+let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
+  | _ => fail
+      end.
+
+Ltac instantiate_inhab H :=
+let T := type of H in 
+match T with 
+| forall (y : ?A), forall (z : ?B), _ => let inh := fresh in assert (inh : A) ; [ find_inhabitant_context A |
+let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H]
+| _ => idtac
+end.
+
+Ltac instantiate_tuple_terms_inhab H t := match t with
+| (?x, ?t') => try (let H' := instantiate_ident H x in
+instantiate_tuple_terms_inhab H' t) ; try (instantiate_tuple_terms_inhab H t')
+| unit =>  let T := type of H in
+           match T with
+            | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H ]
+            | _ => idtac
+            end
+end.
+
+Ltac instantiate_tuple_terms_goal_inhab H := let t0 := return_tuple_subterms_of_type_type in 
+let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t.
+
+Ltac get_eliminators_st_default I := 
+let H' := get_eliminators_st_return I in
+instantiate_tuple_terms_goal_inhab H'.
+
+Section tests_default.
+
+Variable A : Type.
+Variable a : A.
+
+Goal nat -> A -> False.
+get_eliminators_st_default list. clear -a.
+get_eliminators_st_default Ind_test. clear -a.
+get_eliminators_st_default Ind_test2. clear -a.
+Abort.
+
+End tests_default.
 
 
 
