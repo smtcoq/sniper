@@ -22,7 +22,7 @@ Goal ((forall (A : Type) (l : list A),
        | _ :: xs => S #|xs|
        end) -> True).
 intro H.
-eliminate_pattern_matching H.
+eliminate_pattern_matching H 1.
 exact I.
 Qed.
 

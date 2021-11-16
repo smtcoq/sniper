@@ -155,9 +155,10 @@ match l_ctors_and_ty_ctors  with
 end
 in aux E l_ctors_and_ty_ctors l_ty [].
 
+Print nth.
 
-Ltac eliminate_pattern_matching H :=
 
+Ltac eliminate_pattern_matching H k :=
   let n := fresh "n" in 
   epose (n := ?[n_evar] : nat);
   let T := type of H in
@@ -190,7 +191,9 @@ let n := eval cbv in (Datatypes.length l_ty_ctors) in
 let l_ctors := eval cbv in (get_list_ctors_tConstruct_applied A n) in 
 let l_ctor_and_ty_ctor := eval cbv in (combine l_ctors l_ty_ctors) in
 let list_of_hyp := eval cbv in (get_equalities E l_ctor_and_ty_ctor l) in
- unquote_list list_of_hyp ; prove_hypothesis H )] ; clear H.
+let st_quoted := eval cbv in (nth k (rev list_of_hyp) unit_reif) in
+let st0 := metacoq_get_value (tmUnquote st_quoted) in 
+let st := eval hnf in (my_projT2 st0) in assert st by (intros; apply H))] ; clear H.
 
 Ltac create_evars_for_each_constructor i := 
 let y := metacoq_get_value (tmQuoteRec i) in 
@@ -334,7 +337,6 @@ match p with
 end.
 
 Ltac eliminate_dependent_pattern_matching H :=
-
   let n := fresh "n" in 
   let T := fresh "T" in 
   epose (n := ?[n_evar] : nat) ;
@@ -405,11 +407,9 @@ Goal ((forall (A: Type) (x : A) (l : list A) (n : nat), hd x l = match l with
 end) -> True).
 Proof.
 intros H. 
-eliminate_pattern_matching H.
 expand_fun min1.
 expand_fun hd.
-eliminate_pattern_matching H2.
-eliminate_pattern_matching H.
+eliminate_pattern_matching H1 0.
 
 Abort.
 
@@ -419,7 +419,7 @@ Goal ((forall (A: Type) (x : A) (a : A) (l : list A),
 | y :: xs => y
 end)).
 get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
-eliminate_pattern_matching H')). assumption.
+eliminate_pattern_matching H' 1)). assumption.
 Qed.
 
 
@@ -429,7 +429,7 @@ Goal ((forall (A: Type) (l : list A),
 | y :: xs => length xs + 1
 end) -> True).
 intro H.
-eliminate_pattern_matching H.
+eliminate_pattern_matching H 0.
 exact I. 
 Qed.
 
@@ -443,7 +443,7 @@ Goal ((forall (H : Type) (H0 : list H),
         end) H0) -> True).
 intro H.
 eliminate_fix_hyp H.
-eliminate_pattern_matching H0.
+eliminate_pattern_matching H0 1.
 Abort.
 
 Definition bool_pair := (bool * bool)%type.
