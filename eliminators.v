@@ -56,8 +56,13 @@ let nb := remove_option opt1 in
 let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
 construct_reif.
 
+Ltac find_inh_assumption t :=
+match goal with
+| H : t |- _ => H
+end.
+
 Ltac find_inhabitant_context t := 
-first[ assumption | constructor | apply Inh | epose (inhab := ?[t_evar] : t)]. 
+first[ find_inhabitant | constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
 
 Section test_inhabitants.
 Variable A : Type. 
@@ -559,8 +564,9 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
 Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
-| forall (y : ?A), forall (z : ?B), _ => let inh := fresh in assert (inh : A) ; [ find_inhabitant_context A |
-let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H]
+| forall (y : ?A), forall (z : ?B), _ => first [ let inh := find_inh_assumption A in
+let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H |  let inh := fresh in assert (inh : A) ; [ find_inhabitant_context A |
+let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H]]
 | _ => idtac
 end.
 

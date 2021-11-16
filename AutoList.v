@@ -60,11 +60,11 @@ Section Lists.
       | a :: m => m
     end.
 
-  (** The [In] predicate *)
-  Fixpoint In (a:A) (l:list A) : bool :=
+  (** The boolean In *)
+  Fixpoint Inb (a:A) (l:list A) : bool :=
     match l with
       | [] => false
-      | b :: m => orb (eqb_of_compdec HA a b) (In a m)
+      | b :: m => orb (eqb_of_compdec HA a b) (Inb a m)
     end.
 
 
@@ -90,7 +90,7 @@ Section Lists.
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof.
- get_eliminators_st list. scope. verit. Qed.
+ scope. get_eliminators_st_default list. verit. Qed.
 
 Variable a : A.
 
@@ -137,18 +137,17 @@ Local Open Scope Z_scope. *)
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
   Proof. 
-  get_eliminators_st list.
-  scope. clear H H0 H14 H18 H19 H12 H21 H22. specialize (H5 a). 
-(* TODO Louise : habitant et clears *)
+  get_eliminators_st_default list.
+  scope.
   verit.
   Qed.
 
   Theorem length_zero_iff_nil' (l : list A):
    length l <> 0 <-> l <> nil. 
 Proof. 
-get_eliminators_st list.
-scope. clear H14 H18 H19 H12 H21 H22. specialize (H5 a). verit. Qed.
-(* TODO Louise *)
+get_eliminators_st_default list.
+snipe. Qed.
+
   (** *** Head and tail *)
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
@@ -164,36 +163,36 @@ snipe.
 
   (** Characterization of [In] *)
 
-  Theorem in_eq : forall (a:A) (l:list A), Lists.In a (a :: l) = true.
+  Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
   Proof.
  snipe.
   Qed.
 
-  Theorem in_cons : forall (a b:A) (l:list A), Lists.In b l = true -> Lists.In b (a :: l) = true.
+  Theorem in_cons : forall (a b:A) (l:list A), Lists.Inb b l = true -> Lists.Inb b (a :: l) = true.
   Proof.
   snipe. 
   Qed.
 
   Theorem not_in_cons (x b : A) (l : list A):
-    ~ Lists.In x (a::l) = true <-> x<>a /\ ~ Lists.In x l = true.
+    ~ Lists.Inb x (a::l) = true <-> x<>a /\ ~ Lists.Inb x l = true.
   Proof.
   snipe.
   Qed.
 
-  Theorem in_nil : forall a:A, ~ Lists.In a nil.
+  Theorem in_nil : forall a:A, ~ Lists.Inb a nil.
   Proof.
     snipe.
   Qed.
 
-  Theorem in_split : forall x (l:list A), Lists.In x l = true -> exists l1 l2, l = l1++x::l2.
+  Theorem in_split : forall x (l:list A), Lists.Inb x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l. 
-  - scope. intros. rewrite H6 in H. inversion H.
+  - scope. intros. rewrite H6 in H.  Fail verit. inversion H.
   - scope. admit. (* Existentials so not handled by verit *)
 Admitted.
 
   (** Inversion *)
-  Lemma in_inv : forall (a b:A) (l:list A), Lists.In b (a :: l) -> a = b \/ Lists.In b l.
+  Lemma in_inv : forall (a b:A) (l:list A), Lists.Inb b (a :: l) -> a = b \/ Lists.Inb b l.
   Proof.
   snipe.
   Qed.
@@ -216,18 +215,18 @@ Admitted.
   (** Concat with [nil] *)
   Theorem app_nil_l : forall l:list A, [] ++ l = l.
   Proof.
-    snipe.
+    get_eliminators_st_default list ; snipe.
   Qed.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l ; snipe.
+    induction l ; get_eliminators_st_default list ; snipe.
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. snipe app_nil_r. Qed. 
+  Proof. get_eliminators_st_default list ; snipe app_nil_r. Qed. 
 
 
 
@@ -259,7 +258,7 @@ Admitted.
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+    get_eliminators_st_default list.
     snipe app_cons_not_nil. Qed.
     
 
@@ -267,18 +266,18 @@ Admitted.
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-    assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+   get_eliminators_st_default list.
    scope. verit. Qed.
 
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
-    induction x as [| x l IHl].
-assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
+    induction x as [| x l IHl];
+    get_eliminators_st_default list.
      - snipe.
-     - scope. Fail verit.
-Admitted.
+     - scope. verit.
+  Qed.
 
   (** Compatibility with other operations *)
 
