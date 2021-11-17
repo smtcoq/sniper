@@ -104,24 +104,19 @@ Variable a : A.
       | x :: xs => 1 + length xs
     end.
 
-  Theorem length_zero_iff_nil (l : list A):
+  Theorem length_zero_iff_nil : forall (l : list A),
    length l <> 0 <-> l <> nil.
   Proof.
-  scope. get_eliminators_st_default list. clear H18 H21 H25 H22.
-  verit. (* TODO Chantal *)
+  scope.
+  verit. 
   Qed.
 
-  Theorem length_zero_iff_nil' (l : list A):
-   length l <> 0 <-> l <> nil. 
-Proof. 
-get_eliminators_st_default list.
-snipe. Qed.
 
   (** *** Head and tail *)
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
-Proof.
-snipe.
+  Proof.
+  snipe.
   Qed.
 
 
@@ -156,7 +151,7 @@ snipe.
   Theorem in_split : forall x (l:list A), Lists.Inb x l = true -> exists l1 l2, l = l1++x::l2.
   Proof.
   induction l. 
-  - scope. intros. rewrite H6 in H.  Fail verit. inversion H.
+  - scope. Fail verit. (*TODO Chantal : existentials ?*) intros H ; rewrite H6 in H. inversion H.
   - scope. admit. (* Existentials so not handled by verit *)
 Admitted.
 
@@ -184,27 +179,25 @@ Admitted.
   (** Concat with [nil] *)
   Theorem app_nil_l : forall l:list A, [] ++ l = l.
   Proof.
-    scope ; get_eliminators_st_default list ; verit.
+    snipe.
   Qed.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l ; scope ; get_eliminators_st_default list.
- clear H16 H17. verit. clear H16.  verit. (* TODO Chantal : pb sur verit avec 
-les nested Types ? *)
+    induction l ; snipe.
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. scope app_nil_r ; get_eliminators_st_default list; verit. Qed. 
+  Proof. snipe app_nil_r. Qed. 
 
 
 
   (** [app] is associative *)
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
-    intros l ; induction l ; scope ; get_eliminators_st_default list ; verit.
+    intros l ; induction l ; snipe.
   Qed. 
 
   (* begin hide *)
@@ -229,24 +222,22 @@ les nested Types ? *)
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    scope app_cons_not_nil ; get_eliminators_st_default list; verit. Qed.
+    snipe. Qed.
     
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-   scope; get_eliminators_st_default list.
- verit. Qed.
-
+   snipe. Qed.
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
-    induction x as [| x l IHl] ; scope; get_eliminators_st_default list.
-     - snipe.
-     - scope. verit.
-  Qed.
+    induction x as [| x l IHl].
+     - scope. clear H17. verit. (* TODO Chantal : erreur sans le clear *)
+     - scope. (* verit bug TODO Chantal *)
+  Abort.
 
   (** Compatibility with other operations *)
 
@@ -259,12 +250,12 @@ les nested Types ? *)
     scope.
     intros l m b. induction l. 
     - verit.
-    - (*  verit. *) (* TODO Chantal *) Admitted.
+    -  (*  verit. *) (* TODO Chantal *) Admitted.
 
   Lemma in_or_app : forall (l m:list A) (a:A), or (Inb a l) (Inb a m) -> Inb a (l ++ m).
   Proof.
-    intros l ; induction l ; snipe.
-  Qed.
+    intros l ; induction l. scope. Admitted.
+
 
   Lemma in_app_iff : forall l l' (a:A), Inb a (l++l') <-> or (Inb a l) (Inb a l').
   Proof.
@@ -274,6 +265,8 @@ les nested Types ? *)
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
     induction l ; snipe. Qed.
+
+(* 
  Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
@@ -287,16 +280,12 @@ les nested Types ? *)
     simpl; rewrite app_length; auto with arith.
     rewrite H; auto with arith.
     injection H as [= H H0]; f_equal; eauto.
-  Qed.
+  Qed. *)
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
-    intros l l1 l2; revert l1 l2 l. 
-    induction l1 as [ | x1 l1]. 
-assert (H : forall (l : list A), l = nil \/ l = cons (p1 l) (p2 l)) by (intro l' ; destruct l' ; auto).
-    - scope. clear H8 H10. intros l2 l. destruct (H l). verit. verit. (* Tactic failure: [Proofview.tclTIMEOUT] Tactic timeout!. *)
-    - scope app_length. admit.
+
   Admitted.
 
 
@@ -337,17 +326,13 @@ Section Elts.
     end.
 
   Lemma nth_in_or_default :
-    forall (n:nat) (l:list A) (d:A), {In (nth n l d) l} + {nth n l d = d}.
-  Proof.
-    intros n l d; revert n; induction l.
-    - right; destruct n; trivial.
-    - intros [|n]; simpl.
-      * left; auto. snipe. Admitted.
+    forall (n:nat) (l:list A) (d:A), {Inb (nth n l d) l} + {nth n l d = d}.
+Admitted.
    
 
   Lemma nth_S_cons :
     forall (n:nat) (l:list A) (d a:A),
-      In (nth n l d) l -> In (nth (S n) (a :: l) d) (a :: l).
+      Inb (nth n l d) l -> Inb (nth (S n) (a :: l) d) (a :: l).
   Proof.
     snipe. Qed. 
 
@@ -368,48 +353,28 @@ Section Elts.
     forall n l (d:A), nth_default d l n = nth n l d.
   Proof.
     scope.
-    assert (forall (x : A) (x0 : list A) (x1 : nat) (x2 : A), nth_error x0 x1 = Some x2 ->
- nth_default x x0 x1 = x2). 
-  assert (forall (x : A) (x0 : list A) (x1 : nat) (x2 : A), nth_error x0 x1 = None ->
- nth_default x x0 x1 = x).
-
-intros. rewrite H4. rewrite H. reflexivity. 
-intros. rewrite H4. rewrite H2. reflexivity.
-intros. destruct l ; destruct n. 
   (* TODO : the pattern matching is not on a variable ! *)
   Admitted.
 
   (** Results about [nth] *)
 
-(*
-
   Lemma nth_In :
     forall (n:nat) (l:list A) (d:A), n < length l -> In (nth n l d) l.
   Proof.
-    unfold lt; induction n as [| n hn]; simpl.
-    - destruct l; simpl; [ inversion 2 | auto ].
-    - destruct l; simpl.
-      * inversion 2.
-      * intros d ie; right; apply hn; auto with arith.
-  Qed.
+    Admitted.
 
-  Lemma In_nth l x d : In x l ->
+  Lemma Inb_nth (l : list A) x d : Inb x l ->
     exists n, n < length l /\ nth n l d = x.
   Proof.
-    induction l as [|a l IH].
-    - easy.
-    - intros [H|H].
-      * subst; exists 0; simpl; auto with arith.
-      * destruct (IH H) as (n & Hn & Hn').
-        exists (S n); simpl; auto with arith.
-  Qed.
+    induction l as [|b l IH]. 
+    admit. admit.
+  Admitted. 
 
-  Lemma nth_overflow : forall l n d, length l <= n -> nth n l d = d.
+  Lemma nth_overflow : forall (l : list A) n d, length l <= n -> nth n l d = d.
   Proof.
-    induction l; destruct n; simpl; intros; auto.
-    - inversion H.
-    - apply IHl; auto with arith.
-  Qed.
+    (* TODO *)
+  Admitted.
+(*
 
   Lemma nth_indep :
     forall l n d d', n < length l -> nth n l d = nth n l d'.
@@ -526,7 +491,7 @@ intros. destruct l ; destruct n.
     apply nth_split with (d:=d) in H. destruct H as [l1 [l2 [H H']]].
     subst. rewrite H. rewrite nth_error_app2; [|auto].
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
-  Qed.
+  Qed. 
 
   (*****************)
   (** ** Remove    *)
@@ -548,7 +513,7 @@ intros. destruct l ; destruct n.
     unfold not; intro HF; simpl in HF; destruct HF; auto.
     apply (IHl y); assumption.
   Qed.
-
+*)
 
 (******************************)
 (** ** Last element of a list *)
@@ -577,59 +542,45 @@ intros. destruct l ; destruct n.
     forall l d, l <> [] -> l = removelast l ++ [last l d].
   Proof.
     induction l.
-    destruct 1; auto.
-    intros d _.
-    destruct l; auto.
-    pattern (a0::l) at 1; rewrite IHl with d; auto; discriminate.
-  Qed.
+    - snipe.
+    - scope. get_eliminators_st_default list. 
+  Admitted.
 
   Lemma exists_last :
     forall l, l <> [] -> { l' : (list A) & { a : A | l = l' ++ [a]}}.
   Proof.
-    induction l.
-    destruct 1; auto.
-    intros _.
-    destruct l.
-    exists [], a; auto.
-    destruct IHl as [l' (a',H)]; try discriminate.
-    rewrite H.
-    exists (a::l'), a'; auto.
-  Qed.
+   Admitted. 
+
 
   Lemma removelast_app :
     forall l l', l' <> [] -> removelast (l++l') = l ++ removelast l'.
   Proof.
-    induction l.
-    simpl; auto.
-    simpl; intros.
-    assert (l++l' <> []).
-    destruct l.
-    simpl; auto.
-    simpl; discriminate.
-    specialize (IHl l' H).
-    destruct (l++l'); [elim H0; auto|f_equal; auto].
-  Qed.
+    induction l. 
+    - snipe.
+    - scope. admit.
+  Admitted.
 
 
   (******************************************)
   (** ** Counting occurrences of an element *)
   (******************************************)
 
-  Fixpoint count_occ (l : list A) (x : A) : nat :=
+  Fixpoint count_occ (l : list A) (x : A) : Z :=
     match l with
       | [] => 0
       | y :: tl =>
         let n := count_occ tl x in
-        if eq_dec y x then S n else n
+        if eqb_of_compdec HA x y then (n + 1) else n
     end.
 
   (** Compatibility of count_occ with operations on list *)
-  Theorem count_occ_In l x : In x l <-> count_occ l x > 0.
+  Theorem count_occ_In : forall (l : list A) x, Inb x l <-> (count_occ l x > 0)%Z.
   Proof.
-    induction l as [|y l]; simpl.
-    - split; [destruct 1 | apply gt_irrefl].
-    - destruct eq_dec as [->|Hneq]; rewrite IHl; intuition.
-  Qed.
+    induction l as [|y l].
+    - scope. 
+    Admitted. 
+
+(*
 
   Theorem count_occ_not_In l x : ~ In x l <-> count_occ l x = 0.
   Proof.

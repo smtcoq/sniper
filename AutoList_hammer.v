@@ -289,9 +289,6 @@ Admitted.
   Proof.
     intros l l1 l2; revert l1 l2 l. 
     induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2].
-    - hammer.
-    - intros l H. symmetry in H. simpl in H. rewrite app_comm_cons in H. admit.
-    - admit.
     - hammer. 
   Admitted.
 
