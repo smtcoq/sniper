@@ -82,64 +82,33 @@ Section Lists.
 
   Theorem destruct_list : forall l : list A, {x:A & {tl:list A | l = x::tl}}+{l = []}.
   Proof.
-    induction l as [ |a tail]. scope.
+    induction l as [ |a tail]. scope. 
     right; reflexivity.
     left; exists a, tail; reflexivity.
   Qed.
 
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
-  Proof. get_eliminators_st_default list.
- scope.  verit. Qed.
+  Proof.
+ snipe. Qed.
 
 Variable a : A.
-
-Definition p1 := fun (l : list A) => match l with
-| nil => a
-| cons y _ => y
-end.
-
-Definition p2 := fun (l : list A) => match l with 
-| nil => nil
-| cons x xs => xs
-end.
 
  Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
   snipe.
-   Qed.
+  Qed.
 
   Fixpoint length (l : list A) :=  match l with
       | [] => 0
       | x :: xs => 1 + length xs
     end.
 
- (*  Hypothesis def_length_nil : Z.eqb 0 (Z.of_nat (length nil)).
-  Hypothesis Z_to_nat : forall (n : nat), Z.leb 0 (Z.of_nat n).
-  Hypothesis def_length_cons : forall x xs, Z.eqb (Z.of_nat (length (x :: xs))) (1 + Z.of_nat (length xs)). *)
-
-(* Require Import
-        Bool ZArith BVList Logic BVList FArray
-        SMT_classes SMT_classes_instances ReflectFacts.
-Import BVList.BITVECTOR_LIST. 
-
-
-
-
-  Lemma arith_Z : forall (n: nat), (1 + Z.of_nat n =? 0)%Z -> False.
-  Proof. verit Z_to_nat. Qed.
-
-
-
-
-Local Open Scope Z_scope. *) 
-
   Theorem length_zero_iff_nil (l : list A):
    length l <> 0 <-> l <> nil.
-  Proof. 
-  get_eliminators_st_default list.
-  scope.
-  verit.
+  Proof.
+  scope. get_eliminators_st_default list. clear H18 H21 H25 H22.
+  verit. (* TODO Chantal *)
   Qed.
 
   Theorem length_zero_iff_nil' (l : list A):
@@ -215,25 +184,27 @@ Admitted.
   (** Concat with [nil] *)
   Theorem app_nil_l : forall l:list A, [] ++ l = l.
   Proof.
-    get_eliminators_st_default list ; snipe.
+    scope ; get_eliminators_st_default list ; verit.
   Qed.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l ; get_eliminators_st_default list ; snipe.
+    induction l ; scope ; get_eliminators_st_default list.
+ clear H16 H17. verit. clear H16.  verit. (* TODO Chantal : pb sur verit avec 
+les nested Types ? *)
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. get_eliminators_st_default list ; snipe app_nil_r. Qed. 
+  Proof. scope app_nil_r ; get_eliminators_st_default list; verit. Qed. 
 
 
 
   (** [app] is associative *)
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
-    intros l ; induction l ; snipe.
+    intros l ; induction l ; scope ; get_eliminators_st_default list ; verit.
   Qed. 
 
   (* begin hide *)
@@ -258,23 +229,21 @@ Admitted.
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-    get_eliminators_st_default list.
-    snipe app_cons_not_nil. Qed.
+    scope app_cons_not_nil ; get_eliminators_st_default list; verit. Qed.
     
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-   get_eliminators_st_default list.
-   scope. verit. Qed.
+   scope; get_eliminators_st_default list.
+ verit. Qed.
 
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
-    induction x as [| x l IHl];
-    get_eliminators_st_default list.
+    induction x as [| x l IHl] ; scope; get_eliminators_st_default list.
      - snipe.
      - scope. verit.
   Qed.
@@ -285,19 +254,19 @@ Admitted.
   Proof.
     induction l; snipe app_comm_cons. Qed.
 
-  Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> or (In a l) (In a m).
+  Lemma in_app_or : forall (l m:list A) (a:A), Inb a (l ++ m) -> or (Inb a l) (Inb a m).
   Proof.
     scope.
     intros l m b. induction l. 
     - verit.
     - (*  verit. *) (* TODO Chantal *) Admitted.
 
-  Lemma in_or_app : forall (l m:list A) (a:A), or (In a l) (In a m) -> In a (l ++ m).
+  Lemma in_or_app : forall (l m:list A) (a:A), or (Inb a l) (Inb a m) -> Inb a (l ++ m).
   Proof.
     intros l ; induction l ; snipe.
   Qed.
 
-  Lemma in_app_iff : forall l l' (a:A), In a (l++l') <-> or (In a l) (In a l').
+  Lemma in_app_iff : forall l l' (a:A), Inb a (l++l') <-> or (Inb a l) (Inb a l').
   Proof.
    scope (in_app_or, in_or_app). verit. Qed.
 

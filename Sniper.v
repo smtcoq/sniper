@@ -27,6 +27,7 @@ Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
 Require Export elimination_polymorphism.
+Require Export eliminators.
 Require Export interpretation_algebraic_types.
 
 
@@ -53,20 +54,20 @@ def_fix_and_pattern_matching ; inst t.
 
 
 Ltac scope_param_nat t :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert).
-(* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
-hypothèses dans nat et ensuite verit se met à peiner *)
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert) ;
+get_eliminators_in_goal.
 
 Ltac scope_no_param_nat :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst ; try nat_convert).
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst ; try nat_convert) ;
+get_eliminators_in_goal.
 
 Ltac scope_param_no_nat t :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t).
-(* besoin de nat_convert parce que sinon, on risque de déplier des définitions et ajouter des 
-hypothèses dans nat et ensuite verit se met à peiner *)
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t) ;
+get_eliminators_in_goal.
 
 Ltac scope_no_param_no_nat :=
-try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst).
+try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst) ;
+get_eliminators_in_goal.
 
 Ltac snipe_param_nat t := 
 scope_param_nat t ; verit.

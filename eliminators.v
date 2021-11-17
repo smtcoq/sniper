@@ -21,6 +21,7 @@ Require Import MetaCoq.Template.All.
 
 Require Import String.
 Require Import List.
+Require Import ZArith.
 
 Require Import SMTCoq.SMTCoq.
 
@@ -60,13 +61,15 @@ let nb := remove_option opt1 in
 let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
 construct_reif.
 
-Ltac find_inh_assumption t :=
-match goal with
-| H : t |- _ => H
-end.
 
 Ltac find_inhabitant_context t := 
 first[ find_inhabitant | constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
+
+Ltac find_inh t :=
+match goal with
+| H : t |- _ => H
+| _ => let H := fresh in let _ := match goal with _ => assert (H : t) by find_inhabitant_context t end in H
+end.
 
 Section test_inhabitants.
 Variable A : Type. 
@@ -566,12 +569,12 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
   | _ => fail
       end.
 
+
 Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
-| forall (y : ?A), forall (z : ?B), _ => first [ let inh := find_inh_assumption A in
-let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H |  let inh := fresh in assert (inh : A) ; [ find_inhabitant_context A |
-let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H]]
+| forall (y : ?A), forall (z : ?B), _ => try (let inh := find_inh A in
+let H' := instantiate_ident H inh in instantiate_inhab H') ; clear H
 | _ => idtac
 end.
 
@@ -607,6 +610,63 @@ End tests_default.
 
 
 
+Fixpoint is_ind_not_in_list (t : term) (l : list term) := 
+match t with
+| tInd ind _ => let name := (inductive_mind ind).2 in match l with
+         | nil => true
+         | cons x xs => match x with
+                           | tInd ind' _ => let name' := (inductive_mind ind').2 in if String.eqb name name' then false 
+else is_ind_not_in_list t xs
+                           | _ => is_ind_not_in_list t xs
+                        end
+         end
+| _ => false
+end.
+
+
+Fixpoint get_ind_of_prod_no_dup (t : term) (acc : list term) (acc' : list term) :=
+match t with
+| tProd _ A u => let I := (no_app A).1 in if is_ind_not_in_list I acc
+then get_ind_of_prod_no_dup u (I:: acc) (I :: acc') else get_ind_of_prod_no_dup u acc acc'
+| _ => acc'
+end.
+
+
+MetaCoq Quote Definition bool_reif := bool. 
+MetaCoq Quote Definition Z_reif := Z.
+MetaCoq Quote Definition nat_reif := nat.
+
+
+Definition get_ind_of_prod_no_dup_default t := 
+get_ind_of_prod_no_dup t [bool_reif ; Z_reif; nat_reif ; eq_reif] [].
+
+Ltac elims_on_list l := 
+match l with 
+| nil => idtac 
+| cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
+                 let I := eval hnf in (u.(my_projT2)) in
+                 get_eliminators_st_default I ; elims_on_list xs
+end.
+
+Ltac get_eliminators_in_goal := match goal with 
+| |- ?T => let T_reif := metacoq_get_value (tmQuote T) in 
+          let l := eval cbv in (get_ind_of_prod_no_dup_default T_reif) in
+          elims_on_list l
+end.
+
+
+
+Section test_final_tactic.
+
+Variable A : Type.
+Variable a : A.
+
+Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs.
+Proof. 
+get_eliminators_in_goal.
+Abort.
+
+End test_final_tactic.
 
 
 
