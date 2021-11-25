@@ -107,8 +107,7 @@ Variable a : A.
   Theorem length_zero_iff_nil : forall (l : list A),
    length l <> 0 <-> l <> nil.
   Proof.
-  scope.
-  verit. 
+  snipe.
   Qed.
 
 
