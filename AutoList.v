@@ -236,7 +236,7 @@ Admitted.
   Proof.
     induction x as [| x l IHl].
      - scope. clear H17. verit. (* TODO Chantal : erreur sans le clear *)
-     - scope. (* verit bug TODO Chantal *)
+     - scope. (* verit. compdec en Caml *)
   Abort.
 
   (** Compatibility with other operations *)
@@ -248,18 +248,20 @@ Admitted.
   Lemma in_app_or : forall (l m:list A) (a:A), Inb a (l ++ m) -> or (Inb a l) (Inb a m).
   Proof.
     scope.
-    intros l m b. induction l. 
+    intros l m b. induction l. (* TODO : scope doit marcher après les intros *)
     - verit.
-    -  (*  verit. *) (* TODO Chantal *) Admitted.
+    - (*  verit. *) (* TODO Chantal *) Admitted.
 
   Lemma in_or_app : forall (l m:list A) (a:A), or (Inb a l) (Inb a m) -> Inb a (l ++ m).
   Proof.
-    intros l ; induction l. scope. Admitted.
+    intros l ; induction l. scope.
+    - Fail verit. admit. (* TODO Chantal *)
+    - Fail verit. admit. (* TODO Chantal *) Admitted.
 
 
   Lemma in_app_iff : forall l l' (a:A), Inb a (l++l') <-> or (Inb a l) (Inb a l').
   Proof.
-   scope (in_app_or, in_or_app). verit. Qed.
+   snipe (in_app_or, in_or_app). Qed.
 
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
@@ -272,7 +274,7 @@ Admitted.
   Proof.
     intros l l1 l2; revert l1 l2 l.
     intro l1; induction l1 as [ | x1 l1]; intro l2; destruct l2 as [ | x2 l2];
-     simpl; auto; intros l H. (* TODO *) 
+     simpl; auto; intros l H.
     absurd (length (x2 :: l2 ++ l) <= length l).
     simpl; rewrite app_length; auto with arith.
     rewrite <- H; auto with arith.
@@ -284,7 +286,7 @@ Admitted.
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
-  Proof.
+  Proof. (* TODO : test with trakt *)
 
   Admitted.
 
@@ -355,6 +357,8 @@ Admitted.
     scope.
   (* TODO : the pattern matching is not on a variable ! *)
   Admitted.
+
+(* TODO : length in Z *)
 
   (** Results about [nth] *)
 
@@ -543,7 +547,7 @@ Admitted.
   Proof.
     induction l.
     - snipe.
-    - scope. get_eliminators_st_default list. 
+    - scope. (* verit. *) (* TODO Louise : see manual proof *)
   Admitted.
 
   Lemma exists_last :
@@ -557,7 +561,7 @@ Admitted.
   Proof.
     induction l. 
     - snipe.
-    - scope. admit.
+    - scope. admit. (* TODO Louise : see manual proof *)
   Admitted.
 
 
@@ -565,18 +569,18 @@ Admitted.
   (** ** Counting occurrences of an element *)
   (******************************************)
 
-  Fixpoint count_occ (l : list A) (x : A) : Z :=
+  Fixpoint count_occZ (l : list A) (x : A) : Z :=
     match l with
       | [] => 0
       | y :: tl =>
-        let n := count_occ tl x in
+        let n := count_occZ tl x in
         if eqb_of_compdec HA x y then (n + 1) else n
     end.
 
   (** Compatibility of count_occ with operations on list *)
-  Theorem count_occ_In : forall (l : list A) x, Inb x l <-> (count_occ l x > 0)%Z.
+  Theorem count_occZ_In : forall (l : list A) x, Inb x l <-> (count_occZ l x > 0)%Z.
   Proof.
-    induction l as [|y l].
+    induction l as [|y l]. (* TODO >%Z no definition and others... *) 
     - scope. 
     Admitted. 
 
