@@ -50,9 +50,9 @@ let H' := instantiate_par_ident H bool in instantiate_par H' bool.
 Abort.
 
 
-Ltac instantiate_tuple_terms H t := match t with
-| (?x, ?t') => try (let H' := instantiate_par_ident H x in let u := type of H' in
-instantiate_tuple_terms H' t) ; try (instantiate_tuple_terms H t')
+Ltac instantiate_tuple_terms H t1 t2 := match t1 with
+| (?x, ?t1') => try (let H' := instantiate_par_ident H x in let u := type of H' in
+instantiate_tuple_terms H' t2 t2 ) ; try (instantiate_tuple_terms H t1' t2) 
 | unit =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => constr_eq A Type ; clear H
@@ -61,17 +61,17 @@ instantiate_tuple_terms H' t) ; try (instantiate_tuple_terms H t')
 end.
 
 Ltac instantiate_tuple_terms_goal H := let t0 := return_tuple_subterms_of_type_type in 
-let t := eval cbv in t0 in instantiate_tuple_terms H t.
+let t := eval cbv in t0 in instantiate_tuple_terms H t t.
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
 intros H.
 let p := return_tuple_subterms_of_type_type in pose p.
-instantiate_tuple_terms_goal H.
+instantiate_tuple_terms_goal H. 
 Abort.
 
 
 Ltac instantiate_tuple_terms_tuple_hyp t terms := match t with 
-| (?H, ?t') => instantiate_tuple_terms H terms ; instantiate_tuple_terms_tuple_hyp t' terms
+| (?H, ?t') => instantiate_tuple_terms H terms terms ; instantiate_tuple_terms_tuple_hyp t' terms
 | unit => idtac
 end.
 
@@ -81,7 +81,7 @@ Ltac instantiate_tuple_terms_tuple_hyp_no_unit t terms := lazymatch t with
 instantiate_tuple_terms_tuple_hyp_no_unit t2 terms
 | ?H => let T := type of H in 
      match T with 
-  | forall (y : ?A), _ => constr_eq A Type ; try (instantiate_tuple_terms H terms)
+  | forall (y : ?A), _ => constr_eq A Type ; try (instantiate_tuple_terms H terms terms)
   | _ => try (let U := type of T in constr_eq U Prop ; notHyp H ; let H0 := fresh H in assert (H0 : T) by exact H)
   end
 end.
