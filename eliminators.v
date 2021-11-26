@@ -491,8 +491,7 @@ match opt with
 end
 end.
 
-Ltac get_eliminators_st_return I := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
+Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
 let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
 match opt with 
@@ -510,7 +509,7 @@ match opt with
   let I_lifted := eval cbv in (lift (total_args) 0 I_app) in
         match I_rec_term with
         | tInd ?I_indu _ =>
-                      let x := get_eliminators_aux_st nbconstruct I ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
+                      let x := get_eliminators_aux_st nbconstruct na ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
                       let t := eval cbv in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
@@ -520,6 +519,10 @@ assert (Helim : u') by (prove_by_blind_destruct) end in Helim
 | None => fail
 end
 end.
+
+Ltac get_eliminators_st_return_quote I := 
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_eliminators_st_return I_rec I.
 
 Section tests_eliminator.
 
@@ -578,9 +581,9 @@ let H' := instantiate_ident H inh in instantiate_inhab H') ; clear H
 | _ => idtac
 end.
 
-Ltac instantiate_tuple_terms_inhab H t := match t with
-| (?x, ?t') => try (let H' := instantiate_ident H x in
-instantiate_tuple_terms_inhab H' t) ; try (instantiate_tuple_terms_inhab H t')
+Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
+| (?x, ?t1') => try (let H' := instantiate_ident H x in
+instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
 | unit =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H ]
@@ -589,10 +592,14 @@ instantiate_tuple_terms_inhab H' t) ; try (instantiate_tuple_terms_inhab H t')
 end.
 
 Ltac instantiate_tuple_terms_goal_inhab H := let t0 := return_tuple_subterms_of_type_type in 
-let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t.
+let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t t.
 
 Ltac get_eliminators_st_default I := 
 let H' := get_eliminators_st_return I in
+instantiate_tuple_terms_goal_inhab H'.
+
+Ltac get_eliminators_st_default_quote I := 
+let H' := get_eliminators_st_return_quote I in
 instantiate_tuple_terms_goal_inhab H'.
 
 Section tests_default.
@@ -601,9 +608,9 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-get_eliminators_st_default list. clear -a.
-get_eliminators_st_default Ind_test. clear -a.
-get_eliminators_st_default Ind_test2. clear -a.
+get_eliminators_st_default_quote list. clear -a.
+get_eliminators_st_default_quote Ind_test. clear -a.
+get_eliminators_st_default_quote Ind_test2. clear -a.
 Abort.
 
 End tests_default.
@@ -645,7 +652,7 @@ match l with
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
                  let I := eval hnf in (u.(my_projT2)) in
-                 get_eliminators_st_default I ; elims_on_list xs
+                 get_eliminators_st_default_quote I ; elims_on_list xs
 end.
 
 Ltac get_eliminators_in_goal := match goal with 
@@ -654,7 +661,36 @@ Ltac get_eliminators_in_goal := match goal with
           elims_on_list l
 end.
 
+Ltac is_var v :=
+let v_reif := metacoq_get_value (tmQuote v) in 
+match v_reif with 
+| tVar _ => idtac
+| _ => fail
+end.
 
+(* Returns the tuple of variables in a local context *)
+Ltac vars := 
+match goal with
+| v : _ |- _ => let _ := match goal with _ => let T := type of v in let U := type of T in
+constr_eq U Type ; is_var v ; revert v end in let acc := hyps in 
+let _ := match goal with _ => intro v end in constr:((v, acc))
+| _ => constr:(unit)
+end.
+
+Definition prod_types := (Z, bool, nat).
+
+
+Ltac get_eliminators_in_variables := 
+let t := vars in 
+let rec tac_rec v tuple :=
+match v with
+| (?v1, ?t') => let T := type of v1 in 
+                let I := get_head T in 
+                try (is_not_in_tuple tuple I  ;
+                get_eliminators_st_default_quote I) ; tac_rec t' (tuple, I) 
+| unit => idtac
+end
+in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
 
 Section test_final_tactic.
 
@@ -664,6 +700,10 @@ Variable a : A.
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs.
 Proof. 
 get_eliminators_in_goal.
+Abort.
+
+Goal forall (n : nat) (l : list A)(x : A) (xs: list A), (l = nil \/ l = cons x xs \/ n = 0).
+intros. get_eliminators_in_variables.
 Abort.
 
 End test_final_tactic.

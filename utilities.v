@@ -25,6 +25,7 @@ Ltac unquote_term t_reif :=
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
 let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
 
+Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
 
 Ltac unquote_list l :=
 match constr:(l) with

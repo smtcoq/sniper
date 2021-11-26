@@ -69,6 +69,14 @@ Ltac scope_no_param_no_nat :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst) ;
 get_eliminators_in_goal.
 
+Ltac scope_param_no_nat_var t :=
+intros ; try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t) ;
+get_eliminators_in_goal.
+
+Ltac scope_no_param_no_nat_var :=
+intros ; try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst) ;
+get_eliminators_in_goal.
+
 Ltac snipe_param_nat t := 
 scope_param_nat t ; verit.
 
@@ -80,6 +88,12 @@ scope_param_no_nat t ; verit.
 
 Ltac snipe_no_param_no_nat :=
 scope_no_param_no_nat ; verit.
+
+Ltac snipe_param_no_nat_var t :=
+scope_param_no_nat_var t ; verit.
+
+Ltac snipe_no_param_no_nat_var :=
+scope_no_param_no_nat_var ; verit.
 
 Tactic Notation "snipe" constr(t) := snipe_param_no_nat t.
 Tactic Notation "snipe" := snipe_no_param_no_nat.
