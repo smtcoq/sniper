@@ -259,21 +259,34 @@ Admitted.
     induction l ; snipe1. Undo.
     induction l ; snipe2. Qed.
 
-(* 
- Lemma app_inv_tail:
+  Lemma nat_succ : forall n n' : nat, ~ (n = S (n' + n)).
+  Proof.
+  intros n ; induction n as [ | n IHn].
+  - simpl. intros n H. inversion H.
+  - simpl. intros n' H. inversion H. assert (forall n' : nat, S(n' + n) = n' + S n).
+    intros n0. induction n0 ; auto. rewrite <- H0 in H1. apply IHn in H1. assumption. Qed. 
+
+(*  Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
   Proof.
     intros l l1 l2; revert l1 l2 l.
-    intro l1; induction l1 as [ | x1 l1]; intro l2; destruct l2 as [ | x2 l2];
-     simpl; auto; intros l H.
-    absurd (length (x2 :: l2 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite <- H; auto with arith.
-    absurd (length (x1 :: l1 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite H; auto with arith.
-    injection H as [= H H0]; f_equal; eauto.
-  Qed. *)
+    intro l1; induction l1 as [ | x1 l1].
+    - assert 
+(forall (l2 l xs : list A) (x : A), [] ++ l = l2 ++ l -> l2 = cons x xs -> False).
+    + intros l2 l xs x H1 H2. subst.
+     assert (H3 : length ([] ++ l) = length ((x :: xs) ++ l)) by (apply (f_equal length) in H1 ; assumption).
+    rewrite !app_length in H3. simpl in H3. apply nat_succ in H3. assumption. (* This part has to be done manually *)
+    + scope1 app_nil_r. clear H18 H17 H3 H7 H11 H13 H5 H8. Fail verit. (* TODO Chantal *)
+        * intros l l2. specialize (H16 l). 
+  destruct H16 as [H17 | H18].
+    { auto. }
+    { rewrite H18. intros H19. rewrite H0 in H19. eapply H with (l := l2) (l2 := proj_list0 A a l :: proj_list A H15 l) in H19. destruct H19.
+auto. }
+    - scope1. intros l2 l. intros H.
+specialize (H14 l2). destruct H14 as [H14' | H14'']. rewrite H14' in H. 
+assert (foo : length ([] ++ l) = length ((x1 :: l1) ++ l)) by (apply (f_equal length) in H ; symmetry in H ; assumption).
+ rewrite !app_length in foo. simpl in foo. apply nat_succ in foo. destruct foo.
+ rewrite H14'' in H. simpl in H. inversion H. apply IHl1 in H14. rewrite H14. auto. Qed. *)
 
   Lemma app_inv_tail:
     forall l l1 l2 : list A, l1 ++ l = l2 ++ l -> l1 = l2.
