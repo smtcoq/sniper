@@ -23,7 +23,7 @@ Local Open Scope Z_scope.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> []).
-Proof. snipe. Qed.
+Proof. snipe1. Qed.
 
 
 (* The same, on any type who enjoys a decidable equality *)
@@ -33,7 +33,7 @@ Section Generic.
   Variable HA : CompDec A.
 
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> []).
-  Proof. snipe. Qed.
+  Proof. snipe1. Qed.
 
 End Generic.
 
@@ -57,15 +57,15 @@ Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- snipe app_nil_r.
-- snipe (app_ass, app_nil_r).
+- snipe1 app_nil_r.
+- snipe1 (app_ass, app_nil_r).
 Qed.
 
 
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. snipe (rev_elements_app, app_nil_r). Qed.
+Proof. snipe1 (rev_elements_app, app_nil_r). Qed.
 
 
 Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
@@ -93,7 +93,7 @@ Qed.
 (* The proof of this lemma, except induction, can be automatized *)
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe. Qed.
+Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe1. Qed.
 
 
 (* Manually using this lemma *)
@@ -111,22 +111,22 @@ Qed.
 (* It can be fully automatized *)
 Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. intros A H. snipe @search_app. Qed.
+Proof. intros A H. snipe1 @search_app. Qed.
 
 
 (* Another example with search *)
 Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
     search b (a :: l) -> eqb_of_compdec HA a b \/ search b l.
-Proof. intros A HA. snipe. Qed.
+Proof. intros A HA. snipe1. Qed.
 
 
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros A H; induction l; snipe. Qed.
+Proof. intros A H; induction l; snipe1. Qed.
 
 
 (** Examples on trees *)
 
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
-Proof. intros t a t' b; snipe. Qed.
+Proof. intros t a t' b; snipe1. Qed.
