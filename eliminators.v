@@ -671,8 +671,7 @@ end.
 (* Returns the tuple of variables in a local context *)
 Ltac vars := 
 match goal with
-| v : _ |- _ => let _ := match goal with _ => let T := type of v in let U := type of T in
-constr_eq U Type ; is_var v ; revert v end in let acc := hyps in 
+| v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
 let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
@@ -684,10 +683,10 @@ Ltac get_eliminators_in_variables :=
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
-| (?v1, ?t') => let T := type of v1 in 
+| (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
                 let I := get_head T in 
                 try (is_not_in_tuple tuple I  ;
-                get_eliminators_st_default_quote I) ; tac_rec t' (tuple, I) 
+                get_eliminators_st_default_quote I) ; tac_rec t' (tuple, I) ]
 | unit => idtac
 end
 in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
@@ -702,8 +701,8 @@ Proof.
 get_eliminators_in_goal.
 Abort.
 
-Goal forall (n : nat) (l : list A)(x : A) (xs: list A), (l = nil \/ l = cons x xs \/ n = 0).
-intros. get_eliminators_in_variables.
+Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
+intros. get_eliminators_in_variables. 
 Abort.
 
 End test_final_tactic.

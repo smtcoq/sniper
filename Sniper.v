@@ -101,11 +101,11 @@ Tactic Notation "snipe1" := snipe_no_param_no_nat.
 Tactic Notation "scope1" constr(t) := scope_param_no_nat t.
 Tactic Notation "scope1" := scope_no_param_no_nat.
 
-Tactic Notation "snipe2" constr(t) := snipe_param_no_nat t.
-Tactic Notation "snipe2" := snipe_no_param_no_nat.
+Tactic Notation "snipe2" constr(t) := snipe_param_no_nat_var t.
+Tactic Notation "snipe2" := snipe_no_param_no_nat_var.
 
-Tactic Notation "scope2" constr(t) := scope_param_no_nat t.
-Tactic Notation "scope2" := scope_no_param_no_nat.
+Tactic Notation "scope2" constr(t) := scope_param_no_nat_var t.
+Tactic Notation "scope2" := scope_no_param_no_nat_var.
 
 Tactic Notation "scope_nat" constr(t) := scope_param_nat t.
 Tactic Notation "scope_nat" := scope_no_param_nat.

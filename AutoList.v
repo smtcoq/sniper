@@ -60,7 +60,7 @@ Section Lists.
   (** Discrimination *)
   Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
   Proof.
-    snipe1. Undo. snipe2. 
+    snipe1. 
   Qed.
 
 
@@ -77,13 +77,13 @@ Section Lists.
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof.
- snipe1. Undo. snipe2. Qed.
+ snipe1. Qed.
 
   Variable a : A.
 
  Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
-  snipe1. Undo. snipe2.
+  snipe1.
   Qed.
 
   Fixpoint length (l : list A) :=  match l with
@@ -94,7 +94,7 @@ Section Lists.
   Theorem length_zero_iff_nil : forall (l : list A),
    length l <> 0 <-> l <> nil.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
 
@@ -102,7 +102,7 @@ Section Lists.
 
   Theorem hd_error_nil : hd_error (@nil A) = None.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
 
@@ -115,23 +115,23 @@ Section Lists.
 
   Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
   Theorem in_cons : forall (a b:A) (l:list A), Lists.Inb b l = true -> Lists.Inb b (a :: l) = true.
   Proof.
-  snipe1. Undo. snipe2. 
+  snipe1.  
   Qed.
 
   Theorem not_in_cons (x b : A) (l : list A):
     ~ Lists.Inb x (a::l) = true <-> x<>a /\ ~ Lists.Inb x l = true.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
   Theorem in_nil : forall a:A, ~ Lists.Inb a nil.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
   Theorem in_split : forall x (l:list A), Lists.Inb x l = true -> exists l1 l2, l = l1++x::l2.
@@ -144,7 +144,7 @@ Admitted.
   (** Inversion *)
   Lemma in_inv : forall (a b:A) (l:list A), Lists.Inb b (a :: l) -> a = b \/ Lists.Inb b l.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
 
@@ -158,40 +158,37 @@ Admitted.
   (** Discrimination *)
   Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> ((a :: y) ++ x).
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1.
   Qed.
 
 
   (** Concat with [nil] *)
   Theorem app_nil_l : forall l:list A, [] ++ l = l.
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
   Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
-    induction l ; snipe1. Undo. induction l ; snipe2.
+    induction l ; snipe1. 
   Qed.
 
   (* begin hide *)
   (* Deprecated *)
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. snipe1 app_nil_r. Undo. snipe2 app_nil_r. Qed. 
+  Proof. snipe1 app_nil_r. Qed.
 
 
 
   (** [app] is associative *)
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
-    intros l ; induction l ; snipe1. Undo.
-    intros l ; induction l ; snipe2.
+    intros l ; induction l ; snipe1.
   Qed. 
 
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     snipe1 app_assoc. Undo.
-     snipe2 app_assoc.
-    Qed.
+     snipe1 app_assoc. Qed.
 
   Hint Resolve app_assoc_reverse : core.
   (* end hide *)
@@ -199,7 +196,7 @@ Admitted.
   (** [app] commutes with [cons] *)
   Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
   Proof.
-  snipe1. Undo. snipe2.
+  snipe1. 
   Qed.
 
   (** Facts deduced from the result of a concatenation *)
@@ -207,21 +204,20 @@ Admitted.
   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-  snipe1. Undo. snipe2. Qed.
+  snipe1.  Qed.
     
 
    Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-  snipe1. Undo. snipe2. Qed.
+  snipe1. Qed.
 
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
     induction x as [| x l IHl].
-     - scope1. clear H17. verit. Undo.  (* TODO Chantal : erreur sans le clear *)
-      Undo. Undo. scope2. clear H17. verit.
+     - scope1. clear H17. verit.  (* TODO Chantal : erreur sans le clear *)
      - scope1. (* verit. compdec en Caml *)
   Abort.
 
@@ -229,15 +225,13 @@ Admitted.
 
   Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
-    induction l; snipe1 app_comm_cons. Undo. induction l ; snipe2 app_comm_cons. Qed.
+    induction l; snipe1 app_comm_cons.  Qed.
 
   Lemma in_app_or : forall (l m:list A) (a:A), Inb a (l ++ m) -> or (Inb a l) (Inb a m).
   Proof.
     scope1.
     intros l m b. induction l.
     - verit. 
-    Undo. Undo. Undo. Undo. Undo. scope2 ; induction l.
-    - verit.
     - (*  verit. *) (* TODO Chantal *) 
 
 Admitted.
@@ -251,13 +245,12 @@ Admitted.
 
   Lemma in_app_iff : forall l l' (a:A), Inb a (l++l') <-> or (Inb a l) (Inb a l').
   Proof.
-   snipe1 (in_app_or, in_or_app). Undo. snipe2 (in_app_or, in_or_app). Qed.
+   snipe1 (in_app_or, in_or_app). Qed.
 
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l ; snipe1. Undo.
-    induction l ; snipe2. Qed.
+    induction l ; snipe1. Qed.
 
   Lemma nat_succ : forall n n' : nat, ~ (n = S (n' + n)).
   Proof.
@@ -340,7 +333,7 @@ Admitted.
     forall (n:nat) (l:list A) (d a:A),
       Inb (nth n l d) l -> Inb (nth (S n) (a :: l) d) (a :: l).
   Proof.
-   snipe1. Undo. snipe2. Qed. 
+   snipe1. Qed. 
 
   Fixpoint nth_error (l:list A) (n:nat) {struct n} : option A :=
     match n, l with
@@ -362,71 +355,93 @@ Admitted.
   (* TODO : the pattern matching is not on a variable ! *)
   Admitted.
 
-(* TODO : length in Z *)
 
-  (** Results about [nth] *)
+Fixpoint lengthZ (l : list A) :=
+match l with
+| [] => 0%Z
+| x :: xs => (1 + lengthZ xs)%Z
+end.
+
+Local Open Scope Z_scope.
+
+  (** Results about [nthZ] *)
+
+Fixpoint nth_Z (n:Z) (l:list A) (default:A) {struct l} : A :=
+    match n, l with
+      | Z0, x :: l' => x
+      | Z0, other => default
+      | Zpos n, [] => default
+      | Zpos m, x :: t => nth_Z (Z.pred (Zpos m)) t default
+      | _, _ => default
+    end.
+
+Require Import Coq.micromega.Lia.
+
+  Axiom false_ineq : ((0 < 0) -> False). (* Supposed to be handled by veriT *)
 
   Lemma nth_In :
-    forall (n:nat) (l:list A) (d:A), n < length l -> In (nth n l d) l.
+    forall (n:Z) (l:list A) (d:A), (n < lengthZ l)%Z -> In (nth_Z n l d) l.
   Proof.
+  induction n ; scope1.
+  - intros l ; specialize (H46 l).
+    destruct H46 as [H46' | H46'']. rewrite <- H46' in H7.
+    rewrite H7. intros d H. apply false_ineq in H. Fail verit. destruct H.
+    
     Admitted.
 
   Lemma Inb_nth (l : list A) x d : Inb x l ->
-    exists n, n < length l /\ nth n l d = x.
+    exists n, n < lengthZ l /\ nth_Z n l d = x.
   Proof.
-    induction l as [|b l IH]. 
-    admit. admit.
   Admitted. 
 
-  Lemma nth_overflow : forall (l : list A) n d, length l <= n -> nth n l d = d.
+  Lemma nth_overflow : forall (l : list A) n d, lengthZ l <= n -> nth_Z n l d = d.
   Proof.
-    (* TODO *)
+  induction l ; scope1. (* verit. TODO Chantal *)
+    (*    induction l; destruct n; simpl; intros; auto.
+    - inversion H.
+    - apply IHl; auto with arith.*)
   Admitted.
-(*
 
   Lemma nth_indep :
-    forall l n d d', n < length l -> nth n l d = nth n l d'.
+    forall l n d d', n < lengthZ l -> nth_Z n l d = nth_Z n l d'.
   Proof.
-    induction l.
+    induction l; scope1.
+    - (* verit. TODO Chantal *) admit.
+    -  (* verit. TODO Chantal *) admit.
+   (* induction l.
     - inversion 1.
-    - intros [|n] d d'; simpl; auto with arith.
-  Qed.
+    - intros [|n] d d'; simpl; auto with arith. *)
+  Admitted.
 
   Lemma app_nth1 :
-    forall l l' d n, n < length l -> nth n (l++l') d = nth n l d.
+    forall l l' d n, n < lengthZ l -> nth_Z n (l++l') d = nth_Z n l d.
   Proof.
-    induction l.
-    - inversion 1.
-    - intros l' d [|n]; simpl; auto with arith.
-  Qed.
+    induction l; scope1. (* verit. TODO Chantal *)
+  Admitted.
 
   Lemma app_nth2 :
-    forall l l' d n, n >= length l -> nth n (l++l') d = nth (n-length l) l' d.
+    forall l l' d n, n >= lengthZ l -> nth_Z n (l++l') d = nth_Z (n-lengthZ l) l' d.
   Proof.
-    induction l; intros l' d [|n]; auto.
+    induction l; scope1.  (* verit. TODO Chantal *)
+    (* induction l; intros l' d [|n]; auto.
     - inversion 1.
-    - intros; simpl; rewrite IHl; auto with arith.
-  Qed.
+    - intros; simpl; rewrite IHl; auto with arith. *)
+  Admitted.
+
+Local Open Scope nat_scope.
 
   Lemma nth_split n l d : n < length l ->
     exists l1, exists l2, l = l1 ++ nth n l d :: l2 /\ length l1 = n.
   Proof.
-    revert l.
-    induction n as [|n IH]; intros [|a l] H; try easy.
-    - exists nil; exists l; now simpl.
-    - destruct (IH l) as (l1 & l2 & Hl & Hl1); auto with arith.
-      exists (a::l1); exists l2; simpl; split; now f_equal.
-  Qed.
-
+  Admitted. 
   (** Results about [nth_error] *)
 
   Lemma nth_error_In l n x : nth_error l n = Some x -> In x l.
   Proof.
-    revert n. induction l as [|a l IH]; intros [|n]; simpl; try easy.
-    - injection 1; auto.
-    - eauto.
-  Qed.
-
+    revert n. induction l as [|b l IH]; scope1. 
+(* Fail verit. TODO. *)
+  Admitted.
+(*
   Lemma In_nth_error l x : In x l -> exists n, nth_error l n = Some x.
   Proof.
     induction l as [|a l IH].
@@ -550,8 +565,9 @@ Admitted.
     forall l d, l <> [] -> l = removelast l ++ [last l d].
   Proof.
     induction l.
-    - snipe.
-    - scope. (* verit. *) (* TODO Louise : see manual proof *)
+    - snipe1.
+    - 
+ scope1. (* verit. *) (* TODO Louise : see manual proof *)
   Admitted.
 
   Lemma exists_last :
@@ -564,9 +580,9 @@ Admitted.
     forall l l', l' <> [] -> removelast (l++l') = l ++ removelast l'.
   Proof.
     induction l. 
-    - snipe.
-    - scope. admit. (* TODO Louise : see manual proof *)
-  Admitted.
+    - snipe1.
+    - scope1. admit. (* TODO Louise : see manual proof *)
+  Admitted. (*
 
 
   (******************************************)

@@ -66,10 +66,11 @@ Section Lists.
 
   (** Destruction *)
 
-  Lemma hd_error_tl_repr : forall l (a:A) r,
+ (* Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof.
- Time snipe1. Undo. Time snipe2. Qed.
+ Time snipe1. Undo.
+ Time snipe2. Qed. *)
 
   Variable a : A.
 
@@ -83,11 +84,11 @@ Section Lists.
       | x :: xs => 1 + length xs
     end.
 
-  Theorem length_zero_iff_nil : forall (l : list A),
+ (* Theorem length_zero_iff_nil : forall (l : list A),
    length l <> 0 <-> l <> nil.
   Proof.
   Time snipe1. Undo. Time snipe2.
-  Qed.
+  Qed. *)
 
 
   (** *** Head and tail *)
@@ -105,10 +106,10 @@ Section Lists.
 
   (** Characterization of [In] *)
 
-  Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
+  (* Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
   Proof.
   Time snipe1. Undo. Time snipe2.
-  Qed.
+  Qed. *)
 
   Theorem in_cons : forall (a b:A) (l:list A), Lists.Inb b l = true -> Lists.Inb b (a :: l) = true.
   Proof.
@@ -153,10 +154,10 @@ Section Lists.
   Time snipe1. Undo. Time snipe2.
   Qed.
 
-  Theorem app_nil_r : forall l:list A, l ++ [] = l.
+  (* Theorem app_nil_r : forall l:list A, l ++ [] = l.
   Proof.
     Time induction l ; snipe1. Undo. Time induction l ; snipe2.
-  Qed.
+  Qed. *)
 
   (* begin hide *)
   (* Deprecated *)
@@ -186,17 +187,17 @@ Section Lists.
 
   (** Facts deduced from the result of a concatenation *)
 
-  Theorem app_eq_nil' : forall l l':list A, 
+(*   Theorem app_eq_nil' : forall l l':list A, 
 (l ++ l') = nil -> l = nil /\ l' = nil.
   Proof.
-  Time snipe1. Undo. Time snipe2. Qed.
+  Time snipe1. Undo. Time snipe2. Qed. *)
     
 
-   Theorem app_eq_unit :
+  (*  Theorem app_eq_unit :
     forall (x y:list A) (a:A),
       x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
   Proof.
-  Time snipe1. Undo. Time snipe2. Qed.
+  Time snipe1. Undo. Time snipe2. Qed. *)
 
   (** Compatibility with other operations *)
 
@@ -217,11 +218,11 @@ Admitted.
   Proof.
    Time snipe1 (in_app_or, in_or_app). Undo. Time snipe2 (in_app_or, in_or_app). Qed.
 
-  Lemma app_inv_head:
+ (*  Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
     Time induction l ; snipe1. Undo.
-    Time induction l ; snipe2. Qed.
+    Time induction l ; snipe2. Qed. *)
 
 Section Elts.
 
@@ -245,8 +246,8 @@ Section Elts.
       | S m, [] => false
       | S m, x :: t => nth_ok m t default
     end.
-  Lemma nth_S_cons :
+(*  Lemma nth_S_cons :
     forall (n:nat) (l:list A) (d a:A),
       Inb (nth n l d) l -> Inb (nth (S n) (a :: l) d) (a :: l).
   Proof.
-   Time snipe1. Undo. Time snipe2. Qed. 
+   Time snipe1. Undo. Time snipe2. Qed. *)
