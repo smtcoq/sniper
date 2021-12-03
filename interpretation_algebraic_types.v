@@ -1697,9 +1697,9 @@ Fail contains_not_eq (1=1). contains_not_eq (fun x: nat => x). exact I. Qed.
 Ltac interp_alg_types_context_aux' p :=
 match goal with 
 | |- context C[?y] =>
-is_not_in_tuple p y ;contains_not_eq y ;
+is_not_in_tuple p y ; contains_not_eq y ;
 interp_alg_types y ;
-interp_alg_types_context_aux' (p, y)
+try (interp_alg_types_context_aux' (p, y))
 | _ : context C[?y] |- _ =>
 is_not_in_tuple p y ; contains_not_eq y ;
 interp_alg_types y ; interp_alg_types_context_aux' (p, y)

@@ -76,8 +76,8 @@ Section Lists.
 
   Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
-  Proof.
- snipe1. Qed.
+  Proof. 
+  snipe1. Qed.
 
   Variable a : A.
 
@@ -469,9 +469,9 @@ Local Open Scope nat_scope.
     - split; now auto with arith.
     - rewrite IHl; split; auto with arith.
   Qed.
-
-  Lemma nth_error_split l n a : nth_error l n = Some a ->
-    exists l1, exists l2, l = l1 ++ a :: l2 /\ length l1 = n.
+*)
+  Lemma nth_error_split l n b : nth_error l n = Some b ->
+    exists l1, exists l2, l = l1 ++ b :: l2 /\ length l1 = n.
   Proof.
     revert l.
     induction n as [|n IH]; intros [|x l] H; simpl in *; try easy.
@@ -479,7 +479,7 @@ Local Open Scope nat_scope.
     - destruct (IH _ H) as (l1 & l2 & H1 & H2).
       exists (x::l1); exists l2; simpl; split; now f_equal.
   Qed.
-
+(*
   Lemma nth_error_app1 l l' n : n < length l ->
     nth_error (l++l') n = nth_error l n.
   Proof.
@@ -494,13 +494,14 @@ Local Open Scope nat_scope.
     revert l.
     induction n; intros [|a l] H; auto; try solve [inversion H].
     simpl in *. apply IHn. auto with arith.
-  Qed.
+  Qed. 
 
   (** Results directly relating [nth] and [nth_error] *)
 
   Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
     nth_error l n = Some x -> nth n l d = x.
   Proof.
+    snipe1 (nth_error_split, app_nth2).
     intros l n x d H.
     apply nth_error_split in H. destruct H as [l1 [l2 [H H']]].
     subst. rewrite app_nth2; [|auto].
@@ -514,29 +515,24 @@ Local Open Scope nat_scope.
     apply nth_split with (d:=d) in H. destruct H as [l1 [l2 [H H']]].
     subst. rewrite H. rewrite nth_error_app2; [|auto].
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
-  Qed. 
+  Qed. *)
 
   (*****************)
   (** ** Remove    *)
   (*****************)
 
-  Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
   Fixpoint remove (x : A) (l : list A) : list A :=
     match l with
       | [] => []
-      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
+      | y::tl => if (eqb_of_compdec HA x y) then remove x tl else y::(remove x tl)
     end.
 
   Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
   Proof.
-    induction l as [|x l]; auto.
-    intro y; simpl; destruct (eq_dec y x) as [yeqx | yneqx].
-    apply IHl.
-    unfold not; intro HF; simpl in HF; destruct HF; auto.
-    apply (IHl y); assumption.
-  Qed.
-*)
+    induction l ; scope1.
+    - Fail verit. (* TODO *)
+Admitted.
 
 (******************************)
 (** ** Last element of a list *)
@@ -566,8 +562,9 @@ Local Open Scope nat_scope.
   Proof.
     induction l.
     - snipe1.
-    - 
- scope1. (* verit. *) (* TODO Louise : see manual proof *)
+    - scope2. specialize (H21 l). destruct H21 as [H21' | H21''].
+        + rewrite H21'. verit.
+        + rewrite H21''. (* verit. *) (* TODO Chantal *)
   Admitted.
 
   Lemma exists_last :
@@ -581,7 +578,10 @@ Local Open Scope nat_scope.
   Proof.
     induction l. 
     - snipe1.
-    - scope1. admit. (* TODO Louise : see manual proof *)
+    - scope1. intros l' H. assert (l++l' <> []). verit.
+    specialize (H17 l). destruct H17 as [H17 |H17']. 
+          + destruct (l ++ l'). destruct H14. verit.
+ admit. (* TODO Louise : see manual proof *)
   Admitted. (*
 
 
