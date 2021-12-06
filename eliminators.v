@@ -686,8 +686,8 @@ match v with
 | (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
                 let I := get_head T in 
                 try (is_not_in_tuple tuple I  ;
-                get_eliminators_st_default_quote I) ; tac_rec t' (tuple, I) ]
-| unit => idtac
+                get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
+| _ => idtac
 end
 in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
 
