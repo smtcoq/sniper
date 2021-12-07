@@ -577,7 +577,7 @@ Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
 | forall (y : ?A), forall (z : ?B), _ => try (let inh := find_inh A in
-let H' := instantiate_ident H inh in instantiate_inhab H') ; clear H
+let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H)
 | _ => idtac
 end.
 
@@ -586,7 +586,7 @@ Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
 | unit =>  let T := type of H in
            match T with
-            | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H ]
+            | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H]
             | _ => idtac
             end
 end.
@@ -700,6 +700,14 @@ Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs
 Proof. 
 get_eliminators_in_goal.
 Abort.
+
+Goal
+  forall s1 s2 : string, s1 = s2.
+Proof.
+get_eliminators_in_goal.
+clear. intros s1 s2. get_eliminators_in_variables.
+Abort.
+
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
 intros. get_eliminators_in_variables. 
