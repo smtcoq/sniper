@@ -26,7 +26,7 @@ Section lemmas.
 Lemma surjective_pairing :
   forall (p:A × B), p = (fst A B p, snd A B p).
 Proof.
-  scope1. (*  verit. *) (* TODO Chantal, TODO Louise pb avec Scope2 *)
+  scope2. (*  verit. *) (* TODO Chantal *)
 Admitted.
 
 Lemma injective_projections :
@@ -40,11 +40,5 @@ Lemma pair_equal_spec :
   forall (a1 a2 : A) (b1 b2 : B),
     (a1, b1) = (a2, b2) <-> a1 = a2 /\ b1 = b2.
 Proof.
-  snipe1.
+  snipe1. Undo. snipe2.
 Qed.
-
-Definition prod_uncurry (A B C:Type) (f:A * B -> C)
-  (x:A) (y:B) : C := f (x,y).
-
-Definition prod_curry (A B C:Type) (f:A -> B -> C)
-  (p:A * B) : C := match p with (x, y) => f x y end.
