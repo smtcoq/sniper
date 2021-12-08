@@ -684,30 +684,6 @@ match v with
 end
 in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
 
-Section test_final_tactic.
-
-Variable A : Type.
-Variable a : A.
-
-Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs.
-Proof. 
-get_eliminators_in_goal.
-Abort.
-
-Goal
-  forall s1 s2 : string, s1 = s2.
-Proof.
-get_eliminators_in_goal.
-clear. intros s1 s2. get_eliminators_in_variables.
-Abort.
-
-
-Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
-intros. get_eliminators_in_variables. 
-Abort.
-
-End test_final_tactic.
-
 
 
 
