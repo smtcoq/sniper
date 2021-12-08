@@ -37,6 +37,38 @@ Section Generic.
 
 End Generic.
 
+Section destruct_auto.
+
+  Variable A : Type.
+  Variable HA : CompDec A.
+
+
+(* This theorem needs a case analysis on x and y *)
+ Theorem app_eq_unit (x y:list A) (a:A) :
+      x ++ y = [a] -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
+  Proof.
+    destruct x as [|a' l]; [ destruct y as [|a' l] | destruct y as [| a0 l0] ];
+      simpl.
+    intros H; discriminate H.
+    left; split; auto.
+    intro H; right; split; auto.
+    generalize H.
+    generalize (app_nil_r l); intros E.
+    rewrite -> E; auto.
+    intros H.
+    injection H as [= H H0].
+    assert ([] = l ++ a0 :: l0) as H1 by auto.
+    apply app_cons_not_nil in H1 as [].
+  Qed.
+
+Theorem app_eq_unit_auto :
+    forall (x y: list A) (a:A),
+      x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
+  Proof. snipe. Qed.
+
+
+End destruct_auto.
+
 
 (* An example with polymorphism *)
 Lemma length_app : forall A, forall (l1 l2: list A),
