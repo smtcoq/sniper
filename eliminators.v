@@ -37,19 +37,6 @@ Definition mkApp (u : term) (l : list term) :=
 tApp u l.
 
 
-Ltac find_inhabitant t := 
-let t_reif_rec := metacoq_get_value (tmQuoteRec t) in 
-let p := eval cbv in (no_app t_reif_rec.2) in
-let t_reif_no_app := eval cbv in p.1 in
-let params := eval cbv in p.2 in
-let opt1 := eval cbv in 
-(find_index_constructor_of_arity_zero (get_constructors_inductive t_reif_no_app (t_reif_rec.1))) in
-let nb := remove_option opt1 in 
-let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
-let construct0 := metacoq_get_value (tmUnquote construct_reif) in 
-let construct := eval cbv in construct0.(my_projT2) in
-exact construct.
-
 Ltac get_inhabitant t := 
 let t_reif_rec := metacoq_get_value (tmQuoteRec t) in 
 let p := eval cbv in (no_app t_reif_rec.2) in
@@ -60,6 +47,12 @@ let opt1 := eval cbv in
 let nb := remove_option opt1 in 
 let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
 construct_reif.
+
+Ltac find_inhabitant t := 
+let construct_reif := get_inhabitant t in
+let construct0 := metacoq_get_value (tmUnquote construct_reif) in 
+let construct := eval cbv in construct0.(my_projT2) in
+exact construct.
 
 
 Ltac find_inhabitant_context t := 
