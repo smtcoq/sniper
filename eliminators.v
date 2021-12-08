@@ -18,7 +18,6 @@ Require Import elimination_polymorphism.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.Template.All.
-
 Require Import String.
 Require Import List.
 Require Import ZArith.
@@ -455,35 +454,6 @@ Ltac prove_by_blind_destruct :=
 let x := fresh in 
 intro x ; try (destruct x ; auto) ; prove_by_blind_destruct.
 
-Ltac get_eliminators_st I := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-let I_rec_term := eval cbv in (I_rec.2) in
-let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
-match opt with 
-| Some (?npars, ?ty_pars) =>
-  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
-  let list_args_len := eval cbv in (rev (get_args_list_with_length list_ty npars)) in 
-  let list_args := eval cbv in (split list_args_len).1 in 
-  let list_ty_default0 := eval cbv in (flatten list_args) in
-  let list_ty_default := eval cbv in (lift_rec_rev list_ty_default0) in 
-  let nbconstruct := eval cbv in (Datatypes.length list_args) in
-  let list_constructors_reif := eval cbv in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
-  let total_args := eval cbv in (total_arg_constructors list_args_len) in
-  let list_of_pars_rel := eval cbv in ((get_list_of_rel_lifted npars (total_args + 1))) in
-  let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
-  let I_lifted := eval cbv in (lift (total_args) 0 I_app) in
-        match I_rec_term with
-        | tInd ?I_indu _ =>
-                      let x := get_eliminators_aux_st nbconstruct I ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
-                      let t := eval cbv in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
-    I_lifted (mkOr x)))) in
-                      let u := metacoq_get_value (tmUnquote t) in 
-                      let u' := eval hnf in (u.(my_projT2)) in assert u' by (prove_by_blind_destruct)
-        | _ => fail
-| None => fail
-end
-end.
-
 Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
 let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
@@ -517,6 +487,9 @@ Ltac get_eliminators_st_return_quote I :=
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_eliminators_st_return I_rec I.
 
+Ltac get_eliminators_st I :=
+let st := get_eliminators_st_return_quote I in idtac.
+
 Section tests_eliminator.
 
 Inductive Ind_test (A B : Type) :=
@@ -541,7 +514,6 @@ Abort.
 
 
 Goal False.
-
 get_eliminator 2 1 nat.
 get_eliminator 2 1 list.
 get_eliminator 2 2 list.
