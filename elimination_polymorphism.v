@@ -144,3 +144,81 @@ intros.
 test2 nil_cons. apply nil_cons0. Qed.
 
 End test.
+
+
+(** TODO : new tactics **) 
+
+Definition inst_tuple_quote (p : term*(list term)) (strategy : list term -> list term) :=
+match p with
+| (t, l) => let fix aux t l strategy := match l with
+  | [] => []
+  | x :: xs => 
+    match t with
+      | tProd _ Ty u => if is_type Ty then
+let tinst := subst10 x u in (tinst, strategy l) :: aux t xs strategy
+else [(t, [])]
+      | _ => [(t, [])]
+    end
+  end
+in aux t l strategy
+end.
+
+Check inst_tuple_quote.
+
+Ltac inst_tuple_list l strategy := 
+match l with 
+| [] => constr:([])
+| ?p :: ?l' => let l1 := eval cbv in (inst_tuple_quote p strategy) in
+    let l1 := inst_tuple_list l1 strategy in
+    let l2 := inst_tuple_list l' strategy in 
+    let l := eval cbv in (l1 ++ l2) in l
+end.
+
+Ltac return_list_terms l :=
+ let rec aux l acc :=
+lazymatch constr:(l) with
+| nil => constr:(acc)
+| cons ?x ?xs =>
+  let y := metacoq_get_value (tmUnquote x) in 
+  let u := constr:(y.(my_projT2)) in 
+  let w := eval hnf in u in
+  let T := type of w in 
+  let b0 := ltac:(is_type_quote_bool T) in 
+  let b := eval hnf in b0 in
+    lazymatch b with 
+    | true => aux xs constr:((x :: acc))
+    | false => aux xs acc
+    end
+end
+in aux l (@nil term).
+
+Ltac return_list_subterms_of_type_type := match goal with
+|- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_list_terms l
+end.
+
+Require Import String.
+
+Ltac inst_dumb_strat H := 
+let H_reif := metacoq_get_value (tmQuote H) in 
+let t0 := return_list_subterms_of_type_type in 
+let t := eval cbv in t0 in idtac t0 ;
+let result0 := (inst_tuple_list constr:([(H_reif, t0)]) (@id (list term))) in
+let result := eval cbv in result0 in
+idtac result.
+
+Goal forall (A B : Type) (a : A) (b : B), a = a -> b = b.
+intros A B.
+Check nil_cons.
+inst_tuple_list (forall (A : Type) (x : A) (l : list A), [] <> x :: l).
+
+
+
+
+
+
+
+
+
+
+
+
