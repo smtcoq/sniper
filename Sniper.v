@@ -18,9 +18,6 @@ Require Export MetaCoq.Template.All.
 Require Export MetaCoq.Template.Universes.
 Require Export MetaCoq.PCUIC.PCUICSubstitution.
 Require Export MetaCoq.Template.All.
-Require Export String.
-Require Export List.
-Require Export ZArith.
 Require Export utilities.
 Require Export definitions.
 Require Export elimination_fixpoints.
@@ -86,8 +83,14 @@ scope_no_param_nat ; verit.
 Ltac snipe_param_no_nat t :=
 scope_param_no_nat t ; verit.
 
+Ltac snipe_param_no_nat_no_check t :=
+scope_param_no_nat t ; verit_no_check.
+
 Ltac snipe_no_param_no_nat :=
 scope_no_param_no_nat ; verit.
+
+Ltac snipe_no_param_no_nat_no_check :=
+scope_no_param_no_nat ; verit_no_check.
 
 Ltac snipe_param_no_nat_var t :=
 scope_param_no_nat_var t ; verit.
@@ -97,6 +100,9 @@ scope_no_param_no_nat_var ; verit.
 
 Tactic Notation "snipe" constr(t) := snipe_param_no_nat t.
 Tactic Notation "snipe" := snipe_no_param_no_nat.
+
+Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_nat_no_check t.
+Tactic Notation "snipe_no_check" := snipe_no_param_no_nat_no_check.
 
 Tactic Notation "scope" constr(t) := scope_param_no_nat t.
 Tactic Notation "scope" := scope_no_param_no_nat.
