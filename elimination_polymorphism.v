@@ -151,7 +151,7 @@ End test.
 Definition inst_tuple_quote (p : term*(list term)) (strategy : list term -> list term) :=
 match p with
 | (t, l) => let fix aux t l strategy := match l with
-  | [] => []
+  | [] => [(t, [])]
   | x :: xs => 
     match t with
       | tProd _ Ty u => if is_type Ty then
@@ -168,17 +168,23 @@ Check inst_tuple_quote.
 Ltac inst_tuple_list l strategy := 
 match l with 
 | [] => constr:([])
-| ?p :: ?l' => let l1 := eval cbv in (inst_tuple_quote p strategy) in
-    let l1 := inst_tuple_list l1 strategy in
+| cons ?p ?l' => match p with
+    | prod ?x1 ?x2 => match x2 with 
+      | [] => constr:(x1)
+      | _ =>
+    let l0 := eval cbv in (inst_tuple_quote p strategy) in
+    let l1 := inst_tuple_list l0 strategy in l1 (*
     let l2 := inst_tuple_list l' strategy in 
-    let l := eval cbv in (l1 ++ l2) in l
+    let l := eval cbv in (l1 ++ l2) in l *)
+      end
+    end
 end.
 
 Ltac return_list_terms l :=
  let rec aux l acc :=
 lazymatch constr:(l) with
 | nil => constr:(acc)
-| cons ?x ?xs =>
+| cons ?x ?xs => idtac "bar" ;
   let y := metacoq_get_value (tmUnquote x) in 
   let u := constr:(y.(my_projT2)) in 
   let w := eval hnf in u in
@@ -206,10 +212,77 @@ let result0 := (inst_tuple_list constr:([(H_reif, t0)]) (@id (list term))) in
 let result := eval cbv in result0 in
 idtac result.
 
+Definition foo := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+       (tSort
+          (Universe.of_levels
+             (inr (Level.Level "Sniper.elimination_polymorphism.755"))))
+       (tProd {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
+          (tRel 0)
+          (tProd
+             {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
+             (tApp
+                (tInd
+                   {|
+                     inductive_mind :=
+                       (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                       "list"%string);
+                     inductive_ind := 0
+                   |} []) [tRel 1])
+             (tApp
+                (tConst
+                   (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                   "not"%string) [])
+                [tApp
+                   (tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                          "eq"%string);
+                        inductive_ind := 0
+                      |} [])
+                   [tApp
+                      (tInd
+                         {|
+                           inductive_mind :=
+                             (MPfile
+                                ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "list"%string);
+                           inductive_ind := 0
+                         |} []) [tRel 2];
+                   tApp
+                     (tConstruct
+                        {|
+                          inductive_mind :=
+                            (MPfile
+                               ["Datatypes"%string; "Init"%string; "Coq"%string],
+                            "list"%string);
+                          inductive_ind := 0
+                        |} 0 []) [tRel 2];
+                   tApp
+                     (tConstruct
+                        {|
+                          inductive_mind :=
+                            (MPfile
+                               ["Datatypes"%string; "Init"%string; "Coq"%string],
+                            "list"%string);
+                          inductive_ind := 0
+                        |} 1 []) [tRel 2; tRel 1; tRel 0]]]))).
+
+MetaCoq Quote Definition nat_reif := nat.
+
+Goal False.
+let u := eval cbv in nat_reif in
+let v := eval cbv in foo in
+let x := inst_tuple_list [(foo, [u])] (@id (list term)) in 
+idtac x.
+
 Goal forall (A B : Type) (a : A) (b : B), a = a -> b = b.
 intros A B.
 Check nil_cons.
-inst_tuple_list (forall (A : Type) (x : A) (l : list A), [] <> x :: l).
+let x := metacoq_get_value (tmQuote (forall (A : Type) 
+         (x : A) (l : list A),
+       [] <> x :: l)) in pose x.
+
 
 
 
