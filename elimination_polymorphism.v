@@ -208,6 +208,60 @@ End test.
 
 (** TODO : new tactics **) 
 
+(* Ltac instanciate_type_all H := 
+let P := type of H  in let P':= type of P in con
+str_eq P' Prop ; lazymatch P with
+-    | forall (x : ?A), _ =>
+-      let A' := eval hnf in A in 
+-is_type_quote A' ; repeat match goal with 
+-          |- context C[?y] => let Y := type of y in let Y' := eval hnf in 
+-Y in is_type_quote Y' ; instanciate_all H y
+-          end
+-end. *)
+
+(* Ltac is_not_in_tuple p z := 
+lazymatch constr:(p) with
+| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
+| _ => constr_neq p z 
+end. *)
+
+Ltac make_list_of_tuple_reif t := 
+lazymatch constr:(t) with 
+| (?x, ?y) => 
+let l0 := ltac:(make_list_of_tuple_reif x) in
+let l0' := ltac:(make_list_of_tuple_reif y) in 
+let l := eval cbv in (l0 ++ l0')
+in l
+| _ => match t with
+    | _ => let _ := match goal with _ => constr_neq t impossible_term end in 
+let t_reif := metacoq_get_value (tmQuote t) in constr:([t_reif])
+    | _ => constr:(@nil term)
+end
+end.
+
+
+
+Goal False.
+let x := eval cbv in (unit, nat, list nat) in 
+let y := make_list_of_tuple_reif x in idtac y.
+let x := eval cbv in (unit, nat, list nat, impossible_term) in 
+let y := make_list_of_tuple_reif x in idtac y.
+Abort.
+
+Ltac return_tuple_terms_of_type_type t1 t2 := 
+match goal with
+|- context C[?y] => 
+let T := type of y in
+first [ constr_eq T Type | constr_eq T Set] ; 
+try (is_not_in_tuple constr:(t1) y ; return_tuple_terms_of_type_type (t1, y) (t2, y)) ; is_not_in_tuple t2 y
+| |- _ => let l := ltac:(make_list_of_tuple_reif t1) in pose l
+end. 
+
+Goal forall (x : nat) (y : unit) (z : bool), True.
+Proof.
+return_tuple_terms_of_type_type impossible_term impossible_term.
+Abort.
+
 Fixpoint mk_list_instantiated_terms (u : term) (l l' : list term) (strategy : list term -> list term) := 
 match l with
 | [] => []
