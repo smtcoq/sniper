@@ -208,14 +208,20 @@ End test.
 
 (** TODO : new tactics **) 
 
+Fixpoint mk_list_instantiated_terms (u : term) (l l' : list term) (strategy : list term -> list term) := 
+match l with
+| [] => []
+| x :: xs => (subst10 x u, strategy l') :: mk_list_instantiated_terms u xs l' strategy
+end.
+
 Definition inst_tuple_quote (p : term*(list term)) (strategy : list term -> list term) :=
 match p with
 | (t, l) => let fix aux t l strategy := match l with
   | [] => []
   | x :: xs => 
     match t with
-      | tProd _ Ty u => if is_type Ty then
-let tinst := subst10 x u in (tinst, strategy l) :: aux t xs strategy
+      | tProd _ Ty u => if is_type Ty then (* TODO instancier aussi avec les xs et append du tout *)
+mk_list_instantiated_terms u l l strategy (* ++ aux t xs strategy *)
 else [(t, [])]
       | _ => [(t, [])]
     end
@@ -263,10 +269,10 @@ Ltac return_list_subterms_of_type_type := match goal with
 end.
 
 Ltac inst_dumb_strat H := 
-let H_reif := metacoq_get_value (tmQuote H) in 
 let t0 := return_list_subterms_of_type_type in 
-let t := eval cbv in t0 in idtac t0 ;
-let result0 := (inst_tuple_list constr:([(H_reif, t0)]) (@id (list term))) in
+let t := eval cbv in t0 in idtac t0 ; 
+let result0 := (inst_tuple_list constr:([(H, 
+[tVar "C"%string; tVar "B"%string; tVar "A"%string])]) (@id (list term))) in
 let result := eval cbv in result0 in
 pose result.
 
@@ -277,16 +283,37 @@ let x :=
 inst_tuple_list [(v, [u])] (@id (list term)) in pose x.
 Abort.
 
-Goal forall (A B : Type) (a : A) (b : B), a = a -> b = b.
-intros A B.
+MetaCoq Quote Definition bar := (forall (A B C : Type) (a : A) (b : B) (c : C) 
+, a = a -> b = b -> c = c).
+
+Ltac unquote_term_no_dup t_reif := 
+run_template_program (tmUnquote t_reif) ltac:(fun t => 
+let x := constr:(t.(my_projT2)) in let y := eval hnf in x in 
+match goal with 
+| z : _ |- _ => let u := eval unfold z in z in constr_eq z y ; fail 2
+| |- _ => pose y
+end).
+
+Ltac unquote_list_no_dup l :=
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => unquote_term_no_dup x ; unquote_list_no_dup xs
+end.
+
+
+Goal (forall (A B C : Type) (a : A) (b : B) (c : C)
+, a = a -> b = b -> c = c).
+intros A B C.
+let t0 := return_list_subterms_of_type_type in pose t0.
 let foo' := eval unfold foo in foo in
-inst_dumb_strat (tmQuote (forall (A : Type) 
-         (x : A) (l : list A),
-       [] <> x :: l)). let l0 := eval unfold l in l in unquote_list l.
-Check nil_cons.
-let x := metacoq_get_value (tmQuote (forall (A : Type) 
-         (x : A) (l : list A),
-       [] <> x :: l)) in pose x.
+inst_dumb_strat foo'. clear l.
+let bar' := eval unfold bar in bar in 
+inst_dumb_strat bar'.
+let l0' := eval unfold l in l in unquote_list_no_dup l0'.
+
+(* TODO : tout instancier == pas exhaustif *)
+
+
 
 
 
