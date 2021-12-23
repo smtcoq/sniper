@@ -148,64 +148,6 @@ End test.
 
 (** TODO : new tactics **) 
 
-Definition foo := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-       (tSort
-          (Universe.of_levels
-             (inr (Level.Level "Sniper.elimination_polymorphism.755"))))
-       (tProd {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
-          (tRel 0)
-          (tProd
-             {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-             (tApp
-                (tInd
-                   {|
-                     inductive_mind :=
-                       (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                       "list"%string);
-                     inductive_ind := 0
-                   |} []) [tRel 1])
-             (tApp
-                (tConst
-                   (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                   "not"%string) [])
-                [tApp
-                   (tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                          "eq"%string);
-                        inductive_ind := 0
-                      |} [])
-                   [tApp
-                      (tInd
-                         {|
-                           inductive_mind :=
-                             (MPfile
-                                ["Datatypes"%string; "Init"%string; "Coq"%string],
-                             "list"%string);
-                           inductive_ind := 0
-                         |} []) [tRel 2];
-                   tApp
-                     (tConstruct
-                        {|
-                          inductive_mind :=
-                            (MPfile
-                               ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-                          inductive_ind := 0
-                        |} 0 []) [tRel 2];
-                   tApp
-                     (tConstruct
-                        {|
-                          inductive_mind :=
-                            (MPfile
-                               ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-                          inductive_ind := 0
-                        |} 1 []) [tRel 2; tRel 1; tRel 0]]]))).
-
-MetaCoq Quote Definition nat_reif := nat.
-
 (* Returns the tuple of hypothesis reified in a local context *)
 Ltac hyps_quoted := 
 match goal with
@@ -219,13 +161,6 @@ constr:(T_reif::acc)
 | _ => constr:(@nil term)
 end.
 
-Ltac hyps_quoted_param l := 
-lazymatch constr:(l) with 
-| [] => let acc := hyps_quoted in constr:(acc)
-| ?x :: ?xs => let x_reif := metacoq_get_value (tmQuote x) in 
-  let l0 := (hyps_quoted_param xs) in
-  constr:(x_reif :: l0) 
-end.
 
 Ltac make_list_of_tuple_reif t := 
 lazymatch constr:(t) with 
@@ -241,13 +176,40 @@ let t_reif := metacoq_get_value (tmQuote t) in constr:([t_reif])
 end
 end.
 
+Ltac make_list_of_tuple_type_reif t := 
+lazymatch constr:(t) with 
+| (?x, ?y) => 
+let l0 := ltac:(make_list_of_tuple_type_reif x) in
+let l0' := ltac:(make_list_of_tuple_type_reif y) in 
+let l := eval cbv in (l0 ++ l0')
+in l
+| _ => match t with
+    | _ => let _ := match goal with _ => constr_neq t impossible_term end in 
+let T := type of t in
+let T_reif := metacoq_get_value (tmQuote T) in constr:([T_reif])
+    | _ => constr:(@nil term)
+end
+end.
 
+Ltac hyps_quoted_param l := 
+match constr:(l) with 
+| [] => let acc := hyps_quoted in constr:(acc)
+| ?x :: ?xs => let s := ltac:(hyps_quoted_param xs) in
+let s0 := eval cbv in s in
+  constr:(x :: s0) 
+end.
 
-Goal False.
-let x := eval cbv in (unit, nat, list nat) in 
-let y := make_list_of_tuple_reif x in idtac y.
-let x := eval cbv in (unit, nat, list nat, impossible_term) in 
-let y := make_list_of_tuple_reif x in idtac y.
+Ltac hyps_quoted_tuple_param t := 
+let l0 := ltac:(make_list_of_tuple_type_reif t) in
+let l := eval cbv in l0 in
+hyps_quoted_param l.
+
+Ltac hyps_quoted_tuple_no_param := hyps_quoted_tuple_param impossible_term.
+
+Goal False -> True. intros.
+let l := hyps_quoted in pose l.
+let foo := hyps_quoted_tuple_param (app_assoc, rev_involutive) in pose foo.
+let foo := hyps_quoted_tuple_no_param in pose foo.
 Abort.
 
 Ltac return_tuple_terms_of_type_type t1 t2 := 
@@ -277,16 +239,14 @@ match p with
   | [] => []
   | x :: xs => 
     match t with
-      | tProd _ Ty u => if is_type Ty then (* TODO instancier aussi avec les xs et append du tout *)
-mk_list_instantiated_terms u l l strategy (* ++ aux t xs strategy *)
+      | tProd _ Ty u => if is_type Ty then 
+mk_list_instantiated_terms u l l strategy
 else [(t, [])]
       | _ => [(t, [])]
     end
   end
 in aux t l strategy
 end.
-
-Check inst_tuple_quote.
 
 Ltac inst_tuple_list l strategy := 
 lazymatch l with 
@@ -325,73 +285,78 @@ Ltac return_list_subterms_of_type_type := match goal with
 |- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_list_terms l
 end.
 
-Ltac inst_dumb_strat H := 
-let t0 := return_list_subterms_of_type_type in 
-let t := eval cbv in t0 in idtac t0 ; 
-let result0 := (inst_tuple_list constr:([(H, 
-[tVar "C"%string; tVar "B"%string; tVar "A"%string])]) (@id (list term))) in
-let result := eval cbv in result0 in
-pose result.
-
-Goal False.
-let u := eval cbv in nat_reif in
-let v := eval cbv in foo in 
-let x :=
-inst_tuple_list [(v, [u])] (@id (list term)) in pose x.
-Abort.
-
-MetaCoq Quote Definition bar := (forall (A B C : Type) (a : A) (b : B) (c : C) 
-, a = a -> b = b -> c = c).
-
-Ltac unquote_term_no_dup t_reif := 
-run_template_program (tmUnquote t_reif) ltac:(fun t => 
-let x := constr:(t.(my_projT2)) in let y := eval hnf in x in 
-match goal with 
-| z : _ |- _ => let u := eval unfold z in z in constr_eq z y ; fail 2
-| |- _ => pose y
-end).
-
-Ltac unquote_list_no_dup l :=
-match constr:(l) with
-| nil => idtac
-| cons ?x ?xs => unquote_term_no_dup x ; unquote_list_no_dup xs
+Ltac apply_tuple t :=
+match t with 
+| (?x, ?y) => try (apply_tuple x) ; try (apply_tuple y)
+| ?z => apply z
 end.
 
-Ltac inst_list t H := 
-let t0 := eval cbv in t in 
-let result0 := (inst_tuple_list constr:([(H, t0)]) (@id (list term))) in
-let result := eval cbv in result0 in
-pose result.
+Goal forall (l m n : list nat), l ++ m ++ n = (l ++ m) ++ n.
+apply_tuple (app_assoc, rev_involutive).
+Qed.
 
-Ltac test1 t1 t2 H := 
+Ltac unquote_term_no_dup_assert t_reif tuple_hyps := 
+let t := metacoq_get_value (tmUnquote t_reif) in
+let x := constr:(t.(my_projT2)) in let y := eval hnf in x in 
+match goal with 
+| z : _ |- _ => let u := eval unfold z in z in constr_eq z y ; fail 1
+| |- _ => assert y by (apply_tuple tuple_hyps)
+end.
+
+Ltac unquote_list_no_dup_assert l t :=
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => unquote_term_no_dup_assert x t ; unquote_list_no_dup_assert xs t
+end.
+
+
+Fixpoint combine_list_elt {A B} (l : list A) (t : B) := 
+match l with
+| [] => []
+| x :: xs => (x, t) :: combine_list_elt xs t
+end.
+
+Ltac inst_list t l t_param := 
+let t_hyps := hyps in 
+let tuple_proof := eval cbv in (t_param, t_hyps) in
+let t0 := eval cbv in t in 
+let l' := eval cbv in (combine_list_elt l t) in
+let result0 := (inst_tuple_list constr:(l') (@id (list term))) in
+let result := eval cbv in result0 in
+unquote_list_no_dup_assert result tuple_proof.
+
+Ltac inst_list_one_term t H t_param := 
+inst_list t [H] t_param. 
+
+Ltac inst_dumb_strat_aux t1 t2 list_hyps t_param := 
 match goal with
 |- context C[?y] =>
 let T := type of y in 
 first [ constr_eq T Type | constr_eq T Set] ;
-try (is_not_in_tuple constr:(t1) y ; test1 (t1, y) (t2, y) H) ;
+try (is_not_in_tuple constr:(t1) y ; inst_dumb_strat_aux (t1, y) (t2, y) list_hyps t_param) ;
 is_not_in_tuple t2 y
-| |- _ => let l := ltac:(make_list_of_tuple_reif t1) in inst_list l H
-end. 
+| |- _ => let l := ltac:(make_list_of_tuple_reif t1) in inst_list l list_hyps t_param
+end.
 
-Goal (forall (A B C : Type) (a : A) (b : B) (c : C)
-, a = a -> b = b -> c = c).
-intros A B C.
-let foo' := eval unfold foo in foo in
-test1 impossible_term impossible_term foo'.
-let l0 := eval unfold l in l in unquote_list l0.
-let t0 := return_list_subterms_of_type_type in pose t0.
-let foo' := eval unfold foo in foo in
-inst_dumb_strat foo'. clear l.
-let bar' := eval unfold bar in bar in 
-inst_dumb_strat bar'.
-let l0' := eval unfold l in l in unquote_list_no_dup l0'.
-clear - A B C.
-let bar' := eval unfold bar in bar in 
-test1 impossible_term impossible_term bar'.
-let l0 := eval unfold l in l in unquote_list_no_dup l0.
+Ltac inst_dumb_strat t := 
+let list_hyps := hyps_quoted_tuple_param t in
+inst_dumb_strat_aux impossible_term impossible_term list_hyps t.
+
+
+Section tests_metacoq_version.
+
+Goal forall (A B C : Type),  
+(forall (A : Type) (a : A), a = a) -> (forall (a : A) (b : B) (c : C), a = a -> b = b -> c = c).
+intros A B C H.
+inst_dumb_strat (app_assoc, rev_involutive).
 Abort.
 
+Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
+intro.
+inst_dumb_strat rev_involutive.
+Abort.
 
+End tests_metacoq_version.
 
 
 
