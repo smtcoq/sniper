@@ -206,6 +206,27 @@ Definition foo := tProd {| binder_name := nNamed "A"%string; binder_relevance :=
 
 MetaCoq Quote Definition nat_reif := nat.
 
+(* Returns the tuple of hypothesis reified in a local context *)
+Ltac hyps_quoted := 
+match goal with
+| H : _ |- _ => let T := type of H in 
+let _ := match goal with _ => let U := type of T in
+constr_eq U Prop ; revert H end in 
+let acc := hyps_quoted in 
+let _ := match goal with _ => intro H end in 
+let T_reif := metacoq_get_value (tmQuote T) in
+constr:(T_reif::acc) 
+| _ => constr:(@nil term)
+end.
+
+Ltac hyps_quoted_param l := 
+lazymatch constr:(l) with 
+| [] => let acc := hyps_quoted in constr:(acc)
+| ?x :: ?xs => let x_reif := metacoq_get_value (tmQuote x) in 
+  let l0 := (hyps_quoted_param xs) in
+  constr:(x_reif :: l0) 
+end.
+
 Ltac make_list_of_tuple_reif t := 
 lazymatch constr:(t) with 
 | (?x, ?y) => 
@@ -342,14 +363,14 @@ let result0 := (inst_tuple_list constr:([(H, t0)]) (@id (list term))) in
 let result := eval cbv in result0 in
 pose result.
 
-Ltac test t1 t2 H := 
+Ltac test1 t1 t2 H := 
 match goal with
 |- context C[?y] =>
 let T := type of y in 
 first [ constr_eq T Type | constr_eq T Set] ;
 try (is_not_in_tuple constr:(t1) y ; test1 (t1, y) (t2, y) H) ;
 is_not_in_tuple t2 y
-| |- _ => idtac t1 ; let l := ltac:(make_list_of_tuple_reif t1) in inst_list l H
+| |- _ => let l := ltac:(make_list_of_tuple_reif t1) in inst_list l H
 end. 
 
 Goal (forall (A B C : Type) (a : A) (b : B) (c : C)
@@ -358,13 +379,17 @@ intros A B C.
 let foo' := eval unfold foo in foo in
 test1 impossible_term impossible_term foo'.
 let l0 := eval unfold l in l in unquote_list l0.
-
 let t0 := return_list_subterms_of_type_type in pose t0.
 let foo' := eval unfold foo in foo in
 inst_dumb_strat foo'. clear l.
 let bar' := eval unfold bar in bar in 
 inst_dumb_strat bar'.
 let l0' := eval unfold l in l in unquote_list_no_dup l0'.
+clear - A B C.
+let bar' := eval unfold bar in bar in 
+test1 impossible_term impossible_term bar'.
+let l0 := eval unfold l in l in unquote_list_no_dup l0.
+Abort.
 
 
 
