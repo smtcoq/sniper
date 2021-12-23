@@ -23,65 +23,6 @@ Import ListNotations.
 Require Import String.
 
 
-Definition foo := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
-       (tSort
-          (Universe.of_levels
-             (inr (Level.Level "Sniper.elimination_polymorphism.755"))))
-       (tProd {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
-          (tRel 0)
-          (tProd
-             {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
-             (tApp
-                (tInd
-                   {|
-                     inductive_mind :=
-                       (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
-                       "list"%string);
-                     inductive_ind := 0
-                   |} []) [tRel 1])
-             (tApp
-                (tConst
-                   (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                   "not"%string) [])
-                [tApp
-                   (tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
-                          "eq"%string);
-                        inductive_ind := 0
-                      |} [])
-                   [tApp
-                      (tInd
-                         {|
-                           inductive_mind :=
-                             (MPfile
-                                ["Datatypes"%string; "Init"%string; "Coq"%string],
-                             "list"%string);
-                           inductive_ind := 0
-                         |} []) [tRel 2];
-                   tApp
-                     (tConstruct
-                        {|
-                          inductive_mind :=
-                            (MPfile
-                               ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-                          inductive_ind := 0
-                        |} 0 []) [tRel 2];
-                   tApp
-                     (tConstruct
-                        {|
-                          inductive_mind :=
-                            (MPfile
-                               ["Datatypes"%string; "Init"%string; "Coq"%string],
-                            "list"%string);
-                          inductive_ind := 0
-                        |} 1 []) [tRel 2; tRel 1; tRel 0]]]))).
-
-MetaCoq Quote Definition nat_reif := nat.
-
-
 (* Instantiate a hypothesis with the parameter x *)
 Ltac instantiate_par H x :=
   let T := type of H in
@@ -183,7 +124,6 @@ Tactic Notation "inst" constr(t) := elimination_polymorphism (t, unit).
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
 Proof. intros H. inst app_length.
-
 Abort.
 
 Section test.
@@ -208,22 +148,63 @@ End test.
 
 (** TODO : new tactics **) 
 
-(* Ltac instanciate_type_all H := 
-let P := type of H  in let P':= type of P in con
-str_eq P' Prop ; lazymatch P with
--    | forall (x : ?A), _ =>
--      let A' := eval hnf in A in 
--is_type_quote A' ; repeat match goal with 
--          |- context C[?y] => let Y := type of y in let Y' := eval hnf in 
--Y in is_type_quote Y' ; instanciate_all H y
--          end
--end. *)
+Definition foo := tProd {| binder_name := nNamed "A"%string; binder_relevance := Relevant |}
+       (tSort
+          (Universe.of_levels
+             (inr (Level.Level "Sniper.elimination_polymorphism.755"))))
+       (tProd {| binder_name := nNamed "x"%string; binder_relevance := Relevant |}
+          (tRel 0)
+          (tProd
+             {| binder_name := nNamed "l"%string; binder_relevance := Relevant |}
+             (tApp
+                (tInd
+                   {|
+                     inductive_mind :=
+                       (MPfile ["Datatypes"%string; "Init"%string; "Coq"%string],
+                       "list"%string);
+                     inductive_ind := 0
+                   |} []) [tRel 1])
+             (tApp
+                (tConst
+                   (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                   "not"%string) [])
+                [tApp
+                   (tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Logic"%string; "Init"%string; "Coq"%string],
+                          "eq"%string);
+                        inductive_ind := 0
+                      |} [])
+                   [tApp
+                      (tInd
+                         {|
+                           inductive_mind :=
+                             (MPfile
+                                ["Datatypes"%string; "Init"%string; "Coq"%string],
+                             "list"%string);
+                           inductive_ind := 0
+                         |} []) [tRel 2];
+                   tApp
+                     (tConstruct
+                        {|
+                          inductive_mind :=
+                            (MPfile
+                               ["Datatypes"%string; "Init"%string; "Coq"%string],
+                            "list"%string);
+                          inductive_ind := 0
+                        |} 0 []) [tRel 2];
+                   tApp
+                     (tConstruct
+                        {|
+                          inductive_mind :=
+                            (MPfile
+                               ["Datatypes"%string; "Init"%string; "Coq"%string],
+                            "list"%string);
+                          inductive_ind := 0
+                        |} 1 []) [tRel 2; tRel 1; tRel 0]]]))).
 
-(* Ltac is_not_in_tuple p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
-| _ => constr_neq p z 
-end. *)
+MetaCoq Quote Definition nat_reif := nat.
 
 Ltac make_list_of_tuple_reif t := 
 lazymatch constr:(t) with 
@@ -250,11 +231,12 @@ Abort.
 
 Ltac return_tuple_terms_of_type_type t1 t2 := 
 match goal with
-|- context C[?y] => 
-let T := type of y in
-first [ constr_eq T Type | constr_eq T Set] ; 
-try (is_not_in_tuple constr:(t1) y ; return_tuple_terms_of_type_type (t1, y) (t2, y)) ; is_not_in_tuple t2 y
-| |- _ => let l := ltac:(make_list_of_tuple_reif t1) in pose l
+|- context C[?y] =>
+let T := type of y in 
+first [ constr_eq T Type | constr_eq T Set] ;
+try (is_not_in_tuple constr:(t1) y ; return_tuple_terms_of_type_type (t1, y) (t2, y)) ;
+is_not_in_tuple t2 y
+| |- _ => idtac t1 ; let l := ltac:(make_list_of_tuple_reif t1) in pose l
 end. 
 
 Goal forall (x : nat) (y : unit) (z : bool), True.
@@ -354,10 +336,29 @@ match constr:(l) with
 | cons ?x ?xs => unquote_term_no_dup x ; unquote_list_no_dup xs
 end.
 
+Ltac inst_list t H := 
+let t0 := eval cbv in t in 
+let result0 := (inst_tuple_list constr:([(H, t0)]) (@id (list term))) in
+let result := eval cbv in result0 in
+pose result.
+
+Ltac test t1 t2 H := 
+match goal with
+|- context C[?y] =>
+let T := type of y in 
+first [ constr_eq T Type | constr_eq T Set] ;
+try (is_not_in_tuple constr:(t1) y ; test1 (t1, y) (t2, y) H) ;
+is_not_in_tuple t2 y
+| |- _ => idtac t1 ; let l := ltac:(make_list_of_tuple_reif t1) in inst_list l H
+end. 
 
 Goal (forall (A B C : Type) (a : A) (b : B) (c : C)
 , a = a -> b = b -> c = c).
 intros A B C.
+let foo' := eval unfold foo in foo in
+test1 impossible_term impossible_term foo'.
+let l0 := eval unfold l in l in unquote_list l0.
+
 let t0 := return_list_subterms_of_type_type in pose t0.
 let foo' := eval unfold foo in foo in
 inst_dumb_strat foo'. clear l.
@@ -365,7 +366,6 @@ let bar' := eval unfold bar in bar in
 inst_dumb_strat bar'.
 let l0' := eval unfold l in l in unquote_list_no_dup l0'.
 
-(* TODO : tout instancier == pas exhaustif *)
 
 
 
