@@ -1707,7 +1707,7 @@ interp_alg_types y ; interp_alg_types_context_aux' (p, y)
 end.
 
 
-Definition prod_types := (Z, bool, True, False, and, or, iff).
+Definition prod_types := (Z, bool, True, False, and, or, nat, Init.Peano.le).
 
 Ltac interp_alg_types_goal := let p := eval unfold prod_types in prod_types in
 interp_alg_types_goal_aux p.
