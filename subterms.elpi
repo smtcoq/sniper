@@ -52,18 +52,3 @@ subterms_type (fix Na _ Ty F) R :-
     subterms_type Ty R1, pi x\ decl x Na Ty => subterms_type (F x) R2,
     std.append R1 R2 R.
 subterms_type _ [].
-
-
-
-% constants: inductive types, inductive constructors, definitions
-%type global gref -> term.
-
-% binders: to form functions, arities and local definitions
-%type fun  name -> term -> (term -> term) -> term.         % fun x : t =>
-%type prod name -> term -> (term -> term) -> term.         % forall x : t,
-%type let  name -> term -> term -> (term -> term) -> term. % let x : T := v in
-
-% other term formers: function application, pattern matching and recursion
-%type app   list term -> term.                   % app [hd|args]
-%type match term -> term -> list term -> term.   % match t p [branch])
-%type fix   name -> int -> term -> (term -> term) -> term. % fix name rno ty bo

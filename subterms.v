@@ -24,7 +24,8 @@ fix length (l : list A) {struct l} : nat  :=
   | nil => 0
   | (_ :: l')%list => S (length l')
   end). 
-  
+
+(* TODO : struct *)
 
 Elpi Command Collect_subterms_type.
 
