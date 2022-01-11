@@ -125,28 +125,28 @@ Import ListNotations.
   snipe. 
   Qed.
 
-  Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
+  Theorem in_eq : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   snipe. 
   Qed.
 
-  Theorem in_cons : forall (a b:A) (l:list A), Lists.Inb b l = true -> Lists.Inb b (a :: l) = true.
+  Theorem in_cons : forall (a b:A) (l:list A), Inb b l = true -> Inb b (a :: l) = true.
   Proof.
   snipe.  
   Qed.
 
   Theorem not_in_cons (x b : A) (l : list A):
-    ~ Lists.Inb x (a::l) = true <-> x<>a /\ ~ Lists.Inb x l = true.
+    ~ Inb x (a::l) = true <-> x<>a /\ ~ Inb x l = true.
   Proof.
   snipe. 
   Qed.
 
-  Theorem in_nil : forall a:A, ~ Lists.Inb a nil.
+  Theorem in_nil : forall a:A, ~ Inb a nil.
   Proof.
   snipe. 
   Qed.
 
-  Lemma in_inv : forall (a b:A) (l:list A), Lists.Inb b (a :: l) -> a = b \/ Lists.Inb b l.
+  Lemma in_inv : forall (a b:A) (l:list A), Inb b (a :: l) -> a = b \/ Inb b l.
   Proof.
   snipe. 
   Qed.
