@@ -14,6 +14,7 @@
 Require Import Sniper.
 Require Import String.
 Require Import ZArith.
+Require Import Bool.
 
 
 Section tests.
@@ -76,6 +77,138 @@ Abort.
 
 Variable HA : CompDec A.
 
+Definition search := 
+fix search {A : Type} {H : CompDec A} (x : A) (l : list A) {struct l} : bool :=
+  match l with
+  | [] => false
+  | x0 :: l0 => orb (eqb_of_compdec H x x0) (search x l0)
+  end.
+
+Local Open Scope list_scope.
+Import ListNotations. 
+
+Lemma search_append_neq : 
+forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
+Proof.
+  snipe. Qed.
+
+
+Open Scope list_scope.
+
+Import ListNotations.
+  Variable a_0 : A.
+
+  (** The boolean In *)
+  Fixpoint Inb (a:A) (l:list A) : bool :=
+    match l with
+      | [] => false
+      | b :: m => orb (eqb_of_compdec HA a b) (Inb a m)
+    end.
+
+  Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
+  Proof.
+    snipe. 
+  Qed.
+
+  Lemma hd_error_tl_repr : forall l (a:A) r,
+    hd_error l = Some a /\ tl l = r <-> l = a :: r.
+  Proof. 
+  snipe. Qed.
+
+ Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
+  Proof. 
+  snipe.
+  Qed.
+
+  Theorem hd_error_nil : hd_error (@nil A) = None.
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem in_eq : forall (a:A) (l:list A), Lists.Inb a (a :: l) = true.
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem in_cons : forall (a b:A) (l:list A), Lists.Inb b l = true -> Lists.Inb b (a :: l) = true.
+  Proof.
+  snipe.  
+  Qed.
+
+  Theorem not_in_cons (x b : A) (l : list A):
+    ~ Lists.Inb x (a::l) = true <-> x<>a /\ ~ Lists.Inb x l = true.
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem in_nil : forall a:A, ~ Lists.Inb a nil.
+  Proof.
+  snipe. 
+  Qed.
+
+  Lemma in_inv : forall (a b:A) (l:list A), Lists.Inb b (a :: l) -> a = b \/ Lists.Inb b l.
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> ((a :: y) ++ x).
+  Proof.
+  snipe.
+  Qed.
+
+  Theorem app_nil_l : forall l:list A, [] ++ l = l.
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem app_nil_r : forall l:list A, l ++ [] = l.
+  Proof.
+    induction l ; snipe. 
+  Qed.
+
+  Theorem app_nil_end : forall (l:list A), l = l ++ [].
+  Proof. snipe app_nil_r. Qed.
+
+  Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
+  Proof.
+    intros l ; induction l ; snipe.
+  Qed. 
+
+  Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
+  Proof.
+     snipe app_assoc. Qed.
+
+  Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
+  Proof.
+  snipe. 
+  Qed.
+
+  Theorem app_eq_nil' : forall l l':list A, 
+(l ++ l') = nil -> l = nil /\ l' = nil.
+  Proof.
+  snipe.  Qed.
+
+   Theorem app_eq_unit :
+    forall (x y:list A) (a:A),
+      x ++ y = a :: nil -> x = nil /\ y = a :: nil \/ x = a :: nil /\ y = nil.
+  Proof.
+  snipe. Qed.
+
+  Lemma app_inj_tail :
+    forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
+  Proof.
+    induction x ; snipe.
+  Qed.
+
+  Lemma in_app_or : forall (l m:list A) (a:A), Inb a (l ++ m) -> or (Inb a l) (Inb a m).
+  Proof.
+    intros l m b. induction l; snipe.
+  Qed.
+
+  Lemma app_inv_head:
+   forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
+  Proof.
+    induction l ; snipe. Qed.
 
 (* Test no_check version *)
 Goal forall (l : list A), l = [] -> hd_error l = None.

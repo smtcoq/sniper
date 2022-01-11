@@ -613,7 +613,7 @@ match l with
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
                  let I := eval hnf in (u.(my_projT2)) in
-                 get_eliminators_st_default_quote I ; elims_on_list xs
+                 try (get_eliminators_st_default_quote I) ; elims_on_list xs
 end.
 
 Ltac get_eliminators_in_goal := match goal with 
