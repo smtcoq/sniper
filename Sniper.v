@@ -52,11 +52,11 @@ def_fix_and_pattern_matching ; inst t.
 
 Ltac scope_param_nat t :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t ; try nat_convert) ;
-get_eliminators_in_goal.
+get_eliminators_in_variables.
 
 Ltac scope_no_param_nat :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching ; inst ; try nat_convert) ;
-get_eliminators_in_goal.
+get_eliminators_in_variables.
 
 Ltac scope_param_no_nat t :=
 try interp_alg_types_context_goal; try (def_fix_and_pattern_matching_mono_param t) ;
@@ -98,23 +98,23 @@ scope_param_no_nat_var t ; verit.
 Ltac snipe_no_param_no_nat_var :=
 scope_no_param_no_nat_var ; verit.
 
-Tactic Notation "snipe2" constr(t) := snipe_param_no_nat t.
-Tactic Notation "snipe2" := snipe_no_param_no_nat.
-
 Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_nat_no_check t.
 Tactic Notation "snipe_no_check" := snipe_no_param_no_nat_no_check.
-
-Tactic Notation "scope2" constr(t) := scope_param_no_nat t.
-Tactic Notation "scope2" := scope_no_param_no_nat.
-
-Tactic Notation "snipe" constr(t) := intros ; snipe_param_no_nat_var t.
-Tactic Notation "snipe" := intros ; snipe_no_param_no_nat_var.
 
 Tactic Notation "scope" constr(t) := scope_param_no_nat_var t.
 Tactic Notation "scope" := scope_no_param_no_nat_var.
 
+Tactic Notation "snipe" constr(t) := intros ; snipe_param_no_nat_var t.
+Tactic Notation "snipe" := intros ; snipe_no_param_no_nat_var.
+
+Tactic Notation "scope2" constr(t) := scope_param_no_nat t.
+Tactic Notation "scope2" := scope_no_param_no_nat.
+
+Tactic Notation "snipe2" constr(t) := snipe_param_no_nat t.
+Tactic Notation "snipe2" := snipe_no_param_no_nat.
+
 Tactic Notation "scope_nat" constr(t) := scope_param_nat t.
 Tactic Notation "scope_nat" := scope_no_param_nat.
 
-Tactic Notation "snipe_nat" constr(t) := snipe_param_nat t.
-Tactic Notation "snipe_nat" := snipe_no_param_nat.
+Tactic Notation "snipe_nat" constr(t) := intros ; snipe_param_nat t.
+Tactic Notation "snipe_nat" := intros ; snipe_no_param_nat.
