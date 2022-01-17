@@ -13,10 +13,6 @@
 
 Require Export SMTCoq.SMTCoq.
 
-Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
-Require Import MetaCoq.PCUIC.PCUICSubstitution.
-Require Import MetaCoq.Template.All.
 Require Export utilities.
 Require Export definitions.
 Require Export elimination_fixpoints.
