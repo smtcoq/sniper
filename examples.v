@@ -17,6 +17,7 @@ Require Import ZArith.
 Require Import tree.
 Require Import Bool.
 Require Import Coq.Lists.List.
+Import ListNotations.
 
 
 Local Open Scope Z_scope.
@@ -25,7 +26,7 @@ Local Open Scope Z_scope.
 (** Examples on lists *)
 
 (* A simple example *)
-Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> []).
+Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof. snipe. Qed.
 
 
@@ -35,7 +36,7 @@ Section Generic.
   Variable A : Type.
   Variable HA : CompDec A.
 
-  Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> []).
+  Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof. snipe. Qed.
 
 End Generic.
@@ -75,7 +76,7 @@ End destruct_auto.
 
 (* An example with polymorphism *)
 Lemma length_app : forall A, forall (l1 l2: list A),
-       (Z.of_nat #|l1 ++ l2| =? Z.of_nat #|l1| + Z.of_nat #|l2|).
+       (Z.of_nat (length (l1 ++ l2)) =? Z.of_nat (length l1) + Z.of_nat (length l2)).
 Proof.
 intros A l1 l2.
 apply Z.eqb_eq.

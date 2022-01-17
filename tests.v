@@ -15,14 +15,16 @@ Require Import Sniper.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
+Require Import List.
+Import ListNotations.
 
 
 Section tests.
 
 Goal ((forall (A : Type) (l : list A),
-#|l| = match l with
+length l = match l with
        | [] => 0
-       | _ :: xs => S #|xs|
+       | _ :: xs => S (length xs)
        end) -> True).
 intro H.
 eliminate_pattern_matching H 1.
