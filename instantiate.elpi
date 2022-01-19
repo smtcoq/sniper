@@ -1,5 +1,5 @@
 pred instantiate i: term, i: term, o: term.
-instantiate (prod N Ty F) T (app [(prod N Ty F), T]) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
+instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
 instantiate T _ T. 
 
 pred instantiate_list i: term, i: (list term), o: (list term).

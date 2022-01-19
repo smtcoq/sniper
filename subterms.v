@@ -1,8 +1,5 @@
 From elpi Require Import elpi.
 
-
-
-
 Elpi Command Collect_subterms.
 Elpi Accumulate File "subterms.elpi".
 Elpi Accumulate lp:{{
@@ -70,53 +67,56 @@ Elpi Collect_subterms_type (nat).
 Elpi Collect_subterms_type (fun x : nat => x).
 Elpi Collect_subterms_type (forall A : Type, nat -> unit).
 
-Ltac pose_alias t := pose t. 
-
-Elpi Tactic pose_list.
+Elpi Tactic swap.
 Elpi Accumulate lp:{{
-  solve (goal _ _ _ _ [trm X | L] as G) GL :-
-    coq.ltac.call "pose_alias" [trm X] G GL, pose_list L.
-  solve (goal _ _ _ _ [] as G) GL :-
-    coq.ltac.call "idtac" [] G GL.
+
+  msolve [G|GL] R :- (std.append GL [G] R).
+}}.
+Elpi Typecheck.
+
+Elpi Tactic assert_list.
+Elpi Accumulate File "construct_cuts.elpi".
+
+Elpi Accumulate lp:{{
+
+  solve (goal _ _ _ _ L as G) GL :- construct_cuts_args L R,
+    refine R G GL.
+    
 
 }}.
 Elpi Typecheck.
 
-Elpi Tactic create_new_goal.
-Elpi Accumulate lp:{{
-
-  solve (goal _ _ _ _ [trm H] as G) GL :-
-    std.assert-ok! (coq.elaborate-ty-skeleton H _ H1) "cut formula illtyped",
-    refine (app[(fun `new_hyp` H1 x\ G1_ x), G2_]) G GL,
-    coq.say GL.
-
-}}.
-Elpi Typecheck.
-
-
-Tactic Notation "pose_list" uconstr(l) := elpi pose_list ltac_term:(l).
-
-(* TODO : un prédicat qui construit récursivement le nouveau but, 
-et la tactique ne fait qu'un refine *)
+Goal False.
+elpi assert_list (True) (nat) (unit) (true=true).
+all: elpi swap.
+Abort.
 
 
 Elpi Tactic instantiate_with_subterms_type_type_of_goal.
 Elpi Accumulate File "subterms.elpi".
 Elpi Accumulate File "instantiate.elpi".
+Elpi Accumulate File "construct_cuts.elpi".
 Elpi Accumulate lp:{{
 
-  solve (goal _ _ Ty _ [trm T] as G) GL :-
-    subterms_type Ty L, instantiate_list T L R,
-    coq.ltac.call "pose_list" [trm {{ unit }}] G GL. 
+  solve (goal _ _ Ty _ [trm T] as G) GL :- !,
+    subterms_type Ty L, instantiate_list T L R, coq.say R, construct_cuts R Trm,
+    refine Trm G GL. 
 
 }}.
 Elpi Typecheck.
 
 
 
-Goal forall A : Type, nat -> unit.
-pose_list unit.
+Goal False.
 elpi instantiate_with_subterms_type_type_of_goal (forall x: Type, x = x).
+Abort.
+
+Ltac instantiate_hyp_with_subterms_of_type_type H := let Ty := type of H in
+elpi instantiate_with_subterms_type_type_of_goal (Ty).
+
+Goal ((forall x: Type, x = x) -> unit -> nat -> Prop).
+intro H.
+instantiate_hyp_with_subterms_of_type_type H. all : try apply H.
 Abort.
 
 
