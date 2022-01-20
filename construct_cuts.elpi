@@ -1,0 +1,13 @@
+pred construct_cuts i: (list term), o: term.
+construct_cuts [X | XS] (app [(fun `new_hyp` X1 x\ G x), R]) :- 
+    std.assert-ok! (coq.elaborate-ty-skeleton X _ X1) "cut formula illtyped",
+    pi x\ decl x N H1 =>
+    construct_cuts XS (G x).
+construct_cuts [] T.
+
+pred terms_to_args i: (list argument), o: (list term).
+terms_to_args [trm X | XS] [X | R] :- terms_to_args XS R.
+terms_to_args [] [].
+
+pred construct_cuts_args i: (list argument), o: term.
+construct_cuts_args L1 R :- terms_to_args L1 L1', construct_cuts L1' R.
