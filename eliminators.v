@@ -90,8 +90,6 @@ let fix aux' l acc := match l with
       end
 in aux' l (tRel 1).
 
-(* TODO : Code refactoring *)
-
 Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
