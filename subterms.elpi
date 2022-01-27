@@ -24,8 +24,6 @@ subterms (fix Na _ Ty F) R :-
     std.append R1 R2 R. 
 subterms _ [].
 
-
-
 pred add_if_type i: term, i: (list term), o: (list term).
 add_if_type T L [T|L] :- coq.typecheck T {{Type}} ok.
 add_if_type _ L L.

@@ -1,8 +1,34 @@
-pred instantiate i: term, i: term, o: term.
-instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
-instantiate T _ T. 
+pred tuple_to_list i: term, o: (list term).
+    tuple_to_list ({{ pair lp:P1 lp:P2 }}) R :- tuple_to_list P1 R1, tuple_to_list P2 R2,
+        std.append R1 R2 R.
+    tuple_to_list T [T].
 
-pred instantiate_list i: term, i: (list term), o: (list term).
-instantiate_list T [U|L] [V|M] :- instantiate T U V, 
-instantiate_list T L M. 
-instantiate_list T [] [].
+pred singl_tuple_to_list i: (list argument), o: (list term).
+    singl_tuple_to_list [trm T] R :- tuple_to_list T R.
+    singl_tuple_to_list [] [].
+
+pred add_if_polymorphic i: term, i: (list term), o: (list term).
+    add_if_polymorphic ((prod Na Ty Bod) as T) L [T | L] :- coq.unify-eq Ty {{ Type }} ok, % equality or equality modulo conversion? TODO : tests
+    add_if_polymorphic _ L L.
+
+pred collect_polymorphic_hypotheses_from_context i: (list decl), o: (list term).
+    collect_polymorphic_hypotheses_from_context [(decl _ _ Ty)| XS] R :- add_if_polymorphic Ty R1 R,
+        collect_polymorphic_hypotheses_from_context XS R1.
+    collect_polymorphic_hypotheses_from_context [] [].
+
+pred instantiate i: term, i: term, o: term.
+    instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
+    instantiate T _ T. 
+
+pred instantiate_term_list i: term, i: (list term), o: (list term).
+    instantiate_term_list T [U|L] [V|M] :- instantiate T U V, 
+    instantiate_term_list T L M. 
+    instantiate_term_list T [] [].
+
+pred instantiate_list_list_type i: (list term), i: (list term), o: (list term).
+    instantiate_list_list [ T| XS] L R :-
+        instantiate_term_list T L R1, instantiate_list_list R1 L R1', 
+        instantiate_list_list XS L R2, std.append R1' R2 R.
+    instantiate_list_list [] L [].
+% TODO : rajouter une condition d'arrêt, on n'instancie le terme que quand c'est un produit requérant un certain type (en entrée)
+% On donnera le type Type pour ce qui nous intéresse
