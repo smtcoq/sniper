@@ -12,11 +12,8 @@
 
 Require Import SMTCoq.SMTCoq.
 
-From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
-Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
 Require Import definitions.

@@ -12,16 +12,12 @@
 
 Require Import SMTCoq.SMTCoq.
 
-From MetaCoq Require Import All.
-Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import expand.
 Require Import ZArith.
 Require Import String.
-Unset Strict Unquote Universe Mode.
 
 
 

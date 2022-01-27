@@ -10,7 +10,6 @@
 (**************************************************************************)
 
 
-From MetaCoq Require Import All.
 Require Import MetaCoq.Template.All.
 Require Import List String.  
 Require Import utilities. 
