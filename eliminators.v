@@ -106,8 +106,6 @@ Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : 
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
 (mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
 
-
-
 Definition proj_one_constructor_params_default_var (ty_params : list term) (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) 
 (nbconstruct : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
 let fix aux ty_params acc :=
@@ -242,7 +240,7 @@ Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nb
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
-let name := fresh "proj_" I in let _ := match goal with _ =>
+let name := fresh "proj_" I  in let _ := match goal with _ =>
 pose (name := x) end in
 let elim := metacoq_get_value (tmQuote name) in 
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
@@ -274,9 +272,13 @@ match n with
           get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
-Ltac prove_by_blind_destruct := 
+Ltac prove_by_destruct_varn n := 
+match n with 
+| 0 =>
 let x := fresh in 
-intro x ; try (destruct x ; auto) ; prove_by_blind_destruct.
+intro x ; destruct x ; auto ; intuition
+| S ?m => let y := fresh in intro y ; prove_by_destruct_varn m
+end.
 
 Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
@@ -301,7 +303,8 @@ match opt with
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
                       let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
-assert (Helim : u') by (prove_by_blind_destruct) end in Helim
+let nb_intros := eval cbv in (npars + total_args) in
+ assert (Helim : u') by (prove_by_destruct_varn nb_intros) end in Helim
         | _ => fail
 | None => fail
 end
@@ -453,4 +456,25 @@ match v with
 | _ => idtac
 end
 in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
+
+Section tests.
+
+Inductive test: Set :=
+    one : test
+  | two : test
+  | three : test
+  | four : test
+  | five : test
+  | six : test.
+
+Goal test -> False.
+   
+Proof. intros. get_eliminators_in_variables.  
+Abort.
+
+End tests.
+
+
+
+
 
