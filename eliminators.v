@@ -272,12 +272,12 @@ match n with
           get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
-Ltac prove_by_destruct_varn n := 
+Ltac prove_by_destruct_varn n  := 
 match n with 
 | 0 =>
 let x := fresh in 
-intro x ; destruct x ; auto ; intuition
-| S ?m => let y := fresh in intro y ; prove_by_destruct_varn m
+intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | left]
+| S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
 Ltac get_eliminators_st_return I_rec na := 
@@ -303,8 +303,9 @@ match opt with
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
                       let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
-let nb_intros := eval cbv in (npars + total_args) in
- assert (Helim : u') by (prove_by_destruct_varn nb_intros) end in Helim
+let nb_intros := eval cbv in (npars + total_args) in 
+ assert (Helim : u') by (prove_by_destruct_varn nb_intros)
+ end in Helim
         | _ => fail
 | None => fail
 end
@@ -469,12 +470,7 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_eliminators_in_variables.  
+Proof. intros. get_eliminators_in_variables.
 Abort.
 
 End tests.
-
-
-
-
-
