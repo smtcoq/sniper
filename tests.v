@@ -42,7 +42,7 @@ Qed.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 Proof.
-interp_alg_types_context_goal. 
+intros ; interp_alg_types_context_goal. 
 def_and_pattern_matching_mono.     
 verit.
 Qed.
