@@ -635,19 +635,43 @@ end.
 Goal True.
 Fail contains_not_eq (1=1). contains_not_eq (fun x: nat => x). exact I. Qed.
 
-Ltac interp_alg_types_aux p y :=
-is_not_in_tuple p y ; contains_not_eq y ;
-try (let y_hnf := eval hnf in y in 
-let y' := get_head y_hnf in constr_eq y y' ; interp_alg_types y).
 
+(* In the goal, we look for the terms whose type is an algebraic type 
+and the terms who are an algebraic type *)
+Ltac interp_alg_types_aux_goal_term p y :=
+is_not_in_tuple p y ;
+try (interp_alg_types y).
+
+Ltac interp_alg_types_aux_goal_type p y :=
+is_not_in_tuple p y ;
+let y' := get_head y in is_not_in_tuple p y';
+try (interp_alg_types y').
+
+
+(* In the context, we look for the not applied type of the variables, 
+or the implicit parameter of an equality *)
+Ltac interp_alg_types_aux_context p y :=
+is_not_in_tuple p y ;
+let y' := get_head y in
+let T := type of y in 
+is_not_in_tuple p y' ; 
+first [
+constr_neq T Prop ;
+interp_alg_types y' | match y with 
+|?x = ?y => let T := type of x in let T' := get_head T in
+is_not_in_tuple p T' ; is_not_in_tuple p T ;
+try (interp_alg_types T')
+end].
 
 Ltac interp_alg_types_context_aux p :=
 match goal with 
-| |- context C[?y] => interp_alg_types_aux p y ; interp_alg_types_context_aux (p, y)
-| _ : context C[?y] |- _ => interp_alg_types_aux p y ; interp_alg_types_context_aux (p, y)
-| _ => idtac
+| |- context C[?y] => 
+let T :=
+type of y in interp_alg_types_aux_goal_term p y ; interp_alg_types_aux_goal_type (p, y) T ;
+interp_alg_types_context_aux (p, y, T)
+| _ : ?y |- _ => interp_alg_types_aux_context p y ; interp_alg_types_context_aux (p, y)
+| _ => clear_dups
 end.
-
 
 Definition prod_types := (Z, bool, True, False, and, or, nat, Init.Peano.le).
 
@@ -655,9 +679,8 @@ Ltac interp_alg_types_context_goal :=
 let p := eval unfold prod_types in prod_types in
 (interp_alg_types_context_aux p).
 
-
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
-interp_alg_types_context_goal.
+intros ; interp_alg_types_context_goal. 
 Abort.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
@@ -683,5 +706,4 @@ fo_prop_of_cons_tac Ntree.   *)
 reflexivity.
 Abort.
 End Test.
-
 

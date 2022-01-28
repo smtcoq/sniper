@@ -249,6 +249,19 @@ let _ := match goal with _ => intro H end in constr:((H, acc))
 | _ => constr:(unit)
 end.
 
+Ltac clear_dup :=
+  match goal with
+    | [ H : ?X |- _ ] => let U := type of X in constr_eq U Prop ;
+      match goal with
+        | [ H' : ?Y |- _ ] =>
+          match H with
+            | H' => fail 2
+            | _ => unify X Y ; (clear H' || clear H)
+          end
+      end
+  end.
+
+Ltac clear_dups := repeat clear_dup.
 
 (** Tactics to work on quoted MetaCoq terms **)
 
@@ -369,7 +382,6 @@ in aux l unit.
 Ltac return_tuple_subterms_of_type_type := match goal with
 |- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l
 end.
-
 
 Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
 let t := return_tuple_subterms_of_type_type in pose t.
