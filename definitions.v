@@ -15,6 +15,7 @@ Require Import SMTCoq.SMTCoq.
 Require Import String.
 Require Import utilities.
 Require Import ZArith.
+Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 
 (* Recursive, be careful: it can unfold definitions that we want to keep folded *)
@@ -45,6 +46,14 @@ Definition prod_of_symb := (unit,
          Z.le,
          Z.ge,
          Z.gt,
+         Pos.lt, 
+         Pos.le, 
+         Pos.ge, 
+         Pos.gt,
+         Z.to_nat,
+         Pos.mul,
+         Pos.add,
+         Pos.sub,
          Init.Nat.add,
          Init.Nat.mul,
          Nat.eqb,

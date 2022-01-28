@@ -14,6 +14,7 @@ Require Import MetaCoq.Template.All.
 Require Import List String.  
 Require Import utilities. 
 Require Import ZArith.
+Require Import PArith.BinPos.
 
 
 Open Scope string_scope.  
@@ -673,7 +674,7 @@ interp_alg_types_context_aux (p, y, T)
 | _ => clear_dups
 end.
 
-Definition prod_types := (Z, bool, True, False, and, or, nat, Init.Peano.le).
+Definition prod_types := (Z, bool, True, False, positive, and, or, nat, Init.Peano.le).
 
 Ltac interp_alg_types_context_goal := 
 let p := eval unfold prod_types in prod_types in
