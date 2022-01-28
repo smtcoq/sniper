@@ -444,9 +444,8 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-Definition prod_types := (Z, bool, nat).
 
-Ltac get_eliminators_in_variables := 
+Ltac get_eliminators_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
@@ -456,7 +455,7 @@ match v with
                 get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
 | _ => idtac
 end
-in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
+in let prod_types0 := eval cbv in p in tac_rec t prod_types0.
 
 Section tests.
 
@@ -470,7 +469,7 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_eliminators_in_variables.
+Proof. intros. get_eliminators_in_variables bool.
 Abort.
 
 End tests.

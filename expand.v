@@ -103,7 +103,7 @@ expand_fun Datatypes.length.
 Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
+get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
 Abort.
 
 

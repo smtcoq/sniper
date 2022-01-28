@@ -36,14 +36,14 @@ Goal ((forall (x : nat) (a : nat) (l : list nat),
 | nil => x
 | y :: xs => y
 end)).
-def_and_pattern_matching_mono.
+def_and_pattern_matching_mono prod_types.
 assumption.
 Qed.
 
-Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
+Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
-intros ; interp_alg_types_context_goal. 
-def_and_pattern_matching_mono.     
+intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
+def_and_pattern_matching_mono prod_of_symb.     
 verit.
 Qed.
 
@@ -69,12 +69,13 @@ Goal
   forall s1 s2 : string, s1 = s2.
 Proof.
 get_eliminators_in_goal.
-clear. intros s1 s2. get_eliminators_in_variables.
+clear. intros s1 s2.
+let p:= eval unfold prod_types in prod_types in get_eliminators_in_variables p.
 Abort.
 
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
-intros. get_eliminators_in_variables. 
+intros. let p:= eval unfold prod_types in prod_types in get_eliminators_in_variables p. 
 Abort.
 
 Variable HA : CompDec A.

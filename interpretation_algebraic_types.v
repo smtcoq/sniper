@@ -674,19 +674,17 @@ interp_alg_types_context_aux (p, y, T)
 | _ => clear_dups
 end.
 
-Definition prod_types := (Z, bool, True, False, positive, and, or, nat, Init.Peano.le).
 
-Ltac interp_alg_types_context_goal := 
-let p := eval unfold prod_types in prod_types in
-(interp_alg_types_context_aux p).
+Ltac interp_alg_types_context_goal p := 
+interp_alg_types_context_aux p.
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
-intros ; interp_alg_types_context_goal. 
+intros ; interp_alg_types_context_goal (bool, Z). 
 Abort.
 
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 intros.
-interp_alg_types_context_goal.
+interp_alg_types_context_goal (bool, Z).
 
 Abort.
 
@@ -695,7 +693,7 @@ Variable A : Type.
 Lemma hd_error_tl_repr : forall l (a:A) r,
    hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof. intros l.
-interp_alg_types_context_goal.
+interp_alg_types_context_goal bool.
 Abort.
 
 Goal 2+2 = 4.

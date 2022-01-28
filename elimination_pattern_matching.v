@@ -452,7 +452,7 @@ Goal ((forall (A: Type) (x : A) (a : A) (l : list A),
 | nil => x
 | y :: xs => y
 end)).
-get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_pattern_matching H' 1)). assumption.
 Qed.
 
