@@ -12,9 +12,6 @@
 
 Require Import SMTCoq.SMTCoq.
 
-From MetaCoq Require Import All.
-Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
@@ -38,7 +35,7 @@ Open Scope string_scope.
 Fixpoint gen_eq (l : list term) (B : term) (t : term) (u : term) {struct l} := 
 match l with
 | [] => mkEq B t u
-| A :: l' => mkProdName "x" A (gen_eq l' B (mkApp (lift 1 0 t) (tRel 0)) (mkApp (lift 1 0 u) (tRel 0)))
+| A :: l' => mkProdName "x" A (gen_eq l' B (mkApp_singl (lift 1 0 t) (tRel 0)) (mkApp_singl (lift 1 0 u) (tRel 0)))
 end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
@@ -87,8 +84,6 @@ end.
 Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.
 
-
-
 Section tests.
 
 Goal False.
@@ -108,7 +103,7 @@ expand_fun Datatypes.length.
 Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
+get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
 Abort.
 
 

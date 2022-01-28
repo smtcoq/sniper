@@ -13,8 +13,6 @@
 Require Import utilities. 
 Require Import elimination_polymorphism.
 Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
-Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 Require Import ZArith.
@@ -22,69 +20,14 @@ Require Import ZArith.
 Require Import SMTCoq.SMTCoq.
 
 
-Definition get_nth_constructor (I : term) (n : nat) : term := 
-let g := get_info_inductive I in match g with 
-  | None => impossible_term_reif
-  | Some (ind, inst) => tConstruct ind n inst
-end. 
-
-
-Definition mkApp (u : term) (l : list term) :=
-tApp u l.
-
-
-Ltac get_inhabitant t := 
-let t_reif_rec := metacoq_get_value (tmQuoteRec t) in 
-let p := eval cbv in (no_app t_reif_rec.2) in
-let t_reif_no_app := eval cbv in p.1 in
-let params := eval cbv in p.2 in
-let opt1 := eval cbv in 
-(find_index_constructor_of_arity_zero (get_constructors_inductive t_reif_no_app (t_reif_rec.1))) in
-let nb := remove_option opt1 in 
-let construct_reif := eval cbv in (mkApp (get_nth_constructor t_reif_no_app nb) params) in
-construct_reif.
-
-Ltac find_inhabitant t := 
-let construct_reif := get_inhabitant t in
-let construct0 := metacoq_get_value (tmUnquote construct_reif) in 
-let construct := eval cbv in construct0.(my_projT2) in
-exact construct.
-
-
 Ltac find_inhabitant_context t := 
-first[ find_inhabitant | constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
+first[ constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
 
 Ltac find_inh t :=
 match goal with
 | H : t |- _ => H
 | _ => let H := fresh in let _ := match goal with _ => assert (H : t) by find_inhabitant_context t end in H
 end.
-
-Section test_inhabitants.
-Variable A : Type. 
-Goal list False.
-let c := (get_inhabitant nat) in pose c.
-find_inhabitant_context (list False).
-Qed.
-
-Goal nat.
-find_inhabitant nat. Qed.
-
-
-Goal (list A). 
-find_inhabitant (list A). 
-Qed.
-
-Goal (list False). 
-exact (@nil False). Qed. 
-
-End test_inhabitants.
-
-Definition mkLam Ty t := match Ty with 
-| tSort _ => tLambda {| binder_name := nNamed "A"%string ; binder_relevance := Relevant |} Ty t
-| _ => tLambda {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} Ty t
-end.
-
 
 Definition get_return_type (indu_app_to_params : term) (domain : term) := 
 mkLam indu_app_to_params (lift 1 0 domain).
@@ -128,46 +71,6 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   | _ => t
   end.
 
-Definition branch (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) (default : term) :=
-let len := Datatypes.length l0 in 
-if Nat.eqb n nbconstruct then 
-let fix aux l acc :=
-match l with 
-| [] => acc 
-| y :: ys => aux ys (mkLam hole acc)
-end
-in aux l0 (tRel (len - nbproj))
-else
-let fix aux' l acc := match l with 
-      | [] => acc
-      | y :: ys => aux' ys (mkLam hole acc)
-      end
-in aux' l0 default.
-
-Definition mkCase_eliminator (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
-(ty_arg_constr : list (list term)) (default : term) (return_type : term) := 
-let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
-(ty_arg_constr : list (list term)) (default : term) (return_type : term) (acc: list (nat × term)) (acc_nat : nat) :=
-match ty_arg_constr with 
-| [] => tCase (I, npars, Relevant) return_type (tRel 0) (List.rev acc)
-| x :: xs => aux I npars nbproj nbconstruct xs default return_type 
-((acc_nat, branch x nbproj nbconstruct acc_nat default)::acc) (acc_nat + 1)
-end
-in aux I npars nbproj nbconstruct ty_arg_constr default return_type [] 0. 
-
-
-Definition proj_one_constructor (i : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
-(ty_arg_constr : list (list term)) (default : term) (return_type : term) := 
-mkLam i (mkCase_eliminator I npars nbproj nbconstruct ty_arg_constr default return_type). 
-
-Definition proj_one_constructor_params (ty_params : list term) (i : term) (I : inductive) (npars : nat) (nbproj : nat) 
-(nbconstruct : nat) (ty_arg_constr : list (list term)) (default : term) (return_type : term) :=
-let fix aux ty_params acc :=
-match ty_params with 
-| nil => acc
-| x :: xs => aux xs (mkLam x acc)
-end in aux ty_params (proj_one_constructor i I npars nbproj nbconstruct ty_arg_constr default return_type).
-
 (** version with default = tRel 1 **)
 
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
@@ -202,8 +105,6 @@ in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
 (mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
-
-
 
 Definition proj_one_constructor_params_default_var (ty_params : list term) (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) 
 (nbconstruct : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
@@ -328,93 +229,18 @@ match I with
 | _ => []
 end.
 
-Ltac get_eliminator nbconstruct nbproj I := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-let I_rec_term := eval cbv in (I_rec.2) in
-let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
-match opt with 
-| Some (?npars, ?ty_pars) =>
-  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
-  let list_args := eval cbv in (rev (get_args_list list_ty npars)) in 
-  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) (nbproj - 1) ) in 
-  let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
-  let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in
-  (* lift 2 0 because we quantify over two new variables: the default and the inductive we match on *)
-  
-  match I_rec_term with
-  | tInd ?I_indu _ => let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
-                    let u := metacoq_get_value (tmUnquote p) in
-                    let x := eval cbv in u.(my_projT2) in
-                    let name := fresh "proj_" I in
-                    pose (name := x)
-  | _ => fail
-| None => fail
-end
-end.
-
-Ltac get_one_eliminator I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty :=
-let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
-let u := metacoq_get_value (tmUnquote p) in
-let x := eval cbv in u.(my_projT2) in
-let name := fresh "proj_" I in
-pose (name := x).
-
-
-Ltac get_eliminators_one_constructor n I ty_pars I_app I_indu npars nbconstruct list_args :=
-match n with
-| 0 => idtac
-| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) in 
-            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in
-            get_one_eliminator I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty ; get_eliminators_one_constructor n'
-            I ty_pars I_app I_indu npars nbconstruct list_args
-end.
-
-Ltac get_eliminators_aux n I ty_pars I_app I_indu npars list_args :=
-match n with
-| 0 => idtac 
-| S ?n' => let nbproj := eval cbv in (Datatypes.length (nth n' list_args nil)) in 
-          get_eliminators_one_constructor nbproj I ty_pars I_app I_indu npars n list_args ;
-          get_eliminators_aux n' I ty_pars I_app I_indu npars list_args
-end.
-              
-
-
-Ltac get_eliminators I := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-let I_rec_term := eval cbv in (I_rec.2) in
-let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
-match opt with 
-| Some (?npars, ?ty_pars) =>
-  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
-  let list_args := eval cbv in (rev (get_args_list list_ty npars)) in 
-  let nbconstruct := eval cbv in (Datatypes.length list_args) in 
-  let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
-        match I_rec_term with
-        | tInd ?I_indu _ => 
-                      get_eliminators_aux nbconstruct I ty_pars I_app I_indu npars list_args 
-        | _ => fail
-| None => fail
-end
-end.
-
-
-MetaCoq Quote Definition or_reif := Logic.or.
-
-MetaCoq Quote Definition eq_reif := @eq.
-
-
 Fixpoint mkOr (l : list term) := 
 match l with
 | nil => impossible_term_reif
 | [ x ] => x
-| cons x xs => tApp or_reif [x ; mkOr xs]
+| cons x xs => tApp or_reif ([mkOr xs] ++ [x])
 end.
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
-let name := fresh "proj_" I in let _ := match goal with _ =>
+let name := fresh "proj_" I  in let _ := match goal with _ =>
 pose (name := x) end in
 let elim := metacoq_get_value (tmQuote name) in 
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
@@ -446,9 +272,13 @@ match n with
           get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
-Ltac prove_by_blind_destruct := 
+Ltac prove_by_destruct_varn n  := 
+match n with 
+| 0 =>
 let x := fresh in 
-intro x ; try (destruct x ; auto) ; prove_by_blind_destruct.
+intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | left]
+| S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
+end.
 
 Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
@@ -473,7 +303,9 @@ match opt with
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
                       let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
-assert (Helim : u') by (prove_by_blind_destruct) end in Helim
+let nb_intros := eval cbv in (npars + total_args) in 
+ assert (Helim : u') by (prove_by_destruct_varn nb_intros)
+ end in Helim
         | _ => fail
 | None => fail
 end
@@ -495,25 +327,6 @@ Inductive Ind_test (A B : Type) :=
 Inductive Ind_test2 (A B C : Type) := 
 | bar1 : C -> Ind_test2 A B C
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
-
-Goal False.
-get_eliminators nat.
-clear.
-get_eliminators list.
-clear.
-get_eliminator 2 1 Ind_test.
-clear.
-get_eliminators Ind_test.
-clear.
-get_eliminators Ind_test2.
-Abort.
-
-
-Goal False.
-get_eliminator 2 1 nat.
-get_eliminator 2 1 list.
-get_eliminator 2 2 list.
-Abort. 
 
 Goal False.
 get_eliminators_st nat. clear.
@@ -599,12 +412,6 @@ then get_ind_of_prod_no_dup u (I:: acc) (I :: acc') else get_ind_of_prod_no_dup 
 | _ => acc'
 end.
 
-
-MetaCoq Quote Definition bool_reif := bool. 
-MetaCoq Quote Definition Z_reif := Z.
-MetaCoq Quote Definition nat_reif := nat.
-
-
 Definition get_ind_of_prod_no_dup_default t := 
 get_ind_of_prod_no_dup t [bool_reif ; Z_reif; nat_reif ; eq_reif] [].
 
@@ -637,10 +444,8 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-Definition prod_types := (Z, bool, nat).
 
-
-Ltac get_eliminators_in_variables := 
+Ltac get_eliminators_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
@@ -650,17 +455,21 @@ match v with
                 get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
 | _ => idtac
 end
-in let prod_types0 := eval cbv in prod_types in tac_rec t prod_types0.
+in let prod_types0 := eval cbv in p in tac_rec t prod_types0.
 
+Section tests.
 
+Inductive test: Set :=
+    one : test
+  | two : test
+  | three : test
+  | four : test
+  | five : test
+  | six : test.
 
+Goal test -> False.
+   
+Proof. intros. get_eliminators_in_variables bool.
+Abort.
 
-
-
-
-
-
-
-
-
-
+End tests.

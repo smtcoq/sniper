@@ -11,144 +11,48 @@
 
 
 Require Import SMTCoq.SMTCoq.
+From MetaCoq Require Import All. 
+Require Import String.
+Require Import ZArith.
 
-From MetaCoq Require Import All.
-Require Import MetaCoq.Template.All.
-Require Import MetaCoq.Template.Universes.
-Require Import MetaCoq.Template.All.
-
-Require Import String. 
+(** Quoted useful terms **)
 
 MetaCoq Quote Definition unit_reif := unit.
 
-Ltac unquote_term t_reif := 
-run_template_program (tmUnquote t_reif) ltac:(fun t => 
-let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
+MetaCoq Quote Definition or_reif := Logic.or.
 
-Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
+MetaCoq Quote Definition eq_reif := @eq.
 
-Ltac unquote_list l :=
-match constr:(l) with
-| nil => idtac
-| cons ?x ?xs => unquote_term x ; unquote_list xs
-end.
+MetaCoq Quote Definition bool_reif := bool. 
 
-Ltac prove_hypothesis H :=
-repeat match goal with
-  | H' := ?x : ?P |- _ =>  lazymatch P with 
-                | Prop => let def := fresh in assert (def : x) by 
-(intros; rewrite H; auto) ;  clear H'
-          end
-end.
+MetaCoq Quote Definition Z_reif := Z.
+
+MetaCoq Quote Definition nat_reif := nat.
+
+Inductive impossible_term :=.
+MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
 
-(* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
-Ltac inverse_tactic tactic := try (tactic; fail 1).
-
-(* [constr_neq t u] fails if and only if [t] and [u] are convertible *)
-Ltac constr_neq t u := inverse_tactic ltac:(constr_eq t u).
-
-
-Ltac is_not_in_tuple p z := 
-lazymatch constr:(p) with
-| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
-| _ => constr_neq p z 
-end.
-
-
-(* Nothing about inductives for now *)
-Fixpoint get_decl (e : global_env) := match e with 
-| [] => []
-| x :: e' => match (snd x) with
-      | ConstantDecl u => match u.(cst_body) with
-            | Some v => v :: get_decl e'
-            | None => get_decl e'
-            end
-      | InductiveDecl u => get_decl e'
-      end
-end.
-
-
-Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
-
-
-
-MetaCoq Quote Definition eq_reif := Eval cbn in @eq.
-
-Ltac notHyp T  :=
-repeat match goal with
-  | [H : _ |- _] => let U := type of H in constr_eq U T ; fail 2
-end.
+(** Functions to build MetaCoq terms **)
 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
 Definition mkProd T u :=
 tProd {| binder_name := nAnon; binder_relevance := Relevant |} T u.
 
+Definition mkLam Ty t := match Ty with 
+| tSort _ => tLambda {| binder_name := nNamed "A"%string ; binder_relevance := Relevant |} Ty t
+| _ => tLambda {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} Ty t
+end.
+
 Definition mkProdName na T u :=
 tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
 
-Definition mkApp t u :=
-tApp t [u].
+Definition mkApp (u : term) (l : list term) :=
+tApp u l.
 
-(* A tactic version of if/else *)
-Ltac if_else_ltac tac1 tac2 b := lazymatch b with
-  | true => tac1
-  | false => tac2
-end.
-
-(* Check is a MetaCoq term is a sort which is not Prop *)
-Definition is_type (t : term) := match t with
-                                 | tSort s => negb (Universe.is_prop s)
-                                 |_ => false
-                                  end.
-
-
-
-(* Allows to use MetaCoq without continuations *)
-Ltac metacoq_get_value p :=
-  let id := fresh in
-  let _ := match goal with _ => run_template_program p
-  (fun t => pose (id := t)) end in
-  let x := eval cbv delta [id] in id in
-  let _ := match goal with _ => clear id end in
-  x.
-
-(* Examples for metacoq_get_value *)
-Goal True.
-let x := metacoq_get_value (tmQuoteRec bool) in pose x.
-let x := metacoq_get_value (tmQuote bool) in pose x.
-let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in pose y.
-let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in pose y.
-Abort.
-
-
-(* Get the nb of construcors of a reified inductive type if we have the reified global environment *)
-Definition get_nb_constructors i Σ := 
-match i with 
-| tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
-                | Some (InductiveDecl decl) => match ind_bodies decl with 
-                          | nil => 0
-                          | x :: _ => Datatypes.length (ind_ctors x)
-                          end
-                | _ => 0
-end
-| _ => 0
-end.
-
-Ltac get_nb_constructors_tac i id :=
-run_template_program (tmQuoteRec i) ltac:(fun i_reif_rec => let n := 
-eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
-pose (id := n)).
-
-(* Returns the tuple of hypothesis in a local context *)
-Ltac hyps := 
-match goal with
-| H : _ |- _ => let _ := match goal with _ => let T := type of H in let U := type of T in
-constr_eq U Prop ; revert H end in let acc := hyps in 
-let _ := match goal with _ => intro H end in constr:((H, acc))
-| _ => constr:(unit)
-end.
+Definition mkApp_singl t u :=
+mkApp t [u].
 
 Fixpoint get_constructors_inductive (I : term) (e : global_env) :=
 match I with 
@@ -168,7 +72,6 @@ end in list_ctors_opt else get_constructors_inductive I e'
 end
 | _ => None
 end.
-
 
 (* Get the pair of the number of parameters of an inductive and the list of their types *)
 Fixpoint get_info_params_inductive (I : term) (e : global_env) :=
@@ -236,9 +139,6 @@ let p := no_app I in match p.1 with
 | _ => None
 end.
 
-Inductive impossible_term :=.
-MetaCoq Quote Definition impossible_term_reif := impossible_term.
-
 Ltac remove_option o := match o with
 | Some ?x => constr:(x)
 | None => fail "None"
@@ -274,6 +174,131 @@ match l with
 | ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
 end.
 
+Fixpoint get_decl (e : global_env) := match e with 
+| [] => []
+| x :: e' => match (snd x) with
+      | ConstantDecl u => match u.(cst_body) with
+            | Some v => v :: get_decl e'
+            | None => get_decl e'
+            end
+      | InductiveDecl u => get_decl e'
+      end
+end.
+
+(* Check is a MetaCoq term is a sort which is not Prop *)
+Definition is_type (t : term) := match t with
+                                 | tSort s => negb (Universe.is_prop s)
+                                 |_ => false
+                                  end.
+
+(* Get the nb of construcors of a reified inductive type if we have the reified global environment *)
+Definition get_nb_constructors i Σ := 
+match i with 
+| tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
+                | Some (InductiveDecl decl) => match ind_bodies decl with 
+                          | nil => 0
+                          | x :: _ => Datatypes.length (ind_ctors x)
+                          end
+                | _ => 0
+end
+| _ => 0
+end.
+
+
+(** Generic tactics **) 
+
+Ltac prove_hypothesis H :=
+repeat match goal with
+  | H' := ?x : ?P |- _ =>  lazymatch P with 
+                | Prop => let def := fresh in assert (def : x) by 
+(intros; rewrite H; auto) ;  clear H'
+          end
+end.
+
+Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
+
+(* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
+Ltac inverse_tactic tactic := try (tactic; fail 1).
+
+(* [constr_neq t u] fails if and only if [t] and [u] are convertible *)
+Ltac constr_neq t u := inverse_tactic ltac:(constr_eq t u).
+
+Ltac is_not_in_tuple p z := 
+lazymatch constr:(p) with
+| (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
+| _ => constr_neq p z 
+end.
+
+Ltac notHyp T  :=
+repeat match goal with
+  | [H : _ |- _] => let U := type of H in constr_eq U T ; fail 2
+end.
+
+(* A tactic version of if/else *)
+Ltac if_else_ltac tac1 tac2 b := lazymatch b with
+  | true => tac1
+  | false => tac2
+end.
+
+(* Returns the tuple of hypothesis in a local context *)
+Ltac hyps := 
+match goal with
+| H : _ |- _ => let _ := match goal with _ => let T := type of H in let U := type of T in
+constr_eq U Prop ; revert H end in let acc := hyps in 
+let _ := match goal with _ => intro H end in constr:((H, acc))
+| _ => constr:(unit)
+end.
+
+Ltac clear_dup :=
+  match goal with
+    | [ H : ?X |- _ ] => let U := type of X in constr_eq U Prop ;
+      match goal with
+        | [ H' : ?Y |- _ ] =>
+          match H with
+            | H' => fail 2
+            | _ => unify X Y ; (clear H' || clear H)
+          end
+      end
+  end.
+
+Ltac clear_dups := repeat clear_dup.
+
+(** Tactics to work on quoted MetaCoq terms **)
+
+Ltac unquote_term t_reif := 
+run_template_program (tmUnquote t_reif) ltac:(fun t => 
+let x := constr:(t.(my_projT2)) in let y := eval hnf in x in pose y).
+
+Ltac unquote_list l :=
+match constr:(l) with
+| nil => idtac
+| cons ?x ?xs => unquote_term x ; unquote_list xs
+end.
+
+Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
+
+(* Allows to use MetaCoq without continuations *)
+Ltac metacoq_get_value p :=
+  let id := fresh in
+  let _ := match goal with _ => run_template_program p
+  (fun t => pose (id := t)) end in
+  let x := eval cbv delta [id] in id in
+  let _ := match goal with _ => clear id end in
+  x.
+
+(* Examples for metacoq_get_value *)
+Goal True.
+let x := metacoq_get_value (tmQuoteRec bool) in pose x.
+let x := metacoq_get_value (tmQuote bool) in pose x.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquote x) in pose y.
+let x := metacoq_get_value (tmQuote 0) in let y := metacoq_get_value (tmUnquoteTyped nat x) in pose y.
+Abort.
+
+Ltac get_nb_constructors_tac i id :=
+run_template_program (tmQuoteRec i) ltac:(fun i_reif_rec => let n := 
+eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
+pose (id := n)).
+
 (* Given a term recursively quoted, gives the list of the type of each of its constructor *)
 Definition list_types_of_each_constructor t :=
 let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
@@ -299,7 +324,6 @@ match n with
 | S n' => aux n' (k + 1) ((tRel (k + l)) :: acc)
 end in aux n 0 nil.
 
-
 Fixpoint flatten_aux {A} (l : list (list A)) (acc : list A) := 
 match l with 
 | nil => acc
@@ -319,7 +343,6 @@ metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in 
 Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
 metacoq_get_value (tmQuote t') in constr:(is_type T).
 
-
 Fixpoint list_of_subterms (t: term) : list term := match t with
 | tLambda _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
 | tProd _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
@@ -333,13 +356,11 @@ Fixpoint list_of_subterms (t: term) : list term := match t with
 | _ => [t]
 end.
 
-
 Definition filter_closed (l: list term) := List.filter (closedn 0) l.
 
 
 Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
 let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l. 
-
 
 Ltac return_unquote_tuple_terms l := let rec aux l acc :=
 match constr:(l) with
@@ -361,7 +382,6 @@ in aux l unit.
 Ltac return_tuple_subterms_of_type_type := match goal with
 |- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l
 end.
-
 
 Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
 let t := return_tuple_subterms_of_type_type in pose t.
