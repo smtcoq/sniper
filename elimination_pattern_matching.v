@@ -28,8 +28,6 @@ Fixpoint codomain (t : term) := match t with
 end.
 
 
-
-
 (* Build the list of constructors and their types applied to the parameters *)
 Definition build_ctor_ty_ctor_applied_to_parameters (args_in_statement : list term) (p : term * term) := let ctor := p.1 in let ty_ctor := p.2 in 
 let ty_args := (no_app (codomain ty_ctor)).2
@@ -42,9 +40,6 @@ in let fix aux args_in_statement ty_args ctor ty_ctor := match args_in_statement
         end 
 end
 in aux args_in_statement ty_args ctor ty_ctor.
-        
-
-
 
 Definition get_info_inductive (I : term) := 
 let p := no_app I in match p.1 with
@@ -110,9 +105,6 @@ match (T, n) with
 end
 in aux T n [].
 
-
-
-
 Fixpoint prenex_quantif_list (l : list term) (t : term):= 
 match l with
 | [] => t 
@@ -133,9 +125,6 @@ Definition list_of_args (t : term) := let fix aux acc t := match t with
 | _ => acc
 end in aux [] t.
 
-
-
-
 Definition prenex_quantif_list_ctor (c : term) (l : list term) (l' : list term) (E : term) :=
 (* c is the constructor reified, l is the list of the type of its arguments, l' is the list of the 
 type of the prenex quantification in the hypothesis, E is the environment *)
@@ -151,8 +140,6 @@ match l_ctors_and_ty_ctors  with
 ((prenex_quantif_list_ctor x (list_of_args y) l_ty E) :: acc)
 end
 in aux E l_ctors_and_ty_ctors l_ty [].
-
-
 
 Ltac eliminate_pattern_matching H k :=
   let n := fresh "n" in 
@@ -252,8 +239,6 @@ create_evars_for_each_constructor nat.
 create_evars_for_each_constructor_test nat.
 Abort.
 
-
-
 Ltac create_evars_and_inst_rec n l := 
 match constr:(n) with 
 | 0 => l
@@ -267,7 +252,6 @@ match constr:(n) with
 | 0 => let u := fresh in let _ := match goal with _ => intro u end in u
 | S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_return_last_ident m
 end.
-
 
 Ltac intro_and_tuple_rec n l := 
 match constr:(n) with
@@ -283,7 +267,6 @@ match constr:(n) with
 | 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, unit))
 | S ?m => let H := fresh in let _ := match goal with _ => intro H end in let l:= intro_and_tuple' m in
 constr:((H, l))
-
 end.
 
 
@@ -292,11 +275,8 @@ let p := intro_and_tuple 4 in pose (p0 := p). clear p0. revert H H0 H1 H2 H3.
 let p := intro_and_tuple' 4 in pose p.
 reflexivity. Qed.
 
-
 Ltac create_evars_and_inst n := 
 create_evars_and_inst_rec n (@nil nat).
-
-
 
 Ltac revert_tuple p := 
 lazymatch constr:(p) with
@@ -413,9 +393,92 @@ repeat match goal with
 ( intros; try (rewrite H); reflexivity); clear u ; try (eliminate_dependent_pattern_matching H0)end] ; clear H ; 
 clear n; clear T.
 
+Ltac is_a_variable x :=
+let x':= metacoq_get_value (tmQuote x) in 
+match x' with 
+| tVar _ => idtac
+| _ => fail
+end.
+
+Ltac contains t u :=
+match t with
+| context [u] => idtac
+| _ => fail
+end.
+
+
+
+Ltac eliminate_dependent_pattern_matching_expr H :=
+  let n := fresh "n" in 
+  let T := fresh "T" in 
+  epose (n := ?[n_evar] : nat) ;
+  epose (T := ?[T_evar]) ;
+  let U := type of H in
+  let H' := fresh in
+  assert (H' : False -> U);
+  [ let HFalse := fresh in
+    intro HFalse;
+    let rec tac_rec m x :=
+        match goal with
+      | |- context C[match ?expr with _ => _ end] => match constr:(m) with
+                                    | 0 => fail
+                                    | S ?p => contains expr x ; instantiate (n_evar := p) ; 
+                                              let Ty := type of expr in let T' := remove_app Ty in
+                                              instantiate (T_evar := T') 
+                                     end 
+      | |- forall _, _ => let y := fresh in intro y; tac_rec (S m) y 
+      | _ => fail 
+      end
+in
+    tac_rec 0 ltac:(fresh) ;
+    destruct HFalse
+  | clear H' ; let indu := eval unfold T in T in 
+create_evars_for_each_constructor indu ; let foo := fresh in assert 
+(foo : False -> U) by 
+(let Hfalse' := fresh in intro Hfalse' ; 
+let nb_var := eval unfold n in n in
+let t := intro_and_tuple nb_var in 
+match goal with
+|- context C[match ?expr with _ => _ end] => 
+  let var_match := eval cbv in (head_tuple _ _ t) in
+  let var_to_revert := eval cbv in (tail_tuple _ _ t) in
+  case_eq expr ; 
+  let indu' := type of expr in revert var_match ;
+  revert_tuple_clear var_to_revert indu' end 
+  ; match goal with 
+| u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
+; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
+(let foo := fresh in assert (foo := H) ; intros; rewrite foo; 
+match goal with 
+| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr ; inversion Hinv ;
+ auto end); clear u ; try (eliminate_dependent_pattern_matching_expr H0) end] ; clear H ; 
+clear n; clear T .
+
+Ltac pattern_matching_var_or_expr H :=
+let b := fresh in 
+epose (b := ?[b_evar] : bool) ;
+let T := type of H in let bar := fresh in assert (False -> T)
+by (let Hfalse := fresh in intro Hfalse ; intros ; match goal with
+| |- context [match ?expr with _ => _ end] => 
+tryif (is_var expr) then (instantiate (b_evar := true)) else 
+instantiate (b_evar := false) 
+ end ; destruct Hfalse) ; let b' := eval unfold b in b in match b' with
+| true => eliminate_dependent_pattern_matching H
+| false => eliminate_dependent_pattern_matching_expr H
+end ; clear b ; clear bar.
 
 Module Tests.
 
+Definition dumb_def (n m : nat) := match Nat.eqb n m with true => true | false => false end.
+
+Goal (forall n m : nat, dumb_def n m = false)-> False.
+ intros. get_def dumb_def. expand_hyp dumb_def_def.
+pattern_matching_var_or_expr H0.
+get_def length. expand_hyp length_def.
+eliminate_fix_hyp H0. pattern_matching_var_or_expr H1.
+Abort.
 
 Definition min1 (x : nat) := match x with
 | 0 => 0
@@ -526,20 +589,3 @@ eliminate_dependent_pattern_matching H0.
 Abort.
 
 End Tests.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

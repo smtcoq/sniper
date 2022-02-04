@@ -47,6 +47,15 @@ def_and_pattern_matching_mono prod_of_symb.
 verit.
 Qed.
 
+Lemma nth_default_eq :
+    forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
+  Proof. intros A HA n ; induction n. 
+  - snipe.
+  - intros l ; destruct l.
+    * snipe.
+    * scope. get_eliminators_st (option). specialize (H A a). verit.
+ Qed.
+
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
