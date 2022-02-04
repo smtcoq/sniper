@@ -27,7 +27,7 @@ length l = match l with
        | _ :: xs => S (length xs)
        end) -> True).
 intro H.
-eliminate_pattern_matching H 1.
+eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
 

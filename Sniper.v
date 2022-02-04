@@ -94,13 +94,13 @@ Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.
 
 Ltac def_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
 get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
-pattern_matching_var_or_expr H')).
+eliminate_dependent_pattern_matching H')).
 
 
 Ltac def_fix_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
 get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
-try (pattern_matching_var_or_expr H'')))).
+try (eliminate_dependent_pattern_matching H'')))).
 
 
 Ltac def_and_pattern_matching_mono p1 :=
