@@ -12,7 +12,12 @@ The translation is implemented through a combination of modular, small
 transformations that independently eliminate specific aspects of Coq
 logic towards first-order logic. These small transformations are safe,
 either generating proof terms on the fly (*certifying* transformations)
-or being proved once and for all in Coq (*certified* transformations).
+or being proved once and for all in Coq (*certified* transformations). A
+crucial transformation is given by the
+[Trakt](https://github.com/ecranceMERCE/trakt) plugin.
+
+This release is for the submission to the conference Interactive Theorem
+Proving 2022.
 
 
 ## Installation and use
@@ -43,12 +48,12 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 ```
 
-Then simply install `Sniper`:
+Then simply install this version of `Sniper`:
 ```
-opam install coq-sniper
+opam pin -y add coq-sniper https://github.com/smtcoq/sniper.git#with-trakt
 ```
 
-It can be used with Coq 8.11 to 8.13.
+It works with Coq-8.13.
 
 You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
@@ -64,13 +69,9 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-You can see examples in the
-[examples.v](https://github.com/smtcoq/sniper/blob/master/examples.v)
-file. Have fun!
+## Examples, tests and benchmarks
 
-
-## Companion paper
-[General automation in Coq through modular transformations](https://pxtp.gitlab.io/2021/papers/Blot-et-al_Automation-modular-transformation.pdf), at PxTP'21
+TODO
 
 
 ## License
