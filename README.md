@@ -78,10 +78,22 @@ You need to install ``Hammer`` by running the command
 ```
 opam install coq-hammer
 ```
-Then you can run
+Then to test ``snipe`` you can run
+```
+make bench_snipe
+```
+To test ``hammer`` you can run 
+```
+make bench_hammer
+```
+And to compare both tactic, you can run
 ```
 make bench
 ```
+
+The other files in this directory are the orginal not automatized ``List`` library (``List_no_automation.v``)
+and the outputs obtained by running the benchs on the computer mentioned in the paper.
+
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license

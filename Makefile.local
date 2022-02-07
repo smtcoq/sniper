@@ -1,3 +1,13 @@
+bench_hammer: benchs/Arith_bench_hammer.v  benchs/List_hammer.v
+	$(SHOW)COQC $^
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $^ $(TIMING_EXTRA)
+
+bench_snipe: benchs/Arith_bench_snipe.v benchs/List_snipe.v
+	$(SHOW)COQC $^
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $^ $(TIMING_EXTRA)
+
+bench: bench_snipe bench_hammer
+
 examples: examples.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
@@ -9,4 +19,4 @@ tests: tests.v
 test: examples tests
 
 clean::
-	rm -f examples.glob examples.vo examples.vok examples.vos tests.glob tests.vo tests.vok tests.vos
+	rm -f examples.glob examples.vo examples.vok examples.vos tests.glob tests.vo tests.vok tests.vos benchs/*.glob benchs/*.vo benchs/*.vok benchs/*.vos
