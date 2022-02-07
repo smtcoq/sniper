@@ -406,8 +406,14 @@ rewrite <- compdec_eq_eqb in E. symmetry. assumption.
   Lemma nth_indep :
     forall l n d d', n < length l -> nth n l d = nth n l d'.
   Proof.
-    (* intro l ; induction l ; snipe. 
-  TODO : SMTCoq is not able to check the proof certificate *)
+    (* intro l ; induction l ; snipe.
+  TODO : SMTCoq is not able to check the proof certificate
+  Chantal :
+    - première branche : le problème vient bien de ce que veriT prouve
+      le faux et non le but, mais veriT n'y arrive plus lorsqu'on change
+      le but en "false" ??
+    - seconde branche : snipe mouline...
+     *)
     intro l; induction l as [|? ? IHl].
     - inversion 1.
     - intros [|n] d d'; [intros; reflexivity|].
