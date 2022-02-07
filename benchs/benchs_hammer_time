@@ -1,0 +1,1477 @@
+CoqHammer 1.3.2 for Coq 8.13
+Found 10057 accessible Coq objects.
+nil_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.061 secs (0.001u,0.052s) (successful)
+destruct_list
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.071 secs (0.003u,0.06s) (successful)
+hd_error_tl_repr
+Replace the hammer tactic with: fcrush 
+Finished transaction in 0.284 secs (0.044u,0.082s) (successful)
+hd_error_some_nil
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.066 secs (0.003u,0.056s) (successful)
+length_zero_iff_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.082 secs (0.002u,0.071s) (successful)
+hd_error_nil
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.049 secs (0.u,0.043s) (successful)
+hd_error_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.056 secs (0.005u,0.044s) (successful)
+app_cons_not_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.627 secs (0.206u,0.09s) (successful)
+app_nil_l
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.051 secs (0.002u,0.043s) (successful)
+app_nil_r
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.128 secs (0.005u,0.11s) (successful)
+app_nil_end
+Detecting provers...
+sh: 1: eprover: not found
+Eprover not found
+Vampire found
+sh: 1: z3_tptp: not found
+Z3 not found
+CVC4 found
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Facts.app_nil_r
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: app_nil_r.
+Finished transaction in 7.706 secs (6.773u,0.468s) (successful)
+app_assoc
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.448 secs (0.001u,0.404s) (successful)
+app_assoc_reverse
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Facts.app_assoc
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: app_assoc.
+Finished transaction in 1.733 secs (0.271u,0.426s) (successful)
+app_comm_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.248 secs (0.u,0.234s) (successful)
+app_eq_nil
+app_eq_unit
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.561 secs (0.139u,0.218s) (successful)
+elt_eq_unit
+app_eq_app
+app_inj_tail
+app_inj_tail_iff
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Facts.app_inj_tail
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: app_inj_tail.
+Finished transaction in 1.394 secs (0.176u,0.418s) (successful)
+app_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.461 secs (0.003u,0.416s) (successful)
+last_length
+app_inv_head_iff:
+  
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.464 secs (0.045u,0.362s) (successful)
+app_inv_head:
+  
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Facts.app_inv_head_iff
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: app_inv_head_iff.
+Finished transaction in 1.693 secs (0.178u,0.406s) (successful)
+app_inv_tail:
+   
+app_inv_tail_iff:
+   
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.Facts.app_inv_tail
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: app_inv_tail.
+Finished transaction in 2.088 secs (0.221u,0.457s) (successful)
+in_eq
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.154 secs (0.001u,0.138s) (successful)
+in_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.162 secs (0.u,0.145s) (successful)
+not_in_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.204 secs (0.u,0.183s) (successful)
+in_nil
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.155 secs (0.004u,0.138s) (successful)
+in_app_or
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.385 secs (0.015u,0.33s) (successful)
+in_or_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.368 secs (0.u,0.331s) (successful)
+in_app_iff
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.Facts.in_or_app, List_hammer.Facts.in_app_or
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: in_or_app, in_app_or.
+Finished transaction in 1.736 secs (0.184u,0.398s) (successful)
+in_split
+in_elt
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.Facts.in_eq, List_hammer.Facts.in_or_app
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: in_eq, in_or_app.
+Finished transaction in 1.981 secs (0.2u,0.423s) (successful)
+in_elt_inv
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Facts.in_or_app, List_hammer.Facts.not_in_cons, List_hammer.Facts.in_app_or
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: in_or_app, not_in_cons, in_app_or.
+Finished transaction in 4.214 secs (0.251u,0.583s) (successful)
+in_inv
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.215 secs (0.u,0.202s) (successful)
+in_dec
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.748 secs (0.079u,0.434s) (successful)
+nth_in_or_default
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto b: on 
+Finished transaction in 1.665 secs (0.293u,0.465s) (successful)
+nth_S_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.23 secs (0.u,0.214s) (successful)
+nth_default_eq
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto q: on 
+Finished transaction in 0.497 secs (0.017u,0.416s) (successful)
+nth_In
+Finished transaction in 0.784 secs (0.746u,0.037s) (successful)
+In_nth
+nth_overflow
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 0.799 secs (0.055u,0.446s) (successful)
+nth_indep
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.74 secs (0.373u,0.469s) (successful)
+app_nth1
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 0.97 secs (0.073u,0.474s) (successful)
+app_nth2
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.008 secs (0.083u,0.474s) (successful)
+app_nth2_plus
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-256) succeeded
+- dependencies: Arith.Minus.minus_plus, Arith.PeanoNat.Nat.le_add_r, List_hammer.Elts.app_nth2
+- definitions: Init.Peano.ge
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: Minus.minus_plus, Nat.le_add_r, app_nth2 unfold: ge.
+Finished transaction in 4.86 secs (0.279u,0.603s) (successful)
+nth_middle
+nth_split
+nth_ext
+nth_error_In
+In_nth_error
+nth_error_None
+nth_error_Some
+nth_error_split
+nth_error_app1
+Replace the hammer tactic with: sauto q: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.506 secs (0.087u,0.481s) (successful)
+nth_error_app2
+nth_error_nth
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.Elts.nth_default_eq
+- definitions: List_hammer.Elts.nth_default
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: nth_default_eq unfold: nth_default.
+Finished transaction in 6.085 secs (0.328u,0.635s) (successful)
+nth_error_nth'
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Elts.nth_default_eq, List_hammer.Elts.nth_error_Some
+- definitions: List_hammer.Elts.nth_default
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: nth_default_eq, nth_error_Some unfold: nth_default.
+Finished transaction in 10.429 secs (0.38u,0.666s) (successful)
+last_last
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.736 secs (0.042u,0.527s) (successful)
+app_removelast_last
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.856 secs (0.056u,0.539s) (successful)
+exists_last
+removelast_app
+Finished transaction in 0.637 secs (0.584u,0.052s) (successful)
+removelast_last
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Elts.removelast_app, List_hammer.app_nil_end, List_hammer.app_cons_not_nil
+- definitions: List_hammer.Elts.removelast, List_hammer.app
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: removelast_app, app_nil_end, app_cons_not_nil unfold: removelast, app.
+Finished transaction in 21.751 secs (0.332u,0.667s) (successful)
+remove_cons
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.507 secs (0.008u,0.247s) (successful)
+remove_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.705 secs (0.u,0.493s) (successful)
+remove_In
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.711 secs (0.007u,0.487s) (successful)
+notin_remove:
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.559 secs (0.016u,0.458s) (successful)
+in_remove:
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.641 secs (0.051u,0.418s) (successful)
+in_in_remove
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.505 secs (0.042u,0.389s) (successful)
+remove_remove_comm
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.476 secs (0.054u,0.357s) (successful)
+remove_remove_eq
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Elts.remove_In, List_hammer.Elts.notin_remove
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: remove_In, notin_remove.
+Finished transaction in 2.206 secs (0.159u,0.471s) (successful)
+remove_length_le
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.078 secs (0.055u,0.534s) (successful)
+remove_length_lt
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: IHl, List_hammer.Elts.remove_cons, List_hammer.Elts.remove_length_le, List_hammer.not_in_cons, Arith.PeanoNat.Nat.succ_le_mono, List_hammer.Elts.nth_error_Some
+- definitions: Init.Peano.lt, List_hammer.Elts.remove, List_hammer.In, List_hammer.length, List_hammer.Elts.nth_error
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hfcrush succeeded.
+Replace the hammer tactic with:
+	hfcrush use: remove_cons, remove_length_le, not_in_cons, Nat.succ_le_mono, nth_error_Some unfold: lt, remove, In, length, nth_error.
+Finished transaction in 6.044 secs (0.505u,0.791s) (successful)
+count_occ_In
+Replace the hammer tactic with: sauto q: on 
+Replace the hammer tactic with: sauto 
+Finished transaction in 1.872 secs (0.091u,0.52s) (successful)
+count_occ_not_In
+count_occ_nil
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.289 secs (0.u,0.243s) (successful)
+count_occ_inv_nil
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.174 secs (0.046u,0.512s) (successful)
+count_occ_cons_eq
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.314 secs (0.007u,0.242s) (successful)
+count_occ_cons_neq
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.314 secs (0.009u,0.239s) (successful)
+count_occ_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.58 secs (0.015u,0.469s) (successful)
+count_occ_elt_eq
+count_occ_elt_neq
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Elts.count_occ_cons_neq, List_hammer.Elts.count_occ_app
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: count_occ_cons_neq, count_occ_app.
+Finished transaction in 3.365 secs (0.226u,0.713s) (successful)
+count_occ_bound
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.743 secs (0.019u,0.516s) (successful)
+rev_app_distr
+rev_unit
+rev_involutive
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ListOps.rev_unit, List_hammer.nil_cons, IHl
+- definitions: List_hammer.ListOps.rev
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: nil_cons, rev_unit unfold: rev.
+Finished transaction in 2.312 secs (0.278u,0.805s) (successful)
+rev_eq_app
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ListOps.rev_app_distr, List_hammer.ListOps.rev_involutive
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: rev_app_distr, rev_involutive.
+Finished transaction in 2.712 secs (0.212u,0.599s) (successful)
+rev_list_ind
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.725 secs (0.002u,0.544s) (successful)
+rev_ind
+Finished transaction in 0. secs (0.u,0.s) (successful)
+in_rev
+rev_length
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.last_length, List_hammer.nil_cons, IHl
+- definitions: List_hammer.ListOps.rev, List_hammer.length
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: nil_cons, last_length unfold: rev, length.
+Finished transaction in 2.332 secs (0.222u,0.833s) (successful)
+rev_nth
+rev_append_rev
+rev_alt
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.app_nil_end, List_hammer.ListOps.rev_append_rev
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: app_nil_end, rev_append_rev.
+Finished transaction in 2.248 secs (0.182u,0.543s) (successful)
+concat_nil
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.26 secs (0.002u,0.24s) (successful)
+concat_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.229 secs (0.001u,0.218s) (successful)
+concat_app
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-64) succeeded
+- dependencies: IH, List_hammer.app_eq_nil, List_hammer.app_assoc, List_hammer.app_comm_cons, List_hammer.ListOps.concat_cons
+- definitions: List_hammer.ListOps.concat
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: app_eq_nil, app_assoc, app_comm_cons, concat_cons unfold: concat.
+Finished transaction in 4.091 secs (0.2u,0.724s) (successful)
+in_concat
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ListOps.concat_cons, List_hammer.in_cons, List_hammer.in_app_iff, IHl
+- definitions: List_hammer.In
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: in_cons, in_app_iff, concat_cons unfold: In.
+Finished transaction in 13.074 secs (0.664u,1.02s) (successful)
+list_eq_dec
+count_occ_rev
+map_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.281 secs (0.004u,0.256s) (successful)
+in_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.692 secs (0.011u,0.518s) (successful)
+in_map_iff
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.929 secs (0.062u,0.512s) (successful)
+map_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.592 secs (0.001u,0.532s) (successful)
+map_nth
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.607 secs (0.011u,0.523s) (successful)
+nth_error_map
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.645 secs (0.026u,0.502s) (successful)
+map_nth_error
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Map.nth_error_map
+- definitions: Init.Datatypes.option_map
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: nth_error_map unfold: option_map.
+Finished transaction in 3.39 secs (0.216u,0.699s) (successful)
+map_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.571 secs (0.006u,0.502s) (successful)
+map_last
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.56 secs (0.007u,0.498s) (successful)
+map_rev
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Map.map_cons, List_hammer.nil_cons, List_hammer.Map.map_last, IHl
+- definitions: List_hammer.rev
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: nil_cons, map_last, map_cons unfold: rev.
+Finished transaction in 2.545 secs (0.213u,0.82s) (successful)
+map_eq_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.342 secs (0.015u,0.297s) (successful)
+map_eq_cons
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.52 secs (0.139u,0.237s) (successful)
+map_eq_app 
+count_occ_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.609 secs (0.041u,0.421s) (successful)
+flat_map_concat_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.433 secs (0.002u,0.388s) (successful)
+flat_map_app
+in_flat_map
+concat_map
+Finished transaction in 0. secs (0.u,0.s) (successful)
+remove_concat
+map_id
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.411 secs (0.u,0.39s) (successful)
+map_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.43 secs (0.004u,0.384s) (successful)
+map_ext_in
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.502 secs (0.045u,0.402s) (successful)
+ext_in_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.484 secs (0.041u,0.4s) (successful)
+map_ext_in_iff
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.map_ext_in, List_hammer.ext_in_map
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: map_ext_in, ext_in_map.
+Finished transaction in 1.421 secs (0.186u,0.474s) (successful)
+map_ext
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.map_ext_in
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: map_ext_in.
+Finished transaction in 1.545 secs (0.183u,0.548s) (successful)
+flat_map_ext
+nth_nth_nth_map
+fold_left_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.494 secs (0.003u,0.45s) (successful)
+fold_left_length
+fold_right_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.415 secs (0.u,0.37s) (successful)
+fold_left_rev_right
+fold_symmetric
+existsb_exists
+Replace the hammer tactic with: hauto lq: on 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.in_eq, List_hammer.in_cons, IH, List_hammer.in_inv
+- definitions: Init.Datatypes.orb, List_hammer.Bool.existsb
+- inversions: Init.Datatypes.bool
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: in_eq, in_cons, in_inv unfold: orb, existsb inv: bool.
+Finished transaction in 7.292 secs (1.698u,0.828s) (successful)
+existsb_nth
+Replace the hammer tactic with: sauto lq: on 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: Arith.PeanoNat.Nat.succ_lt_mono, List_hammer.Bool.existsb_exists, IHl, List_hammer.in_eq
+- definitions: List_hammer.nth, List_hammer.Bool.existsb, Init.Datatypes.orb, List_hammer.length
+- inversions: Init.Datatypes.bool
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: Nat.succ_lt_mono, existsb_exists, in_eq unfold: nth, existsb, orb, length inv: bool.
+Finished transaction in 3.873 secs (0.453u,0.81s) (successful)
+existsb_app
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.app_cons_not_nil, Bool.Bool.orb_true_iff, List_hammer.Bool.existsb_exists, List_hammer.in_eq, IHl1, List_hammer.app_nil_end
+- definitions: Init.Datatypes.orb, List_hammer.app, List_hammer.Bool.existsb
+- inversions: Init.Datatypes.bool, List_hammer.list'
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: app_cons_not_nil, Bool.orb_true_iff, existsb_exists, in_eq, app_nil_end unfold: orb, app, existsb inv: list', bool.
+Finished transaction in 4.338 secs (0.441u,0.907s) (successful)
+forallb_forall
+forallb_app
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-64) succeeded
+- dependencies: IHl1, List_hammer.app_nil_end, Init.Datatypes.andb_true_intro, List_hammer.app_cons_not_nil
+- definitions: Init.Datatypes.andb, List_hammer.Bool.forallb, List_hammer.app
+- inversions: Init.Datatypes.bool
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: app_nil_end, andb_true_intro, app_cons_not_nil unfold: andb, forallb, app inv: bool.
+Finished transaction in 4.112 secs (0.263u,0.913s) (successful)
+filter_In
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 1.195 secs (0.101u,0.597s) (successful)
+filter_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.706 secs (0.02u,0.59s) (successful)
+concat_filter_map
+find_some
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.921 secs (0.127u,0.578s) (successful)
+find_none
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.972 secs (0.132u,0.584s) (successful)
+partition_cons1
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.34 secs (0.008u,0.287s) (successful)
+partition_cons2
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.339 secs (0.011u,0.283s) (successful)
+partition_length
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: sauto 
+Finished transaction in 1.072 secs (0.067u,0.581s) (successful)
+partition_inv_nil
+Replace the hammer tactic with: sauto q: on 
+Finished transaction in 0.32 secs (0.027u,0.254s) (successful)
+elements_in_partition
+Replace the hammer tactic with: hauto lq: on 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Bool.partition_inv_nil, List_hammer.in_cons, List_hammer.not_in_cons, Hrec
+- definitions: List_hammer.In, List_hammer.Bool.partition
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Trying reconstruction batch 2...
+Tactic hcrush succeeded.
+Replace the hammer tactic with:
+	hcrush use: in_cons, not_in_cons, partition_inv_nil unfold: In, partition.
+Finished transaction in 26.74 secs (2.584u,1.091s) (successful)
+filter_ext_in
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.589 secs (0.349u,0.438s) (successful)
+ext_in_filter
+filter_ext_in_iff
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Filtering.filter_ext_in, List_hammer.Filtering.ext_in_filter
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: filter_ext_in, ext_in_filter.
+Finished transaction in 1.89 secs (0.214u,0.48s) (successful)
+filter_map
+filter_ext
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Filtering.filter_ext_in
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: filter_ext_in.
+Finished transaction in 2.341 secs (0.186u,0.6s) (successful)
+remove_alt
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.587 secs (0.015u,0.498s) (successful)
+count_occ_alt
+in_split_l
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.535 secs (0.041u,0.437s) (successful)
+in_split_r
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.501 secs (0.032u,0.416s) (successful)
+split_nth
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.52 secs (0.048u,0.408s) (successful)
+split_length_l
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.457 secs (0.005u,0.406s) (successful)
+split_length_r
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.45 secs (0.012u,0.393s) (successful)
+split_combine
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.522 secs (0.048u,0.416s) (successful)
+combine_split
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.529 secs (0.041u,0.425s) (successful)
+Finished transaction in 0.529 secs (0.041u,0.425s) (successful)
+in_combine_l
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.499 secs (0.021u,0.43s) (successful)
+in_combine_r
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.48 secs (0.016u,0.421s) (successful)
+combine_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+combine_nth
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.65 secs (0.09u,0.492s) (successful)
+in_prod_aux
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.437 secs (0.008u,0.383s) (successful)
+in_prod
+in_prod_iff
+prod_length
+lel_refl
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.193 secs (0.001u,0.174s) (successful)
+lel_trans
+lel_cons_cons
+lel_cons
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.217 secs (0.001u,0.196s) (successful)
+lel_tail
+lel_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.243 secs (0.019u,0.198s) (successful)
+incl_nil_l
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.212 secs (0.u,0.186s) (successful)
+incl_l_nil
+incl_refl
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.189 secs (0.001u,0.172s) (successful)
+incl_tl
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.22 secs (0.003u,0.194s) (successful)
+incl_tran
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.279 secs (0.002u,0.236s) (successful)
+incl_appl
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.in_or_app
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: in_or_app unfold: incl.
+Finished transaction in 4.255 secs (0.182u,0.504s) (successful)
+incl_appl = 
+(fun
+   (H : forall (A : Type) (l m : list' A) (a : A),
+        In a l \/ In a m -> In a (l ++ m)) (l m n : list' A)
+   (H0 : forall a : A, In a l -> In a n) (a : A) (H1 : In a l) =>
+ H A n m a (or_introl (H0 a H1))) in_or_app
+     : forall l m n : list' A, incl l n -> incl l (n ++ m)
+
+Arguments incl_appl [l]%list'_scope _%list'_scope [n]%list'_scope _ _ _
+incl_appr
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.in_or_app
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: in_or_app unfold: incl.
+Finished transaction in 4.393 secs (0.217u,0.575s) (successful)
+incl_cons
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.in_inv
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: in_inv unfold: incl.
+Finished transaction in 3.281 secs (0.211u,0.769s) (successful)
+incl_cons_inv
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.46 secs (0.004u,0.282s) (successful)
+incl_app
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.in_app_or
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: in_app_or unfold: incl.
+Finished transaction in 15.746 secs (0.286u,0.9s) (successful)
+incl_app_app
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.438 secs (0.011u,0.298s) (successful)
+incl_app_inv
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.in_or_app
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: in_or_app unfold: incl.
+Finished transaction in 8.003 secs (0.321u,1.011s) (successful)
+incl_filter
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.filter_In
+- definitions: List_hammer.SetIncl.incl
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: filter_In unfold: incl.
+Finished transaction in 4.772 secs (0.336u,0.71s) (successful)
+remove_incl
+incl_map
+firstn_nil
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.953 secs (0.u,0.617s) (successful)
+firstn_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.306 secs (0.u,0.288s) (successful)
+firstn_all
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.695 secs (0.u,0.605s) (successful)
+firstn_all2
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.076 secs (0.076u,0.578s) (successful)
+firstn_O
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.293 secs (0.u,0.275s) (successful)
+firstn_le_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.964 secs (0.059u,0.57s) (successful)
+firstn_length_le:
+firstn_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.899 secs (0.088u,0.58s) (successful)
+firstn_app_2
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.Cutting.firstn_all, Arith.PeanoNat.Nat.add_0_r, List_hammer.Cutting.firstn_app, Arith.Minus.minus_plus
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: firstn_all, Nat.add_0_r, firstn_app, Minus.minus_plus.
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (nbayes-256) succeeded
+- dependencies: Arith.Minus.minus_plus, List_hammer.Cutting.firstn_all2, List_hammer.Cutting.firstn_app, Arith.PeanoNat.Nat.le_add_r
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: Minus.minus_plus, firstn_all2, firstn_app, Nat.le_add_r.
+Finished transaction in 15.908 secs (0.728u,1.637s) (successful)
+firstn_firstn:
+   
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 1.889 secs (0.221u,0.655s) (successful)
+firstn_skipn_comm
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 1.355 secs (0.155u,0.632s) (successful)
+skipn_firstn_comm
+skipn_O
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.324 secs (0.u,0.299s) (successful)
+skipn_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.347 secs (0.004u,0.303s) (successful)
+skipn_cons
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.318 secs (0.u,0.297s) (successful)
+skipn_all
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.636 secs (0.004u,0.59s) (successful)
+skipn_all2
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Cutting.firstn_all2, List_hammer.Cutting.firstn_O, Arith.PeanoNat.Nat.add_0_r, List_hammer.Cutting.firstn_skipn_comm
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: firstn_all2, firstn_O, Nat.add_0_r, firstn_skipn_comm.
+Finished transaction in 8.585 secs (0.314u,0.823s) (successful)
+firstn_skipn
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.767 secs (0.009u,0.594s) (successful)
+firstn_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.872 secs (0.03u,0.621s) (successful)
+skipn_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.768 secs (0.012u,0.599s) (successful)
+skipn_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 1.007 secs (0.105u,0.606s) (successful)
+firstn_skipn_rev:
+firstn_rev:
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.rev_involutive, List_hammer.rev_length, List_hammer.Cutting.firstn_skipn_rev
+Reconstructing the proof...
+Tactic scongruence succeeded.
+Replace the hammer tactic with:
+	scongruence use: rev_involutive, rev_length, firstn_skipn_rev.
+Finished transaction in 3.315 secs (0.336u,0.693s) (successful)
+skipn_rev:
+removelast_firstn
+Replace the hammer tactic with: hauto lq: on 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Cutting.firstn_length_le, Arith.PeanoNat.Nat.succ_lt_mono, List_hammer.rev_length, IHn, List_hammer.length_zero_iff_nil, Arith.PeanoNat.Nat.succ_le_mono
+- definitions: List_hammer.length, List_hammer.Cutting.firstn, List_hammer.removelast, Init.Peano.lt
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: firstn_length_le, Nat.succ_lt_mono, rev_length, length_zero_iff_nil, Nat.succ_le_mono unfold: length, firstn, removelast, lt.
+Finished transaction in 9.751 secs (0.731u,1.162s) (successful)
+removelast_firstn_len
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.588 secs (0.009u,0.505s) (successful)
+firstn_removelast
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Cutting.firstn_length_le, Arith.PeanoNat.Nat.succ_le_mono, Arith.PeanoNat.Nat.succ_lt_mono, IHn, List_hammer.rev_length, List_hammer.length_zero_iff_nil
+- definitions: List_hammer.length, Init.Peano.lt, List_hammer.Cutting.firstn, List_hammer.rev, List_hammer.removelast
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: firstn_length_le, Nat.succ_le_mono, Nat.succ_lt_mono, rev_length, length_zero_iff_nil unfold: length, lt, firstn, rev, removelast.
+Finished transaction in 5.648 secs (0.79u,0.954s) (successful)
+firstn_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.61 secs (0.032u,0.515s) (successful)
+skipn_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.611 secs (0.013u,0.534s) (successful)
+combine_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.256 secs (0.004u,0.225s) (successful)
+combine_firstn_l
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.584 secs (0.018u,0.507s) (successful)
+combine_firstn_r
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.614 secs (0.031u,0.516s) (successful)
+combine_firstn
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto q: on 
+Finished transaction in 0.628 secs (0.036u,0.521s) (successful)
+Add_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.537 secs (0.u,0.496s) (successful)
+Add_split
+Add_in
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.633 secs (0.034u,0.524s) (successful)
+Add_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.585 secs (0.006u,0.515s) (successful)
+Add_inv
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Add.Add_app, List_hammer.in_split
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hfcrush succeeded.
+Replace the hammer tactic with:
+	hfcrush use: Add_app, in_split.
+Finished transaction in 2.727 secs (0.25u,0.686s) (successful)
+incl_Add_inv
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Add.Add_in, List_hammer.incl_cons_inv, List_hammer.not_in_cons, List_hammer.incl_nil_l
+- definitions: List_hammer.incl
+- inversions: List_hammer.list'
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hfcrush succeeded.
+Replace the hammer tactic with:
+	hfcrush use: Add_in, incl_cons_inv, not_in_cons, incl_nil_l unfold: incl inv: list'.
+Finished transaction in 6.138 secs (0.359u,0.832s) (successful)
+NoDup_Add
+NoDup_remove
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: List_hammer.ReDun.NoDup_Add, List_hammer.Add_app
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: NoDup_Add, Add_app.
+Finished transaction in 7.882 secs (0.342u,0.663s) (successful)
+NoDup_remove_1
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ReDun.NoDup_remove
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: NoDup_remove.
+Finished transaction in 5.574 secs (0.331u,0.72s) (successful)
+NoDup_remove_2
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ReDun.NoDup_remove
+Reconstructing the proof...
+Tactic strivial succeeded.
+Replace the hammer tactic with:
+	strivial use: NoDup_remove.
+Finished transaction in 3.096 secs (0.226u,0.665s) (successful)
+NoDup_cons_iff
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.471 secs (0.006u,0.334s) (successful)
+NoDup_rev
+NoDup_filter
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.app_nil_r, List_hammer.ReDun.NoDup_cons, List_hammer.incl_filter, List_hammer.ReDun.NoDup_cons_iff, IHl
+- definitions: List_hammer.filter, List_hammer.incl
+- inversions: List_hammer.ReDun.NoDup
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: NoDup_cons, incl_filter, NoDup_cons_iff, app_nil_r unfold: filter, incl inv: NoDup.
+Finished transaction in 7.02 secs (0.508u,1.071s) (successful)
+nodup_fixed_point
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 1.423 secs (0.044u,0.616s) (successful)
+nodup_In
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 1.161 secs (0.062u,0.613s) (successful)
+nodup_incl
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ReDun.nodup_In
+- definitions: List_hammer.incl
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: nodup_In unfold: incl.
+Finished transaction in 6.087 secs (0.619u,0.773s) (successful)
+NoDup_nodup
+nodup_inv
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ReDun.NoDup_cons_iff, List_hammer.ReDun.NoDup_nodup
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: NoDup_cons_iff, NoDup_nodup.
+Finished transaction in 5.923 secs (0.269u,0.849s) (successful)
+NoDup_count_occ
+NoDup_count_occ'
+NoDup_nth_error
+NoDup_nth
+NoDup_incl_length
+NoDup_length_incl
+NoDup_incl_NoDup
+NoDup_map_inv
+cons_seq
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.448 secs (0.u,0.321s) (successful)
+seq_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.92 secs (0.u,0.652s) (successful)
+seq_nth
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running z3_tptp.
+Error: Error running eprover.
+CVC4 (knn-64) succeeded
+- dependencies: Arith.PeanoNat.Nat.sub_0_r, Arith.PeanoNat.Nat.succ_lt_mono, Arith.PeanoNat.Nat.add_comm, List_hammer.NatSeq.cons_seq, IHlen
+- definitions: List_hammer.nth, Init.Nat.add
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: Nat.succ_lt_mono, Nat.add_comm, cons_seq, Nat.sub_0_r unfold: nth, Init.Nat.add.
+Finished transaction in 15.391 secs (0.376u,1.172s) (successful)
+seq_shift
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.807 secs (0.007u,0.64s) (successful)
+in_seq
+Exists_exists
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.741 secs (0.005u,0.621s) (successful)
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.913 secs (0.005u,0.671s) (successful)
+Exists_nth
+Exists_nil
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.404 secs (0.003u,0.32s) (successful)
+Exists_cons
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.448 secs (0.013u,0.322s) (successful)
+Exists_app
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto q: on 
+Finished transaction in 1.409 secs (0.143u,0.67s) (successful)
+Exists_rev
+Exists_dec
+Exists_fold_right
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.853 secs (0.028u,0.639s) (successful)
+incl_Exists
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Exists_Forall.One_predicate.Exists_exists
+- definitions: List_hammer.incl
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: Exists_exists unfold: incl.
+Finished transaction in 3.282 secs (0.335u,0.766s) (successful)
+Forall_inv
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.329 secs (0.004u,0.292s) (successful)
+Forall_inv_tail
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.253 secs (0.002u,0.22s) (successful)
+Forall_nil_iff
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.248 secs (0.u,0.228s) (successful)
+Forall_cons_iff
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.311 secs (0.012u,0.272s) (successful)
+Forall_forall
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.546 secs (0.009u,0.493s) (successful)
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.633 secs (0.003u,0.593s) (successful)
+Forall_nth
+Forall_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.693 secs (0.024u,0.576s) (successful)
+Forall_elt
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Exists_Forall.One_predicate.Forall_app, List_hammer.Exists_Forall.One_predicate.Forall_inv
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: Forall_app, Forall_inv.
+Finished transaction in 2.345 secs (0.186u,0.57s) (successful)
+Forall_rev
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: List_hammer.Exists_Forall.One_predicate.Forall_forall, List_hammer.in_rev
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto lq: on succeeded.
+Replace the hammer tactic with:
+	hauto lq: on use: Forall_forall, in_rev.
+Finished transaction in 5.133 secs (0.199u,1.07s) (successful)
+Forall_rect
+Forall_dec
+Forall_fold_right
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.642 secs (0.019u,0.578s) (successful)
+incl_Forall
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Exists_Forall.One_predicate.Forall_forall
+- definitions: List_hammer.incl
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: Forall_forall unfold: incl.
+Finished transaction in 2.223 secs (0.199u,0.618s) (successful)
+map_ext_Forall
+Exists_impl
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.791 secs (0.011u,0.618s) (successful)
+Exists_or
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.686 secs (0.028u,0.584s) (successful)
+Exists_or_inv
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.689 secs (0.031u,0.577s) (successful)
+Forall_impl
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.Exists_Forall.Forall_forall
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: Forall_forall.
+Finished transaction in 3.265 secs (0.21u,0.837s) (successful)
+Forall_and
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.747 secs (0.016u,0.657s) (successful)
+Forall_and_inv
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.671 secs (0.009u,0.601s) (successful)
+Forall_Exists_neg
+Exists_Forall_neg
+neg_Forall_Exists_neg
+Forall_Exists_dec
+incl_Forall_in_iff
+Exists_map
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.657 secs (0.027u,0.574s) (successful)
+Exists_concat
+Exists_flat_map
+Forall_map
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.623 secs (0.011u,0.566s) (successful)
+Forall_concat
+Forall_flat_map
+exists_Forall
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.608 secs (0.01u,0.555s) (successful)
+Forall_image
+concat_nil_Forall
+in_flat_map_Exists
+notin_flat_map_Forall
+Forall2_refl
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.276 secs (0.u,0.271s) (successful)
+Forall2_app_inv_l
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.736 secs (0.018u,0.593s) (successful)
+Forall2_app_inv_r
+Replace the hammer tactic with: sauto lq: on 
+Replace the hammer tactic with: sauto lq: on 
+Finished transaction in 0.794 secs (0.012u,0.596s) (successful)
+Forall2_app
+ForallOrdPairs_In
+Replace the hammer tactic with: sfirstorder 
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: H, List_hammer.in_inv, List_hammer.not_in_cons, IHForallOrdPairs, List_hammer.Forall_forall
+- definitions: List_hammer.In
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic qauto succeeded.
+Replace the hammer tactic with:
+	qauto use: in_inv, not_in_cons, Forall_forall unfold: In.
+Finished transaction in 5.864 secs (0.44u,1.158s) (successful)
+ForallPairs_ForallOrdPairs
+ForallOrdPairs_ForallPairs
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: List_hammer.ForallPairs.ForallOrdPairs_In
+- definitions: List_hammer.ForallPairs.ForallPairs
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hfcrush succeeded.
+Replace the hammer tactic with:
+	hfcrush use: ForallOrdPairs_In unfold: ForallPairs.
+Finished transaction in 5.772 secs (1.66u,0.85s) (successful)
+repeat_length
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.573 secs (0.001u,0.553s) (successful)
+repeat_spec
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.698 secs (0.004u,0.615s) (successful)
+repeat_cons
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.61 secs (0.004u,0.591s) (successful)
+repeat_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.654 secs (0.004u,0.589s) (successful)
+repeat_eq_app
+repeat_eq_cons
+repeat_eq_elt
+Forall_eq_repeat
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto q: on 
+Finished transaction in 0.664 secs (0.023u,0.586s) (successful)
+count_occ_repeat_eq
+count_occ_repeat_neq
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: hauto 
+Finished transaction in 0.693 secs (0.017u,0.598s) (successful)
+count_occ_unique
+count_occ_repeat_excl
+count_occ_sgt
+nth_repeat
+Replace the hammer tactic with: hauto lq: on 
+Replace the hammer tactic with: hauto lq: on 
+Finished transaction in 0.898 secs (0.146u,0.655s) (successful)
+nth_error_repeat
+repeat_to_concat
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sfirstorder 
+Finished transaction in 0.589 secs (0.004u,0.564s) (successful)
+list_sum_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.666 secs (0.016u,0.59s) (successful)
+list_max_app
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: sauto 
+Finished transaction in 0.667 secs (0.019u,0.578s) (successful)
+list_max_le
+Replace the hammer tactic with: sfirstorder 
+Replace the hammer tactic with: fcrush 
+Finished transaction in 1.13 secs (0.112u,0.615s) (successful)
+list_max_lt
