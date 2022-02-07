@@ -150,9 +150,8 @@ Section Facts.
   Lemma elt_eq_unit l1 l2 (a b : A) :
     l1 ++ a :: l2 = [b] -> a = b /\ l1 = [] /\ l2 = [].
   Proof.
-   snipe @app_eq_unit. (* TODO Chantal: nouvelles simplifications après instanciations de verit *)
-  admit.
-  Admitted.
+   snipe @app_eq_unit. (* DONE *)
+  Qed.
 
   Theorem app_eq_app X (x1 x2 y1 y2: list X) : x1++x2 = y1++y2 ->
     exists l, (x1 = y1++l /\ y2 = l++x2) \/ (y1 = x1++l /\ x2 = l++y2).
