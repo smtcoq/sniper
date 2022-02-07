@@ -36,9 +36,9 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-It requires OCaml between 4.07 and 4.10:
+It requires OCaml between 4.09 and 4.10:
 ```
-opam switch create 4.07.1
+opam switch create 4.09.1
 eval $(opam env)
 ```
 
@@ -71,8 +71,17 @@ cd ..
 
 ## Examples, tests and benchmarks
 
-TODO
+Commented examples are available at ``examples.v``.
 
+The benchmarks are in the `benchs` directory of the `sniper` repository.
+You need to install ``Hammer`` by running the command
+```
+opam install coq-hammer
+```
+Then you can run
+```
+make bench
+```
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
