@@ -35,6 +35,82 @@ Section Paper_examples.
     True /\ b = true \/ f (x + y ) = f (y + x ).
     Proof. snipe. Qed.
 
+  (*** Examples from CompCert ***)
+
+
+  Local Open Scope Z_scope.
+
+  Inductive memory_chunk : Type :=
+  | Mint8signed     (**r 8-bit signed integer *)
+  | Mint8unsigned   (**r 8-bit unsigned integer *)
+  | Mint16signed    (**r 16-bit signed integer *)
+  | Mint16unsigned  (**r 16-bit unsigned integer *)
+  | Mint32          (**r 32-bit integer, or pointer *)
+  | Mint64          (**r 64-bit integer *)
+  | Mfloat32        (**r 32-bit single-precision float *)
+  | Mfloat64        (**r 64-bit double-precision float *)
+  | Many32          (**r any value that fits in 32 bits *)
+  | Many64.         (**r any value *)
+
+
+
+  Instance CD_memory_chunk : CompDec memory_chunk. Admitted. 
+
+  Definition size_chunk (chunk: memory_chunk) : Z :=
+    match chunk with
+    | Mint8signed => 1
+    | Mint8unsigned => 1
+    | Mint16signed => 2
+    | Mint16unsigned => 2
+    | Mint32 => 4
+    | Mint64 => 8
+    | Mfloat32 => 4
+    | Mfloat64 => 8
+    | Many32 => 4
+    | Many64 => 8
+    end.
+
+  Lemma size_chunk_pos: forall chunk, size_chunk chunk > 0.
+  Proof. snipe. Qed. 
+
+  Inductive permission: Type :=
+    | Freeable: permission
+    | Writable: permission
+    | Readable: permission
+    | Nonempty: permission.
+
+  Instance CD_permission : CompDec permission. Admitted.
+
+  Inductive perm_order: permission -> permission -> Prop :=
+    | perm_refl:  forall p, perm_order p p
+    | perm_F_any: forall p, perm_order Freeable p
+    | perm_W_R:   perm_order Writable Readable
+    | perm_any_N: forall p, perm_order p Nonempty.
+
+  (* we define a boolean equivalent of perm_order *)
+  Definition perm_orderb p p'  :=
+    match (p,p') with
+    | (Writable, Writable) => true 
+    | (Readable, Readable) => true
+    | (Freeable, _) => true
+    | (Writable, Readable) => true
+    | (_, Nonempty) => true
+    | _ => false
+    end.
+
+  Lemma perm_order_eq : forall p p', perm_order p p' <-> perm_orderb p p'.
+  Proof. split.
+  - intro H. destruct p ; destruct p' ; inversion H ; reflexivity. 
+  - intro H.  destruct p ; destruct p' ; inversion H ; constructor. 
+  Qed. 
+
+  (* we add the equivalence between the two versions in the database : *)
+  Trakt Add Relation (perm_order) (perm_orderb) (perm_order_eq).
+
+  (* transitivity is now automatically proved *)
+  Lemma perm_order_trans:
+    forall p1 p2 p3, perm_order p1 p2 -> perm_order p2 p3 -> perm_order p1 p3.
+  Proof. trakt Z bool. snipe. Qed.
 
 End Paper_examples.
 
@@ -187,79 +263,4 @@ is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
 
 
-(*** Examples from CompCert ***)
 
-
-
-Inductive memory_chunk : Type :=
-  | Mint8signed     (**r 8-bit signed integer *)
-  | Mint8unsigned   (**r 8-bit unsigned integer *)
-  | Mint16signed    (**r 16-bit signed integer *)
-  | Mint16unsigned  (**r 16-bit unsigned integer *)
-  | Mint32          (**r 32-bit integer, or pointer *)
-  | Mint64          (**r 64-bit integer *)
-  | Mfloat32        (**r 32-bit single-precision float *)
-  | Mfloat64        (**r 64-bit double-precision float *)
-  | Many32          (**r any value that fits in 32 bits *)
-  | Many64.         (**r any value *)
-
-
-Instance CD_memory_chunk : CompDec memory_chunk. Admitted. 
-
-Definition size_chunk (chunk: memory_chunk) : Z :=
-  match chunk with
-  | Mint8signed => 1
-  | Mint8unsigned => 1
-  | Mint16signed => 2
-  | Mint16unsigned => 2
-  | Mint32 => 4
-  | Mint64 => 8
-  | Mfloat32 => 4
-  | Mfloat64 => 8
-  | Many32 => 4
-  | Many64 => 8
-  end.
-
-Lemma size_chunk_pos:
-  forall chunk, size_chunk chunk > 0.
-Proof. snipe. Qed. 
-
-Inductive permission: Type :=
-  | Freeable: permission
-  | Writable: permission
-  | Readable: permission
-  | Nonempty: permission.
-
-Instance CD_permission : CompDec permission. Admitted.
-
-Inductive perm_order: permission -> permission -> Prop :=
-  | perm_refl:  forall p, perm_order p p
-  | perm_F_any: forall p, perm_order Freeable p
-  | perm_W_R:   perm_order Writable Readable
-  | perm_any_N: forall p, perm_order p Nonempty.
-
-(* we define a boolean equivalent of perm_order *)
-Definition perm_orderb p p'  :=
-  match (p,p') with
-  | (Writable, Writable) => true 
-  | (Readable, Readable) => true
-  | (Freeable, _) => true
-  | (Writable, Readable) => true
-  | (_, Nonempty) => true
-  | _ => false
-end.
-
-Lemma perm_order_eq : forall p p', perm_order p p' <-> perm_orderb p p'.
-Proof.
-split.
-- intro H. destruct p ; destruct p' ; inversion H ; reflexivity. 
-- intro H.  destruct p ; destruct p' ; inversion H ; constructor. 
-Qed. 
-
-(* we add the equivalence between the two versions in the database : *)
-Trakt Add Relation (perm_order) (perm_orderb) (perm_order_eq).
-
-(* transitivity is now automatically proved *)
-Lemma perm_order_trans:
-  forall p1 p2 p3, perm_order p1 p2 -> perm_order p2 p3 -> perm_order p1 p3.
-Proof. trakt Z bool. snipe. Qed.
