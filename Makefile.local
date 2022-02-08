@@ -8,7 +8,7 @@ bench_hammer_list: benchs/List_hammer.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 	
-bench_snipe : bench_snipe_arith bench_snipe_list
+bench_snipe: bench_snipe_arith bench_snipe_list
 
 bench_snipe_arith:  benchs/Arith_bench_snipe.v 
 	$(SHOW)COQC $<
