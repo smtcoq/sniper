@@ -81,14 +81,7 @@ Section Paper_examples.
 
   Instance CD_permission : CompDec permission. Admitted.
 
-  Inductive perm_order: permission -> permission -> Prop :=
-    | perm_refl:  forall p, perm_order p p
-    | perm_F_any: forall p, perm_order Freeable p
-    | perm_W_R:   perm_order Writable Readable
-    | perm_any_N: forall p, perm_order p Nonempty.
-
-  (* we define a boolean equivalent of perm_order *)
-  Definition perm_orderb p p'  :=
+  Definition perm_order p p'  :=
     match (p,p') with
     | (Writable, Writable) => true 
     | (Readable, Readable) => true
@@ -98,19 +91,10 @@ Section Paper_examples.
     | _ => false
     end.
 
-  Lemma perm_order_eq : forall p p', perm_order p p' <-> perm_orderb p p'.
-  Proof. split.
-  - intro H. destruct p ; destruct p' ; inversion H ; reflexivity. 
-  - intro H.  destruct p ; destruct p' ; inversion H ; constructor. 
-  Qed. 
-
-  (* we add the equivalence between the two versions in the database : *)
-  Trakt Add Relation (perm_order) (perm_orderb) (perm_order_eq).
-
   (* transitivity is now automatically proved *)
   Lemma perm_order_trans:
     forall p1 p2 p3, perm_order p1 p2 -> perm_order p2 p3 -> perm_order p1 p3.
-  Proof. trakt Z bool. snipe. Qed.
+  Proof. snipe. Qed.
 
 End Paper_examples.
 
