@@ -1,10 +1,22 @@
-bench_hammer: benchs/Arith_bench_hammer.v  benchs/List_hammer.v
-	$(SHOW)COQC $^
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $^ $(TIMING_EXTRA)
+bench_hammer: bench_hammer_arith bench_hammer_list
 
-bench_snipe: benchs/Arith_bench_snipe.v benchs/List_snipe.v
-	$(SHOW)COQC $^
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $^ $(TIMING_EXTRA)
+bench_hammer_arith:  benchs/Arith_bench_hammer.v 
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+bench_hammer_list: benchs/List_hammer.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+	
+bench_snipe : bench_snipe_arith bench_snipe_list
+
+bench_snipe_arith:  benchs/Arith_bench_snipe.v 
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+bench_snipe_list: benchs/List_snipe.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
 bench: bench_snipe bench_hammer
 
