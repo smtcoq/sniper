@@ -86,7 +86,7 @@ To test ``hammer`` you can run
 ```
 make bench_hammer
 ```
-And to compare both tactic, you can run
+And to run the tests on both tactics, the command is
 ```
 make bench
 ```

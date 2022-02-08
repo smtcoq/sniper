@@ -19,6 +19,25 @@ Require Import Bool.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Section Paper_examples.
+
+  Variable A : Type.
+  Variable HA : CompDec A.
+
+  Lemma app_length (l l' : list A) : length (l ++ l') = (length l + length l')%nat.
+  Proof. induction l ; snipe. Qed.
+
+  Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
+  Proof. snipe. Qed.
+  
+  Lemma arith_and_uninterpreted_symbol (T : Type) (HT : CompDec T)
+  (x y : nat) (b : bool) (f : nat -> T) :
+    True /\ b = true \/ f (x + y ) = f (y + x ).
+    Proof. snipe. Qed.
+
+
+End Paper_examples.
+
 
 Local Open Scope Z_scope.
 
@@ -38,7 +57,7 @@ Section Generic.
 
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof. snipe. Qed.
-
+  
 End Generic.
 
 Section destruct_auto.
