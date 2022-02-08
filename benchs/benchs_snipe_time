@@ -1,3 +1,4 @@
+nil_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -26,7 +27,9 @@ success
 unsat
 success
 success
-Finished transaction in 1.634 secs (1.608u,0.023s) (successful)
+Finished transaction in 1.615 secs (1.589u,0.024s) (successful)
+destruct_list
+hd_error_tl_repr
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -100,7 +103,8 @@ success
 unsat
 success
 success
-Finished transaction in 9.555 secs (9.475u,0.075s) (successful)
+Finished transaction in 9.636 secs (9.555u,0.075s) (successful)
+hd_error_some_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -145,7 +149,9 @@ success
 unsat
 success
 success
-Finished transaction in 2.063 secs (2.041u,0.019s) (successful)
+Finished transaction in 2.054 secs (2.04u,0.011s) (successful)
+length_zero_iff_nil
+hd_error_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -179,7 +185,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.336 secs (1.331u,0.003s) (successful)
+Finished transaction in 1.329 secs (1.326u,0.s) (successful)
+hd_error_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -225,7 +232,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.693 secs (2.691u,0.s) (successful)
+Finished transaction in 2.682 secs (2.68u,0.s) (successful)
+app_cons_not_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -261,7 +269,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.042 secs (2.038u,0.s) (successful)
+Finished transaction in 2.052 secs (2.048u,0.s) (successful)
+app_nil_l
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -296,7 +305,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.485 secs (1.483u,0.s) (successful)
+Finished transaction in 1.484 secs (1.482u,0.s) (successful)
+app_nil_r
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -355,7 +365,8 @@ success
 unsat
 success
 success
-Finished transaction in 3.092 secs (3.084u,0.003s) (successful)
+Finished transaction in 3.002 secs (2.998u,0.s) (successful)
+app_nil_end
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -414,7 +425,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.873 secs (2.866u,0.004s) (successful)
+Finished transaction in 2.792 secs (2.784u,0.004s) (successful)
+app_assoc
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -487,7 +499,8 @@ success
 unsat
 success
 success
-Finished transaction in 4.119 secs (4.111u,0.004s) (successful)
+Finished transaction in 3.931 secs (3.919u,0.007s) (successful)
+app_assoc_reverse
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -525,7 +538,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.822 secs (1.82u,0.s) (successful)
+Finished transaction in 1.743 secs (1.741u,0.s) (successful)
+app_comm_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -561,7 +575,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.78 secs (1.778u,0.s) (successful)
+Finished transaction in 1.701 secs (1.675u,0.024s) (successful)
+app_eq_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -599,7 +614,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.964 secs (1.962u,0.s) (successful)
+Finished transaction in 2.004 secs (1.989u,0.012s) (successful)
+app_eq_unit
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -638,7 +654,8 @@ success
 unsat
 success
 success
-Finished transaction in 5.995 secs (3.826u,0.007s) (successful)
+Finished transaction in 5.995 secs (3.76u,0.024s) (successful)
+elt_eq_unit
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -678,6 +695,9 @@ success
 unsat
 success
 success
+Finished transaction in 2.748 secs (2.746u,0.s) (successful)
+app_eq_app
+app_inj_tail
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -753,7 +773,8 @@ success
 unsat
 success
 success
-Finished transaction in 9.268 secs (8.704u,0.s) (successful)
+Finished transaction in 9.342 secs (8.784u,0.s) (successful)
+app_inj_tail_iff
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -792,7 +813,8 @@ success
 unsat
 success
 success
-Finished transaction in 3.608 secs (3.606u,0.s) (successful)
+Finished transaction in 3.594 secs (3.584u,0.s) (successful)
+app_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -885,7 +907,8 @@ success
 unsat
 success
 success
-Finished transaction in 6.279 secs (6.27u,0.003s) (successful)
+Finished transaction in 6.402 secs (6.397u,0.s) (successful)
+last_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -932,7 +955,10 @@ success
 unsat
 success
 success
-Finished transaction in 3.185 secs (3.183u,0.s) (successful)
+Finished transaction in 3.233 secs (3.231u,0.s) (successful)
+app_inv_head_iff
+app_inv_head:
+  
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -964,81 +990,6 @@ success
 success
 success
 success
-success
-success
-unsat
-success
-success
-veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-unsat
-success
-success
-Finished transaction in 4.808 secs (4.803u,0.s) (successful)
-veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
 unsat
 success
 success
@@ -1078,7 +1029,11 @@ success
 unsat
 success
 success
-Finished transaction in 2.689 secs (2.681u,0.003s) (successful)
+Finished transaction in 2.909 secs (2.904u,0.s) (successful)
+app_inv_tail:
+   
+app_inv_tail_iff:
+   
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1117,7 +1072,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.104 secs (2.102u,0.s) (successful)
+Finished transaction in 2.438 secs (2.436u,0.s) (successful)
+inb_eq
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1139,7 +1095,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.021 secs (1.019u,0.s) (successful)
+Finished transaction in 1.091 secs (1.089u,0.s) (successful)
+inb_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1163,7 +1120,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.171 secs (1.165u,0.003s) (successful)
+Finished transaction in 1.238 secs (1.236u,0.s) (successful)
+not_inb_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1187,7 +1145,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.312 secs (2.31u,0.s) (successful)
+Finished transaction in 2.494 secs (2.492u,0.s) (successful)
+inb_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1204,7 +1163,8 @@ success
 unsat
 success
 success
-Finished transaction in 0.834 secs (0.832u,0.s) (successful)
+Finished transaction in 0.837 secs (0.836u,0.s) (successful)
+inb_app_or
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1260,7 +1220,8 @@ success
 unsat
 success
 success
-Finished transaction in 3.641 secs (3.636u,0.s) (successful)
+Finished transaction in 3.694 secs (3.69u,0.s) (successful)
+inb_or_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1316,7 +1277,8 @@ success
 unsat
 success
 success
-Finished transaction in 3.752 secs (3.748u,0.s) (successful)
+Finished transaction in 3.787 secs (3.783u,0.s) (successful)
+inb_app_iff
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1345,7 +1307,9 @@ success
 unsat
 success
 success
-Finished transaction in 2.153 secs (2.151u,0.s) (successful)
+Finished transaction in 2.139 secs (2.136u,0.s) (successful)
+inb_split
+inb_elt
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1373,7 +1337,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.722 secs (1.72u,0.s) (successful)
+Finished transaction in 1.703 secs (1.701u,0.s) (successful)
+in_elt_inv
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1404,7 +1369,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.407 secs (2.4u,0.003s) (successful)
+Finished transaction in 2.337 secs (2.335u,0.s) (successful)
+in_inv
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1428,7 +1394,10 @@ success
 unsat
 success
 success
-Finished transaction in 1.32 secs (1.314u,0.003s) (successful)
+Finished transaction in 1.272 secs (1.27u,0.s) (successful)
+in_dec
+nth_in_or_default
+nth_S_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1462,7 +1431,9 @@ success
 unsat
 success
 success
-Finished transaction in 2.533 secs (2.522u,0.008s) (successful)
+Finished transaction in 2.513 secs (2.511u,0.s) (successful)
+nth_default_eq
+nth_In
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1530,7 +1501,14 @@ success
 unsat
 success
 success
-Finished transaction in 5.538 secs (5.521u,0.007s) (successful)
+Finished transaction in 5.692 secs (5.683u,0.s) (successful)
+Inb_nth
+nth_overflow
+nth_indep
+app_nth1
+app_nth2
+app_nth2_plus
+nth_middle
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1567,7 +1545,19 @@ success
 unsat
 success
 success
-Finished transaction in 2.758 secs (2.741u,0.s) (successful)
+Finished transaction in 2.905 secs (2.889u,0.s) (successful)
+nth_split
+nth_ext
+nth_error_Inb
+Inb_nth_error
+nth_error_None
+nth_error_Some
+nth_error_split
+nth_error_app1
+nth_error_app2
+nth_error_nth
+nth_error_nth'
+last_last
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1618,7 +1608,32 @@ success
 unsat
 success
 success
-Finished transaction in 3.067 secs (3.016u,0.s) (successful)
+Finished transaction in 3.212 secs (3.156u,0.s) (successful)
+app_removelast_last
+exists_last
+removelast_app
+removelast_last
+remove_cons_cd
+remove_app
+remove_In
+notin_remove:
+in_remove:
+in_in_remove
+remove_remove_comm
+remove_remove_eq
+remove_length_le
+remove_length_lt
+count_occ_In
+count_occ_not_In
+count_occ_nil
+count_occ_inv_nil
+count_occ_cons_eq
+count_occ_cons_neq
+count_occ_app
+count_occ_elt_eq
+count_occ_elt_neq
+count_occ_bound
+rev_app_distr
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1703,7 +1718,8 @@ success
 unsat
 success
 success
-Finished transaction in 6.332 secs (6.327u,0.s) (successful)
+Finished transaction in 6.318 secs (6.293u,0.019s) (successful)
+rev_unit
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1742,7 +1758,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.866 secs (2.863u,0.s) (successful)
+Finished transaction in 2.759 secs (2.757u,0.s) (successful)
+rev_involutive
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1809,7 +1826,8 @@ success
 unsat
 success
 success
-Finished transaction in 3.648 secs (3.644u,0.s) (successful)
+Finished transaction in 3.672 secs (3.668u,0.s) (successful)
+rev_eq_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1851,7 +1869,11 @@ success
 unsat
 success
 success
-Finished transaction in 2.123 secs (2.121u,0.s) (successful)
+Finished transaction in 2.095 secs (2.093u,0.s) (successful)
+rev_list_ind
+rev_ind
+in_rev
+rev_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -1940,7 +1962,9 @@ success
 unsat
 success
 success
-Finished transaction in 6.134 secs (6.129u,0.s) (successful)
+Finished transaction in 6.148 secs (6.143u,0.s) (successful)
+rev_nth
+rev_append_rev
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2027,7 +2051,8 @@ success
 unsat
 success
 success
-Finished transaction in 6.298 secs (6.293u,0.s) (successful)
+Finished transaction in 6.308 secs (6.302u,0.s) (successful)
+rev_alt
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2070,7 +2095,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.463 secs (2.461u,0.s) (successful)
+Finished transaction in 2.457 secs (2.455u,0.s) (successful)
+concat_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2097,7 +2123,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.061 secs (1.059u,0.s) (successful)
+Finished transaction in 1.156 secs (1.154u,0.s) (successful)
+concat_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2136,7 +2163,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.577 secs (2.575u,0.s) (successful)
+Finished transaction in 2.658 secs (2.656u,0.s) (successful)
+concat_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2221,7 +2249,11 @@ success
 unsat
 success
 success
-Finished transaction in 7.452 secs (7.448u,0.s) (successful)
+Finished transaction in 7.599 secs (7.595u,0.s) (successful)
+in_concat
+list_eq_dec
+count_occ_rev
+map_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2264,7 +2296,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.418 secs (2.412u,0.003s) (successful)
+Finished transaction in 2.235 secs (2.234u,0.s) (successful)
+in_map
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2336,7 +2369,9 @@ success
 unsat
 success
 success
-Finished transaction in 4.382 secs (4.379u,0.s) (successful)
+Finished transaction in 4.415 secs (4.411u,0.s) (successful)
+in_map_iff
+map_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2434,7 +2469,11 @@ success
 unsat
 success
 success
-Finished transaction in 6.167 secs (6.163u,0.s) (successful)
+Finished transaction in 6.042 secs (6.034u,0.003s) (successful)
+map_nth
+nth_error_map
+map_nth_error
+map_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2543,7 +2582,8 @@ success
 unsat
 success
 success
-Finished transaction in 8.536 secs (8.532u,0.s) (successful)
+Finished transaction in 8.569 secs (8.56u,0.003s) (successful)
+map_last
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2637,7 +2677,8 @@ success
 unsat
 success
 success
-Finished transaction in 10.201 secs (10.197u,0.s) (successful)
+Finished transaction in 10.352 secs (10.347u,0.s) (successful)
+map_rev
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2685,21 +2726,6 @@ unsat
 success
 success
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
 success
 success
 success
@@ -2745,29 +2771,6 @@ success
 success
 success
 success
-unsat
-success
-success
-Finished transaction in 9.946 secs (9.942u,0.s) (successful)
-veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
 success
 success
 success
@@ -2783,15 +2786,29 @@ success
 success
 success
 success
-success
-success
-success
 unsat
 success
 success
+Finished transaction in 9.76 secs (9.755u,0.s) (successful)
+map_eq_nil
+map_eq_cons
+map_eq_app 
+count_occ_map
+flat_map_concat_map
+flat_map_app
+in_flat_map
+concat_map
+remove_concat
+map_id
+map_map
+map_ext_in
+ext_in_map
+map_ext_in_iff
+map_ext
+flat_map_ext
+nth_nth_nth_map
+fold_left_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
 success
 success
 success
@@ -2831,26 +2848,7 @@ success
 unsat
 success
 success
-Finished transaction in 4.72 secs (4.717u,0.s) (successful)
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
 success
 success
 success
@@ -2868,17 +2866,6 @@ success
 success
 success
 success
-unsat
-success
-success
-veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
-success
-success
-success
-success
-success
 success
 success
 success
@@ -2900,19 +2887,17 @@ success
 success
 success
 success
-success
-success
-success
-success
-success
-success
-success
-success
-success
 unsat
 success
 success
-Finished transaction in 4.806 secs (4.802u,0.s) (successful)
+Finished transaction in 4.674 secs (4.669u,0.s) (successful)
+fold_left_length
+fold_right_app
+fold_left_rev_right
+fold_symmetric
+existsb_exists
+existsb_nth
+existsb_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -2993,6 +2978,42 @@ success
 unsat
 success
 success
+Finished transaction in 4.699 secs (4.674u,0.019s) (successful)
+forallb_forall
+forallb_app
+filter_In
+filter_app
+concat_filter_map
+find_some
+find_none
+partition_cons1
+partition_cons2
+partition_length
+partition_inv_nil
+elements_in_partition
+filter_ext_in
+ext_in_filter
+filter_ext_in_iff
+filter_map
+filter_ext
+remove_alt
+count_occ_alt
+in_split_l
+in_split_r
+split_nth
+split_length_l
+split_length_r
+split_combine
+combine_split
+in_combine_l
+in_combine_r
+combine_length
+combine_nth
+in_prod_aux
+in_prod
+in_prod_iff
+prod_length
+lel_refl
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3006,7 +3027,8 @@ success
 unsat
 success
 success
-Finished transaction in 0.497 secs (0.495u,0.s) (successful)
+Finished transaction in 0.552 secs (0.551u,0.s) (successful)
+lel_trans
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3024,7 +3046,8 @@ success
 unsat
 success
 success
-Finished transaction in 0.677 secs (0.676u,0.s) (successful)
+Finished transaction in 0.637 secs (0.636u,0.s) (successful)
+lel_cons_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3054,7 +3077,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.128 secs (1.127u,0.s) (successful)
+Finished transaction in 1.16 secs (1.158u,0.s) (successful)
+lel_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3082,7 +3106,25 @@ success
 unsat
 success
 success
-Finished transaction in 0.996 secs (0.995u,0.s) (successful)
+Finished transaction in 1.018 secs (1.017u,0.s) (successful)
+lel_tail
+lel_nil
+incl_nil_l
+incl_l_nil
+incl_refl
+incl_tl
+incl_tran
+incl_appl
+incl_appr
+incl_cons
+incl_cons_inv
+incl_app
+incl_app_app
+incl_app_inv
+incl_filter
+remove_incl
+incl_map
+firstn_nil
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3132,7 +3174,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.034 secs (2.027u,0.003s) (successful)
+Finished transaction in 2.066 secs (2.063u,0.s) (successful)
+firstn_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3169,7 +3212,10 @@ success
 unsat
 success
 success
-Finished transaction in 1.979 secs (1.978u,0.s) (successful)
+Finished transaction in 1.912 secs (1.91u,0.s) (successful)
+firstn_all
+firstn_all2
+firstn_O
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3203,7 +3249,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.482 secs (1.481u,0.s) (successful)
+Finished transaction in 1.373 secs (1.371u,0.s) (successful)
+firstn_le_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3261,7 +3308,15 @@ success
 unsat
 success
 success
-Finished transaction in 3.134 secs (3.129u,0.s) (successful)
+Finished transaction in 3.165 secs (3.161u,0.s) (successful)
+firstn_length_le:
+firstn_app
+firstn_app_2
+firstn_firstn:
+   
+firstn_skipn_comm
+skipn_firstn_comm
+skipn_O
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3294,7 +3349,9 @@ success
 unsat
 success
 success
-Finished transaction in 1.176 secs (1.175u,0.s) (successful)
+Finished transaction in 1.216 secs (1.215u,0.s) (successful)
+skipn_nil
+skipn_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3330,7 +3387,10 @@ success
 unsat
 success
 success
-Finished transaction in 1.78 secs (1.778u,0.s) (successful)
+Finished transaction in 1.716 secs (1.715u,0.s) (successful)
+skipn_all
+skipn_all2
+firstn_skipn
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3420,10 +3480,13 @@ success
 unsat
 success
 success
-Finished transaction in 6.927 secs (6.893u,0.027s) (successful)
+Finished transaction in 6.869 secs (6.858u,0.003s) (successful)
+firstn_length
+skipn_length
+skipn_app
+firstn_skipn_rev:
+firstn_rev:
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
-success
-success
 success
 success
 success
@@ -3467,30 +3530,6 @@ success
 success
 success
 success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-success
-unsat
-success
-success
-Finished transaction in 10.438 secs (10.437u,0.s) (successful)
-veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
 success
@@ -3515,6 +3554,45 @@ success
 unsat
 success
 success
+Finished transaction in 10.187 secs (10.183u,0.s) (successful)
+skipn_rev:
+removelast_firstn
+removelast_firstn_len
+firstn_removelast
+firstn_map
+skipn_map
+combine_nil
+combine_firstn_l
+combine_firstn_r
+combine_firstn
+Add_app
+Add_split
+Add_in
+Add_length
+Add_inv
+incl_Add_inv
+NoDup_Add
+NoDup_remove
+NoDup_remove_1
+NoDup_remove_2
+NoDup_cons_iff
+NoDup_rev
+NoDup_filter
+nodup_fixed_point
+nodup_In
+nodup_incl
+NoDup_nodup
+nodup_inv
+NoDup_count_occ
+NoDup_count_occ'
+NoDup_nth_error
+NoDup_nth
+NoDup_incl_length
+NoDup_length_incl
+NoDup_incl_NoDup
+NoDup_map_inv
+cons_seq
+seq_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3562,7 +3640,12 @@ success
 unsat
 success
 success
-Finished transaction in 2.229 secs (2.22u,0.s) (successful)
+Finished transaction in 2.226 secs (2.205u,0.007s) (successful)
+seq_nth
+seq_shift
+in_seq
+seq_NoDup
+seq_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3628,7 +3711,61 @@ success
 unsat
 success
 success
-Finished transaction in 6.42 secs (5.547u,0.s) (successful)
+Finished transaction in 6.05 secs (5.149u,0.032s) (successful)
+seq_S
+Exists_exists
+Exists_nth
+Exists_nil
+Exists_cons
+Exists_app
+Exists_rev
+Exists_dec
+Exists_fold_right
+incl_Exists
+Forall_inv
+Forall_inv_tail
+Forall_nil_iff
+Forall_cons_iff
+Forall_forall
+Forall_nth
+Forall_app
+Forall_elt
+Forall_rev
+Forall_rect
+Forall_dec
+Forall_fold_right
+incl_Forall
+map_ext_Forall
+Exists_impl
+Exists_or
+Exists_or_inv
+Forall_impl
+Forall_and
+Forall_and_inv
+Forall_Exists_neg
+Exists_Forall_neg
+neg_Forall_Exists_neg
+Forall_Exists_dec
+incl_Forall_in_iff
+Exists_map
+Exists_concat
+Exists_flat_map
+Forall_map
+Forall_concat
+Forall_flat_map
+exists_Forall
+Forall_image
+concat_nil_Forall
+in_flat_map_Exists
+notin_flat_map_Forall
+Forall2_refl
+Forall2_app_inv_l
+Forall2_app_inv_r
+Forall2_app
+ForallOrdPairs_In
+ForallPairs_ForallOrdPairs
+ForallOrdPairs_ForallPairs
+repeat_length
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3692,7 +3829,8 @@ success
 unsat
 success
 success
-Finished transaction in 2.997 secs (2.994u,0.s) (successful)
+Finished transaction in 3.013 secs (3.009u,0.s) (successful)
+repeat_spec
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3738,7 +3876,8 @@ success
 unsat
 success
 success
-Finished transaction in 1.502 secs (1.498u,0.s) (successful)
+Finished transaction in 1.404 secs (1.401u,0.s) (successful)
+repeat_cons
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3800,7 +3939,8 @@ success
 unsat
 success
 success
-Finished transaction in 4.273 secs (4.269u,0.s) (successful)
+Finished transaction in 4.123 secs (4.119u,0.s) (successful)
+repeat_app
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3866,7 +4006,19 @@ success
 unsat
 success
 success
-Finished transaction in 4.244 secs (4.24u,0.s) (successful)
+Finished transaction in 4.3 secs (4.295u,0.s) (successful)
+repeat_eq_app
+repeat_eq_cons
+repeat_eq_elt
+Forall_eq_repeat
+count_occ_repeat_eq
+count_occ_repeat_neq
+count_occ_unique
+count_occ_repeat_excl
+count_occ_sgt
+nth_repeat
+nth_error_repeat
+repeat_to_concat
 veriT dev - the SMT-solver veriT (UFRN/LORIA).
 success
 success
@@ -3952,4 +4104,8 @@ success
 unsat
 success
 success
-Finished transaction in 7.334 secs (7.331u,0.s) (successful)
+Finished transaction in 7.053 secs (7.048u,0.s) (successful)
+list_sum_app
+list_max_app
+list_max_le
+list_max_lt
