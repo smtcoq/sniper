@@ -202,6 +202,9 @@ repeat match goal with
 end]]); clear u ; try (eliminate_dependent_pattern_matching H0) end] ; clear H ; 
 clear n; clear T.
 
+Tactic Notation "eliminate_dependent_pattern_matching" constr(H) :=
+first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
+
 Module Tests.
 
 Definition dumb_def (n m : nat) := match Nat.eqb n m with true => true | false => false end.
@@ -216,12 +219,11 @@ Abort.
 
 Lemma foo x y :( if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
 intros. 
-first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
+eliminate_dependent_pattern_matching H.
 Abort.
 
 Lemma bar: ( forall x y, if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
-intros. assert (H0 := H).
-first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
+intros. eliminate_dependent_pattern_matching H.
 Abort.
 
 Lemma toto (A : Type) (x : list A) :
@@ -230,7 +232,7 @@ match x with
 | y :: ys => ys = ys
 end
 -> True.
-Proof. intros. elim_match_with_no_forall H.
+Proof. intros. eliminate_dependent_pattern_matching H.
 exact I. Qed.
 
 

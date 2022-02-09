@@ -40,6 +40,11 @@ def_and_pattern_matching_mono prod_types.
 assumption.
 Qed.
 
+Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
+intros H.
+scope.
+Abort.
+
 Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
 intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
