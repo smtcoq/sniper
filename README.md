@@ -50,7 +50,7 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 
 Then simply install this version of `Sniper`:
 ```
-opam pin -y add coq-sniper https://github.com/smtcoq/sniper.git#with-trakt
+opam pin -y add coq-sniper https://github.com/smtcoq/sniper.git#itp22
 ```
 
 It works with Coq-8.13.
