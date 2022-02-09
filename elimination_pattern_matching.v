@@ -131,9 +131,10 @@ match goal with
 end) ; clear foo ; 
 repeat match goal with 
 | u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
-(intros ; match goal with 
+(first [ try (rewrite H); reflexivity
+|intros ; match goal with 
 | Hinv : _ |- _ => rewrite Hinv in H ; auto
-end); try elim_match_with_no_forall H0 ; clear u 
+end]); try elim_match_with_no_forall H0 ; clear u 
 end
 end ; clear H.
 
@@ -222,6 +223,15 @@ Lemma bar: ( forall x y, if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
 intros. assert (H0 := H).
 first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
 Abort.
+
+Lemma toto (A : Type) (x : list A) :
+match x with 
+| nil => 0 = 0
+| y :: ys => ys = ys
+end
+-> True.
+Proof. intros. elim_match_with_no_forall H.
+exact I. Qed.
 
 
 Definition min1 (x : nat) := match x with
