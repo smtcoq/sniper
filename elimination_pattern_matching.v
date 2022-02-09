@@ -107,6 +107,36 @@ match t with
 | _ => fail
 end.
 
+Ltac all_quantifers_introduced :=
+lazymatch goal with
+| |- forall _, _ => fail
+| _ => idtac
+end.
+
+Ltac elim_match_with_no_forall H :=
+  let U := type of H in 
+  match U with 
+| context C[match ?expr with _ => _ end] => 
+    let Ty := type of expr in 
+    let T' := remove_app Ty in 
+    create_evars_for_each_constructor T' ;
+    let foo := fresh in 
+    assert (foo : False -> U) 
+by (let Hfalse := fresh in
+intro Hfalse ; tryif (is_a_variable expr)
+then (case expr)
+else (case_eq expr) ;
+match goal with 
+| u : Prop |- ?G => instantiate (u := G); destruct Hfalse
+end) ; clear foo ; 
+repeat match goal with 
+| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
+(intros ; match goal with 
+| Hinv : _ |- _ => rewrite Hinv in H ; auto
+end); try elim_match_with_no_forall H0 ; clear u 
+end
+end ; clear H.
+
 
 Ltac eliminate_dependent_pattern_matching H :=
   let n := fresh "n" in 
@@ -116,8 +146,8 @@ Ltac eliminate_dependent_pattern_matching H :=
   let U := type of H in
   let H' := fresh in
   assert (H' : False -> U);
-  [ let HFalse := fresh in
-    intro HFalse;
+  [ let HFalse := fresh in 
+    intro HFalse; 
     let rec tac_rec m x :=
         match goal with
       | |- context C[match ?expr with _ => _ end] => match constr:(m) with
@@ -158,11 +188,17 @@ else
 repeat match goal with 
 | u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
 (first 
-[intros; try (rewrite H); reflexivity | 
-let foo := fresh in assert (foo := H) ; intros; rewrite foo; 
+[intros; try (rewrite H); reflexivity | first [
+let foo := fresh in assert (foo := H) ; intros; rewrite foo ;
 match goal with 
-| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr ; inversion Hinv ;
- auto end]); clear u ; try (eliminate_dependent_pattern_matching H0) end] ; clear H ; 
+| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr eqn:E ; 
+try inversion Hinv ;
+ auto end |
+repeat match goal with 
+| |- forall x, _ => intro x ; try (specialize (H x)); try (rewrite x in H) ; try 
+(inversion x) ; auto
+| _ => idtac
+end]]); clear u ; try (eliminate_dependent_pattern_matching H0) end] ; clear H ; 
 clear n; clear T.
 
 Module Tests.
@@ -175,6 +211,18 @@ eliminate_dependent_pattern_matching H0.
 get_def length. expand_hyp length_def.
 eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H1.
 Abort.
+
+
+Lemma foo x y :( if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
+intros. 
+first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
+Abort.
+
+Lemma bar: ( forall x y, if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
+intros. assert (H0 := H).
+first [eliminate_dependent_pattern_matching H | elim_match_with_no_forall H].
+Abort.
+
 
 Definition min1 (x : nat) := match x with
 | 0 => 0
