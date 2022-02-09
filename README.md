@@ -73,8 +73,8 @@ cd ..
 
 Commented examples are available at ``examples.v``.
 
-The benchmarks are in the `benchs` directory of the `sniper` repository.
-You need to install ``Hammer`` by running the command
+The benchmarks are in the `benchs` folder.
+You need to install ``coq-hammer`` by running the command
 ```
 opam install coq-hammer
 ```
@@ -91,7 +91,7 @@ And to run the tests on both tactics, the command is
 make bench
 ```
 
-The other files in this directory are the orginal not automatized ``List`` library (``List_no_automation.v``)
+The other files in this folder are the orginal not automatized ``List`` library (``List_no_automation.v``)
 and the outputs obtained by running the benchs on the computer mentioned in the paper.
 
 
