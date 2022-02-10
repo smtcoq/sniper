@@ -71,7 +71,7 @@ in let z := metacoq_get_value (tmUnquote eq) in
 let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
 (assert (H': u) by (intros ; rewrite H; reflexivity) ; 
 k H')
-| _ => fail "not an equality"
+| _ => k H
 end.
 
 Ltac expand_tuple p := fun k => 

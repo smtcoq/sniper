@@ -31,6 +31,14 @@ eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
 
+Definition true_hidden := true.
+Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
+
+Goal definition_no_variables -> True.
+scope.
+Abort.
+
+
 Goal ((forall (x : nat) (a : nat) (l : list nat), 
 @hd nat x (@cons nat a l) = match (@cons nat a l) with
 | nil => x

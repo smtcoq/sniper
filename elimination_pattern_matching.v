@@ -192,7 +192,7 @@ repeat match goal with
 [intros; try (rewrite H); reflexivity | first [
 let foo := fresh in assert (foo := H) ; intros; rewrite foo ;
 match goal with 
-| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr eqn:E ; 
+| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr; 
 try inversion Hinv ;
  auto end |
 repeat match goal with 
@@ -281,7 +281,7 @@ eliminate_dependent_pattern_matching H2.
 eliminate_dependent_pattern_matching H0.
 get_def dep_match. expand_hyp dep_match_def.
 eliminate_fix_hyp H0.
-clear - H2. eliminate_dependent_pattern_matching H2. 
+clear - H2. eliminate_dependent_pattern_matching H2.
 Abort. 
 
 Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
