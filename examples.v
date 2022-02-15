@@ -104,9 +104,9 @@ Lemma rev_elements_node c (H: CompDec c) l x r :
 Proof. snipe (rev_elements_app, app_nil_r). Qed.
 
 
-Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
+(* Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
-Proof. intros B HB l1 l2 l3. snipe_nat length_app. Qed.
+Proof. intros B HB l1 l2 l3. snipe length_app. Qed. *)
 
 
 (* Example of search an element in a list *)

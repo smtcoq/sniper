@@ -112,51 +112,43 @@ def_and_pattern_matching p1 ; inst t.
 Ltac def_fix_and_pattern_matching_mono_param p1 t :=
 def_fix_and_pattern_matching p1 ; inst t.
 
-Ltac scope_param_nat p1 p2 t := let p2' := eval unfold p2 in p2 in
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t ; try nat_convert) ;
+Ltac scope_param p1 p2 t := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
 get_eliminators_in_variables p2'.
 
-Ltac scope_no_param_nat p1 p2 := let p2' := eval unfold p2 in p2 in
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; inst ; try nat_convert) ;
+Ltac scope_no_param p1 p2 := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _  |- _ => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
 get_eliminators_in_variables p2'.
 
-Ltac scope_param_no_nat_var p1 p2 t := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
-get_eliminators_in_variables p2'.
+Ltac snipe_param_no_check p1 p2 t :=
+scope_param p1 p2 t ; verit_no_check.
 
-Ltac scope_no_param_no_nat_var p1 p2 := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
-get_eliminators_in_variables p2'.
+Ltac snipe_no_param_no_check p1 p2 :=
+scope_no_param p1 p2 ; verit_no_check.
 
-Ltac snipe_param_nat p1 p2 t := 
-scope_param_nat p1 p2 t ; verit.
+Ltac snipe_param p1 p2 t :=
+scope_param p1 p2 t ; verit.
 
-Ltac snipe_no_param_nat p1 p2 := 
-scope_no_param_nat p1 p2 ; verit.
+Ltac snipe_no_param p1 p2 :=
+scope_no_param p1 p2 ; verit.
 
-Ltac snipe_param_no_nat_no_check p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit_no_check.
+Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.
+Tactic Notation "snipe_no_check" := snipe_no_param_no_check prod_of_symb prod_types.
 
-Ltac snipe_no_param_no_nat_no_check p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit_no_check.
+Tactic Notation "scope" constr(t) := scope_param prod_of_symb prod_types t.
+Tactic Notation "scope" := scope_no_param prod_of_symb prod_types.
 
-Ltac snipe_param_no_nat_var p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit.
-
-Ltac snipe_no_param_no_nat_var p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit.
-
-Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_nat_no_check prod_of_symb prod_types t.
-Tactic Notation "snipe_no_check" := snipe_no_param_no_nat_no_check prod_of_symb prod_types.
-
-Tactic Notation "scope" constr(t) := scope_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "scope" := scope_no_param_no_nat_var prod_of_symb prod_types.
-
-Tactic Notation "snipe" constr(t) := intros ; snipe_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "snipe" := intros ; snipe_no_param_no_nat_var prod_of_symb prod_types.
-
-Tactic Notation "scope_nat" constr(t) := scope_param_nat prod_of_symb prod_types t.
-Tactic Notation "scope_nat" := scope_no_param_nat prod_of_symb prod_types.
-
-Tactic Notation "snipe_nat" constr(t) := intros ; snipe_param_nat prod_of_symb prod_types t.
-Tactic Notation "snipe_nat" := intros ; snipe_no_param_nat prod_of_symb prod_types.
+Tactic Notation "snipe" constr(t) := intros ; snipe_param prod_of_symb prod_types t.
+Tactic Notation "snipe" := intros ; snipe_no_param prod_of_symb prod_types.

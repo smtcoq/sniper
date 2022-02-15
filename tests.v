@@ -27,9 +27,17 @@ length l = match l with
        | _ :: xs => S (length xs)
        end) -> True).
 intro H.
-eliminate_pattern_matching H 1.
+eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
+
+Definition true_hidden := true.
+Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
+
+Goal definition_no_variables -> True.
+scope.
+Abort.
+
 
 Goal ((forall (x : nat) (a : nat) (l : list nat), 
 @hd nat x (@cons nat a l) = match (@cons nat a l) with
@@ -40,12 +48,26 @@ def_and_pattern_matching_mono prod_types.
 assumption.
 Qed.
 
+Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
+intros H.
+scope.
+Abort.
+
 Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
 intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
 def_and_pattern_matching_mono prod_of_symb.     
 verit.
 Qed.
+
+Lemma nth_default_eq :
+    forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
+  Proof. intros A HA n ; induction n. 
+  - snipe.
+  - intros l ; destruct l.
+    * snipe.
+    * scope. get_eliminators_st (option). specialize (H A a). verit.
+ Qed.
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
