@@ -87,11 +87,13 @@ Elpi Typecheck.
 Elpi Tactic instantiate_with_subterms_type_type_of_goal.
 Elpi Accumulate File "subterms.elpi".
 Elpi Accumulate File "instantiate.elpi".
+Elpi Accumulate File "utilities.elpi".
+Elpi Typecheck.
 Elpi Accumulate File "construct_cuts.elpi".
 Elpi Accumulate lp:{{
 
   solve (goal _ _ Ty _ [trm T] as G) GL :- !,
-    subterms_type Ty L, instantiate_list T L R, coq.say R, construct_cuts R Trm,
+    subterms_type Ty L, instantiate_term_list T L R, coq.say R, construct_cuts R Trm,
     refine Trm G GL. 
 
 }}.
@@ -126,8 +128,20 @@ elpi instantiate_with_subterms_type_type_of_goal (Ty).
 
 Goal ((forall x: Type, x = x) -> unit -> nat -> Prop).
 intro H.
-instantiate_hyp_with_subterms_of_type_type H. all : try apply H.
+instantiate_hyp_with_subterms_of_type_type H; try apply H.
 Abort.
+
+
+
+Elpi Command Tuple_to_list.
+Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate lp:{{
+  main [trm Term] :- tuple_to_list Term L, coq.say L.
+}}.
+Elpi Typecheck.
+
+Elpi Tuple_to_list ((1, unit, bool)).
+
 
 
 

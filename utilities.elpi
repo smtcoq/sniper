@@ -1,0 +1,22 @@
+pred tuple_to_list i: term, o: (list term).
+    tuple_to_list {{ pair lp:P1 lp:P2 }} R :- !, tuple_to_list P1 R1, tuple_to_list P2 R2,
+        std.append R1 R2 R.
+    tuple_to_list T [T].
+
+pred singl_tuple_to_list i: (list argument), o: (list term).
+    singl_tuple_to_list [trm T] R :- tuple_to_list T R.
+    singl_tuple_to_list [] [].
+
+pred add_if_polymorphic i: term, i: (list term), o: (list term).
+    add_if_polymorphic ((prod Na Ty Bod) as T) L [T | L] :- coq.unify-eq Ty {{ Type }} ok,
+    add_if_polymorphic _ L L.
+
+pred collect_polymorphic_hypotheses_from_context i: goal-ctx, o: (list term).
+    collect_polymorphic_hypotheses_from_context [(decl _ _ Ty)| XS] R :- add_if_polymorphic Ty R1 R,
+        collect_polymorphic_hypotheses_from_context XS R1.
+    collect_polymorphic_hypotheses_from_context [] [].
+
+pred append_nodup i: list term, i: list term, o: list term.
+    append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
+    append_nodup [X|XS] Y [X|R] :- append_nodup XS Y R.
+    append_nodup [] Y Y.

@@ -1,21 +1,3 @@
-pred tuple_to_list i: term, o: (list term).
-    tuple_to_list ({{ pair lp:P1 lp:P2 }}) R :- tuple_to_list P1 R1, tuple_to_list P2 R2,
-        std.append R1 R2 R.
-    tuple_to_list T [T].
-
-pred singl_tuple_to_list i: (list argument), o: (list term).
-    singl_tuple_to_list [trm T] R :- tuple_to_list T R.
-    singl_tuple_to_list [] [].
-
-pred add_if_polymorphic i: term, i: (list term), o: (list term).
-    add_if_polymorphic ((prod Na Ty Bod) as T) L [T | L] :- coq.unify-eq Ty {{ Type }} ok, % equality or equality modulo conversion? TODO : tests
-    add_if_polymorphic _ L L.
-
-pred collect_polymorphic_hypotheses_from_context i: (list decl), o: (list term).
-    collect_polymorphic_hypotheses_from_context [(decl _ _ Ty)| XS] R :- add_if_polymorphic Ty R1 R,
-        collect_polymorphic_hypotheses_from_context XS R1.
-    collect_polymorphic_hypotheses_from_context [] [].
-
 pred instantiate i: term, i: term, o: term.
     instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
     instantiate T _ T. 
@@ -30,5 +12,26 @@ pred instantiate_list_list_type i: (list term), i: (list term), o: (list term).
         instantiate_term_list T L R1, instantiate_list_list R1 L R1', 
         instantiate_list_list XS L R2, std.append R1' R2 R.
     instantiate_list_list [] L [].
-% TODO : rajouter une condition d'arrêt, on n'instancie le terme que quand c'est un produit requérant un certain type (en entrée)
-% On donnera le type Type pour ce qui nous intéresse
+
+pred find_instantiated_params i: term, o: (list (pair term (list term))).
+    find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
+        pi x\ decl x N Ty => find_instantiated_params (F x) R2, utilities.append_nodup  R1 R2 L.
+    find_instantiated_params (prod N Ty F) L :- !, find_instantiated_params Ty R1,
+        pi x\ decl x N Ty => find_instantiated_params (F x) R2, utilities.append_nodup  R1 R2 L.
+    find_instantiated_params (let N Ty V F) R :- !, find_instantiated_params Ty R1,
+        pi x\ def x N Ty V => find_instantiated_params (F x) R2, utilities.append_nodup R1 R2 R.
+    find_instantiated_params (match T U L) R :- find_instantiated_params T R1, 
+        std.map L find_instantiated_params R2,
+        std.flatten R2 R3,
+        utilities.append_nodup  R1 R3 R.
+    find_instantiated_params (fix Na _ Ty F) R :- !, find_instantiated_params Ty R1,
+        pi x\ decl x Na Ty => find_instantiated_params (F x) R2,
+        utilities.append_nodup R1 R2 R.
+    find_instantiated_params (app [(global G)|X]) [(pr (global G) R)] :- !, std.map X subterms.add_if_type R.
+    find_instantiated_params (app L) R :- std.map L find_instantiated_params R1, std.flatten R1 R.
+    find_instantiated_params _ [].
+
+pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list term))).
+    find_instantiated_params_in_list [X | XS] L :- find_instantiated_params X R1, 
+    find_instantiated_params_in_list XS R2, utilities.append_nodup R1 R2 L.
+    find_instantiated_params_in_list [] [].
