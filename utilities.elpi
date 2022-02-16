@@ -1,3 +1,8 @@
+pred get_number_of_parameters i: term, o: int.
+    get_number_of_parameters (global (indt I)) NB :- coq.env.indt I _ NB _ _ _ _.
+    get_number_of_parameters (global (indc C)) NB :- coq.env.indc C NB _ _ _.
+    get_number_of_parameters _ 0.
+
 pred tuple_to_list i: term, o: (list term).
     tuple_to_list {{ pair lp:P1 lp:P2 }} R :- !, tuple_to_list P1 R1, tuple_to_list P2 R2,
         std.append R1 R2 R.
@@ -16,7 +21,7 @@ pred collect_polymorphic_hypotheses_from_context i: goal-ctx, o: (list term).
         collect_polymorphic_hypotheses_from_context XS R1.
     collect_polymorphic_hypotheses_from_context [] [].
 
-pred append_nodup i: list term, i: list term, o: list term.
+pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
     append_nodup [X|XS] Y [X|R] :- append_nodup XS Y R.
     append_nodup [] Y Y.
