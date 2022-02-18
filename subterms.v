@@ -46,55 +46,18 @@ Elpi Accumulate lp:{{
 }}.
 Elpi Typecheck.
 
-Elpi Tactic test_param.
+Elpi Tactic test_context.
+Elpi Accumulate File "instantiate.elpi".
 Elpi Accumulate File "utilities.elpi".
+Elpi Typecheck.
 Elpi Accumulate lp:{{
-
-pred type_global i: term, o: term.
-  type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
-
-
-pred codomain i:term, o:term.
-  codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
-  codomain T T.
-
-pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S).
-  is_not_prop T (error "the term is Prop").
-
-pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, coq.say "codomain is" U, is_not_prop U ok.
-
-pred find_instantiated_params i: term, o: (list (pair term (list term))).
-    find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (prod N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (let N Ty V F) R :- !, find_instantiated_params Ty R1,
-        pi x\ def x N Ty V => find_instantiated_params (F x) R2, append_nodup R1 R2 R.
-    find_instantiated_params (match T U L) R :- find_instantiated_params T R1, 
-        std.map L find_instantiated_params R2,
-        std.flatten R2 R3,
-        append_nodup  R1 R3 R.
-    find_instantiated_params (fix Na _ Ty F) R :- !, find_instantiated_params Ty R1,
-        pi x\ decl x Na Ty => find_instantiated_params (F x) R2,
-        append_nodup R1 R2 R.
-    find_instantiated_params (app [(global G)|X]) [(pr (global G) R)] :- 
-    type_global (global G) Ty, codomain_not_prop Ty ok, %TODO one single call to coq.env.indt
-    get_number_of_parameters (global G) NB,
-        std.take NB X R.
-    find_instantiated_params (app L) R :- std.map L find_instantiated_params R1, std.flatten R1 R.
-    find_instantiated_params _ [].
-  solve (goal _ _ Ty _ _ as G) GL :- find_instantiated_params Ty R, coq.say R.
+  solve (goal _ _ Ty _ _ as G) GL :- coq.say "coucou".
 }}.
 Elpi Typecheck.
 
+Goal forall (A: Type) (l: list A), l = l.
+elpi test_context. Abort.
 
-
-
-Goal forall (A: Type) (l: list A) (B: Type) (p : A*B), l=l -> p=p.
-Proof.
- intros A l B p. elpi test_param.
 
 Goal toto = toto. 
 unfold toto. elpi tata.
@@ -192,6 +155,10 @@ Elpi Typecheck.
 
 Elpi Tuple_to_list ((1, unit, bool)).
 
-
+Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
+(p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
+-> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
+p' = p'.
+intros.
 
 

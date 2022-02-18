@@ -53,3 +53,22 @@ pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list 
     find_instantiated_params_in_list [X | XS] L :- find_instantiated_params X R1, 
     find_instantiated_params_in_list XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list [] [].
+
+pred global_using_var i: term, o:  (list (pair term (list int))).
+    global_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
+
+pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
+    % finds if a term X is an argument of another term U (U is partially defined)
+    % and returns the pair between U and the positions of the occurences of X
+    argument_of U X (prod _ Ty F) T :- argument_of U X Ty T1, 
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
+    argument_of U X (fun _ Ty F) T :- argument_of U X Ty T1, 
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
+    argument_of U X (fix _ _ Ty F) T :- argument_of U X Ty T1, 
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
+    argument_of U X (let N Ty V F) T :- argument_of U X Ty T1, argument_of U X V T2,
+        pi x\ def x N Ty V => argument_of U X (F x) T3, std.append T1 T2 T12,
+        std.append T12 T3 T.
+    argument_of U X (match T V L) R :- std.map L (argument_of U X) R', std.flatten R' R.
+    argument_of U X (app [U| XS]) [pr U R1] :- std.mem! XS X, find_occurences XS X R1.
+    argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.

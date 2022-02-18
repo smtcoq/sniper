@@ -25,3 +25,11 @@ pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
     append_nodup [X|XS] Y [X|R] :- append_nodup XS Y R.
     append_nodup [] Y Y.
+
+pred find_occurences_aux i: list A, i: A, i: int, o: list int.
+    find_occurences_aux [X|XS] X N [N|R] :- !, M is N + 1, find_occurences_aux XS X M R.
+    find_occurences_aux [Y |XS] X N R :- M is N + 1, find_occurences_aux XS X M R.
+    find_occurences_aux [] X N [].
+
+pred find_occurences i: list A, i: A, o: list int.
+    find_occurences_aux L X 0 R. 
