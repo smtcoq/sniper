@@ -27,9 +27,18 @@ pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [] Y Y.
 
 pred find_occurences_aux i: list A, i: A, i: int, o: list int.
-    find_occurences_aux [X|XS] X N [N|R] :- !, M is N + 1, find_occurences_aux XS X M R.
+    find_occurences_aux [X|XS] X N [N|R] :- !,  M is N + 1, find_occurences_aux XS X M R.
     find_occurences_aux [Y |XS] X N R :- M is N + 1, find_occurences_aux XS X M R.
     find_occurences_aux [] X N [].
 
 pred find_occurences i: list A, i: A, o: list int.
-    find_occurences_aux L X 0 R. 
+    find_occurences L X R :- find_occurences_aux L X 0 R. 
+
+pred filter_key i: A, i: list (pair A B), o: list B. %takes all the corresponding values for a given key in a list of pairs
+    filter_key X [pr X Y | XS] [Y|R] :- !, filter_key X XS R.
+    filter_key X [Y | XS] R :- filter_key X XS R.
+    filter_key X [] []. 
+
+pred nth i:int, i:list A, o:A. % a version of nth with no fatal error to handle backtracking
+    nth 0 [X|_ ] R :- !, X = R.
+    nth N [_|XS] R :- N > 0, !, N1 is N - 1, nth N1 XS R.

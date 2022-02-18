@@ -46,16 +46,33 @@ Elpi Accumulate lp:{{
 }}.
 Elpi Typecheck.
 
-Elpi Tactic test_context.
-Elpi Accumulate File "instantiate.elpi".
+Elpi Tactic test_nth.
 Elpi Accumulate File "utilities.elpi".
-Elpi Typecheck.
+
 Elpi Accumulate lp:{{
-  solve (goal _ _ Ty _ _ as G) GL :- coq.say "coucou".
+  solve (goal _ _ Ty _ _ as G) GL :- nth 4 [1, 2, 3] R, coq.say R.
+solve (goal _ _ Ty _ _ as G) GL :- nth 2 [1, 2, 3] R, coq.say R.
+
 }}.
 Elpi Typecheck.
 
-Goal forall (A: Type) (l: list A), l = l.
+Goal False.
+elpi test_nth. Abort.
+
+Elpi Tactic test_context.
+Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate File "instantiate.elpi".
+Elpi Accumulate lp:{{
+
+  solve (goal _ _ Ty _ _ as G) GL :- globals_using_var Ty L, coq.say L.
+}}.
+Elpi Typecheck.
+
+Goal forall (A B: Type) (l : A*B), l = l.
+intro A.
+elpi test_context. Abort.
+
+Goal forall (A B : Type) (l: list B), l = l.
 elpi test_context. Abort.
 
 

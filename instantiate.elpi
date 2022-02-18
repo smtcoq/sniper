@@ -27,6 +27,24 @@ pred is_not_prop i: term, o: diagnostic.
 pred codomain_not_prop i: term, o: diagnostic.
 codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
 
+pred globals_using_var i: term, o:  (list (pair term (list int))).
+    globals_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
+
+pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
+    argument_of U X (prod _ Ty F) T :- !, argument_of U X Ty T1,
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+    argument_of U X (fun _ Ty F) T :- !, argument_of U X Ty T1, 
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+    argument_of U X (fix _ _ Ty F) T :- !, argument_of U X Ty T1, 
+      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+    argument_of U X (let N Ty V F) T :- !, argument_of U X Ty T1, argument_of U X V T2,
+        pi x\ def x N Ty V => argument_of U X (F x) T3, append_nodup T1 T2 T12,
+        append_nodup T12 T3 T.
+    argument_of U X (match T V L) R :- std.map L (argument_of U X) R', std.flatten R' R.
+    argument_of U X (app [U| XS]) [pr U R1] :- std.mem! XS X, !, find_occurences XS X R1.
+    argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
+    argument_of U X T [].
+
 pred find_instantiated_params i: term, o: (list (pair term (list term))).
     find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
         pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
@@ -47,28 +65,38 @@ pred find_instantiated_params i: term, o: (list (pair term (list term))).
         std.take NB X R.
     find_instantiated_params (app L) R :- std.map L find_instantiated_params R1, std.flatten R1 R.
     find_instantiated_params _ [].
-  solve (goal _ _ Ty _ _ as G) GL :- find_instantiated_params Ty R.
 
 pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list term))).
     find_instantiated_params_in_list [X | XS] L :- find_instantiated_params X R1, 
     find_instantiated_params_in_list XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list [] [].
 
-pred global_using_var i: term, o:  (list (pair term (list int))).
-    global_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
+pred instances_param_indu_strategy: i: term, i: list term, o: list term.
+    instances_param_indu_strategy H L R :- find_instantiated_params_in_list L L', instances_param_indu_strategy_aux H L' R.
 
-pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
-    % finds if a term X is an argument of another term U (U is partially defined)
-    % and returns the pair between U and the positions of the occurences of X
-    argument_of U X (prod _ Ty F) T :- argument_of U X Ty T1, 
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
-    argument_of U X (fun _ Ty F) T :- argument_of U X Ty T1, 
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
-    argument_of U X (fix _ _ Ty F) T :- argument_of U X Ty T1, 
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, std.append T1 T2 T.
-    argument_of U X (let N Ty V F) T :- argument_of U X Ty T1, argument_of U X V T2,
-        pi x\ def x N Ty V => argument_of U X (F x) T3, std.append T1 T2 T12,
-        std.append T12 T3 T.
-    argument_of U X (match T V L) R :- std.map L (argument_of U X) R', std.flatten R' R.
-    argument_of U X (app [U| XS]) [pr U R1] :- std.mem! XS X, find_occurences XS X R1.
-    argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
+pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)), o: list term.
+    instances_param_indu_strategy_aux (prod Na Ty F) L R :- 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var (prod Na Ty F) L', % TODO : only when L' is not empty, when L' is 
+        % empty we use the default strategy of instanciation
+        generate_instances_list I L' L R.
+    instances_param_indu_strategy_aux H L [H]. % no instances if the hypothesis is not polymorphic
+
+pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), o: list term.
+    generate_instances_list T [X|XS] L R :- generate_instances T X L R1, generate_instances_list T XS L R2, 
+    append_nodup R1 R2 R. 
+    generate_instances_list _ [] _ [].
+
+pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
+    generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos R.
+
+pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
+    generate_instances_aux1 H Trm L [LT1|LTS] R :- generate_instances_aux2 H Trm L LT1 R1,
+    generate_instances_aux1 H Trm L LTS R2,
+    append_nodup R1 R2 R.
+    generate_instances_aux1 _ _ _ [] []. 
+
+pred generate_instances_aux2 i: term, i: term, i: (list int), i: (list term), o: list term.
+    generate_instances_aux2 H Trm [N1|NS] L [H1|HS] :- nth N1 L Inst, instantiate H Inst H1, 
+        generate_instances_aux2 H Trm NS HS.
+    generate_instances_aux2 _ _ [] _ [].
+    % maybe some problems with nth TODO tests, but we consider each inductive fully applied
