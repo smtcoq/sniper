@@ -7,7 +7,7 @@ pred instantiate_term_list i: term, i: (list term), o: (list term).
     instantiate_term_list T L M. 
     instantiate_term_list T [] [].
 
-pred instantiate_list_list_type i: (list term), i: (list term), o: (list term).
+pred instantiate_list_list i: (list term), i: (list term), o: (list term).
     instantiate_list_list [ T| XS] L R :-
         instantiate_term_list T L R1, instantiate_list_list R1 L R1', 
         instantiate_list_list XS L R2, std.append R1' R2 R.
@@ -27,7 +27,7 @@ pred is_not_prop i: term, o: diagnostic.
 pred codomain_not_prop i: term, o: diagnostic.
 codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
 
-pred globals_using_var i: term, o:  (list (pair term (list int))).
+pred globals_using_var i: term, o: (list (pair term (list int))).
     globals_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
 
 pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
@@ -71,7 +71,7 @@ pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list 
     find_instantiated_params_in_list XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list [] [].
 
-pred instances_param_indu_strategy: i: term, i: list term, o: list term.
+pred instances_param_indu_strategy i: term, i: list term, o: list term.
     instances_param_indu_strategy H L R :- find_instantiated_params_in_list L L', instances_param_indu_strategy_aux H L' R.
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)), o: list term.
@@ -87,7 +87,7 @@ pred generate_instances_list i: term, i: (list (pair term (list int))), i: list 
     generate_instances_list _ [] _ [].
 
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
-    generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos R.
+    generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
 
 pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
     generate_instances_aux1 H Trm L [LT1|LTS] R :- generate_instances_aux2 H Trm L LT1 R1,
@@ -97,6 +97,5 @@ pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term
 
 pred generate_instances_aux2 i: term, i: term, i: (list int), i: (list term), o: list term.
     generate_instances_aux2 H Trm [N1|NS] L [H1|HS] :- nth N1 L Inst, instantiate H Inst H1, 
-        generate_instances_aux2 H Trm NS HS.
+        generate_instances_aux2 H Trm NS L HS.
     generate_instances_aux2 _ _ [] _ [].
-    % maybe some problems with nth TODO tests, but we consider each inductive fully applied
