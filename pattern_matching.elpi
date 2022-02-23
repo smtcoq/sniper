@@ -24,4 +24,5 @@ pred unmatch_app i: list term, i: (term -> term), o:term.
 pred unmatch i: term, i: (term -> term), o: term. 
     unmatch (match E _ Pats) K R :- !, coq.typecheck E (global (indt I)) ok, coq.env.indt I _ _ _ CS _, 
         unmatch_patterns Pats CS E K R.
+    unmatch (fun Na Ty F) K R :- !, pi x\ decl x Na Ty => unmatch T F x %Lam (x, ty, t) -> unmatch_core t (fun t' -> k (Lam (x, ty, t')))
     unmatch (app L) K R :- unmatch_app L K R.

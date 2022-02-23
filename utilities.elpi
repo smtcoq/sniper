@@ -13,13 +13,18 @@ pred singl_tuple_to_list i: (list argument), o: (list term).
     singl_tuple_to_list [] [].
 
 pred add_if_polymorphic i: term, i: (list term), o: (list term).
-    add_if_polymorphic ((prod Na Ty Bod) as T) L [T | L] :- coq.unify-eq Ty {{ Type }} ok,
+    add_if_polymorphic ((prod Na Ty Bod) as T) L [T | L] :- coq.unify-eq Ty {{ Type }} ok.
     add_if_polymorphic _ L L.
 
-pred collect_polymorphic_hypotheses_from_context i: goal-ctx, o: (list term).
-    collect_polymorphic_hypotheses_from_context [(decl _ _ Ty)| XS] R :- add_if_polymorphic Ty R1 R,
-        collect_polymorphic_hypotheses_from_context XS R1.
-    collect_polymorphic_hypotheses_from_context [] [].
+pred is_polymorphic i: pair term term.
+    is_polymorphic (pr _ (prod Na Ty F)) :- coq.unify-eq Ty {{ Type }} ok.
+
+pred polymorphic_hypotheses i: (list (pair term term)), o: (list (pair term term)).
+    polymorphic_hypotheses L R :- std.filter L is_polymorphic R.
+
+pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair term term).
+    collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- collect_hypotheses_from_context XS R R'.
+    collect_hypotheses_from_context [] [] [].
 
 pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
@@ -42,3 +47,7 @@ pred filter_key i: A, i: list (pair A B), o: list B. %takes all the correspondin
 pred nth i:int, i:list A, o:A. % a version of nth with no fatal error to handle backtracking
     nth 0 [X|_ ] R :- !, X = R.
     nth N [_|XS] R :- N > 0, !, N1 is N - 1, nth N1 XS R.
+
+pred argument_to_term i: list argument, o: list (pair term term).
+    argument_to_term [trm T| XS] [pr T Ty|R] :- coq.typecheck T Ty ok, argument_to_term XS R.
+    argument_to_term [] [].
