@@ -5,7 +5,7 @@ Ltac assert2 H := assert H.
 
 Ltac assert_list l H := match constr:(l) with
 | nil => idtac 
-| ?x :: ?xs => idtac "bar"; assert x by apply H ; assert_list xs H
+| ?x :: ?xs => idtac "bar"; try (assert x by apply H) ; assert_list xs H
 end ; try (clear H).
 
 Goal False.
@@ -24,66 +24,37 @@ Ltac clear2 H := clear H.
 
 Elpi Tactic test.
 Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate File "find_instances.elpi".
+Elpi Accumulate File "instantiate.elpi".
 Elpi Accumulate File "subterms.elpi".
+Elpi Accumulate File "construct_cuts.elpi".
 Elpi Accumulate lp:{{
+  pred elpi_singl_to_coq_term  i: list term, o: list argument.
+    elpi_singl_to_coq_term [X] [trm X].
 
-pred type_global i: term, o: term.
-  type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
-
-pred codomain i:term, o:term.
-  codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
-  codomain T T.
-
-pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S).
-  is_not_prop T (error "the term is Prop").
-
-pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
-
-pred find_instantiated_params i: term, o: (list (pair term (list term))).
-    find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (prod N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (let N Ty V F) R :- !, find_instantiated_params Ty R1,
-        pi x\ def x N Ty V => find_instantiated_params (F x) R2, append_nodup R1 R2 R.
-    find_instantiated_params (match T U L) R :- find_instantiated_params T R1, 
-        std.map L find_instantiated_params R2,
-        std.flatten R2 R3,
-        append_nodup  R1 R3 R.
-    find_instantiated_params (fix Na _ Ty F) R :- !, find_instantiated_params Ty R1,
-        pi x\ decl x Na Ty => find_instantiated_params (F x) R2,
-        append_nodup R1 R2 R.
-    find_instantiated_params (app [(global G)|X]) [(pr (global G) R)] :- 
-    type_global (global G) Ty, codomain_not_prop Ty ok, %TODO one single call to coq.env.indt
-    get_number_of_parameters (global G) NB,
-        std.take NB X R.
-    find_instantiated_params (app L) R :- std.map L find_instantiated_params R1, std.flatten R1 R.
-    find_instantiated_params _ [].
-
-pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list term))).
-    find_instantiated_params_in_list [X | XS] L :- find_instantiated_params X R1, 
-    find_instantiated_params_in_list XS R2, append_nodup R1 R2 L.
-    find_instantiated_params_in_list [] [].
-
-
-  solve (goal Ctx _ TyG _ L as G) GL :- 
+  solve (goal Ctx _ TyG _ [trm H] as G) GL :- 
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2,
-    find_instantiated_params_in_list [TyG|HL] Inst, coq.say Inst.
+    find_instantiated_params_in_list [TyG|HL] Inst, subterms_type TyG Subs, 
+
+instances_param_indu_strategy_aux H Inst Subs Res, coq.say Res, elpi_singl_to_coq_term Res H', coq.say H',
+coq.ltac.call "assert" H' G GL.
+%construct_cuts Res Trm,
+    %refine Trm G GL. 
+
   
 
 
 }}.
 Elpi Typecheck.
 
-Goal (forall (A : Type) (l : list A), A = A) -> (1 + 1 = 2) -> (forall (A : Type)
-(l: list A), l= l).
-intros. elpi test.
+Goal (forall (A : Type) (l : list A), A = A) -> (1 + 1 = 2) -> (forall (A B : Type)
+(l: list A) (p: B*B), l= l -> p = p).
+intros. elpi test (forall (A : Type) (l: list A), l = l). Abort.
 
 Elpi Tactic elimination_polymorphism.
 Elpi Accumulate File "utilities.elpi".
 Elpi Accumulate File "instantiate.elpi".
+Elpi Accumulate File "find_instances.elpi".
 Elpi Accumulate File "subterms.elpi".
 Elpi Accumulate lp:{{
 
@@ -91,22 +62,19 @@ Elpi Accumulate lp:{{
     elpi_list_to_coq_list [X | XS] (app [{{@cons}}, {{Prop}}, X, R]) :- elpi_list_to_coq_list XS R.
     elpi_list_to_coq_list [] {{@nil Prop}}.
 
- pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, 
-    o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] L G GL :- fst P Nah, snd P HPoly,
-      instances_param_indu_strategy_aux HPoly L LInst, coq.say LInst,
+ pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)),
+  i: list term, i: goal, o: list sealed-goal.
+    instances_param_indu_strategy_list [P | XS] L Subs G GL :- fst P Nah, snd P HPoly,
+      instances_param_indu_strategy_aux HPoly L Subs LInst, 
  elpi_list_to_coq_list
-      LInst LCoq, coq.say LCoq, coq.ltac.call "assert_list" [trm LCoq, trm NaH] G [GL1, GL2], 
-      coq.ltac.open (instances_param_indu_strategy_list XS L) GL2 GL. 
-    instances_param_indu_strategy_list [] L G _.
+      LInst LCoq, coq.ltac.call "assert_list" [trm LCoq, trm NaH] G [GL1, GL2], 
+      coq.ltac.open (instances_param_indu_strategy_list XS L Subs) GL2 GL. 
+    instances_param_indu_strategy_list [] L _ G _.
     
-
-
   solve (goal Ctx _ TyG _ L as G) GL :- 
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2,
-    find_instantiated_params_in_list [TyG |HL] Inst, argument_to_term L LTerm,
-    append_nodup HL2 LTerm Hpoly, 
-    instances_param_indu_strategy_list Hpoly Inst G GL.
+    find_instantiated_params_in_list [TyG |HL] Inst, subterms_type TyG Subs, argument_to_term L LTerm,
+    append_nodup HL2 LTerm HPoly, instances_param_indu_strategy_aux 
   
 
 
@@ -115,7 +83,8 @@ Elpi Typecheck.
 
 Goal (forall (A : Type) (l : list A), A = A) -> (1 + 1 = 2) -> (forall (A : Type)
 (l: list A), l= l).
-intros. elpi elimination_polymorphism. (* Pour l'instant, pb entre l'hyp et son type mais ça va être réglé *)
+intros. elpi elimination_polymorphism (unit). 
+
 
 
 

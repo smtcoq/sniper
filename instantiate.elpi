@@ -1,4 +1,4 @@
-pred instantiate i: term, i: term, o: term.
+ pred instantiate i: term, i: term, o: term.
     instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
     instantiate T _ T. 
 
@@ -12,23 +12,6 @@ pred instantiate_list_list i: (list term), i: (list term), o: (list term).
         instantiate_term_list T L R1, instantiate_list_list R1 L R1', 
         instantiate_list_list XS L R2, std.append R1' R2 R.
     instantiate_list_list [] L [].
-
-pred type_global i: term, o: term.
-  type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
-
-pred codomain i:term, o:term.
-  codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
-  codomain T T.
-
-pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S).
-  is_not_prop T (error "the term is Prop").
-
-pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
-
-pred globals_using_var i: term, o: (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
 
 pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
     argument_of U X (prod _ Ty F) T :- !, argument_of U X Ty T1,
@@ -45,48 +28,22 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
     argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
     argument_of U X T [].
 
-pred find_instantiated_params i: term, o: (list (pair term (list term))).
-    find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (prod N Ty F) L :- !, find_instantiated_params Ty R1,
-        pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.
-    find_instantiated_params (let N Ty V F) R :- !, find_instantiated_params Ty R1,
-        pi x\ def x N Ty V => find_instantiated_params (F x) R2, append_nodup R1 R2 R.
-    find_instantiated_params (match T U L) R :- find_instantiated_params T R1, 
-        std.map L find_instantiated_params R2,
-        std.flatten R2 R3,
-        append_nodup  R1 R3 R.
-    find_instantiated_params (fix Na _ Ty F) R :- !, find_instantiated_params Ty R1,
-        pi x\ decl x Na Ty => find_instantiated_params (F x) R2,
-        append_nodup R1 R2 R.
-    find_instantiated_params (app [(global G)|X]) [(pr (global G) R)] :- 
-    type_global (global G) Ty, codomain_not_prop Ty ok, %TODO one single call to coq.env.indt
-    get_number_of_parameters (global G) NB,
-        std.take NB X R.
-    find_instantiated_params (app L) R :- std.map L find_instantiated_params R1, std.flatten R1 R.
-    find_instantiated_params _ [].
+pred globals_using_var i: term, o:  (list (pair term (list int))).
+    globals_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
 
-pred find_instantiated_params_in_list i: (list term), o: (list (pair term (list term))).
-    find_instantiated_params_in_list [X | XS] L :- find_instantiated_params X R1, 
-    find_instantiated_params_in_list XS R2, append_nodup R1 R2 L.
-    find_instantiated_params_in_list [] [].
+pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
+    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R :- 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', generate_instances_list I L' L SubTy R.
+    instances_param_indu_strategy_aux H L SubTy [H]. % no instances if the hypothesis is not polymorphic
 
-pred instances_param_indu_strategy i: term, i: list term, o: list term.
-    instances_param_indu_strategy H L R :- find_instantiated_params_in_list L L', instances_param_indu_strategy_aux H L' R.
-
-pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)), o: list term.
-    instances_param_indu_strategy_aux (prod Na Ty F) L R :- 
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var (prod Na Ty F) L', generate_instances_list I L' L R.
-    instances_param_indu_strategy_aux H L [H]. % no instances if the hypothesis is not polymorphic
-
-pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), o: list term.
-    generate_instances_list T [X|XS] L R :- generate_instances T X L R1, generate_instances_list T XS L R2, % TODO : only when L is not empty, when L is 
-        % empty we use the default strategy of instanciation so add a list of terms in parameter
-        generate_instances_list I L' L R.
+pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), i: list term, o: list term.
+    generate_instances_list T [X|XS] ([Y|YS] as L) SubTy R :- generate_instances T X L R1, generate_instances_list T XS L SubTy R2, 
     append_nodup R1 R2 R. 
-    generate_instances_list _ [] _ [].
+    generate_instances_list T [] [] SubTy R :- !, instantiate_term_list T SubTy R.
+    generate_instances_list _ [] _ _ [].
 
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
+    %generates_instances T (pr T L) 
     generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
 
 pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
