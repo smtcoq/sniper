@@ -5,9 +5,24 @@ construct_cuts [X | XS] (app [(fun `new_hyp` X1 x\ G x), R]) :-
     construct_cuts XS (G x).
 construct_cuts [] T.
 
-pred terms_to_args i: (list argument), o: (list term).
-terms_to_args [trm X | XS] [X | R] :- terms_to_args XS R.
-terms_to_args [] [].
+pred args_to_terms i: (list argument), o: (list term).
+args_to_terms [trm X | XS] [X | R] :- args_to_terms XS R.
+args_to_terms [] [].
 
 pred construct_cuts_args i: (list argument), o: term.
-construct_cuts_args L1 R :- terms_to_args L1 L1', construct_cuts L1' R.
+construct_cuts_args L1 R :- args_to_terms L1 L1', construct_cuts L1' R.
+
+% dummy predicate to work with multiple subgoals which are all proved by I
+pred refine_list_of_true i: list sealed-goal, o: list sealed-goal. 
+    refine_list_of_true [G] [G] :- !.
+    refine_list_of_true [G1|GL1] GL3 :- !, std.last GL1 G, coq.ltac.open (refine {{I}}) G GL2, 
+        refine_list_of_true [G1|GL2] GL3.
+    refine_list_of_true [] [].
+
+pred refine_by_instantiation i: list sealed-goal, i: term, o: list sealed-goal.
+    % refine_by_instanciation GL1 T GL2 proofs all the subgoals except the first one by applying the theorem T
+    refine_by_instanciation [G] _ [G] :- !.
+    refine_by_instanciation [G1|GL1] T GL3 :- !, std.last GL1 G, coq.say G,
+     coq.ltac.open (refine (app [T| _])) G GL2, coq.say "refine ok foo",
+        refine_by_instanciation [G1|GL2] T GL3.
+    refine_by_instanciation [] _ [].

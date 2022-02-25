@@ -134,18 +134,37 @@ Elpi Accumulate File "construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
-  solve (goal _ _ _ _ L as G) GL :- construct_cuts_args L R,
-    refine R G GL.
+  solve (goal _ _ _ _ L as G) GL :- construct_cuts_args L R, coq.say R,
+    refine R G GL1,
+    refine_list_of_true GL1 GL.
     
 
 }}.
 Elpi Typecheck.
 
 Goal False.
-elpi assert_list (True) (nat) (unit) (true=true).
+assert (H : False).
+elpi assert_list (True) (True) (True).
 Show 2. Show 5.
 all: elpi swap.
 Abort.
+
+
+Elpi Tactic create_new_goal.
+Elpi Accumulate lp:{{
+
+  solve (goal _ _ _ _ [trm H] as G) [GL1| GL] :-
+    std.assert-ok! (coq.elaborate-ty-skeleton H _ H1) "cut formula illtyped",
+    refine (app[(fun `new_hyp` H1 x\ G1_ x), G2_]) G [GL1, GL2],
+    coq.ltac.open (refine {{I}}) GL2 GL.
+
+}}.
+Elpi Typecheck.
+
+Goal False.
+elpi create_new_goal (True). 
+
+
 
 
 

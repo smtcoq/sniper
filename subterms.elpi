@@ -40,13 +40,13 @@ subterms_type (app L) R :- !,
     std.map L subterms_type R1, 
     std.flatten R1 R',
     add_if_type (app L) R' R.
-subterms_type (global G) L :- 
+subterms_type (global G) L :- !,
     add_if_type (global G) [] L.
 subterms_type (let N Ty V F) R :- !,
     subterms_type Ty R1, subterms_type V R2, pi x\ def x N Ty V => subterms_type (F x) R3,
     std.append R1 R2 R12,
     std.append R12 R3 R.
-subterms_type (fix Na _ Ty F) R :- 
+subterms_type (fix Na _ Ty F) R :- !,
     subterms_type Ty R1, pi x\ decl x Na Ty => subterms_type (F x) R2,
     std.append R1 R2 R.
 subterms_type T R :- add_if_type T [] R.

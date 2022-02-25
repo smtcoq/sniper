@@ -3,7 +3,7 @@
     instantiate T _ T. 
 
 pred instantiate_term_list i: term, i: (list term), o: (list term).
-    instantiate_term_list T [U|L] [V|M] :- instantiate T U V, 
+    instantiate_term_list T [U|L] [V|M] :- !, instantiate T U V, 
     instantiate_term_list T L M. 
     instantiate_term_list T [] [].
 
@@ -23,7 +23,7 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
     argument_of U X (let N Ty V F) T :- !, argument_of U X Ty T1, argument_of U X V T2,
         pi x\ def x N Ty V => argument_of U X (F x) T3, append_nodup T1 T2 T12,
         append_nodup T12 T3 T.
-    argument_of U X (match T V L) R :- std.map L (argument_of U X) R', std.flatten R' R.
+    argument_of U X (match T V L) R :- !, std.map L (argument_of U X) R', std.flatten R' R.
     argument_of U X (app [U| XS]) [pr U R1] :- std.mem! XS X, !, find_occurences XS X R1.
     argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
     argument_of U X T [].
@@ -37,22 +37,21 @@ pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),
     instances_param_indu_strategy_aux H L SubTy [H]. % no instances if the hypothesis is not polymorphic
 
 pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), i: list term, o: list term.
-    generate_instances_list T [X|XS] ([Y|YS] as L) SubTy R :- generate_instances T X L R1, generate_instances_list T XS L SubTy R2, 
+    generate_instances_list T [X|XS] ([Y|YS] as L) SubTy R :- !, generate_instances T X L R1, generate_instances_list T XS L SubTy R2, 
     append_nodup R1 R2 R. 
     generate_instances_list T [] [] SubTy R :- !, instantiate_term_list T SubTy R.
     generate_instances_list _ [] _ _ [].
 
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
-    %generates_instances T (pr T L) 
     generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
 
 pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
-    generate_instances_aux1 H Trm L [LT1|LTS] R :- generate_instances_aux2 H Trm L LT1 R1,
+    generate_instances_aux1 H Trm L [LT1|LTS] R :- !, generate_instances_aux2 H Trm L LT1 R1,
     generate_instances_aux1 H Trm L LTS R2,
     append_nodup R1 R2 R.
     generate_instances_aux1 _ _ _ [] []. 
 
 pred generate_instances_aux2 i: term, i: term, i: (list int), i: (list term), o: list term.
-    generate_instances_aux2 H Trm [N1|NS] L [H1|HS] :- nth N1 L Inst, instantiate H Inst H1, 
+    generate_instances_aux2 H Trm [N1|NS] L [H1|HS] :- !, nth N1 L Inst, instantiate H Inst H1, 
         generate_instances_aux2 H Trm NS L HS.
     generate_instances_aux2 _ _ [] _ [].

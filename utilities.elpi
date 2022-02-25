@@ -23,12 +23,12 @@ pred polymorphic_hypotheses i: (list (pair term term)), o: (list (pair term term
     polymorphic_hypotheses L R :- std.filter L is_polymorphic R.
 
 pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair term term).
-    collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- collect_hypotheses_from_context XS R R'.
+    collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [] [] [].
 
 pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
-    append_nodup [X|XS] Y [X|R] :- append_nodup XS Y R.
+    append_nodup [X|XS] Y [X|R] :- !, append_nodup XS Y R.
     append_nodup [] Y Y.
 
 pred find_occurences_aux i: list A, i: A, i: int, o: list int.
@@ -49,5 +49,5 @@ pred nth i:int, i:list A, o:A. % a version of nth with no fatal error to handle 
     nth N [_|XS] R :- N > 0, !, N1 is N - 1, nth N1 XS R.
 
 pred argument_to_term i: list argument, o: list (pair term term).
-    argument_to_term [trm T| XS] [pr T Ty|R] :- coq.typecheck T Ty ok, argument_to_term XS R.
+    argument_to_term [trm T| XS] [pr T Ty|R] :- !, coq.typecheck T Ty ok, argument_to_term XS R.
     argument_to_term [] [].
