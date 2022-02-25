@@ -19,10 +19,21 @@ pred refine_list_of_true i: list sealed-goal, o: list sealed-goal.
         refine_list_of_true [G1|GL2] GL3.
     refine_list_of_true [] [].
 
-pred refine_by_instantiation i: list sealed-goal, i: term, o: list sealed-goal.
-    % refine_by_instanciation GL1 T GL2 proofs all the subgoals except the first one by applying the theorem T
+pred find_in_context i: term, i: goal-ctx, o: term.
+    find_in_context Trm [decl Var _ Ty| XS] Var :- coq.unify-eq Trm Ty ok.
+    find_in_context Trm [X | XS] Var :- find_in_context Trm XS Var.
+    find_in_context Trm [] _ :- coq.error "not in the context".
+
+pred refine_by_app i: term, i: goal, o: list sealed-goal.
+    refine_by_app Ty (goal Ctx _ _ _ _ as G) GL :- find_in_context Ty Ctx Trm, refine (app [Trm, _]) G GL. 
+
+pred refine_by_instantiation i: list sealed-goal, i: (pair term term), o: list sealed-goal.
+    % refine_by_instanciation GL1 P GL2 proofs all the subgoals except the first one by applying the theorem fst P (or its equivalent found in the context)
     refine_by_instanciation [G] _ [G] :- !.
-    refine_by_instanciation [G1|GL1] T GL3 :- !, std.last GL1 G, coq.say G,
-     coq.ltac.open (refine (app [T| _])) G GL2, coq.say "refine ok foo",
-        refine_by_instanciation [G1|GL2] T GL3.
+    refine_by_instanciation [G1|GL1] P GL3 :- fst P T, std.last GL1 G,
+     coq.ltac.open (refine (app [T, _])) G GL2, !,
+        refine_by_instanciation [G1|GL2] P GL3.
+        refine_by_instanciation [G1|GL1] P GL3 :- !, snd P Ty, std.last GL1 G,
+     coq.ltac.open (refine_by_app T) G GL2, 
+        refine_by_instanciation [G1|GL2] P GL3.
     refine_by_instanciation [] _ [].
