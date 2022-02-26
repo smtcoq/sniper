@@ -29,12 +29,18 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
     argument_of U X T [].
 
 pred globals_using_var i: term, o:  (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :- pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
+    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
-    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R :- 
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', generate_instances_list I L' L SubTy R.
+    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R' :- 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', coq.say "glob using var" L', generate_instances_list I L' L SubTy R, 
+        instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux H L SubTy [H]. % no instances if the hypothesis is not polymorphic
+
+pred instances_param_indu_strategy_aux_list i: list term, i: list (pair term (list term)), i: list term, o: list term.
+    instances_param_indu_strategy_aux_list [H1 | HS ] L1 L2 R :- instances_param_indu_strategy_aux H1 L1 L2 R1, 
+        instances_param_indu_strategy_aux_list HS L1 L2 R2, append_nodup R1 R2 R.
+    instances_param_indu_strategy_aux_list [] _ _ [].
 
 pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), i: list term, o: list term.
     generate_instances_list T [X|XS] ([Y|YS] as L) SubTy R :- !, generate_instances T X L R1, generate_instances_list T XS L SubTy R2, 

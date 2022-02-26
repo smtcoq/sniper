@@ -66,10 +66,10 @@ Elpi Accumulate lp:{{
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)),
   i: list term, i: goal, o: list sealed-goal.
     instances_param_indu_strategy_list [P | XS] L Subs G GS :- fst P Nah, snd P HPoly,
-      instances_param_indu_strategy_aux HPoly L Subs LInst, !,
-      construct_cuts LInst ProofTerm, refine ProofTerm G GL1, !,
-      refine_by_instanciation GL1 P [G1 | GL], !,
-      coq.ltac.open (instances_param_indu_strategy_list XS L Subs) G1 GS.
+      instances_param_indu_strategy_aux HPoly L Subs LInst, !, 
+      construct_cuts LInst ProofTerm, coq.say "proofterm" ProofTerm, refine ProofTerm G GL1, !, 
+      refine_by_instanciation GL1 P [G1|GL ], !, coq.say "refined" GL, coq.say G1,
+      coq.ltac.open (instances_param_indu_strategy_list XS L Subs) G1 GS, coq.say "result goal" GS.
     instances_param_indu_strategy_list [] L _ G _.
     
   solve (goal Ctx _ TyG _ L as G) GL :- 
@@ -83,11 +83,14 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 
 Goal forall l : list nat, l = l.
-Proof.  elpi elimination_polymorphism (app_length) (foo). Abort.
+Proof.  elpi elimination_polymorphism (app_length) (foo) (app_cons_not_nil). Abort.
 
-Goal (forall (A : Type) (l : list A), A = A) -> (1 + 1 = 2) -> (forall (A : Type)
+Goal (forall (A : Type) (l : list A), A = A)
+-> (1 + 1 = 2) -> (forall (A : Type)
 (l: list A), l= l).
 intros. elpi elimination_polymorphism. Abort. 
+
+(* TODO : faire marcher la tactique quand on a plusieurs arguments *)
 
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
