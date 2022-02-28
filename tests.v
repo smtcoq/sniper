@@ -16,6 +16,7 @@ Require Import String.
 Require Import ZArith.
 Require Import Bool.
 Require Import List.
+Require Import instantiate.
 Import ListNotations.
 
 
@@ -26,7 +27,7 @@ length l = match l with
        | [] => 0
        | _ :: xs => S (length xs)
        end) -> True).
-intro H.
+intro H. 
 eliminate_dependent_pattern_matching H.
 exact I.
 Qed.

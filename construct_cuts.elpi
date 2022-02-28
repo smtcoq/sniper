@@ -44,13 +44,13 @@ pred construct_term_applied i: term, o: term.
 pred refine_by_instantiation i: list sealed-goal, i: (pair term term), o: list sealed-goal.
     % refine_by_instanciation GL1 P GL2 proofs all the subgoals except the first one by applying the theorem fst P (or its equivalent found in the context)
     refine_by_instantiation [G] _ [G] :- !.
-    refine_by_instantiation [G1|GL1] P GL3 :- fst P T, std.last GL1 G,
+    refine_by_instantiation [G1|GL1] P GL3 :- fst P T, std.last GL1 G, std.drop-last 1 GL1 GL1', 
      %when the polymorphic hypothesis is given as parameter
-        construct_term_applied T Tapp, coq.ltac.open (refine Tapp) G GL2, !, 
-        refine_by_instantiation [G1|GL2] P GL3.
+        construct_term_applied T Tapp, coq.ltac.open (refine Tapp) G GL2, !, std.append GL1' GL2 GL12,
+        refine_by_instantiation [G1|GL12] P GL3.
     refine_by_instantiation [G1|GL1] P GL3 :- 
     %when the polymorphic hypothesis is in the context
-    !, snd P Ty, std.last GL1 G,
-     coq.ltac.open (refine_by_app T) G GL2, 
-        refine_by_instantiation [G1|GL2] P GL3.
+    !, snd P Ty, std.last GL1 G, std.drop-last 1 GL1 GL1',
+     coq.ltac.open (refine_by_app T) G GL2, !, std.append GL1' GL2 GL12,
+        refine_by_instantiation [G1|GL12] P GL3.
     refine_by_instantiation [] _ [].

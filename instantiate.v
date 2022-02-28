@@ -48,8 +48,17 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
-intros. elimination_polymorphism app_length. Abort.  
+intros. elimination_polymorphism app_length. reflexivity. Qed. 
 
+(* Test polymorphism *) 
+Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : nat) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
+intro H. elimination_polymorphism. split. assumption. split. assumption. assumption.
+Qed. 
+(* TODO : improve default strategy : more exhaustive *)
 
 
 
