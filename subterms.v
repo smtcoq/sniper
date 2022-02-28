@@ -145,7 +145,7 @@ Elpi Typecheck.
 Goal False.
 assert (H : False).
 elpi assert_list (True) (True) (True).
-Show 2. Show 5.
+Show 2.
 all: elpi swap.
 Abort.
 
@@ -153,16 +153,18 @@ Abort.
 Elpi Tactic create_new_goal.
 Elpi Accumulate lp:{{
 
-  solve (goal _ _ _ _ [trm H] as G) [GL1| GL] :-
-    std.assert-ok! (coq.elaborate-ty-skeleton H _ H1) "cut formula illtyped",
-    refine (app[(fun `new_hyp` H1 x\ G1_ x), G2_]) G [GL1, GL2],
-    coq.ltac.open (refine {{I}}) GL2 GL.
+  solve (goal _ _ _ _ [trm H, trm H1] as G) [GL1| GL] :-
+    std.assert-ok! (coq.elaborate-ty-skeleton H _ H') "cut formula illtyped",
+    refine (app[(fun `new_hyp` H' x\ G1_ x), G2_]) G [GL1, GL2],
+    coq.ltac.open (refine (app [H1, _ , _])) GL2 GL.
 
 }}.
 Elpi Typecheck.
 
+Check pair_equal_spec.
+
 Goal False.
-elpi create_new_goal (True). 
+elpi create_new_goal (forall (a1 a2 : nat) (b1 b2 : nat), (a1, b1) = (a2, b2) <-> a1 = a2 /\ b1 = b2) (pair_equal_spec). 
 
 
 

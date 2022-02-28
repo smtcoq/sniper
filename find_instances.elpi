@@ -1,17 +1,3 @@
-pred type_global i: term, o: term.
-  type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
-
-pred codomain i:term, o:term.
-  codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
-  codomain T T.
-
-pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S).
-  is_not_prop T (error "the term is Prop").
-
-pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
-
 pred find_instantiated_params i: term, o: (list (pair term (list term))).
     find_instantiated_params (fun N Ty F) L :- !, find_instantiated_params Ty R1,
         pi x\ decl x N Ty => find_instantiated_params (F x) R2, append_nodup  R1 R2 L.

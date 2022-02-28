@@ -29,11 +29,15 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
     argument_of U X T [].
 
 pred globals_using_var i: term, o:  (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R.
+    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R, coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
+    globals_using_var _ []. 
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
     instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R' :- 
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', coq.say "glob using var" L', generate_instances_list I L' L SubTy R, 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, generate_instances_list I L' L R, 
+        instances_param_indu_strategy_aux_list R L SubTy R'.
+    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R' :- 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', L' = [], !,  instantiate_term_list I SubTy R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux H L SubTy [H]. % no instances if the hypothesis is not polymorphic
 
@@ -42,11 +46,10 @@ pred instances_param_indu_strategy_aux_list i: list term, i: list (pair term (li
         instances_param_indu_strategy_aux_list HS L1 L2 R2, append_nodup R1 R2 R.
     instances_param_indu_strategy_aux_list [] _ _ [].
 
-pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), i: list term, o: list term.
-    generate_instances_list T [X|XS] ([Y|YS] as L) SubTy R :- !, generate_instances T X L R1, generate_instances_list T XS L SubTy R2, 
+pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), o: list term.
+    generate_instances_list T [X|XS] ([Y|YS] as L) R :- !, generate_instances T X L R1, generate_instances_list T XS L R2, 
     append_nodup R1 R2 R. 
-    generate_instances_list T [] [] SubTy R :- !, instantiate_term_list T SubTy R.
-    generate_instances_list _ [] _ _ [].
+    generate_instances_list _ [] _ [].
 
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
     generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.

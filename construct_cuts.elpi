@@ -25,15 +25,32 @@ pred find_in_context i: term, i: goal-ctx, o: term.
     find_in_context Trm [] _ :- coq.error "not in the context".
 
 pred refine_by_app i: term, i: goal, o: list sealed-goal.
-    refine_by_app Ty (goal Ctx _ _ _ _ as G) GL :- find_in_context Ty Ctx Trm, refine (app [Trm, _]) G GL. 
+    refine_by_app Ty (goal Ctx _ _ _ _ as G) GL :- find_in_context Ty Ctx Trm, construct_term_applied Trm Tapp,
+        refine Tapp G GL.
+    refine_by_app _ _ _ :- coq.error "the proof term does not correspond to the goal". 
+
+pred number_of_polymorphic_variables i: term, o: int.
+    number_of_polymorphic_variables (prod Na Ty F) N1 :- (coq.unify-leq Ty {{Type}} ok ; coq.unify-leq Ty {{Set}} ok), !,
+        pi x\ decl x Na Ty => number_of_polymorphic_variables (F x) N, N1 is N + 1.
+    number_of_polymorphic_variables _ 0.
+
+pred construct_list i: int, o: list term. 
+    construct_list N [ _| R] :- N > 0, !, M is (N - 1), construct_list M R.
+    construct_list 0 []. 
+
+pred construct_term_applied i: term, o: term.
+    construct_term_applied I (app [I|L]) :- coq.typecheck I Ty ok, number_of_polymorphic_variables Ty NB, construct_list NB L.
 
 pred refine_by_instantiation i: list sealed-goal, i: (pair term term), o: list sealed-goal.
     % refine_by_instanciation GL1 P GL2 proofs all the subgoals except the first one by applying the theorem fst P (or its equivalent found in the context)
-    refine_by_instanciation [G] _ [G] :- !.
-    refine_by_instanciation [G1|GL1] P GL3 :- fst P T, std.last GL1 G,
-     coq.ltac.open (refine (app [T, _])) G GL2, !,
-        refine_by_instanciation [G1|GL2] P GL3.
-        refine_by_instanciation [G1|GL1] P GL3 :- !, snd P Ty, std.last GL1 G,
+    refine_by_instantiation [G] _ [G] :- !.
+    refine_by_instantiation [G1|GL1] P GL3 :- fst P T, std.last GL1 G,
+     %when the polymorphic hypothesis is given as parameter
+        construct_term_applied T Tapp, coq.ltac.open (refine Tapp) G GL2, !, 
+        refine_by_instantiation [G1|GL2] P GL3.
+    refine_by_instantiation [G1|GL1] P GL3 :- 
+    %when the polymorphic hypothesis is in the context
+    !, snd P Ty, std.last GL1 G,
      coq.ltac.open (refine_by_app T) G GL2, 
-        refine_by_instanciation [G1|GL2] P GL3.
-    refine_by_instanciation [] _ [].
+        refine_by_instantiation [G1|GL2] P GL3.
+    refine_by_instantiation [] _ [].
