@@ -53,7 +53,7 @@ Abort.
 Ltac instantiate_tuple_terms H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_par_ident H x in let u := type of H' in
 instantiate_tuple_terms H' t2 t2 ) ; try (instantiate_tuple_terms H t1' t2) 
-| unit =>  let T := type of H in
+| impossible_term =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => constr_eq A Type ; clear H
             | _ => idtac
@@ -72,13 +72,13 @@ Abort.
 
 Ltac instantiate_tuple_terms_tuple_hyp t terms := match t with 
 | (?H, ?t') => instantiate_tuple_terms H terms terms ; instantiate_tuple_terms_tuple_hyp t' terms
-| unit => idtac
+| impossible_term => idtac
 end.
 
 
-Ltac instantiate_tuple_terms_tuple_hyp_no_unit t terms := lazymatch t with 
-| (?t1, ?t2 ) => instantiate_tuple_terms_tuple_hyp_no_unit t1 terms ; 
-instantiate_tuple_terms_tuple_hyp_no_unit t2 terms
+Ltac instantiate_tuple_terms_tuple_hyp_no_ip_term t terms := lazymatch t with 
+| (?t1, ?t2 ) => instantiate_tuple_terms_tuple_hyp_no_ip_term t1 terms ; 
+instantiate_tuple_terms_tuple_hyp_no_ip_term t2 terms
 | ?H => let T := type of H in 
      match T with 
   | forall (y : ?A), _ => constr_eq A Type ; try (instantiate_tuple_terms H terms terms)
@@ -92,7 +92,7 @@ let terms0 := return_tuple_subterms_of_type_type in
 let terms := eval cbv in terms0 in 
 let h0 := hyps in 
 let h := eval cbv in h0 in
-instantiate_tuple_terms_tuple_hyp_no_unit t terms ; 
+instantiate_tuple_terms_tuple_hyp_no_ip_term t terms ; 
 instantiate_tuple_terms_tuple_hyp h terms.
 
 Ltac test t0 := 
@@ -100,25 +100,25 @@ let t := eval cbv in t0 in
 let h0 := hyps in 
 let h := eval cbv in h0 in
 let x := constr:((nat, (bool, unit))) in 
-instantiate_tuple_terms_tuple_hyp_no_unit t x ; 
+instantiate_tuple_terms_tuple_hyp_no_ip_term t x ; 
 instantiate_tuple_terms_tuple_hyp h x.
 
 Ltac test2 t0 :=
 let h0 := hyps in
 let t := eval cbv in t0 in 
 let x := constr:((nat, (bool, unit))) in
-instantiate_tuple_terms_tuple_hyp_no_unit t0 x.
+instantiate_tuple_terms_tuple_hyp_no_ip_term t0 x.
 
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
 intro.
-elimination_polymorphism (rev_involutive, unit).
+elimination_polymorphism (rev_involutive, impossible_term).
 
 Abort.
 
 
 Tactic Notation "inst" := elimination_polymorphism unit.
-Tactic Notation "inst" constr(t) := elimination_polymorphism (t, unit).
+Tactic Notation "inst" constr(t) := elimination_polymorphism (t, impossible_term).
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).

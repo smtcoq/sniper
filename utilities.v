@@ -220,7 +220,7 @@ Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
 Ltac get_tail x := 
 let rec get_tail_aux x p := 
 lazymatch x with ?y ?z => get_tail_aux y (z, p) | _ => p end
-in get_tail_aux x unit.
+in get_tail_aux x impossible_term.
 
 (* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
 Ltac inverse_tactic tactic := try (tactic; fail 1).
@@ -251,7 +251,7 @@ match goal with
 | H : _ |- _ => let _ := match goal with _ => let T := type of H in let U := type of T in
 constr_eq U Prop ; revert H end in let acc := hyps in 
 let _ := match goal with _ => intro H end in constr:((H, acc))
-| _ => constr:(unit)
+| _ => constr:(impossible_term)
 end.
 
 Ltac clear_dup :=
@@ -382,7 +382,7 @@ match constr:(l) with
     | false => aux xs acc
     end
 end
-in aux l unit.
+in aux l impossible_term.
 
 Ltac return_tuple_subterms_of_type_type := match goal with
 |- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l

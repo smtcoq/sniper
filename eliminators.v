@@ -358,7 +358,7 @@ end.
 Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_ident H x in
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
-| unit =>  let T := type of H in
+| impossible_term =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H]
             | _ => idtac
@@ -384,7 +384,7 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-let t0 := unit in 
+let t0 := impossible_term in 
 get_eliminators_st_default_quote list t0. clear -a.
 let t0 := return_tuple_subterms_of_type_type in 
 get_eliminators_st_default_quote Ind_test t0. clear -a.
@@ -449,7 +449,7 @@ Ltac vars :=
 match goal with
 | v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
 let _ := match goal with _ => intro v end in constr:((v, acc))
-| _ => constr:(unit)
+| _ => constr:(impossible_term)
 end.
 
 Ltac get_eliminators_in_variables p := 
