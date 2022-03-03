@@ -217,6 +217,11 @@ end.
 
 Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
 
+Ltac get_tail x := 
+let rec get_tail_aux x p := 
+lazymatch x with ?y ?z => get_tail_aux y (z, p) | _ => p end
+in get_tail_aux x unit.
+
 (* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
 Ltac inverse_tactic tactic := try (tactic; fail 1).
 

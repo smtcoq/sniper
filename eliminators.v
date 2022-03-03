@@ -365,16 +365,18 @@ instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t
             end
 end.
 
-Ltac instantiate_tuple_terms_goal_inhab H := let t0 := return_tuple_subterms_of_type_type in 
+Ltac instantiate_tuple_terms_goal_inhab H t0 := let t0 := return_tuple_subterms_of_type_type in
 let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t t.
 
-Ltac get_eliminators_st_default I := 
+Ltac get_eliminators_st_default I t0 :=
+let t := eval cbv in t0 in 
 let H' := get_eliminators_st_return I in
-instantiate_tuple_terms_goal_inhab H'.
+instantiate_tuple_terms_inhab H' t t.
 
-Ltac get_eliminators_st_default_quote I := 
+Ltac get_eliminators_st_default_quote I t0 :=
+let t := eval cbv in t0 in 
 let H' := get_eliminators_st_return_quote I in
-instantiate_tuple_terms_goal_inhab H'.
+instantiate_tuple_terms_inhab H' t t.
 
 Section tests_default.
 
@@ -382,9 +384,12 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-get_eliminators_st_default_quote list. clear -a.
-get_eliminators_st_default_quote Ind_test. clear -a.
-get_eliminators_st_default_quote Ind_test2. clear -a.
+let t0 := unit in 
+get_eliminators_st_default_quote list t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_eliminators_st_default_quote Ind_test t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_eliminators_st_default_quote Ind_test2 t0. clear -a.
 Abort.
 
 End tests_default.
@@ -404,7 +409,6 @@ else is_ind_not_in_list t xs
 | _ => false
 end.
 
-
 Fixpoint get_ind_of_prod_no_dup (t : term) (acc : list term) (acc' : list term) :=
 match t with
 | tProd _ A u => let I := (no_app A).1 in if is_ind_not_in_list I acc
@@ -415,20 +419,24 @@ end.
 Definition get_ind_of_prod_no_dup_default t := 
 get_ind_of_prod_no_dup t [bool_reif ; Z_reif; nat_reif ; eq_reif] [].
 
-Ltac elims_on_list l := 
+Ltac elims_on_list l t := 
 match l with 
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
-                 let I := eval hnf in (u.(my_projT2)) in
-                 try (get_eliminators_st_default_quote I) ; elims_on_list xs
+                 let I := eval hnf in (u.(my_projT2)) in 
+                 try (get_eliminators_st_default_quote I t) ; elims_on_list xs t
 end.
 
-Ltac get_eliminators_in_goal := match goal with 
+Ltac get_eliminators_in_goal := 
+let t0 := return_tuple_subterms_of_type_type in
+let t := eval cbv in t0 in
+match goal with 
 | |- ?T => let T_reif := metacoq_get_value (tmQuote T) in 
           let l := eval cbv in (get_ind_of_prod_no_dup_default T_reif) in
-          elims_on_list l
+          elims_on_list l t
 end.
 
+(* Checks if a given term is a variable *)
 Ltac is_var v :=
 let v_reif := metacoq_get_value (tmQuote v) in 
 match v_reif with 
@@ -444,15 +452,15 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-
 Ltac get_eliminators_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
 | (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
                 let I := get_head T in 
-                try (is_not_in_tuple tuple I  ;
-                get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
+                let params := get_tail T in 
+                try (is_not_in_tuple tuple T  ;
+                get_eliminators_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
 | _ => idtac
 end
 in let prod_types0 := eval cbv in p in tac_rec t prod_types0.
