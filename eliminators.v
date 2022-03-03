@@ -48,6 +48,7 @@ match l with
 | x :: xs => aux xs (mkLam x t) 
 end in aux l_ty (tRel (k - n)).
 
+(* Shift De Brujin indexes: useful when variables are removed *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
   | tRel i => tRel (i-k)
@@ -73,6 +74,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 
 (** version with default = tRel 1 **)
 
+(* constructs the function associated with the branchs which should return a default value *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
 let l := List.map (lift (len + 1) 0) l0 in
@@ -90,6 +92,11 @@ let fix aux' l acc := match l with
       end
 in aux' l (tRel 1).
 
+(* Constructs the pattern matching in the eliminator
+for instance, given the right arguments to construct the predecessor function we get the reified
+< match x with
+| 0 => default
+| S y => y > *)
 Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
@@ -101,7 +108,7 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 
-
+(* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
 Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
 (mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
@@ -280,6 +287,7 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
+(* Main tactic : from an inductive not applied, generates the generation statement and a projection function for each non dependent argument of each constructor *)
 Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
 let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
@@ -346,7 +354,8 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
   | _ => fail
       end.
 
-
+(* Instantiate a statement by trying to find an inhabitant in the local context (or by using 
+the canonical inhabitant of the CompDec typeclass *)
 Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
@@ -355,6 +364,8 @@ let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H)
 | _ => idtac
 end.
 
+(* Instantiate polymorphic statements with a given tuple of subterms of type Type 
+and calls instantiate_inhab *)
 Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_ident H x in
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
@@ -384,7 +395,7 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-let t0 := impossible_term in 
+let t0 := return_tuple_subterms_of_type_type in 
 get_eliminators_st_default_quote list t0. clear -a.
 let t0 := return_tuple_subterms_of_type_type in 
 get_eliminators_st_default_quote Ind_test t0. clear -a.
@@ -449,7 +460,7 @@ Ltac vars :=
 match goal with
 | v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
 let _ := match goal with _ => intro v end in constr:((v, acc))
-| _ => constr:(impossible_term)
+| _ => constr:(unit)
 end.
 
 Ltac get_eliminators_in_variables p := 

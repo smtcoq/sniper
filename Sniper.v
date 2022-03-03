@@ -28,7 +28,7 @@ Require Import NArith.BinNatDef.
 
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
-Definition prod_of_symb := (unit,
+Definition prod_of_symb := (impossible_term,
          Zplus,
          Zminus, 
          Zmult,
