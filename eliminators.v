@@ -48,6 +48,7 @@ match l with
 | x :: xs => aux xs (mkLam x t) 
 end in aux l_ty (tRel (k - n)).
 
+(* Shift De Brujin indexes: useful when variables are removed *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
   | tRel i => tRel (i-k)
@@ -73,6 +74,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 
 (** version with default = tRel 1 **)
 
+(* constructs the function associated with the branchs which should return a default value *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
 let l := List.map (lift (len + 1) 0) l0 in
@@ -90,6 +92,11 @@ let fix aux' l acc := match l with
       end
 in aux' l (tRel 1).
 
+(* Constructs the pattern matching in the eliminator
+for instance, given the right arguments to construct the predecessor function we get the reified
+< match x with
+| 0 => default
+| S y => y > *)
 Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
@@ -101,7 +108,7 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 
-
+(* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
 Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
 (mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
@@ -280,6 +287,7 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
+(* Main tactic : from an inductive not applied, generates the generation statement and a projection function for each non dependent argument of each constructor *)
 Ltac get_eliminators_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
 let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
@@ -346,7 +354,8 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
   | _ => fail
       end.
 
-
+(* Instantiate a statement by trying to find an inhabitant in the local context (or by using 
+the canonical inhabitant of the CompDec typeclass *)
 Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
@@ -355,26 +364,30 @@ let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H)
 | _ => idtac
 end.
 
+(* Instantiate polymorphic statements with a given tuple of subterms of type Type 
+and calls instantiate_inhab *)
 Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_ident H x in
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
-| unit =>  let T := type of H in
+| impossible_term =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H]
             | _ => idtac
             end
 end.
 
-Ltac instantiate_tuple_terms_goal_inhab H := let t0 := return_tuple_subterms_of_type_type in 
+Ltac instantiate_tuple_terms_goal_inhab H t0 := let t0 := return_tuple_subterms_of_type_type in
 let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t t.
 
-Ltac get_eliminators_st_default I := 
+Ltac get_eliminators_st_default I t0 :=
+let t := eval cbv in t0 in 
 let H' := get_eliminators_st_return I in
-instantiate_tuple_terms_goal_inhab H'.
+instantiate_tuple_terms_inhab H' t t.
 
-Ltac get_eliminators_st_default_quote I := 
+Ltac get_eliminators_st_default_quote I t0 :=
+let t := eval cbv in t0 in 
 let H' := get_eliminators_st_return_quote I in
-instantiate_tuple_terms_goal_inhab H'.
+instantiate_tuple_terms_inhab H' t t.
 
 Section tests_default.
 
@@ -382,9 +395,12 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-get_eliminators_st_default_quote list. clear -a.
-get_eliminators_st_default_quote Ind_test. clear -a.
-get_eliminators_st_default_quote Ind_test2. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_eliminators_st_default_quote list t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_eliminators_st_default_quote Ind_test t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_eliminators_st_default_quote Ind_test2 t0. clear -a.
 Abort.
 
 End tests_default.
@@ -404,7 +420,6 @@ else is_ind_not_in_list t xs
 | _ => false
 end.
 
-
 Fixpoint get_ind_of_prod_no_dup (t : term) (acc : list term) (acc' : list term) :=
 match t with
 | tProd _ A u => let I := (no_app A).1 in if is_ind_not_in_list I acc
@@ -415,20 +430,24 @@ end.
 Definition get_ind_of_prod_no_dup_default t := 
 get_ind_of_prod_no_dup t [bool_reif ; Z_reif; nat_reif ; eq_reif] [].
 
-Ltac elims_on_list l := 
+Ltac elims_on_list l t := 
 match l with 
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
-                 let I := eval hnf in (u.(my_projT2)) in
-                 try (get_eliminators_st_default_quote I) ; elims_on_list xs
+                 let I := eval hnf in (u.(my_projT2)) in 
+                 try (get_eliminators_st_default_quote I t) ; elims_on_list xs t
 end.
 
-Ltac get_eliminators_in_goal := match goal with 
+Ltac get_eliminators_in_goal := 
+let t0 := return_tuple_subterms_of_type_type in
+let t := eval cbv in t0 in
+match goal with 
 | |- ?T => let T_reif := metacoq_get_value (tmQuote T) in 
           let l := eval cbv in (get_ind_of_prod_no_dup_default T_reif) in
-          elims_on_list l
+          elims_on_list l t
 end.
 
+(* Checks if a given term is a variable *)
 Ltac is_var v :=
 let v_reif := metacoq_get_value (tmQuote v) in 
 match v_reif with 
@@ -444,15 +463,15 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-
 Ltac get_eliminators_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
 | (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
                 let I := get_head T in 
-                try (is_not_in_tuple tuple I  ;
-                get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
+                let params := get_tail T in 
+                try (is_not_in_tuple tuple T  ;
+                get_eliminators_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
 | _ => idtac
 end
 in let prod_types0 := eval cbv in p in tac_rec t prod_types0.
