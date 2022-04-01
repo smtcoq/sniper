@@ -272,6 +272,6 @@ Lemma surjective_pairing :
   forall (p:A * B), p = (fst p, snd p).
 Proof. Time snipe. Undo. Time snipe2. Qed.
 
-
+End Pairs.
 
 
