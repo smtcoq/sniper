@@ -42,8 +42,8 @@ pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair te
     collect_hypotheses_from_context [] [] [].
 
 pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.
-    find_pos_in_context_aux [(decl T _ _)| XS] T N (var_context N). 
-    find_pos_in_context_aux [(decl T' _ _)| XS] T M R :- M is N + 1, find_pos_in_context_aux XS T N R.
+    find_pos_in_context_aux [(decl T' _ _)| XS] T N (var_context N) :- coq.unify-eq T' T ok. 
+    find_pos_in_context_aux [(decl T' _ _)| XS] T N R :- M is N + 1, find_pos_in_context_aux XS T M R.
     find_pos_in_context_aux [] T _ (concrete_type T).
 
 pred find_pos_in_context i: goal-ctx, i: term, o: instance.

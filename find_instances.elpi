@@ -26,6 +26,13 @@ pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list in
 pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pair term (list instance))).
     find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, 
         find_instantiated_params_in_list Ctx XS R2, append_nodup R1 R2 L.
-    find_instantiated_params_in_list [] _ [].
+    find_instantiated_params_in_list Ctx [] [].
+
+
+pred subst_in_instances_aux i: goal-ctx, i: list instance, o: list term.
+    subst_in_instances_aux Ctx [(concrete_type T)|XS] [T| XS'] :- subst_in_instances_aux Ctx XS XS'.
+    subst_in_instances_aux Ctx [(var_context N)| XS] [X|XS'] :- subst_in_instances_aux Ctx XS XS', nth N Ctx (decl X _ _).
+    subst_in_instances_aux Ctx [] []. 
 
 pred subst_in_instances i: goal-ctx, i:(list (pair term (list instance))), o: list (pair term (list term)).
+    subst_in_instances Ctx L1 L2 :- std.map L1 snd L1', std.map L1 fst LT, std.map L1' (subst_in_instances_aux Ctx) L2', std.zip LT L2' L2.

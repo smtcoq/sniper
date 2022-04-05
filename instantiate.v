@@ -7,11 +7,12 @@ Elpi Accumulate File "instantiate.elpi".
 Elpi Accumulate File "find_instances.elpi".
 Elpi Accumulate File "subterms.elpi".
 Elpi Accumulate File "construct_cuts.elpi".
+
 Elpi Accumulate lp:{{
 
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list instance)), i: goal, o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ TyG _ _ as G) GS :- 
-      subst_in_instances Ctx Inst Inst',
+    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ TyG _ _ as G) GS :- std.rev Ctx Ctx',
+      subst_in_instances Ctx' Inst Inst',
       subterms_type TyG Subs, 
       snd P HPoly,
       instances_param_indu_strategy_aux HPoly Inst' Subs LInst, !,
@@ -21,9 +22,9 @@ Elpi Accumulate lp:{{
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
     instances_param_indu_strategy_list [] _ G _.
     
-  solve (goal Ctx _ TyG _ L as G) GL :- 
+  solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx [TyG |HL] Inst,
+    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst, 
     instances_param_indu_strategy_list HPoly Inst G GL.
  
 
