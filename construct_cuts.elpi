@@ -12,13 +12,6 @@ args_to_terms [] [].
 pred construct_cuts_args i: (list argument), o: term.
 construct_cuts_args L1 R :- args_to_terms L1 L1', construct_cuts L1' R.
 
-% dummy predicate to work with multiple subgoals which are all proved by I
-pred refine_list_of_true i: list sealed-goal, o: list sealed-goal. 
-    refine_list_of_true [G] [G] :- !.
-    refine_list_of_true [G1|GL1] GL3 :- !, std.last GL1 G, coq.ltac.open (refine {{I}}) G GL2, 
-        refine_list_of_true [G1|GL2] GL3.
-    refine_list_of_true [] [].
-
 pred find_in_context i: term, i: goal-ctx, o: term.
     find_in_context Trm [decl Var _ Ty| XS] Var :- coq.unify-eq Trm Ty ok.
     find_in_context Trm [X | XS] Var :- find_in_context Trm XS Var.

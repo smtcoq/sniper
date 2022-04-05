@@ -41,6 +41,14 @@ pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair te
     collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [] [] [].
 
+pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.
+    find_pos_in_context_aux [(decl T _ _)| XS] T N (var_context N). 
+    find_pos_in_context_aux [(decl T' _ _)| XS] T M R :- M is N + 1, find_pos_in_context_aux XS T N R.
+    find_pos_in_context_aux [] T _ (concrete_type T).
+
+pred find_pos_in_context i: goal-ctx, i: term, o: instance.
+    find_pos_in_context Ctx T Inst :- find_pos_in_context_aux Ctx T 0 Inst.
+
 pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.
     append_nodup [X|XS] Y [X|R] :- !, append_nodup XS Y R.
@@ -66,3 +74,7 @@ pred nth i:int, i:list A, o:A. % a version of nth with no fatal error to handle 
 pred argument_to_term i: list argument, o: list (pair term term).
     argument_to_term [trm T| XS] [pr T Ty|R] :- !, coq.typecheck T Ty ok, argument_to_term XS R.
     argument_to_term [] [].
+
+pred term_to_argument i: list term, o: list argument.
+    term_to_argument [T| XS] [trm T|R] :- !, term_to_argument XS R.
+    term_to_argument [] [].
