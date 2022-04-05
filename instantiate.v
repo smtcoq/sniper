@@ -13,11 +13,11 @@ Elpi Accumulate lp:{{
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list instance)), i: goal, o: list sealed-goal.
     instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ TyG _ _ as G) GS :- std.rev Ctx Ctx',
       subst_in_instances Ctx' Inst Inst',
-      subterms_type TyG Subs, 
       snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' Subs LInst, !,
-      construct_cuts LInst ProofTerm, 
-      refine ProofTerm G GL1, !, 
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
+      % unit is a dumb default case to eliminate useless polymorphic premise
+      construct_cuts LInst ProofTerm,
+      refine ProofTerm G GL1, !,
       refine_by_instantiation GL1 P [G1|GL], !, 
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
     instances_param_indu_strategy_list [] _ G _.
@@ -48,6 +48,12 @@ Goal (forall (A : Type) (l : list A), A = A) -> (forall (B: Type), B = B) ->
 (l: list A) (p : A *A), l= l /\ p =p).
 intros H H1 H2 A l p. elimination_polymorphism. Abort. 
 
+Goal (forall (A : Type), 1 = 1) -> 1=1.
+Proof. intros. elimination_polymorphism. Abort.
+
+
+
+
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
@@ -62,7 +68,6 @@ Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B),
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
 intro H. elimination_polymorphism. split. assumption. split. assumption. assumption.
 Qed. 
-(* TODO : improve default strategy : more exhaustive *)
 
 
 

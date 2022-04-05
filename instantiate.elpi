@@ -24,12 +24,12 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
         pi x\ def x N Ty V => argument_of U X (F x) T3, append_nodup T1 T2 T12,
         append_nodup T12 T3 T.
     argument_of U X (match T V L) R :- !, std.map L (argument_of U X) R', std.flatten R' R.
-    argument_of U X (app [U| XS]) [pr U R1] :- std.mem! XS X, !, find_occurences XS X R1.
+    argument_of U X (app [U| XS]) [pr U R1] :- coq.typecheck U Ty ok, std.mem! XS X, !, find_occurences XS X R1.
     argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
     argument_of U X T [].
 
 pred globals_using_var i: term, o:  (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R, coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
+    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R, not (R = []), coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
     globals_using_var _ []. 
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
