@@ -1,9 +1,9 @@
 pred construct_cuts i: (list term), o: term.
-construct_cuts [X | XS] (app [(fun `new_hyp` X1 x\ G x), R]) :- 
+construct_cuts [X | XS] (app [(fun `new_hyp` X1 x\ G x), _R]) :- 
     std.assert-ok! (coq.elaborate-ty-skeleton X _ X1) "cut formula illtyped",
-    pi x\ decl x N H1 =>
+    pi x\ decl x _N _H1 =>
     construct_cuts XS (G x).
-construct_cuts [] T.
+construct_cuts [] _T.
 
 pred args_to_terms i: (list argument), o: (list term).
 args_to_terms [trm X | XS] [X | R] :- args_to_terms XS R.
@@ -13,8 +13,8 @@ pred construct_cuts_args i: (list argument), o: term.
 construct_cuts_args L1 R :- args_to_terms L1 L1', construct_cuts L1' R.
 
 pred find_in_context i: term, i: goal-ctx, o: term.
-    find_in_context Trm [decl Var _ Ty| XS] Var :- coq.unify-leq Trm Ty ok, !.
-    find_in_context Trm [X | XS] Var :- find_in_context Trm XS Var.
+    find_in_context Trm [decl Var _ Ty| _XS] Var :- coq.unify-leq Trm Ty ok, !.
+    find_in_context Trm [_X | XS] Var :- find_in_context Trm XS Var.
     find_in_context Trm [] _ :- coq.error Trm "is not in the context".
 
 pred refine_by_app i: term, i: goal, o: list sealed-goal.
@@ -22,7 +22,7 @@ pred refine_by_app i: term, i: goal, o: list sealed-goal.
         refine Tapp G GL, GL = [].
     refine_by_app Ty (goal Ctx _ _ _ _ as G) GL :- find_in_context Ty Ctx Trm, construct_term_applied_unit Trm Tapp, 
         refine Tapp G GL. %when the resulting list is not empty, Elpi was not able to find the suitable instance, so we have to give it an arbitrary one 
-    refine_by_app G _ GL :- coq.error "wrong proof term". 
+    refine_by_app _G _ _GL :- coq.error "wrong proof term". 
 
 pred number_of_polymorphic_variables i: term, o: int.
     number_of_polymorphic_variables (prod Na Ty F) N1 :- (coq.unify-leq Ty {{Type}} ok ; coq.unify-leq Ty {{Set}} ok), !,
