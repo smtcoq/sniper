@@ -35,4 +35,4 @@ pred subst_in_instances_aux i: goal-ctx, i: list instance, o: list term.
     subst_in_instances_aux Ctx [] []. 
 
 pred subst_in_instances i: goal-ctx, i:(list (pair term (list instance))), o: list (pair term (list term)).
-    subst_in_instances Ctx L1 L2 :- std.map L1 snd L1', std.map L1 fst LT, std.map L1' (subst_in_instances_aux Ctx) L2', std.zip LT L2' L2.
+    subst_in_instances Ctx L1 L2 :-  std.unzip L1 LT LI, std.map LI (subst_in_instances_aux Ctx) L2', std.zip LT L2' L2.
