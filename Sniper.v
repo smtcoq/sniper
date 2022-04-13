@@ -29,6 +29,9 @@ Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
 
+Elpi Accumulate File "pm_in_goal.elpi".
+
+
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
 Definition prod_of_symb := (impossible_term,
