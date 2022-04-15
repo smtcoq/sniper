@@ -152,3 +152,9 @@ Tactic Notation "scope" := scope_no_param prod_of_symb prod_types.
 
 Tactic Notation "snipe" constr(t) := intros ; snipe_param prod_of_symb prod_types t.
 Tactic Notation "snipe" := intros ; snipe_no_param prod_of_symb prod_types.
+
+Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := intros; scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
+Tactic Notation "snipe_no_check_timeout" int_or_var(n) := intros ; scope_no_param prod_of_symb prod_types ; verit_no_check_timeout n.
+
+Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := intros ; scope_param prod_of_symb prod_types t ; verit_timeout n.
+Tactic Notation "snipe_timeout" int_or_var(n) := intros ; scope_no_param prod_of_symb prod_types ; verit_timeout n.

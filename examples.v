@@ -37,7 +37,7 @@ Section Generic.
   Variable HA : CompDec A.
 
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
-  Proof. snipe. Qed.
+  Proof. (* snipe_timeout 10. *) snipe. Qed.
 
 End Generic.
 
