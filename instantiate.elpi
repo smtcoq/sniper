@@ -1,45 +1,45 @@
  pred instantiate i: term, i: term, o: term.
-    instantiate (prod N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
+    instantiate (prod _N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
     instantiate T _ T. 
 
 pred instantiate_term_list i: term, i: (list term), o: (list term).
     instantiate_term_list T [U|L] [V|M] :- !, instantiate T U V, 
     instantiate_term_list T L M. 
-    instantiate_term_list T [] [].
+    instantiate_term_list _T [] [].
 
 pred instantiate_list_list i: (list term), i: (list term), o: (list term).
     instantiate_list_list [ T| XS] L R :-
         instantiate_term_list T L R1, instantiate_list_list R1 L R1', 
         instantiate_list_list XS L R2, std.append R1' R2 R.
-    instantiate_list_list [] L [].
+    instantiate_list_list [] _L [].
 
 pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))). 
     argument_of U X (prod _ Ty F) T :- !, argument_of U X Ty T1,
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+      pi y\ decl y _Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
     argument_of U X (fun _ Ty F) T :- !, argument_of U X Ty T1, 
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+      pi y\ decl y _Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
     argument_of U X (fix _ _ Ty F) T :- !, argument_of U X Ty T1, 
-      pi y\ decl y Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
+      pi y\ decl y _Na Ty => argument_of U X (F y) T2, append_nodup T1 T2 T.
     argument_of U X (let N Ty V F) T :- !, argument_of U X Ty T1, argument_of U X V T2,
         pi x\ def x N Ty V => argument_of U X (F x) T3, append_nodup T1 T2 T12,
         append_nodup T12 T3 T.
-    argument_of U X (match T V L) R :- !, std.map L (argument_of U X) R', std.flatten R' R.
-    argument_of U X (app [U| XS]) [pr U R1] :- coq.typecheck U Ty ok, std.mem! XS X, !, find_occurences XS X R1.
+    argument_of U X (match _T _V L) R :- !, std.map L (argument_of U X) R', std.flatten R' R.
+    argument_of U X (app [U| XS]) [pr U R1] :- coq.typecheck U _Ty ok, std.mem! XS X, !, find_occurences XS X R1.
     argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
-    argument_of U X T [].
+    argument_of _U _X _T [].
 
 pred globals_using_var i: term, o:  (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :-  pi x\ decl x Na Ty => argument_of (global G) x (F x) R, not (R = []), coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
+    globals_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global G) x (F x) R, not (R = []), coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
     globals_using_var _ []. 
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
-    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R' :- 
+    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
         (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, generate_instances_list I L' L R, 
         instances_param_indu_strategy_aux_list R L SubTy R'.
-    instances_param_indu_strategy_aux ((prod Na Ty F) as I) L SubTy R' :- 
+    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
         (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', L' = [], !,  instantiate_term_list I SubTy R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
-    instances_param_indu_strategy_aux H L SubTy [H]. % no instances if the hypothesis is not polymorphic
+    instances_param_indu_strategy_aux H _L _SubTy [H]. % no instances if the hypothesis is not polymorphic
 
 pred instances_param_indu_strategy_aux_list i: list term, i: list (pair term (list term)), i: list term, o: list term.
     instances_param_indu_strategy_aux_list [H1 | HS ] L1 L2 R :- instances_param_indu_strategy_aux H1 L1 L2 R1, 
@@ -47,7 +47,7 @@ pred instances_param_indu_strategy_aux_list i: list term, i: list (pair term (li
     instances_param_indu_strategy_aux_list [] _ _ [].
 
 pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), o: list term.
-    generate_instances_list T [X|XS] ([Y|YS] as L) R :- !, generate_instances T X L R1, generate_instances_list T XS L R2, 
+    generate_instances_list T [X|XS] ([_Y|_YS] as L) R :- !, generate_instances T X L R1, generate_instances_list T XS L R2, 
     append_nodup R1 R2 R. 
     generate_instances_list _ [] _ [].
 
