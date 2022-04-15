@@ -29,7 +29,7 @@ Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
 
-Elpi Accumulate File "pm_in_goal.elpi".
+(* Elpi Accumulate File "pm_in_goal.elpi". *)
 
 
 (* Tuple of symbols we do not want to unfold 
