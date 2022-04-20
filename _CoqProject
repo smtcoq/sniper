@@ -1,3 +1,5 @@
+-R "/Users/pierrevial/depots/smtcoq" SMTCoq 
+
 -R . Sniper
 
 utilities.v
