@@ -193,7 +193,7 @@ Ltac get_mind_tac t  :=
        | tApp ?iu ?lA =>   
          lazymatch eval hnf in iu with
          | tInd ?indu ?u => 
-       let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
+       let indu_kn := constr:(indu.(inductive_mind)) in let lkup := constr:(lookup_env Sigma indu_kn) in 
          lazymatch eval cbv in lkup  with
          | Some ?d =>   
            match d with
