@@ -9,6 +9,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
+Add Rec LoadPath "/Users/pierrevial/depots/smtcoq" as SMTCoq.
 
 Require Import SMTCoq.SMTCoq.
 
