@@ -193,7 +193,7 @@ Ltac get_mind_tac t  :=
        | tApp ?iu ?lA =>   
          lazymatch eval hnf in iu with
          | tInd ?indu ?u => 
-       let indu_kn := constr:(indu.(inductive_mind)) in let lkup := constr:(lookup_env Sigma indu_kn) in 
+       let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
          lazymatch eval cbv in lkup  with
          | Some ?d =>   
            match d with
@@ -491,15 +491,6 @@ Ltac codom_union_total_tac lB lf lD p :=
 
 (*** Global properties of constructors ***)
 
-Inductive my_type :=
-  | A : my_type
-  | B : my_type -> my_type
-  | C : my_type -> my_type.
-
-MetaCoq Quote Definition mt_reif := my_type.  
-MetaCoq Quote Definition A_reif := A. 
-MetaCoq Quote Definition B_reif := B.
-MetaCoq Quote Definition C_reif := C.
 
 Ltac inj_total_disj_tac B lf lA   :=
   ctors_are_inj_tac B lf lA  ; pairw_disj_codom_tac B lf lA ; codom_union_total_tac B lf lA.

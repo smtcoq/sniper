@@ -17,8 +17,12 @@ Require Import String.
 Require Import List.
 Require Import ZArith.
 
+Require Import interpretation_algebraic_types. 
+
 Require Import SMTCoq.SMTCoq.
 
+
+(* \TODO éliminer la variable return_type, qui est un lift de default_type *)
 
 Ltac find_inhabitant_context t := 
 first[ constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
@@ -49,6 +53,7 @@ match l with
 end in aux l_ty (tRel (k - n)).
 
 (* Shift De Brujin indexes: useful when variables are removed *)
+(* \Rk does not work with dependencies. Should perhaps use subst instead *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
   | tRel i => tRel (i-k)
@@ -77,7 +82,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (* constructs the function associated with the branchs which should return a default value *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
-let l := List.map (lift (len + 1) 0) l0 in
+let l := List.map (lift (len + 1) 0) l0 in (* \Q is l0 useful ???? apparently l0 is supposed to be the list of the types of the params *)
 if Nat.eqb n nbconstruct then 
 let fix aux l acc :=
 match l with 
@@ -90,7 +95,9 @@ let fix aux' l acc := match l with
       | [] => acc
       | y :: ys =>  aux' ys (mkLam hole (lift 1 0 acc)) 
       end
-in aux' l (tRel 1).
+in aux' l (tRel 1).  (* tRel 1 will be the parameter for the default value *)
+    (* note that tRel 1 is not bound in the above function *)
+
 
 (* Constructs the pattern matching in the eliminator
 for instance, given the right arguments to construct the predecessor function we get the reified
@@ -107,11 +114,36 @@ match ty_arg_constr with
 ((acc_nat, branch_default_var x nbproj nbconstruct acc_nat)::acc) (acc_nat + 1)
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
+(* construit le match de l'éliminateur et le default variable non-liée tRel 1 *)
+
 
 (* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
 Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
-(ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
-(mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
+(ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
+(mkLam (lift 1 0 i)  (* lambda de l'inductif appliqué *)
+(mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
+
+(* TODO c'est cette fonction dont on a besoin *)
+Goal False.
+
+(* ainsi, le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
+
+(* disons que :: et on s'intéresse à proj droite *)
+(* i : inductif réifié,ici list_nat_reif (doit être un inductif appliqué *) 
+(* ty_default : list_nat_reif *)
+(* I : inductive, cf. constructeur metacoq tCase *)
+(* npars : 1, car type de base est list *)
+(* nbproj (numéro de proj) : 1 (ou 2 ?) *) 
+(* nbconstruct (numéro du constructeur) : 1 (ou 2 ?) *)
+(* ty_arg_constr: list (list term) : c'est la liste des types des constructeurs
+ (déjà calculée dans interp_alg_type mais aussi calculée avec des trous *)
+(* return_type : devrait être la même chose que le type défaut. Est-ce un arg inutile ? 
+ou alors return_type est lifté par rapport à ty_default *)
+
+(* let p := proj_one_constructor_default_var  *)
+
+Abort.
+
 
 Definition proj_one_constructor_params_default_var (ty_params : list term) (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) 
 (nbconstruct : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
@@ -262,7 +294,13 @@ constr:((elim, db)).
 
 (***********************************)
 
-
+(* nbproj : numéro de la projection *)
+(* exemple: cons est le 2ème constructeur de list 
+ - pour elim_{1,0}, nbproj est 0, ty_default est nat et pour elim_{1,1}, c'est 1 et list nat 
+- nb_construct 2 ou 1.
+- total_arg c'est 2 ou 3 (compte-t-on les paramètres ?)
+*)
+(* ty_default *)
 
 
 Ltac get_info I_rec na :=
@@ -288,15 +326,28 @@ list_args),total_args),list_of_pars_rel),I_app),I_indu))
   in pose x as na 
 end  
 end.
+
 (* list_of_pars_rel is also called lpars *)
 
 Ltac get_info_quote I na := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_info I_rec  na.
 
+Ltac pose_quote_term c idn :=
+  let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
+
+
+Ltac get_ind_param t idn := 
+    let tq := fresh "t_q" in pose_quote_term t tq ;
+    lazymatch eval hnf in tq with
+     | tInd ?indu ?u =>  pose (indu,u) as idn  ; clear tq
+     end.
+
+
 
 Goal 2 + 2 = 5.
 Proof.
+pose (2,3) as x. pose x.1 as y. Eval compute in y.
 let list_info := fresh "list_info" in get_info_quote list list_info. 
 pose list_info.2 as list_indu. Eval compute in list_indu. (* \Q pq ça ne calcule pas ? *)
 pose list_info.1.2 as list_I_app. pose list_info.1.1.2 as list_lpars. 
@@ -304,16 +355,23 @@ pose list_info.1.1.1.2 as list_total_args.
 pose list_info.1.1.1.1.2 as list_list_args.
 pose list_info.1.1.1.1.1.2 as list_list_ty.
 pose list_info.1.1.1.1.1.1.2 as list_ty_pars.
-pose list_info.1.1.1.1.1.1.1 as list_npars.
-clear.
-let x := fresh "x" in get_info_quote list x.
+pose list_info.1.1.1.1.1.1.1 as list_npars.  hnf in list_npars.
+let truc := metacoq_get_value (tmQuote list) in pose truc as list_reif.
+(* let na := fresh "na" in get_ind_param list na ; pose na.1 as list_indu . 
+ match constr:(na) with | (?indu,_) => pose indu as bid end.*)
+Fail let x := (get_one_eliminator_return list list_ty_pars 
+list_I_app list_reif (* list_ty_default *) list_indu list_npars 2 (*list_nbproj *) 
+2 (*nbconstruct*) list_list_args   list_return_ty  list_nb_args_prev list total_args )
+in pose x as truc.
+
+
 Abort.
 
 (* get_one_eliminator_return 
 I ty_pars I_app ty_default I_indu npars nbproj nbconstruct 
 list_args return_ty nb_args_previous_construct total_args *)
 
-Ltac get_nbproh_nbargprevcons n I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb list_eq :=
+Ltac get_nbproj_nbargprevcons n I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb list_eq :=
 match n with
 | 0 => constr:(list_eq)
 | S ?n' => let prod := eval cbv in (nth n' list_args (nil, 0)) in
@@ -385,7 +443,8 @@ match opt with
   let list_constructors_reif := eval cbv in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
   let total_args := eval cbv in (total_arg_constructors list_args_len) 
   in
-(*  idtac total_args ; *)
+  (* idtac total_args *)
+ (*   \Q pq idtac total_args fait planter le prog ? *) 
   let list_of_pars_rel := eval cbv in ((get_list_of_rel_lifted npars (total_args + 1))) in
   let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
   let I_lifted := eval cbv in (lift (total_args) 0 I_app) in

@@ -19,7 +19,20 @@ Elpi Tactic pm_in_goal.
 Elpi Accumulate File "pm_in_goal.elpi".
 Elpi Typecheck.
 
+Ltac kik t := match t with
+| context C [ _ + _ ] => idtac "kikoo"
+| _ => idtac "au revoir"
+end.
+
+Goal False.
+kik 3.
+kik (2 + 3).
+
 Ltac blut t k :=
+match goal with 
+| |- context C[?y] => 
+let T :=
+
   let t' := eval hnf t in 
   lazymatch t with
   | C[]
