@@ -77,20 +77,19 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (* constructs the function associated with the branchs which should return a default value *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
-let l := List.map (lift (len + 1) 0) l0 in
 if Nat.eqb n nbconstruct then 
-let fix aux l acc :=
-match l with 
-| [] => acc 
-| y :: ys => aux ys (mkLam hole acc)
+let fix aux len acc :=
+match len with 
+| 0 => acc 
+| S len' => aux len' (mkLam hole acc)
 end
-in aux l (tRel (len - nbproj))
+in aux len (tRel (len - nbproj))
 else
-let fix aux' l acc := match l with 
-      | [] => acc
-      | y :: ys =>  aux' ys (mkLam hole (lift 1 0 acc)) 
+let fix aux' len acc := match len with 
+      | 0 => acc
+      | S len' =>  aux' len' (mkLam hole (lift 1 0 acc)) 
       end
-in aux' l (tRel 1).
+in aux' len (tRel 1).
 
 (* Constructs the pattern matching in the eliminator
 for instance, given the right arguments to construct the predecessor function we get the reified
