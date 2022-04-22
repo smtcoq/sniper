@@ -129,14 +129,17 @@ Goal False.
 (* ainsi, le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
 
 (* disons que :: et on s'intéresse à proj droite *)
-(* i : inductif réifié,ici list_nat_reif (doit être un inductif appliqué *) 
+(* i : inductif réifié,ici list_nat_reif (doit être un inductif appliqué à un tRel de chaispas*) 
+(*       en fait, i est renommé I_app plus tard *)
 (* ty_default : list_nat_reif *)
 (* I : inductive, cf. constructeur metacoq tCase *)
 (* npars : 1, car type de base est list *)
 (* nbproj (numéro de proj) : 1 (ou 2 ?) *) 
 (* nbconstruct (numéro du constructeur) : 1 (ou 2 ?) *)
-(* ty_arg_constr: list (list term) : c'est la liste des types des constructeurs
- (déjà calculée dans interp_alg_type mais aussi calculée avec des trous *)
+(* ty_arg_constr: list (list term) : c'est la liste des types des constructeurs appliqué à des trucs génériques
+ (déjà calculée dans interp_alg_type mais aussi calculée avec des trous )
+  ty_arg_constr := rev_list_map list_args 
+*) 
 (* return_type : devrait être la même chose que le type défaut. Est-ce un arg inutile ? 
 ou alors return_type est lifté par rapport à ty_default *)
 
@@ -279,6 +282,8 @@ match l with
 end.
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
+  (* trackons les 9è (-4è) et 10è (-3è) arg, i.e. lists_args et return_type *)
+
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
@@ -349,13 +354,14 @@ Goal 2 + 2 = 5.
 Proof.
 pose (2,3) as x. pose x.1 as y. Eval compute in y.
 let list_info := fresh "list_info" in get_info_quote list list_info. 
-pose list_info.2 as list_indu. Eval compute in list_indu. (* \Q pq ça ne calcule pas ? *)
-pose list_info.1.2 as list_I_app. pose list_info.1.1.2 as list_lpars. 
-pose list_info.1.1.1.2 as list_total_args.
-pose list_info.1.1.1.1.2 as list_list_args.
-pose list_info.1.1.1.1.1.2 as list_list_ty.
-pose list_info.1.1.1.1.1.1.2 as list_ty_pars.
-pose list_info.1.1.1.1.1.1.1 as list_npars.  hnf in list_npars.
+pose list_info.2 as list_indu. compute in list_indu. (* \Q pq ça ne calcule pas ? *)
+pose list_info.1.2 as list_I_app. compute in list_I_app.
+pose list_info.1.1.2 as list_lpars. compute in list_lpars.
+pose list_info.1.1.1.2 as list_total_args. compute in list_total_args.
+pose list_info.1.1.1.1.2 as list_list_args. compute in list_list_args.
+pose list_info.1.1.1.1.1.2 as list_list_ty. compute in list_list_ty.
+pose list_info.1.1.1.1.1.1.2 as list_ty_pars. compute in list_ty_pars.
+pose list_info.1.1.1.1.1.1.1 as list_npars.  hnf in list_npars. 
 let truc := metacoq_get_value (tmQuote list) in pose truc as list_reif.
 (* let na := fresh "na" in get_ind_param list na ; pose na.1 as list_indu . 
  match constr:(na) with | (?indu,_) => pose indu as bid end.*)
@@ -396,13 +402,19 @@ match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
        let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
 | S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) in 
-            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in
+            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
+(* différence entre ty_default et return_ty: faire control F *)
+ in
             let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
-            get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
+    (* list_args devient le 8ème  arg de    get_eliminators_one_constructor_return_aux  *)   
+     get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
 end.
 
 Ltac get_eliminators_one_constructor_return n I ty_pars I_app I_indu npars nbconstruct list_args0 nb_args_previous_construct total_args lpars c_reif :=
 let list_args := eval cbv in (split (list_args0)).1 in
+(* maintenant, list_args := val cbv in (split (list_args0)).1  
+   et list_args_0 est le 8è param de get_eliminators_one_constructor_return
+*)
 get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif (@nil (term*nat)).
 
 Ltac get_eliminators_aux_st n I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb list_eq :=
@@ -414,6 +426,9 @@ match n with
            let nb_args_previous_construct := eval cbv in (nb - nbproj) in
           let x :=
           get_eliminators_one_constructor_return nbproj I ty_pars I_app I_indu npars n list_args nb_args_previous_construct total_args lpars c_reif in
+ (* ici, le 8ème arg de get_eliminators_one_constructor_return s'appelle list_args et non list_args0.
+ c'est aussi le 7ème arg de get_eliminators_aux_st
+*) 
           get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
@@ -451,6 +466,7 @@ match opt with
         match I_rec_term with
         | tInd ?I_indu _ =>
                       let x := get_eliminators_aux_st nbconstruct na ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
+(* le 7ème arg de get_eliminators_aux_st est list_args_len, que l'on obtient dans get_info *)
                       let t := eval cbv in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
