@@ -5,7 +5,7 @@ Ltac assert2 H := assert H.
 
 
 Elpi Tactic toto'.
-Elpi Accumulate File "pattern_matching.elpi".
+Elpi Accumulate File "elpi/pattern_matching.elpi".
 Elpi Accumulate lp:{{
 
   solve (goal _ _ Ty _ _ as G) GL :- toto Ty Ty', coq.say Ty'.
@@ -17,7 +17,7 @@ Goal (forall (x y : Type), x=x).
 elpi toto'. Abort.
 
 Elpi Tactic toto3.
-Elpi Accumulate File "pattern_matching.elpi".
+Elpi Accumulate File "elpi/pattern_matching.elpi".
 Elpi Accumulate lp:{{
     
 
@@ -39,7 +39,7 @@ Print foo_rect.
 
 
 Elpi Tactic hop.
-Elpi Accumulate File "pattern_matching.elpi".
+Elpi Accumulate File "elpi/pattern_matching.elpi".
 Elpi Accumulate lp:{{
   solve (goal [decl H _ TyH] Trigger _ Proof _ as G) GL :- coq.say TyH,
     toto2 TyH H Bar, coq.say Bar,  Trigger = Bar,

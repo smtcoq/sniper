@@ -1,7 +1,7 @@
 From elpi Require Import elpi.
 
 Elpi Command Collect_subterms.
-Elpi Accumulate File "subterms.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
   main [trm Term] :- subterms Term L, coq.say L.
 }}.
@@ -38,7 +38,7 @@ Elpi Collect_subterms (toto).
 (* TODO : struct *)
 
 Elpi Tactic tata.
-Elpi Accumulate File "subterms.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
 
 Elpi Accumulate lp:{{
   solve (goal _ _ Ty _ _ as G) GL :- subterms Ty R, coq.say R.
@@ -47,7 +47,7 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 
 Elpi Tactic test_nth.
-Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
 
 Elpi Accumulate lp:{{
   solve (goal _ _ Ty _ _ as G) GL :- nth 4 [1, 2, 3] R, coq.say R.
@@ -60,8 +60,8 @@ Goal False.
 elpi test_nth. Abort.
 
 Elpi Tactic test_context.
-Elpi Accumulate File "utilities.elpi".
-Elpi Accumulate File "instantiate.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/instantiate.elpi".
 Elpi Accumulate lp:{{
 
   solve (goal _ _ Ty _ _ as G) GL :- globals_using_var Ty L, coq.say L.
@@ -83,13 +83,13 @@ Abort.
 
 Elpi Command Collect_subterms_type.
 
-Elpi Accumulate File "subterms.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
   main [trm Term] :- subterms_type Term L, coq.say L.
 }}.
 Elpi Typecheck.
 
-Elpi Accumulate File "subterms.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Collect_subterms_type (Prop).
 Elpi Collect_subterms_type (fun x : Prop => Prop).
 Elpi Collect_subterms_type ((fun x : Type => Prop) Prop).
@@ -115,11 +115,11 @@ Elpi Typecheck.
 
 
 Elpi Tactic instantiate_with_subterms_type_type_of_goal.
-Elpi Accumulate File "subterms.elpi".
-Elpi Accumulate File "instantiate.elpi".
-Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
+Elpi Accumulate File "elpi/instantiate.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Typecheck.
-Elpi Accumulate File "construct_cuts.elpi".
+Elpi Accumulate File "elpi/construct_cuts.elpi".
 Elpi Accumulate lp:{{
 
   solve (goal _ _ Ty _ [trm T] as G) GL :- !,
@@ -130,7 +130,7 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 
 Elpi Tactic assert_list.
-Elpi Accumulate File "construct_cuts.elpi".
+Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
@@ -185,7 +185,7 @@ Abort.
 
 
 Elpi Command Tuple_to_list.
-Elpi Accumulate File "utilities.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate lp:{{
   main [trm Term] :- tuple_to_list Term L, coq.say L.
 }}.

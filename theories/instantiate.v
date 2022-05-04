@@ -2,10 +2,10 @@ From elpi Require Import elpi.
 Require Import List.
 
 Elpi Tactic elimination_polymorphism.
-Elpi Accumulate File "utilities.elpi".
-Elpi Accumulate File "instantiate.elpi".
-Elpi Accumulate File "find_instances.elpi".
-Elpi Accumulate File "construct_cuts.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/instantiate.elpi".
+Elpi Accumulate File "elpi/find_instances.elpi".
+Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
