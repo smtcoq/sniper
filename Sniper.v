@@ -13,6 +13,8 @@
 
 Require Export SMTCoq.SMTCoq.
 
+From elpi Require Import elpi.
+
 Require Export utilities.
 Require Export definitions.
 Require Export elimination_fixpoints.
@@ -21,6 +23,7 @@ Require Export elimination_pattern_matching.
 Require Export elimination_polymorphism.
 Require Export eliminators.
 Require Export interpretation_algebraic_types.
+Require Export instantiate.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
@@ -144,17 +147,44 @@ scope_param p1 p2 t ; verit.
 Ltac snipe_no_param p1 p2 :=
 scope_no_param p1 p2 ; verit.
 
+Tactic Notation "elimination_polymorphism" uconstr_list_sep(l, ",") :=
+  elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context.
+
+Tactic Notation "scope2_aux" constr(p1) constr(p2) uconstr_list_sep(l, ",") := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; 
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+get_eliminators_in_variables p2'.
+
+Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
+let p2' := eval unfold prod_types in prod_types in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ; 
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+get_eliminators_in_variables p2' ; verit.
+
+
 Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.
 Tactic Notation "snipe_no_check" := snipe_no_param_no_check prod_of_symb prod_types.
 
 Tactic Notation "scope" constr(t) := scope_param prod_of_symb prod_types t.
 Tactic Notation "scope" := scope_no_param prod_of_symb prod_types.
 
-Tactic Notation "snipe" constr(t) := intros ; snipe_param prod_of_symb prod_types t.
-Tactic Notation "snipe" := intros ; snipe_no_param prod_of_symb prod_types.
+Tactic Notation "snipe" constr(t) := snipe_param prod_of_symb prod_types t.
+Tactic Notation "snipe" := snipe_no_param prod_of_symb prod_types.
 
-Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := intros; scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
-Tactic Notation "snipe_no_check_timeout" int_or_var(n) := intros ; scope_no_param prod_of_symb prod_types ; verit_no_check_timeout n.
 
-Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := intros ; scope_param prod_of_symb prod_types t ; verit_timeout n.
-Tactic Notation "snipe_timeout" int_or_var(n) := intros ; scope_no_param prod_of_symb prod_types ; verit_timeout n.
+Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
+Tactic Notation "snipe_no_check_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_no_check_timeout n.
+
+Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_timeout n.
+Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n.

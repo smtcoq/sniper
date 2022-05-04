@@ -3,6 +3,7 @@
 utilities.v
 definitions.v
 elimination_polymorphism.v
+instantiate.v
 elimination_pattern_matching.v
 expand.v
 elimination_fixpoints.v

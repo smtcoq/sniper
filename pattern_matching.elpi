@@ -1,0 +1,28 @@
+pred toto i: term, o: term.
+    toto (prod Na Ty F) (prod Na Ty F') :- !, pi x\ decl x Na Ty => toto (F x) (F' x).
+    toto F {{and lp:F True}}.
+
+pred toto2 i: term, i: term, o: term. % T is the proof of X
+    toto2 (prod Na Ty F) T (fun Na Ty G) :- coq.say "foo", !, pi x\ decl x Na Ty => toto2 (F x) (app [T, x]) (G x).
+    toto2 _ T (app [{{@conj _ _}}, T, {{I}}]).
+
+pred unmatch_pattern i: term, i: term, i: term, i: term, i: (term -> term), o: term.
+    unmatch_pattern Pat C (prod Na Ty F) E K (prod Na Ty R) :- !, coq.say "prod case", pi x\ decl x Na Ty => unmatch_pattern (app [Pat, x]) (app [C, x]) (F x) E K (R x). 
+    unmatch_pattern Pat C Ty E K {{ (@eq lp:Ty lp:E lp:C)  -> lp:{{K Pat}} }} :- coq.say "base case". 
+
+pred unmatch_patterns i: list term, i: list constructor, i: term, i: (term -> term), o: term.
+    unmatch_patterns [Pat] [C] E K R :- !, coq.env.indc C _ _ _ TyC, unmatch_pattern Pat (global (indc C)) TyC E K R. 
+    unmatch_patterns [Pat|Pats] [C| Cs] E K {{and lp:R1 lp:R2}} :- !, coq.env.indc C _ _ _ TyC, unmatch_pattern Pat (global (indc C)) TyC E K R1, 
+        unmatch_patterns Pats Cs E K R2. 
+    unmatch_patterns [] _ _ _ {{True}}.
+
+pred unmatch_app i: list term, i: (term -> term), o:term.
+    unmatch_app [X, Y] K R :- !, 
+    (unmatch Y (x\ y\ (K (app [x, y])) R2, unmatch X (x\ ))) R.
+    unmatch_app L K R :- !, std.last L X, std.drop-last 1 L L', unmatch (app L') (x\ unmatch X (y\ K (app [x, y]))) R.
+
+pred unmatch i: term, i: (term -> term), o: term. 
+    unmatch (match E _ Pats) K R :- !, coq.typecheck E (global (indt I)) ok, coq.env.indt I _ _ _ CS _, 
+        unmatch_patterns Pats CS E K R.
+    unmatch (fun Na Ty F) K R :- !, pi x\ decl x Na Ty => unmatch T F x %Lam (x, ty, t) -> unmatch_core t (fun t' -> k (Lam (x, ty, t')))
+    unmatch (app L) K R :- unmatch_app L K R.
