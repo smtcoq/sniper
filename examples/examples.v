@@ -10,11 +10,14 @@
 (**************************************************************************)
 
 
-(* If you have installed Sniper, change this line into `Require Import Sniper.Sniper`. *)
+(* If you have Sniper installed, change these two lines into:
+   From Sniper Require Import Sniper.
+   From Sniper Require Import tree.
+*)
 Require Import Sniper.
+Require Import tree.
 Require Import String.
 Require Import ZArith.
-Require Import tree.
 Require Import Bool.
 Require Import Coq.Lists.List.
 Import ListNotations.
