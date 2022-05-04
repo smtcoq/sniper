@@ -38,6 +38,9 @@ opam switch create 4.07.1
 eval $(opam env)
 ```
 
+Then choose either of the following two sections, install the automatic
+prover, and enjoy!
+
 ### Installation of release 1.0
 
 You need to add this opam repository:
@@ -63,7 +66,7 @@ Then simply install `Sniper`:
 opam install coq-sniper
 ```
 
-## Installation of the automatic prover
+### Installation of the automatic prover and use
 
 You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
