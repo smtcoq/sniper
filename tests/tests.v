@@ -70,7 +70,7 @@ Lemma nth_default_eq :
   - snipe.
   - intros l ; destruct l.
     * snipe.
-    * scope. get_eliminators_st (option). specialize (H A a). verit.
+    * scope. get_projs_st (option). specialize (H A a). verit.
  Qed.
 
 (* Test polymorphism *) 
@@ -82,26 +82,26 @@ Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B),
 intro H. elimination_polymorphism. split. assumption. split. assumption. assumption.
 Qed. 
 
-(* Test eliminators, two versions *)
+(* Test projs, two versions *)
 Variable A : Type.
 Variable a : A.
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs.
 Proof. 
-get_eliminators_in_goal.
+get_projs_in_goal.
 Abort.
 
 Goal
   forall s1 s2 : string, s1 = s2.
 Proof.
-get_eliminators_in_goal.
+get_projs_in_goal.
 clear. intros s1 s2.
-let p:= eval unfold prod_types in prod_types in get_eliminators_in_variables p.
+let p:= eval unfold prod_types in prod_types in get_projs_in_variables p.
 Abort.
 
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
-intros. let p:= eval unfold prod_types in prod_types in get_eliminators_in_variables p. 
+intros. let p:= eval unfold prod_types in prod_types in get_projs_in_variables p. 
 Abort.
 
 Variable HA : CompDec A.

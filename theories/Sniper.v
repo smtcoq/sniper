@@ -21,7 +21,7 @@ Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
 Require Export elimination_polymorphism.
-Require Export eliminators.
+Require Export case_analysis.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
 Require Import ZArith.
@@ -123,7 +123,7 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
-get_eliminators_in_variables p2'.
+get_projs_in_variables p2'.
 
 Ltac scope_no_param p1 p2 := 
 let p2' := eval unfold p2 in p2 in
@@ -133,7 +133,7 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
-get_eliminators_in_variables p2'.
+get_projs_in_variables p2'.
 
 Ltac snipe_param_no_check p1 p2 t :=
 scope_param p1 p2 t ; verit_no_check.
@@ -159,7 +159,7 @@ repeat match goal with
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; 
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_eliminators_in_variables p2'.
+get_projs_in_variables p2'.
 
 Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
 let p2' := eval unfold prod_types in prod_types in
@@ -170,7 +170,7 @@ repeat match goal with
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ; 
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_eliminators_in_variables p2' ; verit.
+get_projs_in_variables p2' ; verit.
 
 
 Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.
