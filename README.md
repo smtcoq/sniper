@@ -22,7 +22,8 @@ Proving 2022.
 
 ## Installation and use
 
-This part describes the steps required to try the `snipe` tactic.
+This part describes the steps required to try the `snipe` tactic. It can
+be used with Coq-8.13.
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
@@ -42,6 +43,23 @@ opam switch create 4.09.1
 eval $(opam env)
 ```
 
+Then choose either of the following two sections, install the automatic
+prover, and enjoy!
+
+### Installation of release 1.0
+
+You need to add this opam repository:
+```
+opam repo add coq-released https://coq.inria.fr/opam/released
+```
+
+Then simply install `Sniper`:
+```
+opam install coq-sniper
+```
+
+### Installation of the development version
+
 You need to add two opam repositories:
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
@@ -53,7 +71,7 @@ Then simply install this version of `Sniper`:
 opam pin -y add coq-sniper https://github.com/smtcoq/sniper.git#itp22
 ```
 
-It works with Coq-8.13.
+### Installation of the automatic prover and use
 
 You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
@@ -63,7 +81,7 @@ cd veriT9f48a98
 make
 ```
 
-We need the veriT binary to be in PATH in order for snipe to use it:
+We need the veriT binary to be in PATH in order for `Sniper` to use it:
 ```
 export PATH="$PATH:$(pwd)"
 cd ..

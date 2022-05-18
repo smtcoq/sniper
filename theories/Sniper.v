@@ -13,14 +13,17 @@
 
 Require Export SMTCoq.SMTCoq.
 
+From elpi Require Import elpi.
+
 Require Export utilities.
 Require Export definitions.
 Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
 Require Export elimination_polymorphism.
-Require Export eliminators.
+Require Export case_analysis.
 Require Export interpretation_algebraic_types.
+Require Export instantiate.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
@@ -28,7 +31,7 @@ Require Import NArith.BinNatDef.
 
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
-Definition prod_of_symb := (unit,
+Definition prod_of_symb := (impossible_term,
          Zplus,
          Zminus, 
          Zmult,
@@ -112,51 +115,76 @@ def_and_pattern_matching p1 ; inst t.
 Ltac def_fix_and_pattern_matching_mono_param p1 t :=
 def_fix_and_pattern_matching p1 ; inst t.
 
-(* Ltac scope_param_nat p1 p2 t := let p2' := eval unfold p2 in p2 in *)
-(* try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t ; try nat_convert) ; *)
-(* get_eliminators_in_variables p2'. *)
+Ltac scope_param p1 p2 t := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
+get_projs_in_variables p2'.
 
-(* Ltac scope_no_param_nat p1 p2 := let p2' := eval unfold p2 in p2 in *)
-(* try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; inst ; try nat_convert) ; *)
-(* get_eliminators_in_variables p2'. *)
+Ltac scope_no_param p1 p2 := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _  |- _ => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
+get_projs_in_variables p2'.
 
-Ltac scope_param_no_nat_var p1 p2 t := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
-get_eliminators_in_variables p2'.
+Ltac snipe_param_no_check p1 p2 t :=
+scope_param p1 p2 t ; verit_no_check.
 
-Ltac scope_no_param_no_nat_var p1 p2 := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
-get_eliminators_in_variables p2'.
+Ltac snipe_no_param_no_check p1 p2 :=
+scope_no_param p1 p2 ; verit_no_check.
 
-(* Ltac snipe_param_nat p1 p2 t :=  *)
-(* scope_param_nat p1 p2 t ; verit. *)
+Ltac snipe_param p1 p2 t :=
+scope_param p1 p2 t ; verit.
 
-(* Ltac snipe_no_param_nat p1 p2 :=  *)
-(* scope_no_param_nat p1 p2 ; verit. *)
+Ltac snipe_no_param p1 p2 :=
+scope_no_param p1 p2 ; verit.
 
-Ltac snipe_param_no_nat_no_check p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit_no_check.
+Tactic Notation "elimination_polymorphism" uconstr_list_sep(l, ",") :=
+  elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context.
 
-Ltac snipe_no_param_no_nat_no_check p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit_no_check.
+Tactic Notation "scope2_aux" constr(p1) constr(p2) uconstr_list_sep(l, ",") := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; 
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+get_projs_in_variables p2'.
 
-Ltac snipe_param_no_nat_var p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit.
+Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
+let p2' := eval unfold prod_types in prod_types in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ; 
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+get_projs_in_variables p2' ; verit.
 
-Ltac snipe_no_param_no_nat_var p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit.
 
-Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_nat_no_check prod_of_symb prod_types t.
-Tactic Notation "snipe_no_check" := snipe_no_param_no_nat_no_check prod_of_symb prod_types.
+Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.
+Tactic Notation "snipe_no_check" := snipe_no_param_no_check prod_of_symb prod_types.
 
-Tactic Notation "scope" constr(t) := scope_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "scope" := scope_no_param_no_nat_var prod_of_symb prod_types.
+Tactic Notation "scope" constr(t) := scope_param prod_of_symb prod_types t.
+Tactic Notation "scope" := scope_no_param prod_of_symb prod_types.
 
-Tactic Notation "snipe" constr(t) := intros ; snipe_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "snipe" := intros ; snipe_no_param_no_nat_var prod_of_symb prod_types.
+Tactic Notation "snipe" constr(t) := snipe_param prod_of_symb prod_types t.
+Tactic Notation "snipe" := snipe_no_param prod_of_symb prod_types.
 
-(* Tactic Notation "scope_nat" constr(t) := scope_param_nat prod_of_symb prod_types t. *)
-(* Tactic Notation "scope_nat" := scope_no_param_nat prod_of_symb prod_types. *)
 
-(* Tactic Notation "snipe_nat" constr(t) := intros ; snipe_param_nat prod_of_symb prod_types t. *)
-(* Tactic Notation "snipe_nat" := intros ; snipe_no_param_nat prod_of_symb prod_types. *)
+Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
+Tactic Notation "snipe_no_check_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_no_check_timeout n.
+
+Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_timeout n.
+Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n.

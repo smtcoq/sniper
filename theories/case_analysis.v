@@ -48,6 +48,7 @@ match l with
 | x :: xs => aux xs (mkLam x t) 
 end in aux l_ty (tRel (k - n)).
 
+(* Shift De Brujin indexes: useful when variables are removed *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
   | tRel i => tRel (i-k)
@@ -73,24 +74,29 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 
 (** version with default = tRel 1 **)
 
+(* constructs the function associated with the branchs which should return a default value *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
-let l := List.map (lift (len + 1) 0) l0 in
 if Nat.eqb n nbconstruct then 
-let fix aux l acc :=
-match l with 
-| [] => acc 
-| y :: ys => aux ys (mkLam hole acc)
+let fix aux len acc :=
+match len with 
+| 0 => acc 
+| S len' => aux len' (mkLam hole acc)
 end
-in aux l (tRel (len - nbproj))
+in aux len (tRel (len - nbproj))
 else
-let fix aux' l acc := match l with 
-      | [] => acc
-      | y :: ys =>  aux' ys (mkLam hole (lift 1 0 acc)) 
+let fix aux' len acc := match len with 
+      | 0 => acc
+      | S len' =>  aux' len' (mkLam hole (lift 1 0 acc)) 
       end
-in aux' l (tRel 1).
+in aux' len (tRel 1).
 
-Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
+(* Constructs the pattern matching in the projection function
+for instance, given the right arguments to construct the predecessor function we get the reified
+< match x with
+| 0 => default
+| S y => y > *)
+Definition mkCase_proj_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) (acc: list (nat × term)) (acc_nat : nat) :=
@@ -101,10 +107,10 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 
-
+(* The following two functions bind the arguments of the projections : the parameters and the default term *)
 Definition proj_one_constructor_default_var (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default
-(mkLam (lift 1 0 i) (mkCase_eliminator_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
+(mkLam (lift 1 0 i) (mkCase_proj_default_var I npars nbproj nbconstruct ty_arg_constr return_type)).
 
 Definition proj_one_constructor_params_default_var (ty_params : list term) (i : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) 
 (nbconstruct : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
@@ -236,7 +242,7 @@ match l with
 | cons x xs => tApp or_reif ([mkOr xs] ++ [x])
 end.
 
-Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
+Ltac get_one_proj_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
@@ -246,21 +252,21 @@ let elim := metacoq_get_value (tmQuote name) in
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
 constr:((elim, db)).
 
-Ltac get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
+Ltac get_projs_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
 match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
        let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
 | S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) in 
             let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default)) in
-            let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
-            get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
+            let x := get_one_proj_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
+            get_projs_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
 end.
 
-Ltac get_eliminators_one_constructor_return n I ty_pars I_app I_indu npars nbconstruct list_args0 nb_args_previous_construct total_args lpars c_reif :=
+Ltac get_projs_one_constructor_return n I ty_pars I_app I_indu npars nbconstruct list_args0 nb_args_previous_construct total_args lpars c_reif :=
 let list_args := eval cbv in (split (list_args0)).1 in
-get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif (@nil (term*nat)).
+get_projs_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif (@nil (term*nat)).
 
-Ltac get_eliminators_aux_st n I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb list_eq :=
+Ltac get_projs_aux_st n I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb list_eq :=
 match n with
 | 0 => constr:(list_eq)
 | S ?n' => let prod := eval cbv in (nth n' list_args (nil, 0)) in
@@ -268,8 +274,8 @@ match n with
            let c_reif := eval cbv in (nth n' list_constructors_reif impossible_term_reif) in
            let nb_args_previous_construct := eval cbv in (nb - nbproj) in
           let x :=
-          get_eliminators_one_constructor_return nbproj I ty_pars I_app I_indu npars n list_args nb_args_previous_construct total_args lpars c_reif in
-          get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
+          get_projs_one_constructor_return nbproj I ty_pars I_app I_indu npars n list_args nb_args_previous_construct total_args lpars c_reif in
+          get_projs_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
 Ltac prove_by_destruct_varn n  := 
@@ -280,7 +286,8 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
-Ltac get_eliminators_st_return I_rec na := 
+(* Main tactic : from an inductive not applied, generates the generation statement and a projection function for each non dependent argument of each constructor *)
+Ltac get_projs_st_return I_rec na := 
 let I_rec_term := eval cbv in (I_rec.2) in
 let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
 match opt with 
@@ -298,7 +305,7 @@ match opt with
   let I_lifted := eval cbv in (lift (total_args) 0 I_app) in
         match I_rec_term with
         | tInd ?I_indu _ =>
-                      let x := get_eliminators_aux_st nbconstruct na ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
+                      let x := get_projs_aux_st nbconstruct na ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_constructors_reif total_args (@nil term) in 
                       let t := eval cbv in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
@@ -311,14 +318,14 @@ let nb_intros := eval cbv in (npars + total_args) in
 end
 end.
 
-Ltac get_eliminators_st_return_quote I := 
+Ltac get_projs_st_return_quote I := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_eliminators_st_return I_rec I.
+get_projs_st_return I_rec I.
 
-Ltac get_eliminators_st I :=
-let st := get_eliminators_st_return_quote I in idtac.
+Ltac get_projs_st I :=
+let st := get_projs_st_return_quote I in idtac.
 
-Section tests_eliminator.
+Section tests_proj.
 
 Inductive Ind_test (A B : Type) :=
 | ind0 : Ind_test A B
@@ -329,13 +336,13 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
 Goal False.
-get_eliminators_st nat. clear.
-get_eliminators_st list. clear.
-get_eliminators_st Ind_test. clear.
-get_eliminators_st Ind_test2. clear.
+get_projs_st nat. clear.
+get_projs_st list. clear.
+get_projs_st Ind_test. clear.
+get_projs_st Ind_test2. clear.
 Abort.
 
-End tests_eliminator.
+End tests_proj.
 
 Ltac instantiate_ident H x :=
   let T := type of H in
@@ -346,7 +353,8 @@ let U := type of (H' x) in notHyp U ; specialize (H' x) end in H'
   | _ => fail
       end.
 
-
+(* Instantiate a statement by trying to find an inhabitant in the local context (or by using 
+the canonical inhabitant of the CompDec typeclass *)
 Ltac instantiate_inhab H :=
 let T := type of H in 
 match T with 
@@ -355,26 +363,30 @@ let H' := instantiate_ident H inh in instantiate_inhab H' ; clear H)
 | _ => idtac
 end.
 
+(* Instantiate polymorphic statements with a given tuple of subterms of type Type 
+and calls instantiate_inhab *)
 Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_ident H x in
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
-| unit =>  let T := type of H in
+| impossible_term =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H]
             | _ => idtac
             end
 end.
 
-Ltac instantiate_tuple_terms_goal_inhab H := let t0 := return_tuple_subterms_of_type_type in 
+Ltac instantiate_tuple_terms_goal_inhab H t0 := let t0 := return_tuple_subterms_of_type_type in
 let t := eval cbv in t0 in instantiate_tuple_terms_inhab H t t.
 
-Ltac get_eliminators_st_default I := 
-let H' := get_eliminators_st_return I in
-instantiate_tuple_terms_goal_inhab H'.
+Ltac get_projs_st_default I t0 :=
+let t := eval cbv in t0 in 
+let H' := get_projs_st_return I in
+instantiate_tuple_terms_inhab H' t t.
 
-Ltac get_eliminators_st_default_quote I := 
-let H' := get_eliminators_st_return_quote I in
-instantiate_tuple_terms_goal_inhab H'.
+Ltac get_projs_st_default_quote I t0 :=
+let t := eval cbv in t0 in 
+let H' := get_projs_st_return_quote I in
+instantiate_tuple_terms_inhab H' t t.
 
 Section tests_default.
 
@@ -382,9 +394,12 @@ Variable A : Type.
 Variable a : A.
 
 Goal nat -> A -> False.
-get_eliminators_st_default_quote list. clear -a.
-get_eliminators_st_default_quote Ind_test. clear -a.
-get_eliminators_st_default_quote Ind_test2. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_projs_st_default_quote list t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_projs_st_default_quote Ind_test t0. clear -a.
+let t0 := return_tuple_subterms_of_type_type in 
+get_projs_st_default_quote Ind_test2 t0. clear -a.
 Abort.
 
 End tests_default.
@@ -404,7 +419,6 @@ else is_ind_not_in_list t xs
 | _ => false
 end.
 
-
 Fixpoint get_ind_of_prod_no_dup (t : term) (acc : list term) (acc' : list term) :=
 match t with
 | tProd _ A u => let I := (no_app A).1 in if is_ind_not_in_list I acc
@@ -415,20 +429,24 @@ end.
 Definition get_ind_of_prod_no_dup_default t := 
 get_ind_of_prod_no_dup t [bool_reif ; Z_reif; nat_reif ; eq_reif] [].
 
-Ltac elims_on_list l := 
+Ltac elims_on_list l t := 
 match l with 
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
-                 let I := eval hnf in (u.(my_projT2)) in
-                 try (get_eliminators_st_default_quote I) ; elims_on_list xs
+                 let I := eval hnf in (u.(my_projT2)) in 
+                 try (get_projs_st_default_quote I t) ; elims_on_list xs t
 end.
 
-Ltac get_eliminators_in_goal := match goal with 
+Ltac get_projs_in_goal := 
+let t0 := return_tuple_subterms_of_type_type in
+let t := eval cbv in t0 in
+match goal with 
 | |- ?T => let T_reif := metacoq_get_value (tmQuote T) in 
           let l := eval cbv in (get_ind_of_prod_no_dup_default T_reif) in
-          elims_on_list l
+          elims_on_list l t
 end.
 
+(* Checks if a given term is a variable *)
 Ltac is_var v :=
 let v_reif := metacoq_get_value (tmQuote v) in 
 match v_reif with 
@@ -444,15 +462,15 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-
-Ltac get_eliminators_in_variables p := 
+Ltac get_projs_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
 | (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
                 let I := get_head T in 
-                try (is_not_in_tuple tuple I  ;
-                get_eliminators_st_default_quote I) ; try (tac_rec t' (tuple, I)) ]
+                let params := get_tail T in 
+                try (is_not_in_tuple tuple T  ;
+                get_projs_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
 | _ => idtac
 end
 in let prod_types0 := eval cbv in p in tac_rec t prod_types0.
@@ -469,7 +487,7 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_eliminators_in_variables bool.
+Proof. intros. get_projs_in_variables bool.
 Abort.
 
 End tests.

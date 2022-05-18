@@ -99,8 +99,8 @@ let H' := fresh in let w := eval hnf in z.(my_projT2)
 in assert (H' :w) 
 by (repeat (let x := fresh in intro x ; try (destruct x ; auto))).
 
-
 Ltac eliminate_fix_ho H := fun k =>
+first [
 let T := type of H in
 let T := metacoq_get_value (tmQuote T) in
 let p := eval cbv in (under_forall T) in 
@@ -120,7 +120,7 @@ let eq_no_fix := eval cbv in (create_forall (mkEq A t (tApp u_no_fix args)) list
 let z := metacoq_get_value (tmUnquote eq_no_fix) in
 let H' := fresh in let w := eval hnf in z.(my_projT2)
 in assert (H' :w) 
-by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear H.
+by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear H| k H].
 
 
 

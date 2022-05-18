@@ -1,12 +1,13 @@
 -R . Sniper
 
-utilities.v
-definitions.v
-elimination_polymorphism.v
-elimination_pattern_matching.v
-expand.v
-elimination_fixpoints.v
-interpretation_algebraic_types.v
-eliminators.v
-tree.v
-Sniper.v
+theories/utilities.v
+theories/definitions.v
+theories/elimination_polymorphism.v
+theories/instantiate.v
+theories/elimination_pattern_matching.v
+theories/expand.v
+theories/elimination_fixpoints.v
+theories/interpretation_algebraic_types.v
+theories/case_analysis.v
+theories/tree.v
+theories/Sniper.v

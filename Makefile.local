@@ -20,15 +20,17 @@ bench_snipe_list: benchs/List_snipe.v
 
 bench: bench_snipe bench_hammer
 
-examples: examples.v
+examples: examples/examples.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
-tests: tests.v
+tests: tests/tests.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
 test: examples tests
 
 clean::
-	rm -f examples.glob examples.vo examples.vok examples.vos tests.glob tests.vo tests.vok tests.vos benchs/*.glob benchs/*.vo benchs/*.vok benchs/*.vos
+	rm -f examples/examples.glob examples/examples.vo examples/examples.vok examples/examples.vos tests/tests.glob tests/tests.vo tests/tests.vok tests/tests.vos benchs/*.glob benchs/*.vo benchs/*.vok benchs/*.vos
+
+.PHONY: examples tests

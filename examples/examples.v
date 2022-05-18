@@ -10,11 +10,14 @@
 (**************************************************************************)
 
 
-(* If you have installed Sniper, change this line into `Require Import Sniper.Sniper`. *)
+(* If you have Sniper installed, change these two lines into:
+   From Sniper Require Import Sniper.
+   From Sniper Require Import tree.
+*)
 Require Import Sniper.
+Require Import tree.
 Require Import String.
 Require Import ZArith.
-Require Import tree.
 Require Import Bool.
 Require Import Coq.Lists.List.
 Import ListNotations.
@@ -109,17 +112,42 @@ Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof. snipe. Qed.
 
 
-(* The same, on any type who enjoys a decidable equality *)
+(* The `snipe` tactics requires instances of equality to be decidable.
+   It is in particular visible with type variables. *)
 Section Generic.
 
   Variable A : Type.
-  Variable HA : CompDec A.
+  Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
+  Proof.
+    snipe.
+    (* New goals are open that require instances of equality to be
+       decidable. On usual types such as `Z` in the previous example,
+       these goals are automatically discharged. On other concrete
+       types, it is up to the user to prove it or admit it. *)
+  Abort.
 
+  (* On abstract type, it has to be assumed. *)
+  Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof. snipe. Qed.
   
 End Generic.
 
+
+(* When the goal is automatically provable by the `snipe` tactic, it is
+   often done in a few seconds. To avoid too long runs when the goal is
+   not provable, the tactic can be called with a timeout, in seconds. *)
+Section Timeout.
+
+  Variable A : Type.
+  Hypothesis HA : CompDec A.
+  Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
+  Proof. (* snipe_timeout 10. *) snipe. Qed.
+
+End Timeout.
+
+
+(* A more involved example *)
 Section destruct_auto.
 
   Variable A : Type.
@@ -183,9 +211,9 @@ Lemma rev_elements_node c (H: CompDec c) l x r :
 Proof. snipe (rev_elements_app, app_nil_r). Qed.
 
 
-Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
+(* Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
-Proof. intros B HB l1 l2 l3. snipe length_app. Qed.
+Proof. intros B HB l1 l2 l3. snipe length_app. Qed. *)
 
 
 (* Example of search an element in a list *)
