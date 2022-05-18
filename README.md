@@ -16,8 +16,7 @@ or being proved once and for all in Coq (*certified* transformations). A
 crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
-This release is for the submission to the conference Interactive Theorem
-Proving 2022.
+This version is an experimental version using the Trakt plugin.
 
 
 ## Installation and use
@@ -43,23 +42,6 @@ opam switch create 4.09.1
 eval $(opam env)
 ```
 
-Then choose either of the following two sections, install the automatic
-prover, and enjoy!
-
-### Installation of release 1.0
-
-You need to add this opam repository:
-```
-opam repo add coq-released https://coq.inria.fr/opam/released
-```
-
-Then simply install `Sniper`:
-```
-opam install coq-sniper
-```
-
-### Installation of the development version
-
 You need to add two opam repositories:
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
@@ -68,7 +50,7 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 
 Then simply install this version of `Sniper`:
 ```
-opam pin -y add coq-sniper https://github.com/smtcoq/sniper.git#itp22
+opam install -y .
 ```
 
 ### Installation of the automatic prover and use
