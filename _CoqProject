@@ -1,4 +1,4 @@
--R "/Users/pierrevial/depots/smtcoq" SMTCoq 
+#-R "/Users/pierrevial/depots/smtcoq" SMTCoq 
 
 -R . Sniper
 
