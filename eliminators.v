@@ -285,6 +285,8 @@ Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nb
   (* trackons les 9è (-4è) et 10è (-3è) arg, i.e. lists_args et return_type *)
 
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
+(* ici, l'avant-dernier param de proj_one_constructor_params_default_var est 
+   (rev_list_map list_args). Ainsi, *)
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
 let name := fresh "proj_" I  in let _ := match goal with _ =>
@@ -307,6 +309,46 @@ constr:((elim, db)).
 *)
 (* ty_default *)
 
+Ltac get_list_args_len I_rec na :=
+  let I_rec_term := eval cbv in (I_rec.2) in
+  let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
+  match opt with 
+  | Some (?npars, ?ty_pars) =>
+  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
+  let list_args_len := eval cbv in (rev (get_args_list_with_length list_ty npars))
+  in pose list_args_len as na
+end.
+
+Ltac get_list_args_len_quote I na:=  
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_list_args_len I_rec  na ; compute in na.
+
+Goal False. (* debunking ty_arg_constr from list_args_len *)
+get_list_args_len_quote list list_lal.
+let x := constr:(split list_lal) in pose x as blut . 
+compute in blut.
+let x:= constr:(blut.1) in pose x as truc. compute in truc.
+Print rev_list_map.
+let x:= constr:(rev_list_map truc) in pose x as bid.
+compute in bid.
+Abort.
+
+
+Ltac get_ty_arg_constr I_rec na := let lal := fresh "lal" in
+ get_list_args_len_quote I_rec   lal ; 
+  let x := constr:(rev_list_map ((split lal).1)) in pose x as na;
+ compute in na ; clear lal. 
+
+Goal False.
+get_list_args_len_quote list list_lal.
+get_ty_arg_constr list list_tarc.
+Abort.
+
+(* list_args := val cbv in (split (list_args0)).1   *)
+
+Ltac get_ty_arg_constr_quote I na:=  
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_ty_arg_constr  I_rec  na.
 
 Ltac get_info I_rec na :=
   let I_rec_term := eval cbv in (I_rec.2) in
@@ -401,10 +443,14 @@ Ltac get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars n
 match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
        let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
-| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) in 
+| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) 
+in 
             let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
 (* différence entre ty_default et return_ty: faire control F *)
- in
+ in (* idtac ty_default ;*) 
+ idtac return_ty ;
+(* let k1 := fresh "kikoooootydef" in pose ty_default as k1  ; 
+ let l2 := fresh "kikoooreturnty" in pose return_ty as k2  ; *)
             let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
     (* list_args devient le 8ème  arg de    get_eliminators_one_constructor_return_aux  *)   
      get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
@@ -544,10 +590,11 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
 Goal False.
-get_bluts nat.
-get_eliminators_st nat. clear.
-get_bluts list.
+Fail get_blut nat ds.
 get_eliminators_st list. clear.
+get_eliminators_st nat. clear.
+
+
 get_eliminators_st Ind_test. clear.
 get_eliminators_st Ind_test2. clear.
 Abort.

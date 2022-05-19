@@ -1,6 +1,6 @@
 Add Rec LoadPath "/home/pierre/depots/sniper" as Sniper.
 (* \Q why is this line needed? *)
-
+ 
 Require Import utilities. 
 Require Import interpretation_algebraic_types.
 Require Import elimination_polymorphism.
@@ -173,15 +173,73 @@ pose list_info.1.1.1.1.1.2 as list_list_ty. compute in list_list_ty.
 pose list_info.1.1.1.1.1.1.2 as list_ty_pars. compute in list_ty_pars.
 pose list_info.1.1.1.1.1.1.1 as list_npars.  hnf in list_npars. 
 (* Print list_I_app. *) (* gives the parameter i *)
+get_list_args_len_quote list list_lal.
+get_ty_arg_constr list list_tarc.
+
+pose ((tApp (* en mettant un idtac dans eliminators.v *)
+   (tInd
+      {|
+        inductive_mind :=
+          (MPfile
+             ["Datatypes"; "Init";
+             "Coq"], "list");
+        inductive_ind := 0
+      |} []) [tRel 0])) as list_ty_default.
+(* on aussi tRel 0 qui doit correspondent à un autre ty_default *)
+
+(* pour ty_default avec un idtac *)
+
+
+
+pose (tLambda
+   {|
+     binder_name := nNamed "x";
+     binder_relevance := Relevant
+   |}
+   (tApp
+      (tInd
+         {|
+           inductive_mind :=
+             (MPfile
+                ["Datatypes"; "Init";
+                "Coq"], "list");
+           inductive_ind := 0
+         |} []) [tRel 2])
+   (tApp
+      (tInd
+         {|
+           inductive_mind :=
+             (MPfile
+                ["Datatypes"; "Init";
+                "Coq"], "list");
+           inductive_ind := 0
+         |} []) [tRel 3])) as rtyp1. 
+pose 
+(tLambda
+   {|
+     binder_name := nNamed "x";
+     binder_relevance := Relevant
+   |}
+   (tApp
+      (tInd
+         {|
+           inductive_mind :=
+             (MPfile
+                ["Datatypes"; "Init";
+                "Coq"], "list");
+           inductive_ind := 0
+         |} []) [tRel 2]) 
+   (tRel 3)) as rtyp0.
 
 
 (* proj_one_constructor_default_var (i : term) (ty_default : term)
  (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) *) 
-
-let x := proj_one_constructor_default_var  (tApp list_reif [tRel 0]) 
+clear list_info.
+let x := constr:(proj_one_constructor_default_var  (tApp list_reif [tRel 0]) 
  (tApp list_reif [tRel 0])  
-list 1 0 1 [t
-in pose x as y.
-
+list_indu 1 0 1 list_tarc rtyp1)
+in pose x as y; compute in y.
+Print tCase.
+pose_unquote_term_hnf y projtruc.
 Abort.
