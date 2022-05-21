@@ -8,8 +8,8 @@
 (*   This file is distributed under the terms of the CeCILL-C licence     *)
 (*                                                                        *)
 (**************************************************************************)
-
-Add Rec LoadPath "/Users/pierrevial/depots/smtcoq" as SMTCoq.
+(* 
+Add Rec LoadPath "/Users/pierrevial/depots/smtcoq" as SMTCoq. *)
 
 Require Import SMTCoq.SMTCoq.
 

@@ -107,7 +107,7 @@ Fixpoint or_nary_reif (l : list term):=
   end.
 
 
-Definition dom_list_f ( B  :  term) (n : nat)  :=
+Definition dom_list_f ( B  :  term) (n : nat)  := (* \TODO transfer in utilities.v *)
   (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
   (* does not handle debruijn indices *)
   let fix dlaux B n acc :=
@@ -121,15 +121,6 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
   in dlaux B n [].
 
 
-(* dom_and_codom_sim is limited because it does not handle an output type that is morally a product *)
-(* the 1st element of the output is the list of domains of C and the 2nd element is its codomain *)
-Definition dom_and_codom_sim (C : term) := 
-  let fix aux C accl  :=
-      match C with        
-      | tProd _ A B => aux B (A :: accl)
-      | _ => (accl , C)
-      end
-        in let ( lA , B) := aux C [] in (List.rev lA, B).
 
     
 (***  Marks impossible cases ***)

@@ -22,7 +22,7 @@ Require Import interpretation_algebraic_types.
 Require Import SMTCoq.SMTCoq.
 
 
-(* \TODO éliminer la variable return_type, qui est un lift de default_type *)
+(* \TODO éliminer la variable return_type, qui est probablement un lift de default_type *)
 
 Ltac find_inhabitant_context t := 
 first[ constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
@@ -33,15 +33,15 @@ match goal with
 | _ => let H := fresh in let _ := match goal with _ => assert (H : t) by find_inhabitant_context t end in H
 end.
 
-Definition get_return_type (indu_app_to_params : term) (domain : term) := 
-mkLam indu_app_to_params (lift 1 0 domain).
-
-Definition codomain_nbconstruct (list_ty_construct : list (list term)) (nbconstruct : nat) (nbproj : nat) :=
-nth nbproj (nth nbconstruct list_ty_construct nil) impossible_term_reif. 
+Definition codomain_nbconstruct (list_ty_construct : list (list term)) (nbconstruct : nat) (nbproj : nat) := 
+ nth nbproj (nth nbconstruct list_ty_construct nil) impossible_term_reif. 
 
 
 Definition get_return_type_nbconstruct (indu_app_to_params : term) (codomain : term) :=
-get_return_type indu_app_to_params codomain.
+  mkLam  indu_app_to_params (lift 1 0 codomain).
+  
+(* get_return_type
+ indu_app_to_params codomain. *)
 
 
 Definition get_proj (n : nat) (l_ty : list term) := 
@@ -350,6 +350,25 @@ Ltac get_ty_arg_constr_quote I na:=
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_ty_arg_constr  I_rec  na.
 
+
+
+Ltac get_info0 I_rec na := (* \TODO remove *)
+  let I_rec_term := eval cbv in (I_rec.2) in
+  let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
+  match opt with 
+  | Some (?npars, ?ty_pars) =>
+  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
+  let list_args_len := eval cbv in (rev (get_args_list_with_length list_ty npars)) in 
+  let list_args := eval cbv in (split list_args_len).1 in 
+  pose list_args as na end .
+
+
+Ltac get_info0_quote I na := (* \TODO remove *)
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_info0 I_rec  na ; compute in na.
+
+
+
 Ltac get_info I_rec na :=
   let I_rec_term := eval cbv in (I_rec.2) in
   let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
@@ -374,11 +393,47 @@ list_args),total_args),list_of_pars_rel),I_app),I_indu))
 end  
 end.
 
-(* list_of_pars_rel is also called lpars *)
 
 Ltac get_info_quote I na := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_info I_rec  na.
+get_info I_rec  na ; compute in na.
+
+ 
+(* list_of_pars_rel is also called lpars *)
+ 
+
+
+Ltac get_info2 I_rec na :=
+  let I_rec_term := eval cbv in (I_rec.2) in
+  let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in 
+  match opt with 
+  | Some (?npars, ?ty_pars) =>
+  let list_ty := eval cbv in (list_types_of_each_constructor I_rec) in 
+  let list_args_len := eval cbv in (rev (get_args_list_with_length list_ty npars)) in 
+  let list_args := eval cbv in (split list_args_len).1 in 
+let list_ty_default0 := eval cbv in (flatten list_args) in
+  let list_ty_default := eval cbv in (lift_rec_rev list_ty_default0) in 
+  let nbconstruct := eval cbv in (Datatypes.length list_args) in
+  let list_ctors_reif := eval cbv in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
+  let total_args := eval cbv in (total_arg_constructors list_args_len) in
+  let list_of_pars_rel := eval cbv in ((get_list_of_rel_lifted npars (total_args + 1))) in
+  let I_app := eval cbv in (get_indu_app_to_params I_rec_term npars) in
+  let I_lifted := eval cbv in (lift (total_args) 0 I_app) in
+        match I_rec_term with
+        | tInd ?I_indu _ =>
+  let x := constr:(((((((list_args_len,list_args),list_ty_default0),list_ty_default),nbconstruct),list_ctors_reif),list_of_pars_rel))
+  in pose x as na 
+end  
+end.
+
+Ltac get_info2_quote I na := 
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_info2 I_rec  na; compute in na.
+
+
+
+
+
 
 Ltac pose_quote_term c idn :=
   let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
@@ -392,7 +447,7 @@ Ltac get_ind_param t idn :=
 
 
 
-Goal 2 + 2 = 5.
+Goal 2 +  2 = 5.
 Proof.
 pose (2,3) as x. pose x.1 as y. Eval compute in y.
 let list_info := fresh "list_info" in get_info_quote list list_info. 
@@ -431,6 +486,16 @@ end.
 
 
 
+(* 
+Ltac get_ty_def_return_ty n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
+match n with
+| 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
+       let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
+| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) 
+in 
+            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
+*) 
+
 (***********************************)
 
 (*****    fin tests       *************)
@@ -448,9 +513,9 @@ in
             let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
 (* différence entre ty_default et return_ty: faire control F *)
  in (* idtac ty_default ;*) 
- idtac return_ty ;
-(* let k1 := fresh "kikoooootydef" in pose ty_default as k1  ; 
- let l2 := fresh "kikoooreturnty" in pose return_ty as k2  ; *)
+(*  idtac "kikooo"  return_ty ; *)
+(*let k1 := fresh "kikoooootydef" in pose ty_default as k1  ; *)
+(* let l2 := fresh "kikoooreturnty" in pose return_ty as k2  ; *)
             let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu npars n nbconstruct list_args return_ty nb_args_previous_construct total_args in 
     (* list_args devient le 8ème  arg de    get_eliminators_one_constructor_return_aux  *)   
      get_eliminators_one_constructor_return_aux n' I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
