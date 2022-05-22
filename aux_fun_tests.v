@@ -188,6 +188,8 @@ Ltac split_info1 I na :=
 *  nelist_list_ty_default0 = [Rel 0 ; Rel 0 ; nelist_reif [Rel 0] ]
 *)
 
+(* \Remark return_ty := eval cbv in (lift 2 0 (mkLam I_app (lift0 1  ty_default)))*)
+
 (* _list_args_len : list (list term * nat )
 * nat__list_args_len = [ ( [] , 0) , ([S_reif] ; 1 ]
 * list_list_args_len =  [ ( [] , 0) ;   ([ Rel 0; list_reif [Rel 0]] 2)]
@@ -211,7 +213,29 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
  
 
 Goal False.
+get_eliminators_st list. 
+get_eliminators_st nat.  
 
+pose_quote_term proj_list "pl1".
+
+
+split_info1 list "ki".
+split_info2 list "koo".
+let list_tyd := constr:(tApp list_reif [tRel 1])  (* ty_default, pourrait aussi être list_reif [Rel 0] *) 
+in
+get_one_eliminator_return list [tRel 3]
+(tApp list_reif [tRel 0])   (* I_app *)
+list_tyd
+list_indu 
+1 
+ 1  (* nbproj *)
+ 1 (* nbconstruct *)
+ list_list_args (* [tRel 0;  tApp list_reif [tRel 0]] *) (*list_args for :: *)
+(lift 2 0 (mkLam list_app (lift0 1  list_tyd)))
+0 2 .
+in pose x as goer.
+
+Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
 
 (* let blut := fresh in get_info_quote list blut. 
 let blut2 := fresh in get_info2_quote list blut.

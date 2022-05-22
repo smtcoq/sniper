@@ -516,7 +516,7 @@ end.
     | _ => B  (* tVar, tEvar, tCast, tSort, tFix, tCofix,tCase...  *) 
     end.
 
-
+(* metavariable i metavariable p *)
 Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) :=
               (* n: nb of oind *)
               (* i: indice of oind in the mutual inductive block *)

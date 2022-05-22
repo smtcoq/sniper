@@ -21,6 +21,10 @@ Require Import interpretation_algebraic_types.
 
 Require Import SMTCoq.SMTCoq.
 
+(* \TODO changer les metavariables 
+- nb --> rk ou k ou n tout court (avec spec )
+
+*)
 
 (* \TODO éliminer la variable return_type, qui est probablement un lift de default_type *)
 
@@ -33,15 +37,16 @@ match goal with
 | _ => let H := fresh in let _ := match goal with _ => assert (H : t) by find_inhabitant_context t end in H
 end.
 
-Definition codomain_nbconstruct (list_ty_construct : list (list term)) (nbconstruct : nat) (nbproj : nat) := 
- nth nbproj (nth nbconstruct list_ty_construct nil) impossible_term_reif. 
+(*  \TODO la fonction codomain_nbconstruct 
+n'était utilisée que dans 
+get_eliminators_one_constructor_return_aux 
+la supprimer définitivement, ou éventuellement la restaurer en lui donnant un meilleur nom
+*)
+
+(* Definition codomain_nbconstruct (list_ty_construct : list (list term)) (nbconstruct : nat) (nbproj : nat) := 
+ nth nbproj (nth nbconstruct list_ty_construct nil) impossible_term_reif.  *)
 
 
-Definition get_return_type_nbconstruct (indu_app_to_params : term) (codomain : term) :=
-  mkLam  indu_app_to_params (lift 1 0 codomain).
-  
-(* get_return_type
- indu_app_to_params codomain. *)
 
 
 Definition get_proj (n : nat) (l_ty : list term) := 
@@ -52,7 +57,10 @@ match l with
 | x :: xs => aux xs (mkLam x t) 
 end in aux l_ty (tRel (k - n)).
 
-(* Shift De Brujin indexes: useful when variables are removed *)
+
+
+(* removes k to each de Brujin indexes: useful when variables are removed *)
+(* \TODO ??? higher order version where fun i => i - k abstracted, if possible (not sure with tCase )*)
 (* \Rk does not work with dependencies. Should perhaps use subst instead *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
@@ -80,9 +88,10 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (** version with default = tRel 1 **)
 
 (* constructs the function associated with the branchs which should return a default value *)
+(* \Q what is n supposed to represent? *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
-let l := List.map (lift (len + 1) 0) l0 in (* \Q is l0 useful ???? apparently l0 is supposed to be the list of the types of the params *)
+let l := List.map (lift (len + 1) 0) l0 in (* \Q is l0 useful ???? apparently l0 is supposed to be the list of the types of the params (of what ???) *)
 if Nat.eqb n nbconstruct then 
 let fix aux l acc :=
 match l with 
@@ -115,6 +124,8 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 (* construit le match de l'éliminateur et le default variable non-liée tRel 1 *)
+
+
 
 
 (* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
@@ -283,13 +294,12 @@ end.
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
   (* trackons les 9è (-4è) et 10è (-3è) arg, i.e. lists_args et return_type *)
-
 let p := eval cbv in (proj_one_constructor_params_default_var ty_pars I_app ty_default I_indu npars nbproj (nbconstruct - 1) (rev_list_map list_args) return_ty) in
 (* ici, l'avant-dernier param de proj_one_constructor_params_default_var est 
    (rev_list_map list_args). Ainsi, *)
 let u := metacoq_get_value (tmUnquote p) in 
 let x := eval cbv in u.(my_projT2) in
-let name := fresh "proj_" I  in let _ := match goal with _ =>
+let name := fresh "proj_" I  in let _ := match goal with _ => (*\Q pourquoi ce match goal with ici et pas plus haut? *)
 pose (name := x) end in
 let elim := metacoq_get_value (tmQuote name) in 
 let db := eval cbv in (total_args + 1 - nb_args_previous_construct - nbproj) in
@@ -486,15 +496,6 @@ end.
 
 
 
-(* 
-Ltac get_ty_def_return_ty n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
-match n with
-| 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
-       let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
-| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) 
-in 
-            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
-*) 
 
 (***********************************)
 
@@ -503,14 +504,17 @@ in
 (***********************************)
 
 
+(*  mkLam I_app (lift 1 0 ty_default) seems to compute a return type. Of what ?*)
+
+
 
 Ltac get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
 match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
        let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
-| S ?n' =>  let ty_default := eval cbv in (codomain_nbconstruct list_args (nbconstruct - 1) n' ) 
+| S ?n' =>  let ty_default := eval cbv in (nth n' (nth (nbconstruct -1) list_args nil ) impossible_term_reif) 
 in 
-            let return_ty := eval cbv in (lift 2 0 (get_return_type_nbconstruct I_app ty_default))
+            let return_ty := eval cbv in (lift0 2 (mkLam I_app (lift0 1  ty_default)))
 (* différence entre ty_default et return_ty: faire control F *)
  in (* idtac ty_default ;*) 
 (*  idtac "kikooo"  return_ty ; *)
@@ -522,7 +526,7 @@ in
 end.
 
 Ltac get_eliminators_one_constructor_return n I ty_pars I_app I_indu npars nbconstruct list_args0 nb_args_previous_construct total_args lpars c_reif :=
-let list_args := eval cbv in (split (list_args0)).1 in
+let list_args := eval cbv in (split (list_args0)).1 in (* \Q pourquoi list_args calculé plusieurs fois ?*)
 (* maintenant, list_args := val cbv in (split (list_args0)).1  
    et list_args_0 est le 8è param de get_eliminators_one_constructor_return
 *)
@@ -542,6 +546,7 @@ match n with
 *) 
           get_eliminators_aux_st n' I ty_pars I_app I_indu npars list_args total_args lpars list_constructors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
+
 
 
 
