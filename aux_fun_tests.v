@@ -21,6 +21,16 @@ Print list.
 
 Inductive nelist {A : Type} : Type :=
 	sing :  A -> nelist    | necons : A -> nelist -> nelist .
+   
+   
+Example blut := @nelist nat.
+
+Inductive biclist {A B : Type} : Type :=
+(*  sing1 : A -> biclist  
+  | sing2 : B -> biclist *)
+  | bicnil : biclist
+  | cons1 : A -> biclist -> biclist
+  | cons2 : B -> biclist -> biclist. 
 
 (*
 
@@ -59,6 +69,12 @@ currently have  the right universes levels *)
 MetaCoq Quote Definition cons_reif := cons.
 MetaCoq Quote Definition sing_reif := sing.
 MetaCoq Quote Definition necons_reif := necons.
+
+
+MetaCoq Quote Definition bicnil_reif := bicnil.
+MetaCoq Quote Definition biccons_reif := biccons.
+
+
 
 
 MetaCoq Quote Definition zero_reif := 0.
@@ -101,6 +117,10 @@ Print nelist_reif.
 Print list_reif.
 MetaCoq Quote Recursively Definition nelist_env_reif := @nelist.
 
+MetaCoq Quote Definition biclist_reif := @biclist.
+
+
+MetaCoq Quote Definition cons_typ_reif := (forall (A: Type), A -> list A -> list A).
 
 Print list_env_reif.
 
@@ -211,6 +231,56 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
 
 (*   constr:(((((((list_args_len,list_args),list_ty_default0),list_ty_default),nbconstruct),list_ctors_reif),list_of_pars_rel)) *) 
  
+
+(* Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
+(ty_arg_constr : list (list term)) (return_type : term) :=  *)
+
+
+
+
+Goal False. (* PAS ENCORE COMPRIS*)
+Print cons_typ_reif.
+let x := constr:( branch_default_var 
+[tRel 0; tApp list_reif [tRel 1] ]
+0 2 2
+in pose x as kikoo.
+unfold branch_default_var in kikoo. simpl in kikoo.
+
+
+let x:= mkCase_eliminator_default_var (list_indu )
+
+
+Goal False.
+(* split_info1 list "ki".
+split_info2 list "koo".  *)
+let x :=  constr:(mkCase_eliminator_default_var list_indu 80 20 40
+[[tRel 1] ; [tRel 3 ; tRel 8]] (tProd (mkNamed "x") (tApp nat_reif [tRel 4 ; tRel 5]) (tRel 12)))
+in pose x as blut.
+unfold mkCase_eliminator_default_var in blut. unfold rev in blut. simpl in blut.
+clear blut.
+ pose_quote_term
+(fun (l : list nat) => match l with
+| [] => 0
+| x  :: l0 => x end
+  ) kik.
+  clear kik.
+  pose_quote_term
+  (fun (l : @biclist nat bool) => match l with
+  | bicnil => 0
+  | cons1 x l0 => x 
+  | cons2 _ _ => 1 end 
+    ) kooo.
+clear.
+pose_quote_term (fun (A : Type)  ( l : @nelist A)  => match l with
+| sing a => a 
+| necons  x l0 => x 
+end
+  ) kaaaa.
+
+  (* tCase : (inductive × nat) × relevance ->
+            term -> term -> list (nat × term) -> term *)
+ (*      tLambda : aname -> term -> term -> term *)
+            Abort.
 
 Goal False.
 get_eliminators_st list. 

@@ -39,27 +39,6 @@ match goal with
 | _ => let H := fresh in let _ := match goal with _ => assert (H : t) by find_inhabitant_context t end in H
 end.
 
-(*  \TODO la fonction codomain_nbconstruct 
-n'était utilisée que dans 
-get_eliminators_one_constructor_return_aux 
-la supprimer définitivement, ou éventuellement la restaurer en lui donnant un meilleur nom
-*)
-
-(* Definition codomain_nbconstruct (list_ty_construct : list (list term)) (nbconstruct : nat) (nbproj : nat) := 
- nth nbproj (nth nbconstruct list_ty_construct nil) impossible_term_reif.  *)
-
-
-
-
-Definition get_proj (n : nat) (l_ty : list term) := 
-let k := Datatypes.length l_ty in 
-let fix aux l t :=
-match l with 
-| nil => t
-| x :: xs => aux xs (mkLam x t) 
-end in aux l_ty (tRel (k - n)).
-
-
 
 (* removes k to each de Brujin indexes: useful when variables are removed *)
 (* \TODO ??? higher order version where fun i => i - k abstracted, if possible (not sure with tCase )*)
@@ -90,10 +69,13 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (** version with default = tRel 1 **)
 
 (* constructs the function associated with the branchs which should return a default value *)
+(* l0 is supposed to be the list of types of the parameters of the constructors, e.g. for cons: 
+[tRel 0 ; tApp list_reif [tRel 1]]
+*)
 (* \Q what is n supposed to represent? *)
 Definition branch_default_var (l0 : list term) (nbproj : nat) (nbconstruct : nat) (n : nat) :=
 let len := Datatypes.length l0 in 
-let l := List.map (lift (len + 1) 0) l0 in (* \Q is l0 useful ???? apparently l0 is supposed to be the list of the types of the params (of what ???) *)
+let l := List.map (lift0 (len + 1)) l0 in 
 if Nat.eqb n nbconstruct then 
 let fix aux l acc :=
 match l with 
@@ -104,12 +86,12 @@ in aux l (tRel (len - nbproj))
 else
 let fix aux' l acc := match l with 
       | [] => acc
-      | y :: ys =>  aux' ys (mkLam hole (lift 1 0 acc)) 
+      | y :: ys =>  aux' ys (mkLam hole (lift0 1  acc)) 
       end
 in aux' l (tRel 1).  (* tRel 1 will be the parameter for the default value *)
     (* note that tRel 1 is not bound in the above function *)
 
-
+(* \TODO long term: recover the "relevant" parameter and not hard-code it *)
 (* Constructs the pattern matching in the eliminator
 for instance, given the right arguments to construct the predecessor function we get the reified
 < match x with
@@ -126,6 +108,9 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 (* construit le match de l'éliminateur et le default variable non-liée tRel 1 *)
+
+
+
 
 
 
@@ -169,6 +154,7 @@ match ty_params with
 | x :: xs => aux xs (mkLam x acc)
 end in aux ty_params (proj_one_constructor_default_var i ty_default I npars nbproj nbconstruct ty_arg_constr return_type).
 
+(* remove_n n [a_1; ... ; a_n ; .... ; a_p ] = [a_{n+1} ; ... ; a_p ]*)
 Fixpoint remove_n {A} (n : nat) (l : list A) := 
 match n with 
 | 0 => l 
