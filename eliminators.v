@@ -26,6 +26,8 @@ Require Import SMTCoq.SMTCoq.
 
 *)
 
+(* \TODO : renommer impossible_term, qui est un inductif vide *)
+
 (* \TODO éliminer la variable return_type, qui est probablement un lift de default_type *)
 
 Ltac find_inhabitant_context t := 
@@ -221,17 +223,24 @@ match l with
 end
 in aux l [].
 
-Definition get_list_args (I_rec : global_env* term) (npars : nat) := rev (get_args_list (list_types_of_each_constructor I_rec) npars).
+Definition get_list_args (I_rec : global_env * term) (npars : nat) := rev (get_args_list (list_types_of_each_constructor I_rec) npars).
 
 Definition get_list_args_with_length (I_rec : global_env* term) (npars : nat) := rev (get_args_list_with_length (list_types_of_each_constructor I_rec) npars).
 
-Fixpoint get_indu_app_to_params (t : term) (n : nat) := 
-match n with 
-| 0 => t
-| S n' => get_indu_app_to_params (tApp t [tRel n']) n'
-end.
+(* get_indu_app_to_params t n = tApp t [tRel (n-1) ; .... ; tRel 0]
+   tail-recursive
+*)
+Definition get_indu_app_to_params (t : term) (n : nat) := 
+  let fix aux n acc :=
+   match n with
+   | 0 => acc 
+   | S n => aux n ((tRel n)::acc)
+   end
+in tApp t (tr_rev (aux n [])). 
 
-Definition rev_list_map {A} (l : list (list A)) := @List.map (list A) (list A) (@rev A) l.
+Definition rev_list_map {A} (l : list (list A)) := @List.map (list A) (list A) (@tr_rev A) l.
+
+
 
 Definition total_arg_constructors (l : list (list term × nat)) := 
 let fix aux l n :=
@@ -245,7 +254,7 @@ Fixpoint mkProd_rec (l : list term) (t: term) :=
 (* warning: t should have been previously lifted *)
 match l with 
 | [] => t 
-| x :: xs => mkProd_rec xs (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} x t)
+| x :: xs => mkProd_rec xs (tProd (mkNamed "x")  x t)
 end.
 
 Definition lift_rec_rev (l : list term) :=
@@ -263,20 +272,19 @@ match list_tVar with
 | (elim, db) :: xs => (tApp elim (lpars ++ [tRel db; tRel 0])) :: get_elim_applied xs lpars
 end.
 
-Fixpoint get_equality (c : term) (t : term) (l : list term) := 
-match l with
-| [] => tApp eq_reif [hole; t; c]
-| x :: xs => get_equality (tApp c [x]) t xs
-end.
+(* get_list_of_holes n = [hole ; ... ; hole] (n occurrences)
+   tail-recursive 
+*)
+Definition get_list_of_holes (n : nat) :=
+  let fix aux n acc := 
+  match n with
+  | 0 => acc 
+  | S n => aux n (hole :: acc)
+end in aux n [].
 
-Fixpoint get_list_of_hole (n : nat) :=
-match n with
-| 0 => nil
-| S m  => hole :: get_list_of_hole m
-end.
 
 Definition get_list_ctors_tConstruct_applied (I : term) (n : nat) (npars: nat) :=
-let l := get_list_of_hole npars in
+let l := get_list_of_holes npars in
 match I with
 | tInd indu inst => let fix aux n := match n with
           | 0 => nil
@@ -285,12 +293,33 @@ match I with
 | _ => []
 end.
 
+
+
+
+
+(**  mkOr [A1_reif ; ... ; An_reif] produce the reification of A1 \/ ... \/ A_n
+    tail-recursive
+**)
 Fixpoint mkOr (l : list term) := 
+  let l' := tr_rev l in 
+  match l' with
+  | [] => impossible_term_reif 
+  | x0 :: l0 => 
+  let fix aux l acc :=
 match l with
-| nil => impossible_term_reif
-| [ x ] => x
-| cons x xs => tApp or_reif ([mkOr xs] ++ [x])
+| [] => impossible_term_reif
+| [ x ] => tApp or_reif (x :: [acc]) 
+| x :: xs => aux xs (tApp or_reif (x :: [acc]))
+end in aux l0 x0
 end.
+
+
+MetaCoq Quote Definition S_reif := S. 
+MetaCoq Quote Definition O_reif := O.
+
+
+
+
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
   (* trackons les 9è (-4è) et 10è (-3è) arg, i.e. lists_args et return_type *)
@@ -506,12 +535,26 @@ end.
 
 (*  mkLam I_app (lift 1 0 ty_default) seems to compute a return type. Of what ?*)
 
+(* \pierre *)
 
+Ltac get_def_ret_ty n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
+match n with
+| S ?n' =>  let ty_default := eval cbv in (nth n' (nth (nbconstruct -1) list_args nil ) impossible_term_reif) 
+in 
+            let return_ty := eval cbv in (lift0 2 (mkLam I_app (lift0 1  ty_default))) in constr:((ty_default,return_ty))
+            end.
+
+(* \TODO chercher get_equality *)
+
+
+(* Definition get_eq (c : term) (t : term) (l : list term) := 
+ tApp eq_reif [hole ; t ; tApp c  l].*) (*\Q pourquoi échange d'ordre entre c et t ?*) 
 
 Ltac get_eliminators_one_constructor_return_aux n I ty_pars I_app I_indu npars nbconstruct list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
 match n with
 | 0 => let elim_app := eval cbv in (get_elim_applied list_elims lpars) in
-       let get_equ := eval cbv in (get_equality c_reif (tRel 0) elim_app) in get_equ
+       let get_equ := constr:(tApp eq_reif [hole ; (tRel 0) ; tApp c_reif elim_app ])
+       in get_equ
 | S ?n' =>  let ty_default := eval cbv in (nth n' (nth (nbconstruct -1) list_args nil ) impossible_term_reif) 
 in 
             let return_ty := eval cbv in (lift0 2 (mkLam I_app (lift0 1  ty_default)))
@@ -645,7 +688,6 @@ get_blut I_rec I.
 
 Ltac get_eliminators_st I :=
 let st := get_eliminators_st_return_quote I in idtac.
-
 
 Ltac get_bluts I := let st := get_blut_quote I in idtac.
 

@@ -112,7 +112,7 @@ Definition dom_list_f ( B  :  term) (n : nat)  := (* \TODO transfer in utilities
   (* does not handle debruijn indices *)
   let fix dlaux B n acc :=
   match n with
-  | 0 => (B,List.rev acc) 
+  | 0 => (B,tr_rev acc) 
   | S n => match B with
           | tProd na A B' =>  dlaux B' n (A :: acc)
           | _ => (B,[]) (* this case shouldn't happen *)
@@ -292,7 +292,7 @@ Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
    let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
       match (p, l)  with
-      | (0 , _) => List.rev (lAf ++ List.map (lift0 d) l) 
+      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) 
       | ( S p , x :: l) => removeandlift p l 
       | ( S _, []) => [] (* this case doesn't happen *)
       end 
@@ -369,8 +369,8 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
 
 
 Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
-  let lD' := List.map (fun l => (@List.skipn term p l)) lD in 
-  let lLen := List.map  (fun l => (@List.length term l) ) lD' in 
+  let lD' := tr_map(fun l => (@List.skipn term p l)) lD in 
+  let lLen := tr_map  (fun l => (@List.length term l) ) lD' in 
   let fix aux0 k i l  :=
     (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
     match k with
@@ -384,7 +384,7 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
     | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x") (lift0 1 A) t])
     end 
   in 
-  let aux2 B f lA k := aux1 (List.rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
+  let aux2 B f lA k := aux1 (tr_rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
   let fix aux3 lB lf lD lLen t := 
     match (((lB, lf) , lD), lLen )  with
     | ((([], []),[]),[]) => t
@@ -495,7 +495,7 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   match l with
   | [] => []
   | ((idc , ty) , n ) :: tlctor => list_lctor  tlctor  (ty :: acc) 
-  end in  List.rev (list_lctor oind.(ind_ctors) []).
+  end in  tr_rev (list_lctor oind.(ind_ctors) []).
   
 Definition switch_inductive ( indu : inductive) (i : nat) :=
   match indu with 

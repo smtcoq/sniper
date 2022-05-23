@@ -216,8 +216,19 @@ Goal False.
 get_eliminators_st list. 
 get_eliminators_st nat.  
 
-pose_quote_term proj_list "pl1".
-
+pose_quote_term (fun (A : Type) (x x0 : list A) => match x0 with
+| [] => x
+| _ :: x1 => x1
+end ) pl1.
+pose_quote_term (fun (A : Type) (x : A) (x0 : list A) => match x0 with
+| [] => x
+| x1 :: _ => x1
+end ) pl0.
+pose_quote_term (fun x x0 : nat => match x0 with
+| 0 => x
+| S x1 => x1
+end ) pn0.
+clear H H0.
 
 split_info1 list "ki".
 split_info2 list "koo".

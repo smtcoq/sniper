@@ -33,6 +33,29 @@ Inductive impossible_term :=.
 MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
 
+(** Tail-recursive version of List.rev **)
+
+Definition tr_rev {A : Type} (l : list A) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (x :: acc ) end
+  in aux l []. 
+
+(** Tail-recursive version of List.map 
+    Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
+**)
+
+Definition tr_map {A B : Type} (f: A -> B) (l : list A) :=
+  let l0 := tr_rev l in 
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (f x :: acc ) end
+  in aux l0 [].
+
+
+
 (** Functions to build MetaCoq terms **)
 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
@@ -82,7 +105,7 @@ match I with
                       | (na,d) :: e' => 
                                 (match d with
                                   | InductiveDecl mind => if (String.eqb
-ident na.2) then let prod := (ind_npars mind, List.map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
+ident na.2) then let prod := (ind_npars mind, tr_map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
                                   | _ => get_info_params_inductive I e'
                                end)    
     end
