@@ -240,11 +240,57 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
 
 Goal False. (* PAS ENCORE COMPRIS*)
 Print cons_typ_reif.
+
+(** branch_default_var *)
 let x := constr:( branch_default_var 
-[tRel 0; tApp list_reif [tRel 1] ]
-0 2 2
-in pose x as kikoo.
-unfold branch_default_var in kikoo. simpl in kikoo.
+[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
+2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
+in pose x as kikoo ;
+unfold branch_default_var in kikoo ; simpl in kikoo.
+let x := constr:( branch_default_var0 
+[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
+2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
+in pose x as blut ;
+unfold branch_default_var0 in blut ; simpl in blut.
+clear. (* DONE *)
+
+
+let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0 ; tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 
+(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var in blut ; unfold branch_default_var in blut ; simpl in blut.
+
+
+
+let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 3 [ [tRel 1]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0]]
+(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as kik ; unfold mkCase_eliminator_default_var in kik ; unfold branch_default_var in blut ; simpl in kik.  
+
+(* return_type est le 2ème arg de tCase: donc le type du pm commençant par tLam et pas un type de retour
+* nbconstruct: rang du ctor: la fonction va agir sur l'élément de rang nbconstruct dans la liste de listes de termes
+* nbproj : 
+*)
+Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
+(ty_arg_constr : list (list term)) (return_type : term) := 
+let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
+(ty_arg_constr : list (list term)) (return_type : term) (acc: list (nat × term)) (acc_nat : nat) :=
+match ty_arg_constr with 
+| [] => tCase (I, npars, Relevant) return_type (tRel 0) (List.rev acc)
+| x :: xs => aux I npars nbproj nbconstruct xs return_type 
+((acc_nat, branch_default_var x nbproj nbconstruct acc_nat)::acc) (acc_nat + 1)
+end
+in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
+
+
+get_eliminators_st list.
+pose_quote_term (fun (A : Type) (x x0 : list A) =>
+match x0 with
+| [] => x
+| _ :: x1 => x1
+end ) pl1.
+pose_quote_term (fun (A : Type) (x : A) (x0 : list A) =>
+match x0 with
+| [] => x
+| x1 :: _ => x1
+end ) pl0.
+
 
 
 let x:= mkCase_eliminator_default_var (list_indu )
