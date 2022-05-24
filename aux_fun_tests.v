@@ -240,7 +240,10 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
 
 Goal False. (* PAS ENCORE COMPRIS*)
 Print cons_typ_reif.
-
+split_info1 list "blut". clear -list_list_args.
+split_info2 list "blut". clear.
+split_info1 @nelist "blut". clear. (* clear -list_app nelist_app. *)
+split_info1 @biclist "blut". clear  - biclist_app biclist_list_args. clear.
 (** branch_default_var *)
 let x := constr:( branch_default_var 
 [tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
@@ -267,6 +270,8 @@ let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 3 [ [tRel 1]; [tRe
 * nbconstruct: rang du ctor: la fonction va agir sur l'élément de rang nbconstruct dans la liste de listes de termes
 * nbproj : 
 *)
+
+(* 
 Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let fix aux (I : inductive) (npars: nat) (nbproj : nat) (nbconstruct : nat)
@@ -277,6 +282,8 @@ match ty_arg_constr with
 ((acc_nat, branch_default_var x nbproj nbconstruct acc_nat)::acc) (acc_nat + 1)
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
+*)
+
 
 
 get_eliminators_st list.
@@ -290,10 +297,10 @@ match x0 with
 | [] => x
 | x1 :: _ => x1
 end ) pl0.
+Abort.
 
 
-
-let x:= mkCase_eliminator_default_var (list_indu )
+(* let x:= mkCase_eliminator_default_var (list_indu ) *)
 
 
 Goal False.
@@ -348,7 +355,7 @@ clear H H0.
 
 split_info1 list "ki".
 split_info2 list "koo".
-let list_tyd := constr:(tApp list_reif [tRel 1])  (* ty_default, pourrait aussi être list_reif [Rel 0] *) 
+Fail let list_tyd := constr:(tApp list_reif [tRel 1])  (* ty_default, pourrait aussi être list_reif [Rel 0] *) 
 in
 get_one_eliminator_return list [tRel 3]
 (tApp list_reif [tRel 0])   (* I_app *)
@@ -360,18 +367,18 @@ list_indu
  list_list_args (* [tRel 0;  tApp list_reif [tRel 0]] *) (*list_args for :: *)
 (lift 2 0 (mkLam list_app (lift0 1  list_tyd)))
 0 2 .
-in pose x as goer.
+
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu npars nbproj nbconstruct list_args return_ty nb_args_previous_construct total_args :=
 
 (* let blut := fresh in get_info_quote list blut. 
 let blut2 := fresh in get_info2_quote list blut.
 clear. *)
-split_info2 nat "blut". clear -list_list_args list_list_argskik list_list_args_len.
+split_info2 nat "blut". (* clear -list_list_args list_list_argskik list_list_args_len. *)
 Abort.
-
+(* 
 constr:((((((((list_args_len),list_args),list_ty_default0),list_ty_default),nbconstruct),list_ctors_reif),list_of_pars_rel)) 
-
+*)
 
 
 (* 
@@ -392,6 +399,9 @@ MetaCoq Quote Definition C_reif := C.
 (* Tests on utilities.v                     *)
 (********************************************)
 
+Goal False.
+let x := constr:(list_types_of_each_constructor list_env_reif) in pose x as ltoeclist ; compute in ltoeclist.
+
 Print get_info_params_inductive.
 
 (* d'après le code, get_info_params_inductive 
@@ -410,6 +420,9 @@ Goal False.
 Proof.
 get_info2_quote list test_list.
 Abort.
+
+
+
 
 (********************************************)
 (* Tests on eliminators.v                   *)
