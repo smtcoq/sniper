@@ -33,7 +33,10 @@ Inductive impossible_term :=.
 MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
 
-(** Tail-recursive version of List.rev **)
+
+
+
+(** Tail-recursive (actually linear) version of List.rev **)
 
 Definition tr_rev {A : Type} (l : list A) :=
   let fix aux l acc :=
@@ -42,7 +45,16 @@ Definition tr_rev {A : Type} (l : list A) :=
   | x :: l => aux l (x :: acc ) end
   in aux l []. 
 
-(** Tail-recursive version of List.map 
+
+(** Tail-recursive (actually linear) version of flatten **)
+Definition tr_flatten {A : Type} (l : list (list A)) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | l0 :: l => aux l (rev_append l0 acc)
+  end in tr_rev (aux l []).
+
+(** Tail-recursive (actually linear) version of List.map 
     Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
 **)
 
@@ -58,18 +70,32 @@ Definition tr_map {A B : Type} (f: A -> B) (l : list A) :=
 
 (** Functions to build MetaCoq terms **)
 
+
+(*  declaring variables   *)
+Open Scope string_scope.
+
+Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
+Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
+
+
+Definition mkNamedtry := mkNamed (("B"%string) : ident).
+
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
 Definition mkProd T u :=
-tProd {| binder_name := nAnon; binder_relevance := Relevant |} T u.
+tProd mkNAnon T u.
 
 Definition mkLam Ty t := match Ty with 
-| tSort _ => tLambda {| binder_name := nNamed "A"%string ; binder_relevance := Relevant |} Ty t
-| _ => tLambda {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} Ty t
+| tSort _ => tLambda (mkNamed "A") Ty t
+| _ => tLambda (mkNamed "x") Ty t
 end.
 
-Definition mkProdName na T u :=
-tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
+
+
+Definition mkProdName na T u := (* \TODO use mkProdName in files *)
+tProd (mkNamed na) T u.
+
+Close Scope string_scope.
 
 Definition mkApp (u : term) (l : list term) :=
 tApp u l.
@@ -327,6 +353,24 @@ run_template_program (tmQuoteRec i) ltac:(fun i_reif_rec => let n :=
 eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
 pose (id := n)).
 
+(*********************)
+(* \TODO temporary inserts before putting order into auxiliary functions *)
+
+Definition dom_list_f ( B  :  term) (n : nat)  := 
+  (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
+  (* does not handle debruijn indices *)
+  let fix dlaux B n acc :=
+  match n with
+  | 0 => (B,tr_rev acc) 
+  | S n => match B with
+          | tProd na A B' =>  dlaux B' n (A :: acc)
+          | _ => (B,[]) (* this case shouldn't happen *)
+          end            
+  end
+  in dlaux B n [].
+
+(***********************)
+
 (* Given a term recursively quoted, gives the list of the type of each of its constructor *)
 Definition list_types_of_each_constructor t :=
 let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
@@ -352,16 +396,6 @@ match n with
 | S n' => aux n' (k + 1) ((tRel (k + l)) :: acc)
 end in aux n 0 nil.
 
-Fixpoint flatten_aux {A} (l : list (list A)) (acc : list A) := 
-match l with 
-| nil => acc
-| x :: xs => let fix aux l acc' := match l with
-              | nil => acc'
-              | y :: ys => aux ys (acc' ++ [y]) end in
-              flatten_aux xs (acc ++ (aux x []))
-end.
-
-Definition flatten {A} (l : list (list A)) := flatten_aux l  [].
 
 (* Reifies a term and calls is_type *)
 Ltac is_type_quote t := let t' := eval hnf in t in let T :=

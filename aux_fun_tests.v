@@ -158,6 +158,14 @@ Definition list_oind := ltac:(let s := fresh in pose_oind_tac list 0 s ; compute
 Print list_oind.
 
 
+Ltac pose_list_ctor_oind t i idn := let x := fresh  in  pose_oind_tac t i x ; let lctor := constr:(list_ctor_oind x) in pose lctor as idn ; compute in idn ; clear x.
+
+Goal False.
+pose_list_ctor_oind list 0 kik.
+Abort.
+
+
+
 
 Ltac split_info1 I na := 
    let I_info := fresh "I_info" in get_info_quote I  I_info ; 
@@ -211,7 +219,7 @@ Ltac split_info1 I na :=
 (* \Remark return_ty := eval cbv in (lift 2 0 (mkLam I_app (lift0 1  ty_default)))*)
 
 (* _list_args_len : list (list term * nat )
-* nat__list_args_len = [ ( [] , 0) , ([S_reif] ; 1 ]
+* nat_list_args_len = [ ( [] , 0) , ([S_reif] ; 1 ]
 * list_list_args_len =  [ ( [] , 0) ;   ([ Rel 0; list_reif [Rel 0]] 2)]
 * nelist_list_args_len = [ ([Rel 0], 1) ] ; ([Rel 0 ; nelist_reif [Rel 0]], 2) ]
 * \Comm: semble être seulement un calcul intermédiaire, on peut l'éliminer ensuite
@@ -256,7 +264,8 @@ let x := constr:( branch_default_var0
 in pose x as blut ;
 unfold branch_default_var0 in blut ; simpl in blut.
 clear. (* DONE *)
-
+let x := constr:( branch_default_var 
+[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15] 0 1 1) in pose x as iki ; unfold branch_default_var in iki ; simpl in iki.
 
 let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0 ; tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 
 (tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var in blut ; unfold branch_default_var in blut ; simpl in blut.
@@ -270,7 +279,7 @@ let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 3 [ [tRel 1]; [tRe
 * nbconstruct: rang du ctor: la fonction va agir sur l'élément de rang nbconstruct dans la liste de listes de termes
 * nbproj : 
 *)
-
+Print mkCase_eliminator_default_var.
 (* 
 Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
@@ -282,7 +291,7 @@ match ty_arg_constr with
 ((acc_nat, branch_default_var x nbproj nbconstruct acc_nat)::acc) (acc_nat + 1)
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
-*)
+
 
 
 

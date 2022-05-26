@@ -60,10 +60,10 @@ MetaCoq Quote Definition or_reif := Eval cbn in or.
 
 (** reified equalities **)
 
-Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
+(* Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
 Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
 
-Definition mkNamedtry := mkNamed (("B"%string) : ident).
+Definition mkNamedtry := mkNamed (("B"%string) : ident).*)
 
 
 Definition consS_typ := tProd (mkNamed "A") (tSort (Universe.from_kernel_repr (Level.lSet, false) []))
@@ -107,18 +107,6 @@ Fixpoint or_nary_reif (l : list term):=
   end.
 
 
-Definition dom_list_f ( B  :  term) (n : nat)  := (* \TODO transfer in utilities.v *)
-  (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
-  (* does not handle debruijn indices *)
-  let fix dlaux B n acc :=
-  match n with
-  | 0 => (B,tr_rev acc) 
-  | S n => match B with
-          | tProd na A B' =>  dlaux B' n (A :: acc)
-          | _ => (B,[]) (* this case shouldn't happen *)
-          end            
-  end
-  in dlaux B n [].
 
 
 
@@ -490,13 +478,17 @@ Ltac inj_disj_tac lB lf lA ln p  :=
   lazymatch eval hnf in lB with
    | ?B :: ?tlB => ctors_are_inj_tac lB lf lA ln p ; pairw_disj_codom_tac B lf lA  p
     end.
+
 Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   let fix list_lctor ( l : list ((ident × term) × nat )) acc :=
   match l with
-  | [] => []
+  | [] => acc
   | ((idc , ty) , n ) :: tlctor => list_lctor  tlctor  (ty :: acc) 
   end in  tr_rev (list_lctor oind.(ind_ctors) []).
   
+
+
+
 Definition switch_inductive ( indu : inductive) (i : nat) :=
   match indu with 
   | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
