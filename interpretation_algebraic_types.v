@@ -138,7 +138,7 @@ Ltac get_env_ind_param t idn :=
      end
      end.
 
-Ltac pose_mind_tac t idn :=   (* factoriser code !*)
+Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
      | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
@@ -164,6 +164,15 @@ Ltac pose_mind_tac t idn :=   (* factoriser code !*)
      end
      end
     .
+
+Print mutual_inductive_body.
+Print context.
+Print decl_type.
+
+(* \TODO Finir our supprimer 
+Ltac pose_params t idn :=
+  let t_mind := fresh in pose_mind_tac t t_mind ; pose  constr:(ind_params)
+  clear t_mind. *)
 
 Ltac get_mind_tac t  :=  
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
@@ -494,31 +503,20 @@ Definition switch_inductive ( indu : inductive) (i : nat) :=
   | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
 end.
 
-  Fixpoint debruijn_mess_aux (indu : inductive )  (n : nat) (u : Instance.t)  (k: nat)  (B: term):=
-    match B with 
-      | tRel j  =>
-      match Nat.leb (j + 1) k  with
-      | true  => tRel j
-      | _ => tInd (switch_inductive indu (n +k - 1 - j) ) u  (* in practice, j >= k + n impossible *)
-      end
-    | tProd na ty body  => tProd na (debruijn_mess_aux indu    n u k ty) (debruijn_mess_aux indu   n u  (k+1)  body) 
-    | tLambda na ty body => tLambda na (debruijn_mess_aux indu   n u  k  ty) (debruijn_mess_aux indu  n u  (k+1)  body) 
-    | tLetIn na def def_ty body => tLetIn na (debruijn_mess_aux indu  n  u  k def  ) (debruijn_mess_aux indu   n u  k  def_ty) (debruijn_mess_aux indu   n u  (k+1)  body ) 
-    | tApp f lg => tApp (debruijn_mess_aux indu   n u  k  f ) (map (debruijn_mess_aux indu   n u k ) lg)                      
-    | _ => B  (* tVar, tEvar, tCast, tSort, tFix, tCofix,tCase...  *) 
-    end.
+
 
 (* metavariable i metavariable p *)
 Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) :=
-              (* n: nb of oind *)
-              (* i: indice of oind in the mutual inductive block *)
-              (* lA : les paramètres *)
+              (* p  : number of parameters of indu *)
+              (* n  : number of oind's *)
+              (* i  : index of oind in the mutual inductive block *)
+              (* lA : the (reified) types of the parameters *)
 let indui := switch_inductive indu i in 
   let fix treat_ctor_oind_aux (indu : inductive) (n : nat) (j: nat)   (l : list ((ident * term) * nat  ))  :=
     match l with
       | [] => ([], [] , [], [])
       | ctor :: tll => let '((_ , typc) , nc ) := ctor in let nc' := nc + p in
-      let '((tll1,tll2),tll3,tll4) := (treat_ctor_oind_aux indu  n (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn_mess_aux indui n u 0  typc) nc' in
+      let '((tll1,tll2),tll3,tll4) := (treat_ctor_oind_aux indu  n (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn0 indui n u   typc) nc' in
       (B_ctor :: tll1,  (tConstruct indui j u)     :: tll2 , lA_ctor :: tll3 , nc :: tll4) 
     end in  treat_ctor_oind_aux indu n 0  oind.(ind_ctors).
 

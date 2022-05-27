@@ -139,6 +139,8 @@ end
 | _ => None
 end.
 
+(** computes the list of one_inductive_body's in a term I which is a reified inductive **)
+(* \TODO should problably also test the equality between paths, not only on the names *)
 Fixpoint get_decl_inductive (I : term) (e : global_env) :=
 match I with 
 | tInd ind _ => match ind.(inductive_mind) with
@@ -155,13 +157,15 @@ end
 | _ => None
 end.
 
+
+
 Definition no_prod (t: term) := match t with 
   | tProd _ _ _ => false 
   | _ => true
 end.
 
-Fixpoint no_prod_after_params (t : term) (npars : nat) := match t with
-   | tProd _ _ u => match npars with 
+Fixpoint no_prod_after_params (t : term) (p : nat) := match t with
+   | tProd _ _ u => match p with 
                    | 0 => false 
                    | S n' => no_prod_after_params u n'
                   end
@@ -222,6 +226,11 @@ match l with
 | nil => nil
 | ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
 end.
+(* \TMP
+ | cons y' _ => let z := y'.(ind_ctors) in let u := 
+subst_type_constructor_list z v in u
+*)
+
 
 Fixpoint get_decl (e : global_env) := match e with 
 | [] => []
@@ -354,7 +363,8 @@ eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
 pose (id := n)).
 
 (*********************)
-(* \TODO temporary inserts before putting order into auxiliary functions *)
+(* \TODO temporary inserts before putting order into auxiliary functions 
+         These functions should be removed from interp_alg_types *)
 
 Definition dom_list_f ( B  :  term) (n : nat)  := 
   (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
@@ -368,6 +378,29 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
           end            
   end
   in dlaux B n [].
+
+Locate subst10.
+
+Definition switch_inductive ( indu : inductive) (i : nat) :=
+  match indu with 
+  | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
+end.
+
+
+
+
+
+Definition debruijn0 (indu : inductive) (n : nat) (u : Instance.t ) (B : term) :=
+  let fix aux1 k acc :=
+    match k with
+    | 0 => acc 
+    | S k => aux1 k  ((tInd (switch_inductive indu k) u):: acc) 
+    end in
+  let oind_list := tr_rev (aux1 n [] )
+  in  subst0 oind_list B .
+
+  Check switch_inductive. Check debruijn0.
+
 
 (***********************)
 
@@ -383,6 +416,10 @@ subst_type_constructor_list z v in u
           end
 | None => nil
 end.
+(* global_env × term -> list term *)
+(* \TODO compare list_types_of_each_constructor and the 3rd proj of get_ctors_and_types_i *)
+
+
 
 Definition get_list_of_rel (n : nat) :=  let fix aux n k acc :=
 match n with 

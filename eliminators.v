@@ -21,6 +21,8 @@ Require Import interpretation_algebraic_types.
 
 Require Import SMTCoq.SMTCoq.
 
+MetaCoq Quote Definition Set_reif := Set.
+MetaCoq Quote Definition list_reif := Set.
 (* \TODO changer les metavariables 
 - nb --> rk ou k ou n tout court (avec spec )
 - une métavariable pour les rangs dans tCase 
@@ -102,6 +104,11 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (* tRel 1 will be the parameter for the default value *)
     (* note that tRel 1 is not bound in the above function *)
  
+Goal False.
+let x := constr:(branch_default_var [tRel 30 ; tRel 50 ; tRel 90 ] 1 1 2) in pose x as kik ; compute in kik. (* A PRIORI, PAS BESOIN DE CALCULER LES TYPES DONC A QUOI SERT TY_CONSTRUCT ?*)
+Abort.
+
+
 
 (* \TODO long term: recover the "relevant" parameter and not hard-code it *)
 (* Constructs the pattern matching in the eliminator
@@ -170,6 +177,18 @@ match ty_params with
 | x :: xs => aux xs (mkLam x acc)
 end in aux ty_params (proj_one_ctor_default_var I_app ty_default I npars nbproj nbconstruct ty_arg_constr return_type).
 
+
+Definition proj_one_ctor_params_default_var0 (ty_params : list term) (I_app : term) (ty_default : term) (I : inductive) (npars : nat) (nbproj : nat) 
+(nbconstruct : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
+let fix aux ty_params acc :=
+match ty_params with 
+| nil => acc
+| x :: xs => aux xs (mkLam x acc)
+end in aux ty_params (proj_one_ctor_default_var I_app (tRel npars) I npars nbproj nbconstruct ty_arg_constr return_type).
+
+
+
+
 (* remove_n n [a_1; ... ; a_n ; .... ; a_p ] = [a_{n+1} ; ... ; a_p ]*)
 Fixpoint remove_n {A} (n : nat) (l : list A) := 
 match n with 
@@ -203,22 +222,25 @@ Abort. *)
 
 
 
-Definition args_of_prod_with_length (t : term)  (npars : nat) := 
+Definition args_of_prod_with_length (t : term)  (p : nat) := 
   (* \TODO what args_prod_with_length does is unclear and so is its use*)
-(* manifestement, t ne compte pas, sauf les Prod prénexes *)
+  (* unlift the de Bruijn indexes of the types of the constructors such as we have got the from ???? *)
+  (* the reason is \TODO *)
+  (* manifestement, t ne compte pas, sauf les Prod prénexes *)
 let fix aux t acc n :=
 match t with 
 | tProd _ Ty v => aux v (Ty :: acc ) (S n)
-| _ => (acc, n - npars)
+| _ => (acc, n - p)
 end
 in
-let p := aux t [] 0 in
-(map_iter 0 unlift (remove_n npars (tr_rev (fst p))), snd p). 
+let res0 := aux t [] 0 in
+(map_iter 0 unlift (remove_n p (tr_rev (fst res0))), snd res0). 
 (* \TODO problème de unlift, car on doit relifter après *)
 
-MetaCoq Quote Definition list_reif := @list.
 
 Goal False.
+(* let x := get_ctors_and_types_i t *)
+clear.
 let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
 ( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold remove_n in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
 Abort. 
@@ -328,9 +350,8 @@ end in aux n [].
 
 
 
-(* get_list_ctors_tConstruct_applied I k n :=
-  [tApp C0 hole_n ; ... ; tApp Ck hole_n ]
-  where C0, ..., Ck
+(* get_list_ctors_tConstruct_applied I k n := [tApp C0 hole_n ; ... ; tApp Ck hole_n ]
+  where C0, ..., Ck are the constructors of I
   k should be the number of ctors of I
   n the number of parameters of I
 *)
@@ -387,7 +408,7 @@ constr:((elim, db)).
 
 (***********************************)
 
-(***** tests Pierre        *********)
+(***** tests Pierre  (à transférer)      *********)
 
 (***********************************)
 
@@ -722,7 +743,7 @@ Ltac get_eliminators_st_return_quote I :=
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_eliminators_st_return I_rec I.
 
-
+(* \TODO supprimer *)
 Ltac get_blut_quote I := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_blut I_rec I.
@@ -731,6 +752,7 @@ get_blut I_rec I.
 Ltac get_eliminators_st I :=
 let st := get_eliminators_st_return_quote I in idtac.
 
+(* \TODO supprimer *)
 Ltac get_bluts I := let st := get_blut_quote I in idtac.
 
 Section tests_eliminator.

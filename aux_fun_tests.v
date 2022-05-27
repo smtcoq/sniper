@@ -72,7 +72,9 @@ MetaCoq Quote Definition necons_reif := necons.
 
 
 MetaCoq Quote Definition bicnil_reif := bicnil.
-MetaCoq Quote Definition biccons_reif := biccons.
+MetaCoq Quote Definition cons1_reif := cons1.
+MetaCoq Quote Definition cons2_reif := cons2.
+
 
 
 
@@ -119,6 +121,17 @@ MetaCoq Quote Recursively Definition nelist_env_reif := @nelist.
 
 MetaCoq Quote Definition biclist_reif := @biclist.
 
+Inductive even : nat -> Prop :=
+  | even_O : even 0
+  | even_S : forall n, odd n -> even (S n)
+with odd : nat -> Prop :=
+    odd_S : forall n, even n -> odd (S n).
+
+MetaCoq Quote Definition even_reif := even.
+MetaCoq Quote Definition odd_reif := odd.
+
+
+
 
 MetaCoq Quote Definition cons_typ_reif := (forall (A: Type), A -> list A -> list A).
 
@@ -162,7 +175,21 @@ Ltac pose_list_ctor_oind t i idn := let x := fresh  in  pose_oind_tac t i x ; le
 
 Goal False.
 pose_list_ctor_oind list 0 kik.
+clear.
+pose_list_ctor_oind even 0 evenctor.
+pose_list_ctor_oind even 1 oddctor.
+let x := constr:(debruijn0 list_indu 2) in pose x as kik ; unfold debruijn0 in kik ; unfold utilities.switch_inductive in kik ; simpl in kik.
+
 Abort.
+
+(*testing get_ctors_and_types *)
+Goal False. 
+let x := constr:(get_ctors_and_types_i list_indu 1 1 0 [] list_oind) in pose x as gttlist ; compute in gttlist.
+Abort.
+
+(* \TMP
+Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) *)
+             
 
 
 
@@ -226,6 +253,24 @@ Ltac split_info1 I na :=
 *)
 
 
+(* _app : term     I_app := get_indu_app_to_params I_rec_term npars
+nat_app = nat_reif
+list_app : list_reif [tRel 0]
+nelist_app = nelist_reif [Rel 0]
+*)
+
+Goal False.
+split_info1 list kik.
+let x := constr:(rev_list_map list_list_args ) in pose x as list_tycon ; compute in list_tycon. 
+
+let x := constr:(proj_one_ctor_params_default_var [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
+in pose x as kik ; compute in kik. 
+let x := constr:(proj_one_ctor_params_default_var0 [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
+in pose x as koo ; compute in koo. 
+Abort. 
+
+
+
 Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupéré par split_info1*)
    let Io := fresh "Io" in get_info2_quote I Io ;
    let I_lpr := fresh I "_list_of_pars_rel" in pose Io.2 as I_lpr ; compute in I_lpr ;
@@ -243,6 +288,57 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
 (* Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) :=  *)
 
+(* pour reprendre le calcul de get_eliminators_st_return, la fonction principale: *)
+(* on calcule d'abord list_ty, list_types of each constructors 
+   ensuite, calcule compliqué de list_args_len, où on compte le nombre d'arguments
+      son type est list (list term * nat)
+      mais la partie liste de types, tout ou presque semble ramener à tRel 0: c'est là qu'il y a le unlift
+   ensuite, list_args, qui est la liste de listes où on ignore les nc
+   ensuite ty_default0 le flattening 
+   enfin ty_default qui le rev liftré incrémentalement
+   Remarque: _list_ty est une list term et pas lis list term, et préfixe bien avec le binding des paramètres
+
+   Reste à comprendre pourquoi les dB sont mis à zéro pour list_args_len et pourquoi c'est utile pour les proj
+   *)
+Goal False.
+
+
+Abort.
+
+(* 
+Ltac get_eliminators_st_return I_rec na := 
+let I_rec_term := eval compute in (I_rec.2) in
+let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
+match opt with 
+| Some (?npars, ?ty_pars) =>
+  let list_ty := eval compute in (list_types_of_each_constructor I_rec) in 
+  let list_args_len := eval compute in (get_args_list_with_length list_ty npars) in 
+  let list_args := eval compute in (split list_args_len).1 in 
+  let list_ty_default0 := eval compute in (tr_flatten list_args) in
+  let list_ty_default := eval compute in (lift_rec_rev list_ty_default0) in 
+  let nbconstruct := eval compute in (Datatypes.length list_args) in
+  let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
+  let total_args := eval compute in (total_arg_ctors list_args_len) 
+  in
+  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted npars (total_args + 1))) in
+  let I_app := eval compute in (get_indu_app_to_params I_rec_term npars) in
+  let I_lifted := eval compute in (lift (total_args) 0 I_app) in
+        match I_rec_term with
+        | tInd ?I_indu _ =>
+                      let x := get_eliminators_aux_st nbconstruct na ty_pars I_app I_indu npars list_args_len total_args list_of_pars_rel list_ctors_reif total_args (@nil term) in 
+
+                      let t := eval compute in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
+    I_lifted (mkOr x)))) in
+                      let u := metacoq_get_value (tmUnquote t) in 
+                      let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
+let nb_intros := eval compute in (npars + total_args) in 
+ assert (Helim : u') by (prove_by_destruct_varn nb_intros)
+ end in Helim
+        | _ => fail
+| None => fail
+end
+end.
+*)
 
 
 
@@ -258,12 +354,12 @@ let x := constr:( branch_default_var
 2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
 in pose x as kikoo ;
 unfold branch_default_var in kikoo ; simpl in kikoo.
-let x := constr:( branch_default_var0 
+let x := constr:( branch_default_var 
 [tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
 2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
 in pose x as blut ;
-unfold branch_default_var0 in blut ; simpl in blut.
-clear. (* DONE *)
+unfold branch_default_var in blut ; simpl in blut.
+clear.  (* DONE *)
 let x := constr:( branch_default_var 
 [tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15] 0 1 1) in pose x as iki ; unfold branch_default_var in iki ; simpl in iki.
 
@@ -291,7 +387,7 @@ match ty_arg_constr with
 ((acc_nat, branch_default_var x nbproj nbconstruct acc_nat)::acc) (acc_nat + 1)
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
-
+*)
 
 
 
