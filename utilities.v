@@ -54,6 +54,20 @@ Definition tr_flatten {A : Type} (l : list (list A)) :=
   | l0 :: l => aux l (rev_append l0 acc)
   end in tr_rev (aux l []).
 
+
+
+
+(** tr_revmap f [a1 ; ... ; an ] = [f an ; .... ; f a1 ]
+ tail-recursive (actually linear)
+**)
+Definition tr_revmap {A B : Type } ( f : A -> B) (l : list A) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (f x :: acc ) end
+  in aux l [].
+
+
 (** Tail-recursive (actually linear) version of List.map 
     Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
 **)
@@ -122,6 +136,8 @@ end
 | _ => None
 end.
 
+
+
 (* Get the pair of the number of parameters of an inductive and the list of their types *)
 Fixpoint get_info_params_inductive (I : term) (e : global_env) :=
 match I with 
@@ -138,6 +154,8 @@ ident na.2) then let prod := (ind_npars mind, tr_map (fun x => x.(decl_type)) (i
 end
 | _ => None
 end.
+
+
 
 (** computes the list of one_inductive_body's in a term I which is a reified inductive **)
 (* \TODO should problably also test the equality between paths, not only on the names *)
@@ -399,7 +417,6 @@ Definition debruijn0 (indu : inductive) (n : nat) (u : Instance.t ) (B : term) :
   let oind_list := tr_rev (aux1 n [] )
   in  subst0 oind_list B .
 
-  Check switch_inductive. Check debruijn0.
 
 
 (***********************)

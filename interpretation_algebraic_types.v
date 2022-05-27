@@ -98,7 +98,7 @@ Fixpoint and_nary_reif (l : list term):=
   end.
 
 
-
+(* remove and replace by mkOr, which is tr *)
 Fixpoint or_nary_reif (l : list term):=
   match l with
   | [] => False_reif           
@@ -138,6 +138,69 @@ Ltac get_env_ind_param t idn :=
      end
      end.
 
+Ltac facto_blut t := 
+  match eval hnf in t with
+  | tInd ?indu ?u => constr:((indu,u))
+  | tApp ?t_indu ?l =>
+     lazymatch eval hnf in t_indu with
+     | tInd ?indu ?u => constr:((indu,u))
+     end
+  end.
+
+  Goal False.
+  let x := facto_blut nat_reif  in pose x as ik.
+  Abort.
+
+
+
+(* Ltac get_blut t idn :=
+  let rqt := fresh "rqt" in rec_quote_term t rqt ; 
+    lazymatch eval hnf in rqt with
+    | (?Sigma,?ind) => idtac "wtf" ;  let induu := (facto_blut constr:(ind)) in idtac "bopiut" ; constr:(0) 
+ end. *)
+
+(* Goal False.
+ let x := get_blut 0  kik in pose x as kik.
+Abort.*)
+
+(* pose_blut t idn takes a Coq term t which an *unquoted* inductive
+     and outputs the pair (indu,mind) : inductive × mutual_inductive_body
+     where indu in the 'inductive' inside t and mind its mutual_inductive_body as it is defined
+     in the global environment Sigma  
+*)
+Ltac pose_blut t idn :=   (* \TODO factorize code!*)
+    let rqt := fresh "rqt" in rec_quote_term t rqt ; 
+    lazymatch eval hnf in rqt with
+     | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
+     | tApp ?t_ind ?lA =>  
+       lazymatch eval hnf in t_ind with
+       | tInd ?indu ?u => 
+     let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
+       lazymatch eval cbv in lkup  with
+       | Some ?d =>   
+         match d with
+         |  InductiveDecl ?mind =>  let x:= constr:(((indu,u),mind)) in pose x as idn ; compute in idn ; clear rqt
+         end       
+       end
+       end  
+       |   tInd ?indu ?u => 
+       let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
+         lazymatch eval cbv in lkup  with
+         | Some ?d =>    
+           match d with
+           |  InductiveDecl ?mind =>  let x:= constr:(((indu,u),mind)) in pose x as idn; compute in idn ; clear rqt
+           end       
+         end     
+     end
+     end
+    .
+
+(* TODO supprimer *)
+Goal False.
+pose_blut list listoblut.
+pose_blut nat natoblut.
+Abort.
+
 Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
@@ -149,7 +212,7 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
        lazymatch eval cbv in lkup  with
        | Some ?d =>   
          match d with
-         |  InductiveDecl ?mind =>  pose mind as idn ; simpl in idn ; clear rqt
+         |  InductiveDecl ?mind =>  pose mind as idn ; compute in idn ; clear rqt
          end       
        end
        end  
@@ -158,22 +221,41 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
          lazymatch eval cbv in lkup  with
          | Some ?d =>    
            match d with
-           |  InductiveDecl ?mind =>  pose mind as idn ; simpl in idn ; clear rqt
+           |  InductiveDecl ?mind =>  pose mind as idn ; compute in idn ; clear rqt
            end       
          end     
      end
      end
     .
 
+Print inductive.    
 Print mutual_inductive_body.
+Print InductiveDecl.
+Print lookup_env.
+Print global_decl.
+Print inductive.
 Print context.
-Print decl_type.
+Print context_decl.
 
-(* \TODO Finir our supprimer 
+
+(* get_params_from_mind mind = (p , lA) 
+  where p is the number of parameters of mind and lA the list of the parameters types *in order*
+  (note that mind.(ind_params)) stores the types in *reverse* order
+*)
+Definition get_params_from_mind mind :=
+  let p := mind.(ind_npars) in 
+  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
+in (p, l0).
+(* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
+
+
+(* \TODO Finir ou supprimer 
 Ltac pose_params t idn :=
   let t_mind := fresh in pose_mind_tac t t_mind ; pose  constr:(ind_params)
   clear t_mind. *)
 
+
+(* \TODO ici, on ne semble considérer que le cas des inductifs *appliqués* *)
 Ltac get_mind_tac t  :=  
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
       lazymatch eval hnf in rqt with
@@ -192,6 +274,8 @@ Ltac get_mind_tac t  :=
        end
        end
       .
+
+  
 
 (*** Properties of inductives ***)
 
@@ -488,6 +572,8 @@ Ltac inj_disj_tac lB lf lA ln p  :=
    | ?B :: ?tlB => ctors_are_inj_tac lB lf lA ln p ; pairw_disj_codom_tac B lf lA  p
     end.
 
+
+    (* list_ctor_oind is probably redundant. Remove it ? \TODO *)
 Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   let fix list_lctor ( l : list ((ident × term) × nat )) acc :=
   match l with
@@ -496,13 +582,7 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
   end in  tr_rev (list_lctor oind.(ind_ctors) []).
   
 
-
-
-Definition switch_inductive ( indu : inductive) (i : nat) :=
-  match indu with 
-  | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
-end.
-
+(* \TODO integrate get_blut in the functions below *)
 
 
 (* metavariable i metavariable p *)
@@ -521,8 +601,9 @@ let indui := switch_inductive indu i in
     end in  treat_ctor_oind_aux indu n 0  oind.(ind_ctors).
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
-  (* n: number of oind *)
-  (* i: is the rank oind in the mutual inductive block *)
+  (* p : number of parameters *)
+  (* n : number of oind *)
+  (* i : is the rank oind in the mutual inductive block *)
  let indui := constr:(switch_inductive indu i)
  in  let gct :=
   constr:(get_ctors_and_types_i indu p n i u  oind) 
@@ -583,6 +664,10 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
      end
      end 
     .
+
+
+
+
 
 Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
 

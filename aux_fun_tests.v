@@ -1,6 +1,13 @@
-(* Add Rec LoadPath "/home/pierre/depots/sniper" as Sniper. *)
-(* \Q why is this line needed? *)
- 
+
+
+(*** Metavariables conventions ***)
+(* indu : inductive  (the 1st argument of the constructor tInd )*)
+(* mind: mutual_inductive_body *)
+(* ooind : one_inductive_body *)
+(* p : number of parameters of an inductive *)
+(* i : rank of an oind in a mind *) 
+(* n : number of oind's in a mind *)
+
 Require Import utilities. 
 Require Import interpretation_algebraic_types.
 Require Import elimination_polymorphism.
@@ -55,6 +62,7 @@ MetaCoq Quote Definition eq_reif := Eval hnf in @eq.
 
 MetaCoq Quote Definition nat_reif := nat.
 MetaCoq Quote Recursively Definition nat_env_reif := nat.
+
 
 
 Definition list_nat := @list nat.
@@ -142,8 +150,17 @@ Definition list_indu := ltac:(let s := fresh in  pose_inductive_tac list s ; exa
 Definition list_nat_indu := ltac:(let s := fresh in  pose_inductive_tac list s ; exact s).
 
 
+(* \TODO eliminate the "let in" which currently appear in list_mind *)
+Definition nat_mind :=  ltac:(let x := fresh in pose_mind_tac nat x ; cbn in x ; exact x).
+Definition list_mind :=  ltac:(let x := fresh in pose_mind_tac list x ; cbn in x ; exact x).
+Definition nelist_mind :=  ltac:(let x := fresh in pose_mind_tac @nelist x ; cbn in x ; exact x).
+Definition biclist_mind :=  ltac:(let x := fresh in pose_mind_tac @biclist x ; cbn in x ; exact x).
+Print biclist_mind.
 
 
+Goal False.
+let x:= constr:(get_params_from_mind biclist_mind) in pose x as biclist_params ; compute in biclist_params.
+Abort.
 
 
 Definition nat_oind := {|
@@ -162,15 +179,18 @@ ind_relevance := Relevant |}.
 
 
 
+
 Ltac pose_oind_tac t i idn := let s := fresh "s" in pose_mind_tac t s ; pose (nth i s.(ind_bodies)  nat_oind) as idn; simpl in idn ; clear s.
 (* pose_oind take an (unreified) inductive  I and outputs the i-th one_inductive_block of I *) 
 (* when I is not a mutual inductive, i should be equal to 0 *)
 (* the tactic uses nat_oind as the defaut value for nth *)
 
 Definition list_oind := ltac:(let s := fresh in pose_oind_tac list 0 s ; compute in s ; exact s).
-Print list_oind.
 
 
+(* pose_list_ctor_oind t i idn computes the lists of types of the constructors of i-th one inductive block of t and poses it as idn.
+   Then, idn has type list term
+*)
 Ltac pose_list_ctor_oind t i idn := let x := fresh  in  pose_oind_tac t i x ; let lctor := constr:(list_ctor_oind x) in pose lctor as idn ; compute in idn ; clear x.
 
 Goal False.
@@ -506,6 +526,7 @@ MetaCoq Quote Definition C_reif := C.
 
 Goal False.
 let x := constr:(list_types_of_each_constructor list_env_reif) in pose x as ltoeclist ; compute in ltoeclist.
+Abort.
 
 Print get_info_params_inductive.
 
