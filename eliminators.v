@@ -701,35 +701,80 @@ let nb_intros := eval compute in (p + total_args) in
 end
 end.
 
+
+
+(* \TODO move up the definition of nat_oind. In utilities.v? *)
+Definition nat_oind := {|
+ind_name := "nat"%string;
+ind_type := tSort (Universe.of_levels (inr Level.lSet));
+ind_kelim := IntoAny;
+ind_ctors := [("O"%string, tRel 0, 0);
+             ("S"%string,
+             tProd
+               {|
+               binder_name := nAnon;
+               binder_relevance := Relevant |}
+               (tRel 0) (tRel 1), 1)];
+ind_projs := [];
+ind_relevance := Relevant |}.
+
 Print Ltac pose_blut.
 (* pv new verion*)
 Print mutual_inductive_body.
 
-Ltac get_eliminators_st_return0 t na := 
-  let _ := match goal with  _ => idtac end in
-  let indmind := fresh "indmind" in pose_blut t indmind ;
-  lazymatch eval hnf in indmind with
+
+Definition ret_ty_proj lA (* la longueur est-elle un param ou doit-elle être calculée ? *)
+  := let fix aux l k acc := 
+    match l with
+    | [] => acc 
+    | A :: l => aux l (S k) ((unlift k A) :: acc)
+    end in tr_rev (aux lA 0 []).
+
+
+Ltac get_my_bluts t na := 
+  (* let _ := match goal with  _ => idtac end in *)
+  let indmind := fresh "indmind" in pose_blut t indmind ; 
+  lazymatch eval compute in indmind with
   | (?induu,?mind) => 
     lazymatch eval hnf in induu with
     | (?indu, ?u) =>
     let pparams := constr:(get_params_from_mind mind) in
+    lazymatch eval hnf in pparams with 
+    | (?p,?lA) =>
     lazymatch eval hnf in pparams with
-    | (?p, ?lA) => let oind := constr:(hd mind.(ind_bodies)) in
+    | (?p, ?lA) => let oind := constr:(hd nat_oind mind.(ind_bodies)) in
      let gct :=
     constr:(get_ctors_and_types_i indu p 1 0 u  oind) 
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
-      | (?lBf,?lA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lf) => 
-        idtac "to be continued"
+      | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
+        | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (remove_n p) llA) in  let x :=
+        constr:((((((((llAtrunc,lB),lf),llA),ln),lA),p)))   in pose x as na ; let trunctruc := constr:(tr_map ret_ty_proj llAtrunc) in pose trunctruc as y ;  clear indmind
         end
       end
     end
     end
-  end end
+  end end end
   .       
-         
+   
   
+
+  Goal False.
+  let indmind := fresh "indmind" in pose_blut list indmind. clear indmind.
+  get_my_bluts list ik ; compute in ik.  
+pose [[];
+[tRel 0;
+tApp
+  (tInd
+     {|
+       inductive_mind :=
+         (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+       inductive_ind := 0
+     |} []) [tRel 1]]] as machin.
+
+
+  (*  let x := get_my_bluts list ik in pose x as kikoo.*)
+  Abort.
 
 (* 
 let t_reif := eval compute in (I_rec.2) in

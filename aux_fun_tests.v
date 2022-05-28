@@ -211,8 +211,13 @@ Abort.
 Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) *)
              
 
+Ltac kooooo t na :=
+   constr:((4,5)).
 
-
+Goal False.
+let x := kooooo list blut in pose x as kik.
+ltac:(let x := get_eliminators_st_return0 list ik in pose x as kik).
+Abort.
 
 Ltac split_info1 I na := 
    let I_info := fresh "I_info" in get_info_quote I  I_info ; 
