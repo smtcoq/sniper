@@ -5,8 +5,12 @@
 (* mind: mutual_inductive_body *)
 (* ooind : one_inductive_body *)
 (* p : number of parameters of an inductive *)
-(* i : rank of an oind in a mind *) 
+(* i : rank of an oind in a mind/rank of a projection *) 
 (* n : number of oind's in a mind *)
+(* nc : number of constructors of a oind *)
+(* k : rank of a constructor in a oind *)
+(* j: rank of case in a pattern-matching (constructor tCase): starts from 1 *)
+
 
 Require Import utilities. 
 Require Import interpretation_algebraic_types.
@@ -210,6 +214,9 @@ Abort.
 (* \TMP
 Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) *)
              
+Goal False. 
+let x := constr:(hd (list_mind.(ind_bodies))) in pose x as kik ; compute in kik.
+Abort.
 
 Ltac kooooo t na :=
    constr:((4,5)).
@@ -376,7 +383,7 @@ split_info1 @biclist "blut". clear  - biclist_app biclist_list_args. clear.
 (** branch_default_var *)
 let x := constr:( branch_default_var 
 [tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
-2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
+3 6 7)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
 in pose x as kikoo ;
 unfold branch_default_var in kikoo ; simpl in kikoo.
 let x := constr:( branch_default_var 
@@ -578,7 +585,7 @@ Abort.
 (* _total_args or _tot_args is equal to the total number of parameters of the constructors:
    is equal to 1 for nat
    is equal to 2 for list, 
-   is equal to 1 for nelist
+   is equal to 3 for nelist
 *)
 
 (* _lpars :
