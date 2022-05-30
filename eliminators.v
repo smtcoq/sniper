@@ -21,6 +21,9 @@ Require Import interpretation_algebraic_types.
 
 Require Import SMTCoq.SMTCoq.
 
+(* \TMP *)
+MetaCoq Quote Definition S_reif := S. 
+MetaCoq Quote Definition O_reif := O.
 MetaCoq Quote Definition Set_reif := Set.
 MetaCoq Quote Definition list_reif := Set.
 (* \TODO changer les metavariables 
@@ -32,6 +35,9 @@ MetaCoq Quote Definition list_reif := Set.
 (* list_types_of_each_constructor  est déjà calculée, dans utilities
   \TODO unifier
 *)
+
+
+
 
 (* \TODO : renommer impossible_term, qui est un inductif vide *)
 
@@ -192,16 +198,6 @@ end in aux ty_params (proj_one_ctor_default_var I_app (tRel p) I p i k ty_arg_co
 
 
 
-(* remove_n n [a_1; ... ; a_n ; .... ; a_p ] = [a_{n+1} ; ... ; a_p ]*)
-Fixpoint remove_n {A} (n : nat) (l : list A) := 
-match n with 
-| 0 => l 
-| S n' => match l with
-        | nil => nil
-        | cons x xs => remove_n n' xs
-        end
-end.
-
 
 (* map_iter k f [a_0 ; ... ; a_n ] = [f k a_0 ; f (k+1) a_1 ; ... ; f (k+n) a_n]   
 *)
@@ -237,7 +233,7 @@ match t with
 end
 in
 let res0 := aux t [] 0 in
-(map_iter 0 unlift (remove_n p (tr_rev (fst res0))), snd res0). 
+(map_iter 0 unlift (skipn p (tr_rev (fst res0))), snd res0). 
 (* \TODO problème de unlift, car on doit relifter après *)
 
 
@@ -245,7 +241,7 @@ Goal False.
 (* let x := get_ctors_and_types_i t *)
 clear.
 let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
-( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold remove_n in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
+( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
 Abort. 
 
 (* warning: handles parameters but not dependent arguments *)
@@ -265,7 +261,7 @@ in tr_rev (aux l []).
 Goal False.
 let x := constr:(get_args_list_with_length (tProd (mkNamed "x") (tRel 1) (tProd (mkNamed "x") (tRel 52) ( tProd (mkNamed "x") (tRel 100) (tProd  (mkNamed "x") (tRel 9)
 (tApp list_reif  [nat_reif ; tRel 3 ; tRel 5 ; tRel 8 ; tRel 13 ; tRel 21]) ))) ) 0 ) in pose x as galenex ; unfold get_args_list_with_length in galenex ;
-unfold args_of_prod_with_length in galenex  ; unfold remove_n in galenex ; unfold map_iter in galenex ; simpl in galenex.
+unfold args_of_prod_with_length in galenex  ; unfold skipn in galenex ; unfold map_iter in galenex ; simpl in galenex.
 Abort.  *)
 
 (* get_indu_app_to_params t n = tApp t [tRel (n-1) ; .... ; tRel 0]
@@ -371,11 +367,12 @@ end.
 (* \TODO : remove tApp when n = 0 *)
 
 
-(**  mkOr [A1_reif ; ... ; An_reif] produce the reification of A1 \/ ... \/ A_n
-    tail-recursive **)
-Definition mkOr (l : list term) := 
-  let l' := tr_rev l in 
-  match l' with
+(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)
+     (reverts list and associates to the *right*
+     tail-recursive **)
+Definition mkOr0 (l : list term) := 
+  (* let l' := tr_rev l in  *)
+  match l with
   | [] => impossible_term_reif 
   | x0 :: l0 => 
   let fix aux l acc :=
@@ -386,11 +383,23 @@ match l with
 end in aux l0 x0
 end.
 
+(*  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of (...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
+     (reverts list and associates to the *left*
+    not tail-recursive *)
+(* \TODO replace mkOr with mkOr0 by suitably modifying tactics below *)    
+Fixpoint mkOr (l : list term) := 
+match l with
+| nil => impossible_term_reif
+| [ x ] => x
+| cons x xs => tApp or_reif ([mkOr xs] ++ [x])
+end.
+
+(* Goal False.
+let x := constr:(mkOr0 [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOr0ex ; compute in mkOr0ex.
+let x := constr:(mkOr [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOrex ; compute in mkOrex.
+Abort. *)
 
 
-
-MetaCoq Quote Definition S_reif := S. 
-MetaCoq Quote Definition O_reif := O.
 
 
 Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu p i k list_args return_ty nb_args_previous_construct total_args :=
@@ -706,7 +715,7 @@ match opt with
         | tInd ?I_indu _ =>
                       let x := get_eliminators_aux_st k na ty_pars I_app I_indu p list_args_len total_args list_of_pars_rel list_ctors_reif total_args (@nil term) in 
 (* le 7ème arg de get_eliminators_aux_st est list_args_len, que l'on obtient dans get_info *)
-                      let t := eval compute in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "KIKOOO"%string ; binder_relevance := Relevant |} 
+                      let t := eval compute in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
                       let u' := eval hnf in (u.(my_projT2)) in let Helim := fresh in let _ := match goal with _ =>
@@ -765,7 +774,7 @@ Ltac get_my_bluts t na :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (remove_n p) llA) in  let x :=
+        | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (skipn p) llA) in  let x :=
         constr:((((((((llAtrunc,lB),lf),llA),ln),lA),p)))   in pose x as na ; let trunctruc := constr:(tr_map ret_ty_proj llAtrunc) in pose trunctruc as y ;  clear indmind
         end
       end
@@ -847,6 +856,17 @@ let st := get_eliminators_st_return_quote I in idtac.
 
 Section tests_eliminator.
 
+(* non-empty lists *)
+Inductive nelist {A : Type} : Type :=
+	sing :  A -> nelist    | necons : A -> nelist -> nelist .
+
+(* bicolor lists *)
+Inductive biclist {A B : Type} : Type :=
+  | bicnil : biclist
+  | cons1 : A -> biclist -> biclist
+  | cons2 : B -> biclist -> biclist. 
+
+
 Inductive Ind_test (A B : Type) :=
 | ind0 : Ind_test A B
 | ind1 : A -> B -> Ind_test A B -> nat -> Ind_test A B.
@@ -859,7 +879,8 @@ Goal False.
 Fail get_blut nat ds.
 get_eliminators_st list. clear.
 get_eliminators_st nat. clear.
-
+get_eliminators_st @nelist. clear.
+get_eliminators_st @biclist. clear.
 
 get_eliminators_st Ind_test. clear.
 get_eliminators_st Ind_test2. clear.
