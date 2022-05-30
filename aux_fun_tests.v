@@ -394,14 +394,18 @@ unfold branch_default_var in blut ; simpl in blut.
 clear.  (* DONE *)
 let x := constr:( branch_default_var 
 [tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15] 0 1 1) in pose x as iki ; unfold branch_default_var in iki ; simpl in iki.
+clear.
+let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif; tRel 0 ; tRel 0 ; tRel 0 ; tRel 0] ; [tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 
+(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var in blut ; unfold branch_default_var in blut ; unfold tr_rev in blut ; simpl in blut.
+clear.
 
-let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0 ; tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 
-(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var in blut ; unfold branch_default_var in blut ; simpl in blut.
 
+let x :=  constr:(mkCase_eliminator_default_var list_indu 1 2 2 [ [tRel 1]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0]]
+(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as kik ; unfold mkCase_eliminator_default_var in kik ; unfold branch_default_var in kik ; unfold tr_rev in kik ; simpl in kik.  
+(* let x := constr:(mkCase_list_param [1 ; 3 ; 2] 2 2) in pose x as kooo ; compute in kooo.  *)
+let x :=  constr:(mkCase_eliminator_default_var0 list_indu 1 2 2 [ [tRel 1]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0]]
+(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var0 in blut ; unfold mkCase_list_param in blut ; unfold tr_rev in blut ; unfold branch_default_var0 in blut ; simpl in blut.  
 
-
-let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 3 [ [tRel 1]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0]]
-(tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as kik ; unfold mkCase_eliminator_default_var in kik ; unfold branch_default_var in blut ; simpl in kik.  
 
 (* return_type est le 2ème arg de tCase: donc le type du pm commençant par tLam et pas un type de retour
 * nbconstruct: rang du ctor: la fonction va agir sur l'élément de rang nbconstruct dans la liste de listes de termes
@@ -420,6 +424,15 @@ match ty_arg_constr with
 end
 in aux I npars nbproj nbconstruct ty_arg_constr return_type [] 0.
 *)
+Abort.
+
+
+Goal False.
+let x := constr:(proj_one_ctor_default_var (tApp list_reif [tRel 1]) (tRel 0) (list_indu) 1 0 0
+[[tRel 0]; [tRel 0 ; tApp list_reif [tRel 0] ]] (tRel 42)) in pose x as kik ; compute in kik.
+let x := constr:(proj_one_ctor_default_var0 (tApp list_reif [tRel 1]) (tRel 0) (list_indu) 1 0 0
+[[tRel 0]; [tRel 0 ; tApp list_reif [tRel 0] ]] (tRel 42)) in pose x as koo ; compute in koo.
+
 
 
 

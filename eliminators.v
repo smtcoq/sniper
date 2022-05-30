@@ -87,14 +87,24 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
    where len = length l0
    Motivation: \TODO 
 *)
- Definition branch_default_var (l0 : list term) (i : nat) (k : nat) (n : nat) :=
+
+(* branch_default_var l0 i k j  = 
+    tRel kp _  ... _ (with len0 holes)
+    where len0 is the length of l0
+    kp = len0 - i if j = k
+    kp = len0 + 1 if j <> k 
+    * If j <> k then, tRel kp denotes def, the default variable
+    Indeed, tRel kp is tRel 1 lifter len0 times
+    * If j = k, then tRel kp denotes the variable that is bound by the hole of rank i
+    *)
+Definition branch_default_var (l0 : list term) (i : nat) (k : nat) (j : nat) :=
   let len := Datatypes.length l0 in 
-  (* \TODO choisir metavariables*)
+  (* \TODO choisir orde des paramètres *)
   (* \TODO factoriser le calcul de length dans les fonctions qui appellent branch_default_var
   branch_default_var n'a pas besoin de l0 mais seulement de sa longueur
   *)
   (* \TODO on peut pê se débarrasser d'un arg entier, n est probablement égal à ... *)
-  let kp := if Nat.eqb n k then len - i
+  let kp := if Nat.eqb j k then len - i
   else S len in
   let fix aux k acc :=
     match k with 
@@ -103,14 +113,25 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
     end
   in aux len (tRel kp).  
 (* tRel 1 will be the parameter for the default value *)
-    (* note that tRel 1 is not bound in the above function *)
+(* note that tRel 1 is not bound in the above function *)
  
-Goal False.
-let x := constr:(branch_default_var [tRel 30 ; tRel 50 ; tRel 90 ; tRel 12 ; tRel 42 ; tRel 9 ] 1 1 2) in pose x as kik ; compute in kik. (* A PRIORI, PAS BESOIN DE CALCULER LES TYPES DONC A QUOI SERT TY_CONSTRUCT ?*)
-Abort.
+(* same function, but when the length is given*)
+(* \TODO order of the parameters? *)
+Definition branch_default_var0 (lenk  : nat) (i : nat) (k : nat) (j : nat) := 
+    let kp := if Nat.eqb k j then lenk - i
+    else S lenk in
+    let fix aux k acc :=
+    match k with 
+    | 0 => acc 
+    | S k => aux k (mkLam hole acc)
+    end
+    in aux lenk (tRel kp).  
+
 
 Definition blut_case (I : term) (indu: inductive) (llA : list (list term))  (* lctors : list term *) (ln : list nat) (* (p : nat) *) (* : list (nat * term) *) :=  0.
-(*   let fix aux1 llA acc := 0 in 0. *)
+(*   let fix aux1 llA acc := 0 in 0. 
+\TODO : supprimer 
+*)
 
 
 (* \TODO long term: recover the "relevant" parameter and not hard-code it *)
@@ -121,20 +142,52 @@ for instance, given the right arguments to construct the predecessor function we
 | S y => y > *)
 (* note: pas besoin de list de list de termes, mais seulement de leur longueur,
 cf. branch_default_var *)
-Definition mkCase_eliminator_default_var (I : inductive) (p : nat) (i : nat) (k : nat)
+(* \TODO à supprimer *)
+Definition mkCase_eliminator_default_var0 (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
-let fix aux (I : inductive) (p: nat) (i : nat) (k : nat)
+let fix aux (indu : inductive) (p: nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) (acc: list (nat × term)) (acc_nat : nat) :=
 match ty_arg_constr with 
-| [] => tCase (I, p, Relevant) return_type (tRel 0) (tr_rev acc)
-| l0 :: xs => aux I p i k xs return_type 
+| [] => tCase (indu, p, Relevant) return_type (tRel 0) (tr_rev acc)
+| l0 :: xs => aux indu p i k xs return_type 
 ((acc_nat, branch_default_var l0 i k acc_nat)::acc) (acc_nat + 1)
 end
-in aux I p i k ty_arg_constr return_type [] 0.
+in aux indu p i k ty_arg_constr return_type [] 0.
 (* construit le match de l'éliminateur et le default variable non-liée tRel 1 *)
 
 
 
+ (* \TODO : pas clair ce que sont les entier dans list (nat * term) de tCase *)
+(* mkCase [len0 ; ... ; lenn ] i k = [(0, tProd _(len0) (tRel db0) ) ; 
+... ; (n, tProd _(len0) dbn)] : list (nat * term) 
+    where tProd _(lenj) denotes tProd _ ... tProd _   (leni times)
+    and dbk = lenk - i  
+        dbj = lenj + 1   if j <> j 
+*)
+ Definition mkCase_list_param (llen : list nat) (i : nat) (k : nat) :=
+  let fix aux llen j acc :=
+  match llen with
+  | [] => acc
+  | len0 :: llen => aux llen (S j)  ((len0 , branch_default_var0 len0 i k j) :: acc )
+  end
+  in tr_rev (aux llen 0 (* 1*) []). 
+  
+Goal False. (* \TMP *)
+let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as kik ; compute in kik.
+Abort.
+
+
+(*  \TODO 
+  mkCase_eliminator_default_var0 indu p i k ty_arg_constr return_type 
+    denotes the pattern-matching of the projector p_{i,k} for an inductive type I
+    whose 'inductive' is indu, which has p parameters
+    ty_arg_constr is supposed to be \TODO
+    return_type is supposed to be \TODO
+*)
+Definition mkCase_eliminator_default_var (indu : inductive) (p : nat) (i : nat) (k : nat)
+(ty_arg_constr : list (list term)) (return_type : term) := 
+let llen := tr_map (@List.length term) ty_arg_constr  in 
+tCase (indu, p, Relevant) return_type (tRel 0) (mkCase_list_param llen i k).
 
 
 
@@ -146,6 +199,15 @@ Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : 
 (mkLam (lift 1 0 I_app)  (* lambda de l'inductif appliqué 
 \Q pourquoi le lift ? *)
 (mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
+
+Definition proj_one_ctor_default_var0 (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
+(ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
+(mkLam (lift 1 0 I_app)  (* lambda de l'inductif appliqué 
+\Q pourquoi le lift ? *)
+(mkCase_eliminator_default_var0 indu p i k ty_arg_constr return_type)).
+
+
+
 
 (* TODO c'est cette fonction dont on a besoin *)
 Goal False.
@@ -172,6 +234,7 @@ ou alors return_type est lifté par rapport à ty_default *)
 Abort.
 
 (* \!!!!!!!!!!!!! ICI ON SE SERT DU CONTENU DE ty_arg_constr *)
+(* Peut-être pour binder tous les paramètres dans l'assert que les constructeurs engendrent tous les habitants ? *)
 Definition proj_one_ctor_params_default_var (ty_params : list term) (I_app : term) (ty_default : term) (I : inductive) (p : nat) (i : nat) 
 (k : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
 let fix aux ty_params acc :=
@@ -192,13 +255,13 @@ end in aux ty_params (proj_one_ctor_default_var I_app (tRel p) I p i k ty_arg_co
 
 
 
-(* remove_n n [a_1; ... ; a_n ; .... ; a_p ] = [a_{n+1} ; ... ; a_p ]*)
-Fixpoint remove_n {A} (n : nat) (l : list A) := 
+(* pop_n n [a_1; ... ; a_n ; .... ; a_p ] = [a_{n+1} ; ... ; a_p ]*)
+Fixpoint pop_n {A} (n : nat) (l : list A) := 
 match n with 
 | 0 => l 
 | S n' => match l with
         | nil => nil
-        | cons x xs => remove_n n' xs
+        | cons x xs => pop_n n' xs
         end
 end.
 
@@ -237,7 +300,7 @@ match t with
 end
 in
 let res0 := aux t [] 0 in
-(map_iter 0 unlift (remove_n p (tr_rev (fst res0))), snd res0). 
+(map_iter 0 unlift (pop_n p (tr_rev (fst res0))), snd res0). 
 (* \TODO problème de unlift, car on doit relifter après *)
 
 
@@ -245,7 +308,7 @@ Goal False.
 (* let x := get_ctors_and_types_i t *)
 clear.
 let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
-( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold remove_n in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
+( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold pop_n in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
 Abort. 
 
 (* warning: handles parameters but not dependent arguments *)
@@ -265,11 +328,12 @@ in tr_rev (aux l []).
 Goal False.
 let x := constr:(get_args_list_with_length (tProd (mkNamed "x") (tRel 1) (tProd (mkNamed "x") (tRel 52) ( tProd (mkNamed "x") (tRel 100) (tProd  (mkNamed "x") (tRel 9)
 (tApp list_reif  [nat_reif ; tRel 3 ; tRel 5 ; tRel 8 ; tRel 13 ; tRel 21]) ))) ) 0 ) in pose x as galenex ; unfold get_args_list_with_length in galenex ;
-unfold args_of_prod_with_length in galenex  ; unfold remove_n in galenex ; unfold map_iter in galenex ; simpl in galenex.
+unfold args_of_prod_with_length in galenex  ; unfold pop_n in galenex ; unfold map_iter in galenex ; simpl in galenex.
 Abort.  *)
 
 (* get_indu_app_to_params t n = tApp t [tRel (n-1) ; .... ; tRel 0]
    tail-recursive
+   \TODO remove this function and use the one below instead
 *)
 Definition get_indu_app_to_params (t : term) (n : nat) := 
   let fix aux n acc :=
@@ -278,6 +342,18 @@ Definition get_indu_app_to_params (t : term) (n : nat) :=
    | S n => aux n ((tRel n)::acc)
    end
 in tApp t (tr_rev (aux n [])). 
+
+
+(* get_indu_app_to_params t n = tApp t [tRel n ; .... ; tRel 1]
+   tail-recursive
+*)
+Definition get_indu_app_to_params0 (t : term) (n : nat) := 
+  let fix aux n acc :=
+   match n with
+   | 0 => acc 
+   | S n => aux n ((tRel (S n))::acc)
+   end
+in tApp t (tr_rev (aux n [])).
 
 
 (* rev_list_map [ l1 ; ... ; lk ] = [ rev l1 ; rev l2 ; ... ; rev lk ]
@@ -342,9 +418,9 @@ end.
 
 
 
-(* get_list_of_holes n = [hole ; ... ; hole] (n occurrences)
+(* holes_n n = [hole ; ... ; hole] (n occurrences)
    tail-recursive *)
-Definition get_list_of_holes (n : nat) :=
+Definition holes_n (n : nat) :=
   let fix aux n acc := 
   match n with
   | 0 => acc 
@@ -360,7 +436,7 @@ end in aux n [].
 *)
 (* tail recursive *)
 Definition get_list_ctors_tConstruct_applied (I : term) (n : nat) (p : nat) :=
-let l := get_list_of_holes p in
+let l := holes_n p in
 match I with
 | tInd indu inst => let fix aux n acc  := match n with
           | 0 => acc
@@ -765,7 +841,7 @@ Ltac get_my_bluts t na :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (remove_n p) llA) in  let x :=
+        | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (pop_n p) llA) in  let x :=
         constr:((((((((llAtrunc,lB),lf),llA),ln),lA),p)))   in pose x as na ; let trunctruc := constr:(tr_map ret_ty_proj llAtrunc) in pose trunctruc as y ;  clear indmind
         end
       end
