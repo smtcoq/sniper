@@ -457,7 +457,6 @@ Definition mkOr (l : list term) :=
   let fix aux l acc :=
 match l with
 | [] => impossible_term_reif
-| [ x ] => tApp or_reif (x :: [acc]) 
 | x :: xs => aux xs (tApp or_reif (x :: [acc]))
 end in aux l0 x0
 end.
