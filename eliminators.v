@@ -25,7 +25,7 @@ Require Import SMTCoq.SMTCoq.
 MetaCoq Quote Definition S_reif := S. 
 MetaCoq Quote Definition O_reif := O.
 MetaCoq Quote Definition Set_reif := Set.
-MetaCoq Quote Definition list_reif := Set.
+MetaCoq Quote Definition list_reif := list.
 (* \TODO changer les metavariables 
 - nb --> rk ou k ou n tout court (avec spec )
 - une métavariable pour les rangs dans tCase 
@@ -103,7 +103,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
     Indeed, tRel kp is tRel 1 lifter len0 times
     * If j = k, then tRel kp denotes the variable that is bound by the hole of rank i
     *)
-Definition branch_default_var (l0 : list term) (i : nat) (k : nat) (j : nat) :=
+Definition branch_default_var0 (l0 : list term) (i : nat) (k : nat) (j : nat) :=
   let len := Datatypes.length l0 in 
   (* \TODO choisir orde des paramètres *)
   (* \TODO factoriser le calcul de length dans les fonctions qui appellent branch_default_var
@@ -123,7 +123,7 @@ Definition branch_default_var (l0 : list term) (i : nat) (k : nat) (j : nat) :=
  
 (* same function, but when the length is given*)
 (* \TODO order of the parameters? *)
-Definition branch_default_var0 (lenk  : nat) (i : nat) (k : nat) (j : nat) := 
+Definition branch_default_var (lenk  : nat) (i : nat) (k : nat) (j : nat) := 
     let kp := if Nat.eqb k j then lenk - i
     else S lenk in
     let fix aux k acc :=
@@ -148,17 +148,6 @@ for instance, given the right arguments to construct the predecessor function we
 | S y => y > *)
 (* note: pas besoin de list de list de termes, mais seulement de leur longueur,
 cf. branch_default_var *)
-(* \TODO à supprimer *)
-Definition mkCase_eliminator_default_var0 (indu : inductive) (p : nat) (i : nat) (k : nat)
-(ty_arg_constr : list (list term)) (return_type : term) := 
-let fix aux (indu : inductive) (p: nat) (i : nat) (k : nat)
-(ty_arg_constr : list (list term)) (return_type : term) (acc: list (nat × term)) (acc_nat : nat) :=
-match ty_arg_constr with 
-| [] => tCase (indu, p, Relevant) return_type (tRel 0) (tr_rev acc)
-| l0 :: xs => aux indu p i k xs return_type 
-((acc_nat, branch_default_var l0 i k acc_nat)::acc) (acc_nat + 1)
-end
-in aux indu p i k ty_arg_constr return_type [] 0.
 (* construit le match de l'éliminateur et le default variable non-liée tRel 1 *)
 
 
@@ -174,12 +163,12 @@ in aux indu p i k ty_arg_constr return_type [] 0.
   let fix aux llen j acc :=
   match llen with
   | [] => acc
-  | len0 :: llen => aux llen (S j)  ((len0 , branch_default_var0 len0 i k j) :: acc )
+  | len0 :: llen => aux llen (S j)  ((len0 , branch_default_var len0 i k j) :: acc )
   end
   in tr_rev (aux llen 0 (* 1*) []). 
   
 Goal False. (* \TMP *)
-let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as kik ; compute in kik.
+let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as mklistparamex ; compute in mklistparamex.
 Abort.
 
 
@@ -206,20 +195,17 @@ Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : 
 \Q pourquoi le lift ? *)
 (mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
 
-Definition proj_one_ctor_default_var0 (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
+(* Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
 (mkLam (lift 1 0 I_app)  (* lambda de l'inductif appliqué 
 \Q pourquoi le lift ? *)
-(mkCase_eliminator_default_var0 indu p i k ty_arg_constr return_type)).
+(mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
+*)
 
 
 
 
-(* TODO c'est cette fonction dont on a besoin *)
-Goal False.
-
-(* ainsi, le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
-
+(* le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
 (* disons que :: et on s'intéresse à proj droite *)
 (* i : inductif réifié,ici list_nat_reif (doit être un inductif appliqué à un tRel de chaispas*) 
 (*       en fait, i est renommé I_app plus tard *)
@@ -237,7 +223,6 @@ ou alors return_type est lifté par rapport à ty_default *)
 
 (* let res0 := proj_one_ctor_default_var  *)
 
-Abort.
 
 (* \!!!!!!!!!!!!! ICI ON SE SERT DU CONTENU DE ty_arg_constr *)
 (* Peut-être pour binder tous les paramètres dans l'assert que les constructeurs engendrent tous les habitants ? *)
@@ -249,16 +234,10 @@ match ty_params with
 | x :: xs => aux xs (mkLam x acc)
 end in aux ty_params (proj_one_ctor_default_var I_app ty_default I p i k ty_arg_constr return_type).
 
-
-Definition proj_one_ctor_params_default_var0 (ty_params : list term) (I_app : term) (ty_default : term) (I : inductive) (p : nat) (i : nat) 
-(k : nat) (ty_arg_constr : list (list term)) (return_type : term) :=
-let fix aux ty_params acc :=
-match ty_params with 
-| nil => acc
-| x :: xs => aux xs (mkLam x acc)
-end in aux ty_params (proj_one_ctor_default_var I_app (tRel p) I p i k ty_arg_constr return_type).
-
-
+(* \TODO vérifier
+   Ici se termine la partie où on définit les constructeurs.
+   Ensuite, on va construire l'énoncé de génération 
+*)
 
 
 
@@ -299,12 +278,40 @@ let res0 := aux t [] 0 in
 (map_iter 0 unlift (skipn p (tr_rev (fst res0))), snd res0). 
 (* \TODO problème de unlift, car on doit relifter après *)
 
+Check args_of_prod_with_length.
+Check unlift.
+
+(*
+proj_return_types [[A_{0,0} ; ... ; A_{0,l_0}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k}] ]
+    = [ [A_{0,0}] ; A_ {1,1} ^{-1} ; ... ; A_{l_0}^{-l_0} ] ; ... ;
+         [A_{k,0}] ; A_ {k,1} ^{-1} ; ... ; A_{l_k}^{-l_k}] ]
+      \TODO helps compute the return types of the projections
+*)
+
+(* \TODO chose between proj_return_types and ret_ty_proj (the former is the latter + tr_map )*)
+Definition proj_return_types (llA: list (list term)) :=
+  let fix aux acc i lA :=
+    match lA with
+    | [] => acc 
+    | A :: tlA => aux ((unlift i A) :: acc ) (S i) tlA
+  end  in  (tr_map (fun lA => tr_rev(aux [] 0  lA)) llA).
+
+
+Definition ret_ty_proj lA 
+  := let fix aux l k acc := 
+    match l with
+    | [] => acc 
+    | A :: l => aux l (S k) ((unlift k A) :: acc)
+    end in tr_rev (aux lA 0 []).
+
+
 
 Goal False.
 (* let x := get_ctors_and_types_i t *)
 clear.
 let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
 ( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
+let x := constr:(proj_return_types [[tRel 0] ;  [ tRel 0; tApp list_reif [tRel 1] ]; [tRel 0 ; tRel 2 ; tApp (tRel 5) [tRel 4 ; tRel 8]]]) in pose x as prtex ; compute in prtex.
 Abort. 
 
 (* warning: handles parameters but not dependent arguments *)
@@ -329,7 +336,7 @@ Abort.  *)
 
 (* get_indu_app_to_params t n = tApp t [tRel (n-1) ; .... ; tRel 0]
    tail-recursive
-   \TODO remove this function and use the one below instead
+   \TODO remove this function, the lift0 1 in the main function and use the one below (get_indu_app_to_params0) instead
 *)
 Definition get_indu_app_to_params (t : term) (n : nat) := 
   let fix aux n acc :=
@@ -369,12 +376,42 @@ match l with
 | x :: xs => aux xs (snd x + n)
 end
 in aux l 0.
+Check total_arg_ctors.
 (* \TODO total_arg_ctors n'est utilisé que dans Ltac get_eliminators_st_return sur list_args_len. Une info est sans doute calculée deux fois. 
 On peut s'en doute s'en débarrasser 
 *)
 
-(* mkProd [A1 ; .... ; An ] t = tProd "x" A1. ... tProd "x" An. t  *)
-Fixpoint mkProd_rec (l : list term) (t: term) := 
+(* \TODO : trouver meilleur nom *)
+(* \TODO : pre_bind_all_for_proj [[A_{0,0} ; ... ; A_{0,l_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k-1}] ]
+                                  [l0 ; ... ; lk ]
+    = [ A_{k,l_k}^L ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
+      where L = l_0 + ... + l_k
+      Thus, pre_bind_all_for_proj performs a flattening, a revert and a incremental lift of all the elements of the initial list of lists
+    *)
+(* \TODO peut-être conserver les accumulateurs l0, l0+l1, l0+l1+l2, ou alors les calculer séparément et faire 
+l'incrémentation à partir de la liste lnacc *)
+Definition pre_bind_all_for_proj (llAunlift : list (list term)) (ln : list nat) :=
+  let fix aux1  acc i (lA : list term) : list term  := 
+  match lA with
+  | [] => acc  
+  | A0 :: lA => aux1 ((lift0 i A0) :: acc) (S i) lA
+  end 
+  in let fix aux2 acc  a1 a2 llA ln :=
+  match (llA,ln) with
+  | ([],[]) => acc 
+  | (lA :: llA, na :: ln)  => let a1'  :=  na + a1 in  aux2 (aux1 acc  a1 lA )  a1' na  llA ln
+  | _ => [] (* this cases does not happen: ln and llAunflit have the same length *)
+  end 
+  in  aux2 [] 0 0  llAunlift ln.
+
+
+
+Goal False.
+let x := constr:(pre_bind_all_for_proj [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp list_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
+Abort.
+
+(* mkProd [A1 ; .... ; An ] t = tProd "x" An. ... tProd "x" A1. t   (reverts list) *)
+Fixpoint mkProd_rec (l : list term)  (t: term) := 
 (* warning: t should have been previously lifted *)
 match l with 
 | [] => t 
@@ -383,6 +420,10 @@ end.
 (* \TODO mkProd_rec n'est utilisée que dans get_eliminators_st_return, mais deux fois sur la même ligne
 Voir si on peut éliminer ou facto du code.
 *)
+
+Goal False.
+let x := constr:(mkProd_rec [tRel 3 ; tRel 5 ; tRel 8] (tRel 13)) in pose x as mprex ; compute in mprex.
+Abort.
 
 (* lift_rec_rev [A0; ...; An] = [lift0 n An ; .... ; lift1 1 A1 ; lift0 0 A0] *)
 (* tail-recursive *)
@@ -411,11 +452,14 @@ match list_tVar with
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
 (* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
+Check get_elim_applied. 
 
+(* \TODO *)
+Fixpoint get_elim_applied0 (list_proj : list term) (acc : list term ) := 0. 
 
 
 (* holes_n n = [hole ; ... ; hole] (n occurrences)
-   tail-recursive *)
+   linear *)
 Definition holes_n (n : nat) :=
   let fix aux n acc := 
   match n with
@@ -430,7 +474,7 @@ end in aux n [].
   k should be the number of ctors of I
   n the number of parameters of I
 *)
-(* tail recursive *)
+(* linear *)
 Definition get_list_ctors_tConstruct_applied (I : term) (n : nat) (p : nat) :=
 let l := holes_n p in
 match I with
@@ -443,8 +487,8 @@ end.
 (* \TODO : remove tApp when n = 0 *)
 
 
-(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)
-     (reverts list and associates to the *right*
+(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)  
+     (reverts list and associates to the *right* )
      tail-recursive **)
 Definition mkOr0 (l : list term) := 
   (* let l' := tr_rev l in  *)
@@ -469,7 +513,7 @@ match l with
 | cons x xs => tApp or_reif ([mkOr xs] ++ [x])
 end.
 
-(* Goal False.
+(* Goal False. \TMP
 let x := constr:(mkOr0 [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOr0ex ; compute in mkOr0ex.
 let x := constr:(mkOr [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOrex ; compute in mkOrex.
 Abort. *)
@@ -493,203 +537,12 @@ constr:((elim, db)).
 
 
 
-(***********************************)
-
-(***** tests Pierre  (à transférer)      *********)
-
-(***********************************)
-
-(* i : numéro de la projection *)
-(* exemple: cons est le 2ème constructeur de list 
- - pour elim_{1,0}, i est 0, ty_default est nat et pour elim_{1,1}, c'est 1 et list nat 
-- nb_construct 2 ou 1.
-- total_arg c'est 2 ou 3 (compte-t-on les paramètres ?)
-*)
-(* ty_default *)
-
-Ltac get_list_args_len I_rec na :=
-  let I_rec_term := eval compute in (I_rec.2) in
-  let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
-  match opt with 
-  | Some (?p, ?ty_pars) =>
-  let list_ty := eval compute in (list_types_of_each_constructor I_rec) in 
-  let list_args_len := eval compute in (get_args_list_with_length list_ty p)
-  in pose list_args_len as na
-end.
-
-Ltac get_list_args_len_quote I na:=  
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_list_args_len I_rec  na ; compute in na.
-
-Goal False. (* debunking ty_arg_constr from list_args_len *)
-get_list_args_len_quote list list_lal.
-let x := constr:(split list_lal) in pose x as blut . 
-compute in blut.
-let x:= constr:(blut.1) in pose x as truc. compute in truc.
-let x:= constr:(rev_list_map truc) in pose x as bid.
-compute in bid.
-Abort.
-
-
-Ltac get_ty_arg_constr I_rec na := let lal := fresh "lal" in
- get_list_args_len_quote I_rec   lal ; 
-  let x := constr:(rev_list_map ((split lal).1)) in pose x as na;
- compute in na ; clear lal. 
-
-Goal False.
-get_list_args_len_quote list list_lal.
-get_ty_arg_constr list list_tarc.
-Abort.
-
-(* list_args := val compute in (split (list_args0)).1   *)
-
-Ltac get_ty_arg_constr_quote I na:=  
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_ty_arg_constr  I_rec  na.
-
-
-
-Ltac get_info0 I_rec na := (* \TODO remove *)
-  let I_rec_term := eval compute in (I_rec.2) in
-  let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
-  match opt with 
-  | Some (?p, ?ty_pars) =>
-  let list_ty := eval compute in (list_types_of_each_constructor I_rec) in 
-  let list_args_len := eval compute in (get_args_list_with_length list_ty p) in 
-  let list_args := eval compute in (split list_args_len).1 in 
-  pose list_args as na end .
-
-
-Ltac get_info0_quote I na := (* \TODO remove *)
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_info0 I_rec  na ; compute in na.
-
-
-
-Ltac get_info I_rec na :=
-  let I_rec_term := eval compute in (I_rec.2) in
-  let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
-  match opt with 
-  | Some (?p, ?ty_pars) =>
-  let list_ty := eval compute in (list_types_of_each_constructor I_rec) in 
-  let list_args_len := eval compute in (get_args_list_with_length list_ty p) in 
-  let list_args := eval compute in (split list_args_len).1 in 
-let list_ty_default0 := eval compute in (tr_flatten list_args) in
-  let list_ty_default := eval compute in (lift_rec_rev list_ty_default0) in 
-  let k := eval compute in (Datatypes.length list_args) in
-  let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term k p) in 
-  let total_args := eval compute in (total_arg_ctors list_args_len) in
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (total_args + 1))) in
-  let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
-  let I_lifted := eval compute in (lift (total_args) 0 I_app) in
-        match I_rec_term with
-        | tInd ?I_indu _ =>
-  let x := constr:((((((((p,ty_pars),list_ty),
-list_args),total_args),list_of_pars_rel),I_app),I_indu)) 
-  in pose x as na 
-end  
-end.
-
-
-Ltac get_info_quote I na := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_info I_rec  na ; compute in na.
-
- 
-(* list_of_pars_rel is also called lpars *)
- 
-
-
-Ltac get_info2 I_rec na :=
-  let I_rec_term := eval compute in (I_rec.2) in
-  let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
-  match opt with 
-  | Some (?p, ?ty_pars) =>
-  let list_ty := eval compute in (list_types_of_each_constructor I_rec) in 
-  let list_args_len := eval compute in (get_args_list_with_length list_ty p) in 
-  let list_args := eval compute in (split list_args_len).1 in 
-let list_ty_default0 := eval compute in (tr_flatten list_args) in
-  let list_ty_default := eval compute in (lift_rec_rev list_ty_default0) in 
-  let k := eval compute in (Datatypes.length list_args) in
-  let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term k p) in 
-  let total_args := eval compute in (total_arg_ctors list_args_len) in
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (total_args + 1))) in
-  let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
-  let I_lifted := eval compute in (lift (total_args) 0 I_app) in
-        match I_rec_term with
-        | tInd ?I_indu _ =>
-  let x := constr:(((((((list_args_len,list_args),list_ty_default0),list_ty_default),k),list_ctors_reif),list_of_pars_rel))
-  in pose x as na 
-end  
-end.
-
-Ltac get_info2_quote I na := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_info2 I_rec  na; compute in na.
-
-
-
-Ltac pose_quote_term c idn :=
-  let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
-
-
-Ltac get_ind_param t idn := 
-    let tq := fresh "t_q" in pose_quote_term t tq ;
-    lazymatch eval hnf in tq with
-     | tInd ?indu ?u =>  pose (indu,u) as idn  ; clear tq
-     end.
-
-
-
-Goal 2 +  2 = 5.
-Proof.
-pose (2,3) as x. pose x.1 as y. Eval compute in y.
-let list_info := fresh "list_info" in get_info_quote list list_info. 
-pose list_info.2 as list_indu. compute in list_indu. (* \Q pq ça ne calcule pas ? *)
-pose list_info.1.2 as list_I_app. compute in list_I_app.
-pose list_info.1.1.2 as list_lpars. compute in list_lpars.
-pose list_info.1.1.1.2 as list_total_args. compute in list_total_args.
-pose list_info.1.1.1.1.2 as list_list_args. compute in list_list_args.
-pose list_info.1.1.1.1.1.2 as list_list_ty. compute in list_list_ty.
-pose list_info.1.1.1.1.1.1.2 as list_ty_pars. compute in list_ty_pars.
-pose list_info.1.1.1.1.1.1.1 as list_p.  hnf in list_p. 
-let truc := metacoq_get_value (tmQuote list) in pose truc as list_reif.
-(* let na := fresh "na" in get_ind_param list na ; pose na.1 as list_indu . 
- match constr:(na) with | (?indu,_) => pose indu as bid end.*)
-Fail let x := (get_one_eliminator_return list list_ty_pars 
-list_I_app list_reif (* list_ty_default *) list_indu list_p 2 (*list_nbproj *) 
-2 (*k*) list_list_args   list_return_ty  list_nb_args_prev list total_args )
-in pose x as truc.
-Abort.
-
-(* get_one_eliminator_return 
-I ty_pars I_app ty_default I_indu p i k 
-list_args return_ty nb_args_previous_construct total_args *)
-
-(* \TODO rename this function*)
-Ltac get_nbproj_nbargprevcons n I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb list_eq :=
-match n with
-| 0 => constr:(list_eq)
-| S ?n' => let prod := eval compute in (nth n' list_args (nil, 0)) in
-           let i := eval compute in (prod.2) in 
-           let c_reif := eval compute in (nth n' list_ctors_reif impossible_term_reif) in
-           let nb_args_previous_construct := eval compute in (nb - i) 
-in constr:((i,nb_args_previous_construct))
-end.
-
-(***********************************)
-
-(*****    fin tests    *************)
-
-(***********************************)
-
-
 
 
 
 (*  mkLam I_app (lift0 1  ty_default) seems to compute a return type. Of what ? *)
 (*  -> ty_default   *)
-
+(* \TMP *)
 Ltac get_def_ret_ty n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
 match n with
 | S ?n' =>  let ty_default := eval compute in (nth n' (nth (k -1) list_args nil ) impossible_term_reif) 
@@ -783,7 +636,7 @@ match opt with
   in
   (* idtac total_args *)
  (*   \Q pq idtac total_args fait planter le prog ? *) 
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (total_args + 1))) in
+  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (S total_args))) in
   let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with
@@ -824,12 +677,6 @@ Print Ltac pose_blut.
 Print mutual_inductive_body.
 
 
-Definition ret_ty_proj lA (* la longueur est-elle un param ou doit-elle être calculée ? *)
-  := let fix aux l k acc := 
-    match l with
-    | [] => acc 
-    | A :: l => aux l (S k) ((unlift k A) :: acc)
-    end in tr_rev (aux lA 0 []).
 
 
 Ltac get_my_bluts t na := 
@@ -850,7 +697,9 @@ Ltac get_my_bluts t na :=
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
         | (?lB,?lf) =>   let llAtrunc := constr:(tr_map (skipn p) llA) in  let x :=
-        constr:((((((((llAtrunc,lB),lf),llA),ln),lA),p)))   in pose x as na ; let trunctruc := constr:(tr_map ret_ty_proj llAtrunc) in pose trunctruc as y ;  clear indmind
+        constr:((((((((llAtrunc,lB),lf),llA),ln),lA),p)))   in pose x as na ; let x := constr:(tr_map ret_ty_proj llAtrunc) in pose x as llAunlift ;  let x := constr:(fold_left Nat.add ln 0) in pose x as L  ; (* L is the total number of constructors arguments *)
+        (* let x := constr:(proj_return_types llAtrunc) in pose x as llAunlift  ; *)
+        clear indmind
         end
       end
     end
@@ -862,7 +711,7 @@ Ltac get_my_bluts t na :=
 
   Goal False.
   let indmind := fresh "indmind" in pose_blut list indmind. clear indmind.
-  get_my_bluts list ik ; compute in ik ; compute in y.  
+  get_my_bluts list ik ; compute in ik . compute in llAunlift ; compute in llAunlift. compute in L;
 pose [[];
 [tRel 0;
 tApp
@@ -926,7 +775,6 @@ get_eliminators_st_return I_rec I.
 
 Ltac get_eliminators_st I :=
 let st := get_eliminators_st_return_quote I in idtac.
-
 
 
 Section tests_eliminator.

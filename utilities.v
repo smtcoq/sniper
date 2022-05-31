@@ -438,17 +438,19 @@ end.
 
 
 
-Definition get_list_of_rel (n : nat) :=  let fix aux n k acc :=
-match n with 
-| 0 => acc
-| S n' => aux n' (k + 1) ((tRel k) :: acc)
-end in aux n 0 nil.
 
-Definition get_list_of_rel_lifted (n l : nat) := let fix aux n k acc :=
-match n with 
-| 0 => acc
-| S n' => aux n' (k + 1) ((tRel (k + l)) :: acc)
-end in aux n 0 nil.
+(** get_list_of_rel_lifted n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
+   (list of length n)
+   linear 
+**)
+Definition get_list_of_rel_lifted (n l : nat) :=
+  let  fix aux n  k acc  :=
+  match n with
+   | 0 => acc 
+   | S n => aux n  (S k) ((tRel k)::acc)
+   end
+   in aux n  l [].
+  
 
 
 (* Reifies a term and calls is_type *)
