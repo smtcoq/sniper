@@ -1,17 +1,18 @@
 
 pred type_global i: term, o: term.
   type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
+  type_global (global (indc C)) Ty :- coq.env.indc C _ _ _ Ty.
 
 pred codomain i:term, o:term.
   codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
   codomain T T.
 
 pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S_).
-  is_not_prop _T (error "the term is Prop").
+  is_not_prop T ok :- not (coq.unify-leq T {{Prop}} ok).
 
 pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
+  codomain_not_prop (prod Na Ty F) D :- !, pi x\ decl x Na Ty => codomain_not_prop (F x) D.
+  codomain_not_prop T ok :- !, is_not_prop T ok.
 
 pred get_number_of_parameters i: term, o: int.
     get_number_of_parameters (global (indt I)) NB :- coq.env.indt I _ NB _ _ _ _.
