@@ -133,6 +133,7 @@ Definition branch_default_var (lenk  : nat) (i : nat) (k : nat) (j : nat) :=
     end
     in aux lenk (tRel kp).  
 
+   
 
 Definition blut_case (I : term) (indu: inductive) (llA : list (list term))  (* lctors : list term *) (ln : list nat) (* (p : nat) *) (* : list (nat * term) *) :=  0.
 (*   let fix aux1 llA acc := 0 in 0. 
@@ -187,22 +188,14 @@ tCase (indu, p, Relevant) return_type (tRel 0) (mkCase_list_param llen i k).
 
 
 
+
+
 (* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
 (* \TODO : fusionner proj_one_ctor_default_var *)
 Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
-(mkLam (lift 1 0 I_app)  (* lambda de l'inductif appliqué 
-\Q pourquoi le lift ? *)
+(mkLam (lift0 1  I_app) (* \TODO intégrer le lift dans le calcul de I_app*)
 (mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
-
-(* Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
-(ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
-(mkLam (lift 1 0 I_app)  (* lambda de l'inductif appliqué 
-\Q pourquoi le lift ? *)
-(mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
-*)
-
-
 
 
 (* le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
@@ -233,12 +226,50 @@ match ty_params with
 | nil => acc
 | x :: xs => aux xs (mkLam x acc)
 end in aux ty_params (proj_one_ctor_default_var I_app ty_default I p i k ty_arg_constr return_type).
+(* ty_params is probably the revert of the list of the types of 
+the parameters *)
+
+
 
 (* \TODO vérifier
    Ici se termine la partie où on définit les constructeurs.
    Ensuite, on va construire l'énoncé de génération 
 *)
 
+
+(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)  
+     (reverts list and associates to the *right* )
+     tail-recursive **)
+     Definition mkOr0 (l : list term) := 
+      (* let l' := tr_rev l in  *)
+      match l with
+      | [] => impossible_term_reif 
+      | x0 :: l0 => 
+      let fix aux l acc :=
+    match l with
+    | [] => impossible_term_reif
+    | x :: xs => aux xs (tApp or_reif (x :: [acc]))
+    end in aux l0 x0
+    end.
+    
+    (*  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of (...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
+         (reverts list and associates to the *left*
+        not tail-recursive *)
+    (* \TODO replace mkOr with mkOr0 by suitably modifying tactics below *)    
+    Fixpoint mkOr (l : list term) := 
+    match l with
+    | nil => impossible_term_reif
+    | [ x ] => x
+    | cons x xs => tApp or_reif ([mkOr xs] ++ [x])
+    end.
+    
+    (* Goal False. \TMP
+    let x := constr:(mkOr0 [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOr0ex ; compute in mkOr0ex.
+    let x := constr:(mkOr [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOrex ; compute in mkOrex.
+    Abort. *)
+    
+    
+    
 
 
 (* map_iter k f [a_0 ; ... ; a_n ] = [f k a_0 ; f (k+1) a_1 ; ... ; f (k+n) a_n]   
@@ -276,7 +307,7 @@ end
 in
 let res0 := aux t [] 0 in
 (map_iter 0 unlift (skipn p (tr_rev (fst res0))), snd res0). 
-(* \TODO problème de unlift, car on doit relifter après *)
+(* \TODO pê problème de unlift, car on doit relifter après *)
 
 Check args_of_prod_with_length.
 Check unlift.
@@ -287,8 +318,7 @@ proj_return_types [[A_{0,0} ; ... ; A_{0,l_0}] ; ... ; [A_{k,0} ; .... ; A_{k,l_
          [A_{k,0}] ; A_ {k,1} ^{-1} ; ... ; A_{l_k}^{-l_k}] ]
       \TODO helps compute the return types of the projections
 *)
-
-(* \TODO chose between proj_return_types and ret_ty_proj (the former is the latter + tr_map )*)
+(* \TODO choose between proj_return_types and ret_ty_proj (the former is the latter + tr_map )*)
 Definition proj_return_types (llA: list (list term)) :=
   let fix aux acc i lA :=
     match lA with
@@ -441,6 +471,25 @@ in aux l [] 0.
 
 
 
+(* holes_n n = [hole ; ... ; hole] (n occurrences)
+   linear *)
+   Definition holes_n (n : nat) :=
+    let fix aux n acc := 
+    match n with
+    | 0 => acc 
+    | S n => aux n (hole :: acc)
+  end in aux n [].
+  
+  (* holes_n n = [hole ; ... ; hole ; tRel db ; tRel 0] 
+      \TODO useful to pass the parameters to the projections,
+      cf. ??? and ??? *)
+  Definition holes_n' (n : nat) (db : nat) :=
+    let fix aux n acc := 
+    match n with
+    | 0 => acc 
+    | S n => aux n (hole :: acc)
+  end in aux n [tRel db; tRel 0].
+
 (* gets each elimination function applied to the parameters, the default and the term *)
 (* get_elim_applied [(p0 , d0 ); ... ; (pn , dn)] [A1 ; ... ; Ak ]
      = [ tApp p0 [ A1 ; ... ; Ak ; tRel d0 ; tRel0 ] 
@@ -448,28 +497,58 @@ in aux l [] 0.
 Fixpoint get_elim_applied (list_tVar : list (term * nat)) (lpars : list term) :=
 match list_tVar with
 | nil => nil
-| (elim, db) :: xs => (tApp elim (lpars ++ [tRel db; tRel 0])) :: get_elim_applied xs lpars
+| (elim, db) :: xs => (tApp elim (holes_n' (length lpars) db)):: get_elim_applied xs lpars
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
 (* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
 Check get_elim_applied. 
 
-(* \TODO *)
-Fixpoint get_elim_applied0 (list_proj : list term) (acc : list term ) := 0. 
+(* \TODO spec: *)
+Definition get_eq_x_ctor_proj (p: nat) (ctor : term) (projs : list term)  (db: nat) (* lpars : term*) 
+(* \todo see it one needs to give the parameters: probably not *)
+:= 
+  let args_projs := holes_n p in
+  let projs_app := tr_map (fun t => tApp t args_projs) projs
+  in mkEq hole (tRel 0) (tApp ctor projs_app).
+
+Goal false.
+let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
+3) in pose x as gexcpex ; compute in gexcpex.
+Abort.
 
 
-(* holes_n n = [hole ; ... ; hole] (n occurrences)
-   linear *)
-Definition holes_n (n : nat) :=
-  let fix aux n acc := 
-  match n with
-  | 0 => acc 
-  | S n => aux n (hole :: acc)
-end in aux n [].
+(* \todo check that the db are computed somewhere *)
+(* \todo, here, one rather needs a revert mkOr *)
+(* \todo see if this needs to be reverted later*)
+(* get_generation_disjunction p ctors list_proj ldb 
+   outputs the reification of forall x : I, 
+   x = C0 (projs0 x) \/ .... \/ x = Ck (projsk x)
+   where lctors is the list of the (reified) constructors of an inductive, list_proj is the list of lists of their projections
+   (which are computed by ???)
+   and ldb is the list of De Bruijn indices of ????
+*)
+(* \TODO remove ldb argument *)
+Definition get_generation_disjunction  (p : nat) (I: term) (L : nat) (ctors : list term) (list_proj : list (list term)) (ldb : list nat) := 
+  let fix aux ctors list_proj ldb acc := 
+  match (ctors,list_proj,ldb) with
+  | ([],[],[]) => acc
+  | (ctor :: lctors , projs :: list_proj , db :: ldb ) => aux lctors list_proj ldb  ((get_eq_x_ctor_proj p ctor projs db) :: acc)
+  | _ => [] (* this cases does not happen *)
+ end in mkProd (tApp I (get_list_of_rel_lifted L p)) (mkOr (aux ctors list_proj ldb [])).
+
+Goal False.
+let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
+  [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [80 ; 40 ; 7]) in pose x as ggdex ; compute in ggdex.
+Abort.
 
 
+(* \todo: coupler avec pre_bind_all_for_proj *)
+(* \todo : gérer la liste des db, qui est 
+[[L; ... ; lk + ... + l2 +1 ] ; ....; [lk + l_{k-1}  ....; lk+2 ; lk+1 ] ;[ lk ...; 2 ; 1]]
+*)
 
-(* get_list_ctors_tConstruct_applied I k n := [tApp C0 hole_n ; ... ; tApp Ck hole_n ]
+
+(* get_list_ctors_tConstruct_applied I k n := [tApp C0 holes_n ; ... ; tApp Ck holes_n ]
   where C0, ..., Ck are the constructors of I
   k should be the number of ctors of I
   n the number of parameters of I
@@ -485,38 +564,6 @@ match I with
 | _ => []
 end.
 (* \TODO : remove tApp when n = 0 *)
-
-
-(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)  
-     (reverts list and associates to the *right* )
-     tail-recursive **)
-Definition mkOr0 (l : list term) := 
-  (* let l' := tr_rev l in  *)
-  match l with
-  | [] => impossible_term_reif 
-  | x0 :: l0 => 
-  let fix aux l acc :=
-match l with
-| [] => impossible_term_reif
-| x :: xs => aux xs (tApp or_reif (x :: [acc]))
-end in aux l0 x0
-end.
-
-(*  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of (...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
-     (reverts list and associates to the *left*
-    not tail-recursive *)
-(* \TODO replace mkOr with mkOr0 by suitably modifying tactics below *)    
-Fixpoint mkOr (l : list term) := 
-match l with
-| nil => impossible_term_reif
-| [ x ] => x
-| cons x xs => tApp or_reif ([mkOr xs] ++ [x])
-end.
-
-(* Goal False. \TMP
-let x := constr:(mkOr0 [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOr0ex ; compute in mkOr0ex.
-let x := constr:(mkOr [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOrex ; compute in mkOrex.
-Abort. *)
 
 
 

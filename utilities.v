@@ -442,6 +442,7 @@ end.
 (** get_list_of_rel_lifted n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
    (list of length n)
    linear 
+   \todo : change the name
 **)
 Definition get_list_of_rel_lifted (n l : nat) :=
   let  fix aux n  k acc  :=
@@ -449,8 +450,7 @@ Definition get_list_of_rel_lifted (n l : nat) :=
    | 0 => acc 
    | S n => aux n  (S k) ((tRel k)::acc)
    end
-   in aux n  l [].
-  
+   in aux n l [].
 
 
 (* Reifies a term and calls is_type *)

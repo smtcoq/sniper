@@ -577,26 +577,10 @@ split_info1 list "blut". clear -list_list_args.
 split_info2 list "blut". clear.
 split_info1 @nelist "blut". clear. (* clear -list_app nelist_app. *)
 split_info1 @biclist "blut". clear  - biclist_app biclist_list_args. clear.
-(** branch_default_var *)
-let x := constr:( branch_default_var 
-[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
-3 6 7)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
-in pose x as kikoo ;
-unfold branch_default_var in kikoo ; simpl in kikoo.
-let x := constr:( branch_default_var 
-[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15]
-2 5 8)  (* ce qui compte, c'est l'égalité 2ème et 3ème . Ensuite, il y a len - 1er + 1*)
-in pose x as blut ;
-unfold branch_default_var in blut ; simpl in blut.
-clear.  (* DONE *)
-let x := constr:( branch_default_var 
-[tRel 0; tApp list_reif [tRel 1] ; tRel 8 ; tRel 12 ; tRel 15] 0 1 1) in pose x as iki ; unfold branch_default_var in iki ; simpl in iki.
-
+(** branch_default_var **)
+(** mkCase_eliminator_default_var **)
 let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0 ; tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 
 (tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as blut ; unfold mkCase_eliminator_default_var in blut ; unfold branch_default_var in blut ; simpl in blut.
-
-
-
 let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 3 [ [tRel 1]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0]]
 (tProd (mkNamed "a") (tRel 40) (tRel 42))) in pose x as kik ; unfold mkCase_eliminator_default_var in kik ; unfold branch_default_var in blut ; simpl in kik.  
 
