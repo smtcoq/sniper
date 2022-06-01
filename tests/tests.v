@@ -66,10 +66,10 @@ Qed.
 
 Lemma nth_default_eq :
     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
-  Proof. intros A HA n ; induction n. 
-  - snipe.
+  Proof. intros A HA n ; induction n.  
+  - snipe2.
   - intros l ; destruct l.
-    * snipe.
+    * snipe2.
     * scope. get_projs_st (option). specialize (H A a). verit.
  Qed.
 
