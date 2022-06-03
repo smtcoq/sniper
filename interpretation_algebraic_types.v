@@ -99,6 +99,7 @@ Fixpoint and_nary_reif (l : list term):=
 
 
 (* remove and replace by mkOr, which is tr *)
+(* \todo check that it is SMTLib friendly *)
 Fixpoint or_nary_reif (l : list term):=
   match l with
   | [] => False_reif           
