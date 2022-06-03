@@ -27,8 +27,18 @@ Open Scope string_scope.
 
 Import ListNotations MonadNotation. 
 
+Print impossible_term_reif.
 
-Print list.
+Check nth.
+
+(* reified term selectors in lists and lists of lists *)
+Definition sel_lterm (i : nat) (l : list term) := nth i l impossible_term_reif.
+
+Definition sel_llterm (k : nat) (i : nat) (l : list (list term)) := 
+  sel_lterm i (nth k l []).
+
+
+
 
 Inductive nelist {A : Type} : Type :=
 	sing :  A -> nelist    | necons : A -> nelist -> nelist .
@@ -42,6 +52,8 @@ Inductive biclist {A B : Type} : Type :=
   | bicnil : biclist
   | cons1 : A -> biclist -> biclist
   | cons2 : B -> biclist -> biclist. 
+
+
 
 (*
 
@@ -57,7 +69,8 @@ let x := fresh in pose constr:(k - 1) constr:(n -1)
 Definition get_ind_ident (kerna : kername) := let (mdp , idind) := kerna in idind.
 
 
-Locate pose_inductive_tac.
+
+
 
 MetaCoq Quote Definition Type_reif := Eval hnf in Type.
 MetaCoq Quote Definition Prop_reif := Eval hnf in Prop.
@@ -353,6 +366,46 @@ let list_ty_default0 := eval compute in (tr_flatten list_args) in
 end  
 end.
 
+Goal False.
+
+
+(* \TODO commenter les exemples*)
+let x := constr:(proj_ki 0 [] nat_reif nat_indu 1 0 [[]; [tRel 0]] [0 ; 1]
+(nat_reif)) in pose x as pS_reif ; compute in pS_reif.
+pose_unquote_term_hnf pS_reif pS.
+clear.
+let x := constr:(proj_ki 1 [Set_reif] list_reif list_indu 1 1 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
+(tApp list_reif [tRel 0])) in pose x as proj_list11_reif ; compute in proj_list11_reif.
+pose_unquote_term_hnf proj_list11_reif proj_list_11.
+let x := constr:(proj_ki 1 [Set_reif] list_reif list_indu 1 0 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
+(tRel 0)) in pose x as proj_list10_reif ; compute in proj_list10_reif.
+pose_unquote_term_hnf proj_list10_reif proj_list_10. clear -proj_list_10 proj_list_11.
+Abort.
+
+
+Goal False. 
+let x := constr:(collect_projs 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2) in pose x as list_projs ; compute in list_projs. 
+
+let x := constr:(sel_llterm 1 0 list_projs)  
+in pose x as p10_reif ; compute in p10_reif.
+pose_unquote_term_hnf p10_reif p10.
+let x := constr:(sel_llterm 1 1 list_projs) in pose x as p11_reif ; compute in p11_reif.
+pose_unquote_term_hnf p11_reif p11.
+Abort.
+
+
+
+
+Goal False.
+declare_projs_aux kik 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2.
+
+let x := declare_projs1 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose x as list_projs ; compute in list_projs.
+Abort.
+
+
+
+
+
 Ltac get_info2_quote I na := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_info2 I_rec  na; compute in na.
@@ -415,6 +468,9 @@ end.
 
 
 
+Goal False.
+let x := constr:(get_ctors list_indu 2 []) in pose x as kik ; compute in kik.
+Abort.
 
 
 
@@ -728,12 +784,12 @@ Print get_info_params_inductive.
 (* d'après le code, get_info_params_inductive 
 renvoie npars et ty_pars*)
 
-Ltac get_info2 I_rec na :=
+Ltac get_info20 I_rec na :=
   let I_rec_term := eval cbv in (I_rec.2) in
   let opt := eval cbv in (get_info_params_inductive I_rec_term I_rec.1) in pose opt as na.
 
 
-  Ltac get_info2_quote I na := 
+  Ltac get_info20_quote I na := 
    let I_rec := metacoq_get_value (tmQuoteRec I) in
    get_info2 I_rec  na.
 
