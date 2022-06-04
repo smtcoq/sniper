@@ -396,7 +396,13 @@ Abort.
 
 
 
-Goal False.
+Goal False. 
+
+let x := blut1 na 1  [Set_reif]   list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]  1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo ;  compute in kooo.
+pose_unquote_term_hnf (sel_lterm 0 kooo) p10_reif.
+pose_unquote_term_hnf (sel_lterm 1 kooo) p11_reif.
+(* let x:= blut1  na 1 [Set_reif]  list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo. *)
+
 declare_projs_aux kik 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2.
 
 let x := declare_projs1 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose x as list_projs ; compute in list_projs.
