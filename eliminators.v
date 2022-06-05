@@ -285,33 +285,21 @@ mkLam_rec lA_rev
 *)
 Definition collect_projs (p : nat) (lA_rev : list term) (I : term) (indu: inductive)
 (llAunlift : list (list term)) (ln : list nat) (nc : nat)
-:= let fix aux1 (k : nat) (i :nat) lAk' acc :=
-  match (i,lAk') with 
+:= let fix aux1 (k : nat) (nk :nat) lAk' acc :=
+  match (nk,lAk') with 
   | (0,[]) => acc 
-  | (S i, Akiu :: lAk') => aux1 k i lAk' ((proj_ki p lA_rev I indu k i llAunlift ln (Akiu)):: acc)
+  | (S i, Akiu :: lAk') => aux1 k nk lAk' ((proj_ki p lA_rev I indu k i llAunlift ln (Akiu)):: acc)
   | _ => [] (* this case should not happen *)
   end 
 in 
 let fix aux2 llAu' ln' k  acc :=
 match (k,llAu',ln') with
 | (0,[],[]) => acc
-| (S k,lAk :: llAu' , i :: ln' ) => aux2 llAu' ln' k ((aux1 k i (tr_rev lAk) []) :: acc)
+| (S k,lAk :: llAu' , nk :: ln' ) => aux2 llAu' ln' k ((aux1 k nk (tr_rev lAk) []) :: acc)
 | _ => []
 end in
 aux2 (tr_rev llAunlift) (tr_rev ln) nc []. 
 
-
-Ltac blut1  na p lA_rev I indu llAu ln k lAk nk :=
-  let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
-  let rec aux1 k i lAk' acc :=
-  lazymatch i with
-  | 0 => (* idtac "blut 0" ;*) constr:(acc)
-  | S ?i0 => (* idtac "blut 1" ;*) lazymatch eval hnf in lAk' with
-   | ?Akiu :: ?tlAk' =>  (* idtac "blut 2" ;*) let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na in pose (name := pki ) ; let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in (* idtac "blut 3" ;*) aux1 k i0 tlAk' acc0 
-   end 
-  end
-  in    aux1 k nk lAk' (@nil term)
-.
 
 
 
@@ -334,40 +322,6 @@ let x := constr:(collect_projs p lA_rev I indu llAu ln nc) in idtac "compute" ; 
 pose (name := x) end in
 let elim := metacoq_get_value (tmQuote name) in  *)
 
-
-Ltac declare_projs1 p lA_rev  I  indu llAunlift  ln nc 
-:= 
-match goal with _ => (* idtac "prems" ; *) let rec aux1 k  i  lAk' acc := 
-(* idtac "blut 0"; *)  let x := constr:((i,lAk'))   in (* idtac "kikoo" ; *)
-  lazymatch eval hnf in x with
-   | (?i,?lAk') => lazymatch eval hnf in i with
-     | 0 => constr:(acc) 
-     | S ?i => lazymatch eval hnf in lAk' with
-       | ?Akiu :: ?lAk' => let res1 := aux1 k i lAk' constr:(((proj_ki p lA_rev I indu k i llAunlift ln (Akiu)):: acc))in constr:(res1)
-       end end
-   | _ => idtac "error declare_projs 1"
-  end 
-in
-let rec aux2 llAu' ln' k  acc :=
-let y := constr:(((k,llAu'),ln')) 
-in (* idtac "loool" ;*) lazymatch eval hnf in y with
-| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
-  lazymatch eval cbv in ln0' with
-  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
-  | ?i :: ?ln1' => (*  idtac "blut 3" ;*)
-    lazymatch eval hnf in y0 with 
-    | (?k, ?lAu') => lazymatch eval hnf in k with
-      | S ?k => (* idtac "blut 5" ; *) lazymatch eval hnf in lAu' with
-        | ?lAk :: ?lAu'=> let res2 := aux2 llAu' ln' k constr:((aux1 k i (tr_rev lAk) (@nil term)) :: acc) in constr:(res2)
-  end 
-  end   
-  end
-  end 
-  |_ => idtac "error declare_projs 1"
-end
-in let res := aux2 constr:(tr_rev llAunlift) constr:(tr_rev ln) nc (@nil term)  in constr:(res)
-end
-.
 
 (************************************************)
 
