@@ -395,8 +395,73 @@ Abort.
 
 
 
+Ltac blut1  na p lA_rev I indu llAu ln k lAk nk :=
+  let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
+  let rec aux1 k i lAk' acc :=
+  lazymatch i with
+  | 0 => (* idtac "blut 0" ;*) constr:(acc)
+  | S ?i0 => (* idtac "blut 1" ;*) lazymatch eval hnf in lAk' with
+   | ?Akiu :: ?tlAk' =>  (* idtac "blut 2" ;*) let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na in pose (name := pki ) ; let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in (* idtac "blut 3" ;*) let z := aux1 k i0 tlAk' acc0 in constr:(z)
+   end 
+  end
+  in    aux1 k nk lAk' (@nil term)
+.
+
+
+Fixpoint truc l := match l with
+| [] => 0
+| n :: l => n + 2 * (truc l)
+end.
+
+Definition sq n := n * n.
+
+
+
+Ltac blut7 lA := let _ := match goal with _ =>  idtac "kloo" end in let lAk' := constr:(tr_rev lA) in 
+let rec aux1  lAk' acc :=  lazymatch eval hnf in lAk' with
+| (@nil nat) => idtac "blut 0";  eval compute in acc ;constr:(acc)
+| ?Akiu :: ?tlAk' =>     let n' := constr:(sq Akiu) in  let name := fresh "proj_"  in let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in idtac "blut 3" ;  let z := aux1  tlAk' acc0 in compute in z ; constr:(z)
+end in aux1 lA (@nil term).
+
+
+Ltac blut8 lA := let _ := match goal with _ =>  idtac "koooo" end in let lAk' := constr:(tr_rev lA) in 
+let rec aux1  lAk' acc :=  lazymatch eval hnf in lAk' with
+| (@nil nat) => idtac "blut 0"; let x := constr:(truc acc) in  x
+| ?Akiu :: ?tlAk' =>     let n' := constr:(sq Akiu) in  let name := fresh "proj_"  in pose (name :=  n') ; let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in idtac "blut 3" ;  idtac tlAk' ; idtac acc0 ; let z := aux1  tlAk' acc0 in constr:(z)
+end in aux1 lA (@nil term).
+
+
+Ltac blut6 n lA :=  let lAk' := constr:(tr_rev lA) in 
+let rec aux1  k lAk' acc :=  match  eval hnf in k with
+| 0 => (* idtac "blut 0"; *) constr:(acc) 
+| S ?k0 => match eval hnf in lAk' with
+| ?Akiu :: ?tlAk' =>     let n' := constr:(sq Akiu) in  let name := fresh "proj_"  in let _ := match goal with _ => pose (name :=  n')  end in let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in (* idtac "blut 3" ;   idtac tlAk' ; idtac acc0 ; *) let z := aux1  k0 tlAk' acc0 in constr:(z) 
+end end in aux1 n lA (@nil term).
+
+Goal False.
+(* pose (x := blut6 2 [2 ; 3 ; 4]).*)
+let x := blut6 2 [2 ; 3 ; 4] in pose x as kik.
+Abort.
+
+
+(* TODO : voir comment Lousie gère les appels de fonctions *)
+Ltac blut0 na lA nk :=
+  let lAk' := constr:(tr_rev lA) in 
+  let rec aux1  i lAk' acc :=
+  lazymatch i with
+  | 0 =>  idtac "blut 0" ;  match goal with _ in  constr:(acc)
+  | S ?i0 => idtac "blut 1" ; lazymatch eval hnf in lAk' with
+  | ?Akiu :: ?tlAk' =>   idtac "blut 2" ; let pki := constr:(sq Akiu) in 
+   let name :=  fresh "proj_" na in match goal with _ => pose (name := pki ) end ; let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in idtac "blut 3" ;  let z := aux1  i0 tlAk' acc0 in constr:(z)
+   end 
+  end
+  in aux1 nk lAk' (@nil term)
+.
+
 
 Goal False. 
+let x := blut0 kik  [2 ; 5 ; 8] 3 in pose x as koo.
+
 
 let x := blut1 na 1  [Set_reif]   list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]  1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo ;  compute in kooo.
 pose_unquote_term_hnf (sel_lterm 0 kooo) p10_reif.
