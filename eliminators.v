@@ -163,24 +163,6 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
     Indeed, tRel kp is tRel 1 lifter len0 times
     * If j = k, then tRel kp denotes the variable that is bound by the hole of rank i
     *)
-Definition branch_default_var0 (l0 : list term) (i : nat) (k : nat) (j : nat) :=
-  let len := Datatypes.length l0 in 
-  (* \TODO choisir orde des paramètres *)
-  (* \TODO factoriser le calcul de length dans les fonctions qui appellent branch_default_var
-  branch_default_var n'a pas besoin de l0 mais seulement de sa longueur
-  *)
-  (* \TODO on peut pê se débarrasser d'un arg entier, n est probablement égal à ... *)
-  let kp := if Nat.eqb j k then len - i
-  else S len in
-  let fix aux k acc :=
-    match k with 
-    | 0 => acc 
-    | S k => aux k (mkLam hole acc)
-    end
-  in aux len (tRel kp).  
-(* tRel 1 will be the parameter for the default value *)
-(* note that tRel 1 is not bound in the above function *)
- 
 (* same function, but when the length is given*)
 (* \TODO order of the parameters? *)
 Definition branch_default_var (lenk  : nat) (i : nat) (k : nat) (j : nat) := 
@@ -205,12 +187,6 @@ Definition branch_default_var1 (lenk  : nat)  (k : nat) (i : nat) (j : nat) :=
       in aux lenk (tRel kp).  
 
    
-
-Definition blut_case (I : term) (indu: inductive) (llA : list (list term))  (* lctors : list term *) (ln : list nat) (* (p : nat) *) (* : list (nat * term) *) :=  0.
-(*   let fix aux1 llA acc := 0 in 0. 
-\TODO : supprimer 
-*)
-
 
 (* \TODO long term: recover the "relevant" parameter and not hard-code it *)
 (* Constructs the pattern matching in the eliminator
@@ -247,9 +223,6 @@ cf. branch_default_var *)
     end
     in tr_rev (aux llen 0 (* 1*) []). 
 
-Goal False. (* \TMP *)
-let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as mklistparamex ; compute in mklistparamex.
-Abort.
 
 
 (*  \TODO 
@@ -303,32 +276,79 @@ aux2 (tr_rev llAunlift) (tr_rev ln) nc [].
 
 
 
-Ltac declare_projs_aux1 na p lA_rev  I  indu llAu  ln   nc
-:= idtac "kik" ;   let _ := match goal with _ => idtac end in idtac "kooo"; 
-let x := constr:(collect_projs p lA_rev I indu llAu ln nc) in idtac "compute" ; compute in x ; idtac "blut"; let rec aux1 lf acc :=
-  lazymatch lf with
-  | (@nil (list term)) => acc 
-  | ?p :: ?lf0  =>   let name := fresh "proj_" na in   
-  pose_unquote_term_hnf p name ;
-  let tVar_reif := (metacoq_get_value (tmQuote name)) in let 
-  acc0 := constr:(tVar_reif :: acc) 
-  in  aux1 lf0 acc0 
-  end in let truc := constr:(hd impossible_term_reif (tl x)) in
-  aux1 truc (@list term)  
-  .
 
 
-(* let name := fresh "proj_" I i "_" k  in let _ := match goal with _ => (*\Q pourquoi ce match goal with ici et pas plus haut? *)
-pose (name := x) end in
-let elim := metacoq_get_value (tmQuote name) in  *)
+(* \TODO améliorer le nommage *)
+(* declare_projs_for_one_ctor .... k lAk k 
+   (1) declare the projections of Ck, the ctor of rank k of I with the base name na (hopefully, the name of the inductive)
+   (2) outputs the list of reified projections as tVar's [ tVar "na_k_0" ; .... ; tVar "na_k_nk" ] (i.e. projections are in order)
+   where 
+   * lA is the list of types of the arguments of C_k
+   * nk is the number of parameters of C_k
+   * the other metavariables follow the usual conventions 
+*)
+
+Ltac declare_projs_for_one_ctor na p lA_rev I indu llAu ln k lAk nk :=
+  let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
+  let rec aux1 k i lAk' acc :=
+  lazymatch i with
+  | 0 => constr:(acc)
+  | S ?i0 => lazymatch eval hnf in lAk' with
+   | ?Akiu :: ?tlAk' => let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na (* k "_" i0 *) in let _ := match goal with _ =>  pose_unquote_term_hnf pki name
+    end in let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in let z := aux1 k i0 tlAk' acc0 in constr:(z)
+   end 
+   |_ => idtac "error declare_projs_for_one_ctor" 
+  end
+  in aux1 k nk lAk' (@nil term)
+.
+
+(* declare_projs na ... nc
+  (1) declare the projs of an inductive using base name na (the name of inductive)
+  (2) outputs the list of lists of the reified projectors as tVar's 
+      [[ tVar "na_0_0" ; .... ; tVar "na_k_n0" ] ; ....
+      ;  [ tVar "na_nc_0" ; .... ; tVar "na_nc_{k_nc}" ] ]
+      (i.e. projections are in order)
+  where nc is the number of constructors of the inductive
+  *)
+  (* \TODO  currently, the projections are in order in the output, but it would be better that they are in the reverse order to produce the generation statement
+  (indeed, we need to perform one reverse)
+  *)
+Ltac declare_projs na p lA_rev I indu llAu ln nc :=
+  let llAu_rev := constr:(tr_rev llAu) in let ln_rev := 
+constr:(tr_rev ln)    
+in 
+ let rec aux llAu' ln' k  acc :=
+let y := constr:(((k,llAu'),ln')) 
+in (* idtac "loool" ;*) match eval hnf in y with
+| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
+  match eval cbv in ln0' with
+  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
+  | ?nk :: ?tln0 => (*  idtac "blut 3" ;*)
+    match eval hnf in y0 with 
+    | (?k, ?lAu') => lazymatch eval hnf in k with
+      | S ?k =>  (* idtac "blut 5" ; *)  match eval hnf in lAu' with
+        | ?lAk :: ?tlAu'=> let projs_k  :=  declare_projs_for_one_ctor na p lA_rev I indu llAu ln k  lAk nk in let acc0 := constr:(projs_k :: acc ) in let res2 := aux tlAu' tln0 k acc0 in  constr:(res2)
+  end 
+  end   
+  end
+  end 
+ |_ => idtac "error declare_projs " 
+end
+in 
+let res := aux llAu_rev ln_rev nc (@nil (list term))  in constr:(res)
+. 
 
 
-(************************************************)
 
-Ltac declare_projs2 p lA_rev  I  indu llAunlift  ln nc 
+
+
+
+(* \TODO write a unique function declare_projs, which is not split in two 
+as declare_projs_for_one_ctor and declare_projs *)
+Ltac declare_projs0 p lA_rev  I  indu llAunlift  ln nc 
 := 
-match goal with _ => (* idtac "prems" ; *) let rec aux1 k  i  lAk' acc := 
-(* idtac "blut 0"; *)  let x := constr:((i,lAk'))   in (* idtac "kikoo" ; *)
+match goal with _ => let rec aux1 k  i  lAk' acc := 
+ let x := constr:((i,lAk'))   in (* idtac "blut 0" ; *)
   lazymatch eval hnf in x with
    | (?i,?lAk') => lazymatch eval hnf in i with
      | 0 => constr:(acc) 
@@ -340,7 +360,7 @@ match goal with _ => (* idtac "prems" ; *) let rec aux1 k  i  lAk' acc :=
 in
 let rec aux2 llAu' ln' k  acc :=
 let y := constr:(((k,llAu'),ln')) 
-in (* idtac "loool" ;*) lazymatch eval hnf in y with
+in  lazymatch eval hnf in y with
 | (?y0 , ?ln0') => (* idtac "blut 1" ; *)
   lazymatch eval cbv in ln0' with
   | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
@@ -360,17 +380,7 @@ end
 .
 
 
-
-(* Ltac declare_projs0 na p lA_rev I indu llAu ln nc :=  (* \TODO experiment with red strat, eg. with hnf *)
-  let x := constr:(collect_projs p lA_rev I indu llAu ln nc) in cbv in x ;  
-  let name := fresh "proj_" na in let  
-  let _ := match goal with _ => 
-  pose (name := ) end in
-  let pik := metacoq_get_value (tmQuote name) in  *)
-(* let name := fresh "proj_" I i "_" k  in let _ := match goal with _ => (*\Q pourquoi ce match goal with ici et pas plus haut? *)
-pose (name := x) end in
-let elim := metacoq_get_value (tmQuote name) in  *)
-
+(************************************************)
 
 
 (* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
