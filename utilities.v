@@ -34,6 +34,12 @@ MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
 
 
+(** \TODO see if needed *)
+Fixpoint leng (l : list nat) :=
+  match l with
+  | [] => 0
+  | _ :: l0 => S (leng l0)
+  end.
 
 
 (** Tail-recursive (actually linear) version of List.rev **)
@@ -66,6 +72,20 @@ Definition tr_revmap {A B : Type } ( f : A -> B) (l : list A) :=
   | [] => acc 
   | x :: l => aux l (f x :: acc ) end
   in aux l [].
+
+(** rec_acc_add [n_1 ; .... ; n_c ] = [n ]
+**)
+Definition rev_acc_add l :=
+let fix aux l s acc :=
+match l with
+  | [] => acc
+  | x :: l => let s' := x+s in aux l s'  (s' :: acc)
+end in aux l 0 [].
+
+Goal False.
+let x := constr:(rev_acc_add [2 ; 3 ; 8]) in pose x as kik ; compute in kik.
+Abort.
+
 
 
 (** Tail-recursive (actually linear) version of List.map 
@@ -451,6 +471,11 @@ Definition get_list_of_rel_lifted (n l : nat) :=
    | S n => aux n  (S k) ((tRel k)::acc)
    end
    in aux n l [].
+
+Goal False.
+let x := constr:(get_list_of_rel_lifted 8 4) in pose x as kik ; compute in kik.
+Abort.
+
 
 
 (* Reifies a term and calls is_type *)
