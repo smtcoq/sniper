@@ -196,7 +196,7 @@ Ltac pose_blut t idn :=   (* \TODO factorize code!*)
      end
     .
 
-(* TODO supprimer *)
+(* \TODO supprimer *)
 Goal False.
 pose_blut list listoblut.
 pose_blut nat natoblut.
