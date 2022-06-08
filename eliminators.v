@@ -74,6 +74,12 @@ end.
 Voir si on peut éliminer ou facto du code.
 *)
 
+Fixpoint mkProd_rec_n (na : ident) (l : list term)  (t: term) := 
+(* warning: t should have been previously lifted *)
+match l with 
+| [] => t 
+| x :: xs => mkProd_rec_n na xs (tProd (mkNamed na)  x t)
+end.
 
 
 Goal False.
@@ -561,15 +567,15 @@ On peut s'en doute s'en débarrasser
 *)
 
 (* \TODO : trouver meilleur nom *)
-(* \TODO : pre_bind_all_for_proj [[A_{0,0} ; ... ; A_{0,l_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k-1}] ]
+(* \TODO : bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,l_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k-1}] ]
                                   [l0 ; ... ; lk ]
     = [ A_{k,l_k}^L ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
       where L = l_0 + ... + l_k
-      Thus, pre_bind_all_for_proj performs a flattening, a revert and a incremental lift of all the elements of the initial list of lists
+      Thus, bind_def_val_in_gen performs a flattening, a revert and a incremental lift of all the elements of the initial list of lists
     *)
 (* \TODO peut-être conserver les accumulateurs l0, l0+l1, l0+l1+l2, ou alors les calculer séparément et faire 
 l'incrémentation à partir de la liste lnacc *)
-Definition pre_bind_all_for_proj (llAunlift : list (list term)) (ln : list nat) :=
+Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
   let fix aux1  acc i (lA : list term) : list term  := 
   match lA with
   | [] => acc  
@@ -584,9 +590,9 @@ Definition pre_bind_all_for_proj (llAunlift : list (list term)) (ln : list nat) 
   in  aux2 [] 0 0  llAunlift ln.
 
 
-  (* same as pre_bind_all_for_proj, but performs products
+  (* same as bind_def_val_in_gen, but performs products
   currently, binds in the reverse order : function should probably be discarded *)
-  Definition pre_bind_all_for_proj0 (t: term) (llAunlift : list (list term)) (ln : list nat) :=
+  Definition bind_def_val_in_gen0 (t: term) (llAunlift : list (list term)) (ln : list nat) :=
     let fix aux1  acc i (lA : list term) : term  := 
     match lA with
     | [] => acc  
@@ -602,8 +608,8 @@ Definition pre_bind_all_for_proj (llAunlift : list (list term)) (ln : list nat) 
 
 
 Goal False.
-let x := constr:(pre_bind_all_for_proj [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
-let x := constr:(pre_bind_all_for_proj0 S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
+let x := constr:(bind_def_val_in_gen [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
+let x := constr:(bind_def_val_in_gen0 S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
 Abort.
 
 
@@ -716,7 +722,7 @@ let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_
   Abort.
 
 
-(* \todo: coupler avec pre_bind_all_for_proj *)
+(* \todo: coupler avec bind_def_val_in_gen *)
 (* \todo : gérer la liste des db, qui est 
 [[L; ... ; lk + ... + l2 +1 ] ; ....; [lk + l_{k-1}  ....; lk+2 ; lk+1 ] ;[ lk ...; 2 ; 1]]
 *)
@@ -922,7 +928,7 @@ Print mutual_inductive_body.
 
 
 
-Ltac get_my_bluts t na := 
+Ltac gen_statement t := 
   let indmind := fresh "indmind" in pose_blut t indmind ; 
   lazymatch eval compute in indmind with
   | (?induu,?mind) => 
@@ -937,17 +943,15 @@ Ltac get_my_bluts t na :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (List.length ln) in let info_uple :=
-        constr:(((((((((llAtrunc,lB),lc),llA),ln),lA),p),nc)))  in 
-        (* let x := constr:(proj_return_types llAtrunc) in pose x as llAunlift  ; *)
+        | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (List.length ln) in 
         let lA_rev := eval compute in (tr_rev lA) in let llAu := eval compute in (tr_map ret_ty_proj llAtrunc) in let t_reif := constr:(tInd indu u) in  let L := constr:(fold_left Nat.add ln 0) in
         let res3 := 
-         declare_projs na p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
-        let _ := match goal with _ => pose (llprojs  := res3)  (* pose res3 as kik*) (*  pose t as na  *) end in
-        let ltypes_forall := constr:(pre_bind_all_for_proj llAu ln) in 
-        let ggd := constr:(mkProd_rec lA_rev (mkProd_rec ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
-         let gent := fresh "gen" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "pr_gen_" t in assert (Helim : gent) by  prove_by_destruct_varn 3 ;
-       clear indmind  
+         declare_projs t p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
+        let _ := match goal with _ => pose (llprojs  := res3)  end in
+        let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
+        let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
+         let gent := fresh "gen" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "pr_gen_" t in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ;
+       clear indmind llprojs
         end
       end
     end
@@ -955,24 +959,6 @@ Ltac get_my_bluts t na :=
   end end end
   .       
    
-  Print get_generation_disjunction.
-
-
-  Goal False.
-  let indmind := fresh "indmind" in pose_blut list indmind. clear.
-  idtac "RESEEEET".
-   get_my_bluts list ik. 
-    
-clear.
-
-
-
-  (*  let x := get_my_bluts list ik in pose x as kikoo.*)
-  Abort.
-
-
-
-
 
  
 Ltac get_eliminators_st_return_quote I := 
@@ -1014,6 +1000,15 @@ get_eliminators_st @nelist. clear.
 get_eliminators_st @biclist. clear.
 get_eliminators_st Ind_test. clear.
 get_eliminators_st Ind_test2. clear.
+Abort.
+
+Goal False.
+gen_statement nat. clear.
+gen_statement list. clear.
+gen_statement @nelist. clear.
+gen_statement @biclist. clear.
+gen_statement Ind_test. clear.
+gen_statement Ind_test2. clear.
 Abort.
 
 
