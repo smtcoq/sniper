@@ -297,6 +297,12 @@ get_list_args_len_quote list list_lal.
 get_ty_arg_constr list list_tarc.
 Abort.
 
+
+
+Goal False.
+let x := constr:(bind_def_val_in_gen [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
+let x := constr:(bind_def_val_in_gen0 S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
+Abort.
 (* list_args := val compute in (split (list_args0)).1   *)
 
 Ltac get_ty_arg_constr_quote I na:=  
@@ -483,14 +489,30 @@ let res := aux2 llAu_rev ln_rev nc (@nil term)  in constr:(res)
 
 
 Goal False.
-idtac "RESEEEEET".
 let x := declare_projs kik  1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose x as kik.
+Abort.
+
+(**** producing the generation statement *)
+Goal False.
+let x := constr:(map_iter 4 (fun x y => x * x + 2* y ) [1; 2 ; 3 ; 5]) in pose x as kik ;
+unfold map_iter in kik ; simpl in kik.  
 Abort.
 
 
 
+Goal false.
+clear.
+let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
+8) in pose x as gexcpex ; compute in gexcpex.
+Abort.
 
 
+Goal False.
+let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
+  [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [3 ; 2 ; 3]) in pose x as ggdex ; compute in ggdex.  clear.
+  Abort.
+
+(**** Old info function. To sort *)
 Ltac get_info2_quote I na := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_info2 I_rec  na; compute in na.
@@ -863,6 +885,11 @@ MetaCoq Quote Definition C_reif := C.
 (********************************************)
 (* Tests on utilities.v                     *)
 (********************************************)
+
+
+Goal False.
+let x := constr:(mkProd_rec [tRel 3 ; tRel 5 ; tRel 8] (tRel 13)) in pose x as mprex ; compute in mprex.
+Abort.
 
 Goal False.
 let x := constr:(list_types_of_each_constructor list_env_reif) in pose x as ltoeclist ; compute in ltoeclist.

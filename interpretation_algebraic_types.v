@@ -40,7 +40,7 @@ Fixpoint get_decl (I : term) (e : global_env) :=
 
 Ltac unquote_term t idn e := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT2 x) as idn))); e idn.
 
-Ltac pose_unquote_term_hnf t idn  := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT2 x) as idn))); cbv in idn.
+Ltac pose_unquote_term_hnf t idn  := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT2 x) as idn))); simpl in idn.
 
 Ltac assert_unquote_term_hnf t  idn := (run_template_program (tmUnquote t ) ltac:(fun x =>  (assert (idn : my_projT2 x)))).
 
@@ -164,12 +164,12 @@ Ltac facto_blut t :=
  let x := get_blut 0  kik in pose x as kik.
 Abort.*)
 
-(* pose_blut t idn takes a Coq term t which an *unquoted* inductive
+(* info_indu t idn takes a Coq term t which an *unquoted* inductive
      and outputs the pair (indu,mind) : inductive × mutual_inductive_body
      where indu in the 'inductive' inside t and mind its mutual_inductive_body as it is defined
      in the global environment Sigma  
 *)
-Ltac pose_blut t idn :=   (* \TODO factorize code!*)
+Ltac info_indu t idn :=   (* \TODO factorize code!*)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
     lazymatch eval hnf in rqt with
      | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
@@ -198,8 +198,8 @@ Ltac pose_blut t idn :=   (* \TODO factorize code!*)
 
 (* \TODO supprimer *)
 Goal False.
-pose_blut list listoblut.
-pose_blut nat natoblut.
+info_indu list listoblut.
+info_indu nat natoblut.
 Abort.
 
 Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
@@ -229,14 +229,6 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
      end
     .
 
-Print inductive.    
-Print mutual_inductive_body.
-Print InductiveDecl.
-Print lookup_env.
-Print global_decl.
-Print inductive.
-Print context.
-Print context_decl.
 
 
 (* get_params_from_mind mind = (p , lA) 

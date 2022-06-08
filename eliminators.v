@@ -21,11 +21,7 @@ Require Import interpretation_algebraic_types.
 
 Require Import SMTCoq.SMTCoq.
 
-(* \TMP *)
-MetaCoq Quote Definition S_reif := S. 
-MetaCoq Quote Definition O_reif := O.
-MetaCoq Quote Definition Set_reif := Set.
-MetaCoq Quote Definition list_reif := list.
+
 (* \TODO changer les metavariables 
 - nb --> rk ou k ou n tout court (avec spec )
 - une métavariable pour les rangs dans tCase 
@@ -63,6 +59,7 @@ in tApp t (tr_rev (aux n [])).
 Definition get_indu_app_to_params0 (t : term) (p n: nat) := 
   tApp t (get_list_of_rel_lifted p n).
 
+(* \TODO transfer in utilities *)
 (* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
 Fixpoint mkProd_rec (l : list term)  (t: term) := 
 (* warning: t should have been previously lifted *)
@@ -74,6 +71,7 @@ end.
 Voir si on peut éliminer ou facto du code.
 *)
 
+(* same thing but one provides a name for the bound variables *)
 Fixpoint mkProd_rec_n (na : ident) (l : list term)  (t: term) := 
 (* warning: t should have been previously lifted *)
 match l with 
@@ -82,9 +80,6 @@ match l with
 end.
 
 
-Goal False.
-let x := constr:(mkProd_rec [tRel 3 ; tRel 5 ; tRel 8] (tRel 13)) in pose x as mprex ; compute in mprex.
-Abort.
 
 (* mkLam [A1 ; .... ; An ] t = Lam "x/A" An. ... tProd "x/A" A1. t   (reverts list) *)
 Fixpoint mkLam_rec (l : list term)  (t: term) := 
@@ -246,10 +241,6 @@ mkLam_rec lA_rev
 (tCase (indu, p, Relevant)  (mkLam (get_indu_app_to_params0 I p 2) (lift0 3 Akiu)) (tRel 0)  (mkCase_list_param1 ln k i)))).
 
 
-
-
-
-
 (* This function computes the projections of an inductive type the projections in the local environment
   \TODO some  tr_rev's could perhaps be avoided if collect_projs is merged with the Ltac function declare_projs below
 *)
@@ -276,10 +267,10 @@ Ltac declare_projs_ctor_k  na p lA_rev I indu llAu ln k lAk nk :=
   let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
   let rec aux1 k i lAk' acc :=
   lazymatch i with
-  | 0 => (* idtac "blut 0" ;*) constr:(acc)
-  | S ?i0 => (* idtac "blut 1" ;*) lazymatch eval hnf in lAk' with
-   | ?Akiu :: ?tlAk' =>  (* idtac "blut 2" ;*) let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na (* k "_" i0 *) in let _ := match goal with _ =>(** pose (name := pki )*) pose_unquote_term_hnf pki name
-    end in let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in (* idtac "blut 3" ;*) let z := aux1 k i0 tlAk' acc0 in constr:(z)
+  | 0 => constr:(acc)
+  | S ?i0 => lazymatch eval hnf in lAk' with
+   | ?Akiu :: ?tlAk' =>  let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pki name
+    end in let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in let z := aux1 k i0 tlAk' acc0 in constr:(z)
    end 
    | _ => idtac "erroc declare_projs_ctor_k"
   end
@@ -313,11 +304,11 @@ constr:(tr_rev ln)
 in 
  let rec aux llAu' ln' k  acc :=
 let y := constr:(((k,llAu'),ln')) 
-in (* idtac "loool" ;*) match eval hnf in y with
-| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
+in match eval hnf in y with
+| (?y0 , ?ln0') => 
   match eval cbv in ln0' with
-  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
-  | ?nk :: ?tln0 => (*  idtac "blut 3" ;*)
+  | (@nil nat) =>   constr:(acc) 
+  | ?nk :: ?tln0 =>
     match eval hnf in y0 with 
     | (?k, ?lAu') => lazymatch eval hnf in k with
       | S ?k =>  (* idtac "blut 5" ; *)  match eval hnf in lAu' with
@@ -357,10 +348,10 @@ in
 let rec aux2 llAu' ln' k  acc :=
 let y := constr:(((k,llAu'),ln')) 
 in  lazymatch eval hnf in y with
-| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
+| (?y0 , ?ln0') => 
   lazymatch eval cbv in ln0' with
-  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
-  | ?i :: ?ln1' => (*  idtac "blut 3" ;*)
+  | (@nil nat) => constr:(acc) 
+  | ?i :: ?ln1' => 
     lazymatch eval hnf in y0 with 
     | (?k, ?lAu') => lazymatch eval hnf in k with
       | S ?k => (* idtac "blut 5" ; *) lazymatch eval hnf in lAu' with
@@ -472,10 +463,7 @@ the parameters *)
 
 
 (* Goal False. (* \Q Keep? *)
-let x := constr:(map_iter 4 (fun x y => x * x + 2* y ) [1; 2 ; 3 ; 5]) in pose x as kik ;
-unfold map_iter in kik ; simpl in kik.  
-let x := constr:(map_iter0 4 (fun x y => x * x + 2* y ) [1; 2 ; 3 ; 5]) in pose x as koo ;
-unfold map_iter0 in koo ; unfold tr_rev in koo ; simpl in koo.   
+l
 Abort. *)
  
 
@@ -496,8 +484,7 @@ let res0 := aux t [] 0 in
 (map_iter 0 unlift (skipn p (tr_rev (fst res0))), snd res0). 
 (* \TODO pê problème de unlift, car on doit relifter après *)
 
-Check args_of_prod_with_length.
-Check unlift.
+
 
 (*
 proj_return_types [[A_{0,0} ; ... ; A_{0,l_0}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k}] ]
@@ -535,12 +522,7 @@ match l with
 | x :: xs => let x' := args_of_prod_with_length x p in aux xs (x' :: acc)
 end
 in tr_rev (aux l []). 
-(* 
-Goal False.
-let x := constr:(get_args_list_with_length (tProd (mkNamed "x") (tRel 1) (tProd (mkNamed "x") (tRel 52) ( tProd (mkNamed "x") (tRel 100) (tProd  (mkNamed "x") (tRel 9)
-(tApp list_reif  [nat_reif ; tRel 3 ; tRel 5 ; tRel 8 ; tRel 13 ; tRel 21]) ))) ) 0 ) in pose x as galenex ; unfold get_args_list_with_length in galenex ;
-unfold args_of_prod_with_length in galenex  ; unfold skipn in galenex ; unfold map_iter in galenex ; simpl in galenex.
-Abort.  *)
+
 
 
 
@@ -561,7 +543,7 @@ match l with
 | x :: xs => aux xs (snd x + n)
 end
 in aux l 0.
-Check total_arg_ctors.
+
 (* \TODO total_arg_ctors n'est utilisé que dans Ltac get_eliminators_st_return sur list_args_len. Une info est sans doute calculée deux fois. 
 On peut s'en doute s'en débarrasser 
 *)
@@ -607,10 +589,6 @@ Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
     in  aux2 t 0 0  llAunlift ln.
 
 
-Goal False.
-let x := constr:(bind_def_val_in_gen [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
-let x := constr:(bind_def_val_in_gen0 S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
-Abort.
 
 
 (* lift_rec_rev [A0; ...; An] = [lift0 n An ; .... ; lift1 1 A1 ; lift0 0 A0] *)
@@ -659,7 +637,7 @@ match list_tVar with
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
 (* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
-Check get_elim_applied. 
+
 
 (* get_eq_x_ctor_proj p ctor [p_0, ..., p_{k-1}] db  
    is the reification of the equality "tRel 0" = ctor (p0 [ _p ; tRel db  ; tRel 0] ; 
@@ -678,15 +656,6 @@ let fix aux lprojs i  acc :=
    | _ => [] (* this case does not happen *)
   end in 
   mkEq hole (tRel 0) (tApp ctor (rev_append (holes_n p) (tr_rev (aux projs (S db) [])))).
-
-
-
-(* \TMP *)
-Goal false.
-clear.
-let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
-8) in pose x as gexcpex ; compute in gexcpex.
-Abort.
 
 
 (* \todo check that the db are computed somewhere *)
@@ -713,13 +682,6 @@ Abort.
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
  in tProd (mkNamed "x") (tApp I (get_list_of_rel_lifted p L)) (mkOr (aux lc list_proj lN [])) .
-
- 
-
-Goal False.
-let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
-  [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [3 ; 2 ; 3]) in pose x as ggdex ; compute in ggdex.  clear.
-  Abort.
 
 
 (* \todo: coupler avec bind_def_val_in_gen *)
@@ -921,15 +883,10 @@ ind_ctors := [("O"%string, tRel 0, 0);
 ind_projs := [];
 ind_relevance := Relevant |}.
 
-Print Ltac pose_blut.
-(* pv new verion*)
-Print mutual_inductive_body.
-
-
 
 
 Ltac gen_statement t := 
-  let indmind := fresh "indmind" in pose_blut t indmind ; 
+  let indmind := fresh "indmind" in info_indu t indmind ; 
   lazymatch eval compute in indmind with
   | (?induu,?mind) => 
     lazymatch eval hnf in induu with
