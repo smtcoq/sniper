@@ -602,8 +602,8 @@ Definition pre_bind_all_for_proj (llAunlift : list (list term)) (ln : list nat) 
 
 
 Goal False.
-let x := constr:(pre_bind_all_for_proj0 [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
-let x := constr:(pre_bind_all_for_proj S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
+let x := constr:(pre_bind_all_for_proj [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as kik ; compute in kik.
+let x := constr:(pre_bind_all_for_proj0 S_reif [[tRel 0 ] ; [tRel 0 ; tApp list_reif [tRel 0] ; tApp list_reif [tRel 0]]; [tRel 0 ; tApp nat_reif [tRel 1]]  ] [1 ; 3 ; 2]) in pose x as koo ; compute in koo.
 Abort.
 
 
@@ -671,7 +671,9 @@ let fix aux lprojs i  acc :=
    | (pki :: lprojs, S i) => aux lprojs i ((tApp pki (holes_n' p i))::acc)
    | _ => [] (* this case does not happen *)
   end in 
-  mkEq hole (tRel 0) (tApp ctor (tr_rev (aux projs (S db) []))).
+  mkEq hole (tRel 0) (tApp ctor (rev_append (holes_n p) (tr_rev (aux projs (S db) [])))).
+
+
 
 (* \TMP *)
 Goal false.
@@ -704,7 +706,7 @@ Abort.
   | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_proj p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
- in mkProd (tApp I (get_list_of_rel_lifted p L)) (mkOr (aux lc list_proj lN [])) .
+ in tProd (mkNamed "x") (tApp I (get_list_of_rel_lifted p L)) (mkOr (aux lc list_proj lN [])) .
 
  
 
@@ -943,8 +945,8 @@ Ltac get_my_bluts t na :=
          declare_projs na p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
         let _ := match goal with _ => pose (llprojs  := res3)  (* pose res3 as kik*) (*  pose t as na  *) end in
         let ltypes_forall := constr:(pre_bind_all_for_proj llAu ln) in 
-        (* let ggd := constr:(mkProd_rec lA_rev (mkProd_rec ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
-         pose  (kloo := ggd) ;    *)
+        let ggd := constr:(mkProd_rec lA_rev (mkProd_rec ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
+         let gent := fresh "gen" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "pr_gen_" t in assert (Helim : gent) by  prove_by_destruct_varn 3 ;
        clear indmind  
         end
       end
@@ -959,10 +961,10 @@ Ltac get_my_bluts t na :=
   Goal False.
   let indmind := fresh "indmind" in pose_blut list indmind. clear.
   idtac "RESEEEET".
-   get_my_bluts list ik. compute in kloo.
-pose_unquote_term_hnf klooo truc.
- get_my_bluts list ik. ; compute in ik .  (* compute in llAunlift ; compute in llAunlift. compute in L; *)
-pose  as machin.
+   get_my_bluts list ik. 
+    
+clear.
+
 
 
   (*  let x := get_my_bluts list ik in pose x as kikoo.*)
@@ -1010,10 +1012,10 @@ get_eliminators_st list. clear.
 get_eliminators_st nat. clear.
 get_eliminators_st @nelist. clear.
 get_eliminators_st @biclist. clear.
-
 get_eliminators_st Ind_test. clear.
 get_eliminators_st Ind_test2. clear.
 Abort.
+
 
 End tests_eliminator.
 
