@@ -133,13 +133,13 @@ _p is a macro for p evars
    tail-recursive
    \TODO remove this function, the lift0 1 in the main function and use the one below (get_indu_app_to_params0) instead
 *)
-Definition get_indu_app_to_params (t : term) (n : nat) := 
-  let fix aux n acc :=
-   match n with
+Definition get_indu_app_to_params (t : term) (p : nat) := 
+  let fix aux p acc :=
+   match p with
    | 0 => acc 
-   | S n => aux n ((tRel n)::acc)
+   | S p => aux p ((tRel p)::acc)
    end
-in tApp t (tr_rev (aux n [])). 
+in tApp t (tr_rev (aux p [])). 
 
 (* get_indu_app_to_params t n = tApp t [tRel n ; .... ; tRel 1]
    tail-recursive
@@ -191,8 +191,7 @@ end.
 
 
 (* removes k to each de Brujin indexes: useful when variables are removed *)
-(* \TODO ??? higher order version where fun i => i - k abstracted, if possible (not sure with tCase )*)
-(* \Rk does not work with dependencies. Should perhaps use subst instead *)
+(* Remark: does not work with dependencies. Should perhaps use subst instead *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
   | tRel i => tRel (i-k)
@@ -240,31 +239,28 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
     Indeed, tRel kp is tRel 1 lifter len0 times
     * If j = k, then tRel kp denotes the variable that is bound by the hole of rank i
     *)
-
- 
-
 (* same function, but when the length is given*)
 (* \TODO order of the parameters? *)
-Definition branch_default_var (lenk  : nat) (i : nat) (k : nat) (j : nat) := 
-    let kp := if Nat.eqb k j then lenk - i
-    else S lenk in
-    let fix aux k acc :=
-    match k with 
+Definition branch_default_var (n  : nat) (i : nat) (j : nat) (q : nat) := 
+    let kp := if Nat.eqb j q then n - i
+    else S n in
+    let fix aux j acc :=
+    match j with 
     | 0 => acc 
-    | S k => aux k (mkLam hole acc)
+    | S j => aux j (mkLam hole acc)
     end
-    in aux lenk (tRel kp).  
+    in aux n (tRel kp).  
+(* \TODO metavariables i and j are perhaps swaooed in branch_default_var *)
 
-
-Definition branch_default_var1 (lenk  : nat)  (k : nat) (i : nat) (j : nat) := 
-      let kp := if Nat.eqb k j then lenk - (S i)  
-      else S lenk in
-      let fix aux k acc :=
-      match k with 
+Definition branch_default_var1 (n : nat)  (i : nat) (j : nat) (q : nat) := 
+      let kp := if Nat.eqb i q then n - (S j)  
+      else S n in
+      let fix aux i acc :=
+      match i with 
       | 0 => acc 
-      | S k => aux k (mkLam hole acc)
+      | S i => aux i (mkLam hole acc)
       end
-      in aux lenk (tRel kp).  
+      in aux n (tRel kp).  
 
    
 
@@ -287,21 +283,21 @@ cf. branch_default_var *)
     and dbk = lenk - i  
         dbj = lenj + 1   if j <> j 
 *)
- Definition mkCase_list_param (llen : list nat) (i : nat) (k : nat) :=
-  let fix aux llen j acc :=
-  match llen with
+ Definition mkCase_list_param (ln : list nat) (i : nat) (j : nat) :=
+  let fix aux ln q acc :=
+  match ln with
   | [] => acc
-  | len0 :: llen => aux llen (S j)  ((len0 , branch_default_var len0 i k j) :: acc )
+  | len0 :: ln => aux ln (S q)  ((len0 , branch_default_var len0 i j q) :: acc )
   end
-  in tr_rev (aux llen 0 (* 1*) []). 
+  in tr_rev (aux ln 0 (* 1*) []). 
   
-  Definition mkCase_list_param1 (llen : list nat)  (k : nat) (i : nat) :=
-    let fix aux llen j acc :=
-    match llen with
+  Definition mkCase_list_param1 (ln : list nat)  (i : nat) (j : nat) :=
+    let fix aux ln q acc :=
+    match ln with
     | [] => acc
-    | len0 :: llen => aux llen (S j)  ((len0 , branch_default_var1 len0 k i j) :: acc )
+    | len0 :: ln => aux ln (S q)  ((len0 , branch_default_var1 len0 i j q) :: acc )
     end
-    in tr_rev (aux llen 0 (* 1*) []). 
+    in tr_rev (aux ln 0 (* 1*) []). 
 
 
 
@@ -314,7 +310,7 @@ cf. branch_default_var *)
 *)
 Definition mkCase_eliminator_default_var (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
-let llen := tr_map (@List.length term) ty_arg_constr  in 
+let llen := tr_map leng ty_arg_constr  in 
 tCase (indu, p, Relevant) return_type (tRel 0) (mkCase_list_param llen i k).
 
 
@@ -322,11 +318,11 @@ tCase (indu, p, Relevant) return_type (tRel 0) (mkCase_list_param llen i k).
 (* \TODO calculer directement lift0 1 I_app *)
 (* \TODO voir si pas de rev qui se cachent plus haut, notamment pour retourner llAunlift *)
 (* rq: ty_arg_constr = map rev llAunlift *)
-Definition proj_ki (p : nat) (lA_rev : list term) (I : term) (indu : inductive)  (k : nat) (i : nat)
-(llAunlift : list (list term)) (ln : list nat) (Akiu : term):= 
+Definition proj_ij (p : nat) (lA_rev : list term) (I : term) (indu : inductive)  (i : nat) (j : nat)
+(llAunlift : list (list term)) (ln : list nat) (Aiju : term):= 
 mkLam_rec lA_rev  
- (mkLam Akiu (mkLam (get_indu_app_to_params0 I p 1)
-(tCase (indu, p, Relevant)  (mkLam (get_indu_app_to_params0 I p 2) (lift0 3 Akiu)) (tRel 0)  (mkCase_list_param1 ln k i)))).
+ (mkLam Aiju (mkLam (get_indu_app_to_params0 I p 1)
+(tCase (indu, p, Relevant)  (mkLam (get_indu_app_to_params0 I p 2) (lift0 3 Aiju)) (tRel 0)  (mkCase_list_param1 ln i j)))).
 
 
 (* This function computes the projections of an inductive type the projections in the local environment
@@ -337,7 +333,7 @@ Definition collect_projs (p : nat) (lA_rev : list term) (I : term) (indu: induct
 := let fix aux1 (k : nat) (nk :nat) lAk' acc :=
   match (nk,lAk') with 
   | (0,[]) => acc 
-  | (S i, Akiu :: lAk') => aux1 k nk lAk' ((proj_ki p lA_rev I indu k i llAunlift ln (Akiu)):: acc)
+  | (S i, Akiu :: lAk') => aux1 k nk lAk' ((proj_ij p lA_rev I indu k i llAunlift ln (Akiu)):: acc)
   | _ => [] (* this case should not happen *)
   end 
 in 
@@ -351,16 +347,16 @@ aux2 (tr_rev llAunlift) (tr_rev ln) nc [].
 
 
 (* \TODO améliorer le nommage *)
-Ltac declare_projs_ctor_k  na p lA_rev I indu llAu ln k lAk nk :=
+Ltac declare_projs_ctor_i  na p lA_rev I indu llAu ln k lAk nk :=
   let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
   let rec aux1 k i lAk' acc :=
   lazymatch i with
   | 0 => constr:(acc)
   | S ?i0 => lazymatch eval hnf in lAk' with
-   | ?Akiu :: ?tlAk' =>  let pki := constr:(proj_ki p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pki name
+   | ?Akiu :: ?tlAk' =>  let pki := constr:(proj_ij p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pki name
     end in let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in let z := aux1 k i0 tlAk' acc0 in constr:(z)
    end 
-   | _ => idtac "erroc declare_projs_ctor_k"
+   | _ => idtac "erroc declare_projs_ctor_i"
   end
   in   let res_dpk := aux1 k nk lAk' (@nil term) in constr:(res_dpk)
 .
@@ -401,7 +397,7 @@ in match eval hnf in y with
     | (?k, ?lAu') => lazymatch eval hnf in k with
       | S ?k =>  (* idtac "blut 5" ; *)  match eval hnf in lAu' with
         | ?lAk :: ?tlAu'=> 
-        let dpk  := declare_projs_ctor_k na p lA_rev I indu llAu ln k  lAk nk in let acc0 := constr:(dpk :: acc ) in let res2 := aux tlAu' tln0 k acc0 in  constr:(res2)
+        let dpk  := declare_projs_ctor_i na p lA_rev I indu llAu ln k  lAk nk in let acc0 := constr:(dpk :: acc ) in let res2 := aux tlAu' tln0 k acc0 in  constr:(res2)
   end 
   end   
   end
@@ -420,7 +416,7 @@ let res_dp := aux llAu_rev ln_rev nc (@nil (list term))  in constr:(res_dp)
 (*** \TODO one unique function which declares the projectors of I in the local context
  and outputs the list of lists of their tVar's
 *)
-Ltac declare_projs0 p lA_rev  I  indu llAunlift  ln nc 
+Ltac declare_projs0 p lA_rev  I indu llAunlift  ln nc 
 := 
 match goal with _ => let rec aux1 k  i  lAk' acc := 
  let x := constr:((i,lAk'))   in (* idtac "blut 0" ; *)
@@ -428,7 +424,7 @@ match goal with _ => let rec aux1 k  i  lAk' acc :=
    | (?i,?lAk') => lazymatch eval hnf in i with
      | 0 => constr:(acc) 
      | S ?i => lazymatch eval hnf in lAk' with
-       | ?Akiu :: ?lAk' => let res1 := aux1 k i lAk' constr:(((proj_ki p lA_rev I indu k i llAunlift ln (Akiu)):: acc))in constr:(res1)
+       | ?Akiu :: ?lAk' => let res1 := aux1 k i lAk' constr:(((proj_ij p lA_rev I indu k i llAunlift ln (Akiu)):: acc))in constr:(res1)
        end end
    | _ => idtac "error declare_projs 1"
   end 
@@ -721,7 +717,7 @@ in aux l [] 0.
 Fixpoint get_elim_applied (list_tVar : list (term * nat)) (lpars : list term) :=
 match list_tVar with
 | nil => nil
-| (elim, db) :: xs => (tApp elim (holes_n' (length lpars) db)):: get_elim_applied xs lpars
+| (elim, db) :: xs => (tApp elim (holes_n' (leng lpars) db)):: get_elim_applied xs lpars
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
 (* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
@@ -929,7 +925,7 @@ match opt with
   let list_args := eval compute in (split list_args_len).1 in 
   let list_ty_default0 := eval compute in (tr_flatten list_args) in
   let list_ty_default := eval compute in (lift_rec_rev list_ty_default0) in 
-  let k := eval compute in (Datatypes.length list_args) in
+  let k := eval compute in (leng list_args) in
   let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term k p) in 
   let total_args := eval compute in (total_arg_ctors list_args_len) 
   in
@@ -988,7 +984,7 @@ Ltac gen_statement t :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (List.length ln) in 
+        | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
         let lA_rev := eval compute in (tr_rev lA) in let llAu := eval compute in (tr_map ret_ty_proj llAtrunc) in let t_reif := constr:(tInd indu u) in  let L := constr:(fold_left Nat.add ln 0) in
         let res3 := 
          declare_projs t p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
@@ -1038,7 +1034,6 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
 Goal False.
-Fail get_blut nat ds.
 get_eliminators_st list. clear.
 get_eliminators_st nat. clear.
 get_eliminators_st @nelist. clear.

@@ -5,12 +5,14 @@
 (* mind: mutual_inductive_body *)
 (* ooind : one_inductive_body *)
 (* p : number of parameters of an inductive *)
-(* i : rank of an oind in a mind/rank of a projection *) 
-(* n : number of oind's in a mind *)
-(* nc : number of constructors of a oind *)
-(* k : rank of a constructor in a oind *)
+(* roind : rank of an oind in a mind/rank of a projection *) 
+(* noind : number of oind's in a mind *) (* no *)
+(* nc : number of constructors of a oind *) (* k *)
+(* k : rank of a constructor in a oind *)    (* i *)
+(* n : number of arguments of a constructor *)
+(* j : rank of an argument of a constructor *)
 (* j: rank of case in a pattern-matching (constructor tCase): starts from 1 *)
-
+(* REMPLACER : cela devrait être nc*)   
 
 Require Import utilities. 
 Require Import interpretation_algebraic_types.
@@ -27,7 +29,6 @@ Open Scope string_scope.
 
 Import ListNotations MonadNotation. 
 
-Print impossible_term_reif.
 
 Check nth.
 
@@ -250,6 +251,10 @@ Ltac kooooo t na :=
 *)
 (* ty_default *)
 
+
+
+
+
 Ltac get_list_args_len I_rec na :=
   let I_rec_term := eval compute in (I_rec.2) in
   let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
@@ -273,18 +278,8 @@ let x:= constr:(rev_list_map truc) in pose x as bid.
 compute in bid.
 Abort.
 
-Goal False. (* \TMP *)
-let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as mklistparamex ; compute in mklistparamex.
-Abort.
 
 
-Goal False.
-(* let x := get_ctors_and_types_i t *)
-clear.
-let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
-( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
-let x := constr:(proj_return_types [[tRel 0] ;  [ tRel 0; tApp list_reif [tRel 1] ]; [tRel 0 ; tRel 2 ; tApp (tRel 5) [tRel 4 ; tRel 8]]]) in pose x as prtex ; compute in prtex.
-Abort. 
 
 
 Ltac get_ty_arg_constr I_rec na := let lal := fresh "lal" in
@@ -385,210 +380,8 @@ let list_ty_default0 := eval compute in (tr_flatten list_args) in
 end  
 end.
 
-(**** Before producing the projections *)
- 
-
-Goal False. (* \TMP *)
-let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as mklistparamex ; compute in mklistparamex.
-Abort.
 
 
-
-
-(******* Producing the projections *)
-
-Goal False.
-(* \TODO commenter les exemples*)
-let x := constr:(proj_ki 0 [] nat_reif nat_indu 1 0 [[]; [tRel 0]] [0 ; 1]
-(nat_reif)) in pose x as pS_reif ; compute in pS_reif.
-pose_unquote_term_hnf pS_reif pS.
-clear.
-let x := constr:(proj_ki 1 [Set_reif] list_reif list_indu 1 1 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
-(tApp list_reif [tRel 0])) in pose x as proj_list11_reif ; compute in proj_list11_reif.
-pose_unquote_term_hnf proj_list11_reif proj_list_11.
-let x := constr:(proj_ki 1 [Set_reif] list_reif list_indu 1 0 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
-(tRel 0)) in pose x as proj_list10_reif ; compute in proj_list10_reif.
-pose_unquote_term_hnf proj_list10_reif proj_list_10. clear -proj_list_10 proj_list_11.
-Abort.
-
-
-Goal False. 
-let x := constr:(collect_projs 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2) in pose x as list_projs ; compute in list_projs. 
-
-let x := constr:(sel_llterm 1 0 list_projs)  
-in pose x as p10_reif ; compute in p10_reif.
-pose_unquote_term_hnf p10_reif p10.
-let x := constr:(sel_llterm 1 1 list_projs) in pose x as p11_reif ; compute in p11_reif.
-pose_unquote_term_hnf p11_reif p11.
-Abort.
-
-
-
-
-
-
-Goal False. 
-
-
-let x := blut0 kik  [2 ; 5 ; 8] 3 in pose x as koo.
-clear.
-
-
-
-let x := declare_projs_ctor_k na 1  [Set_reif]   list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]  1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo ;  compute in kooo .
-pose_unquote_term_hnf (sel_lterm 0 kooo) p10_reif.
-pose_unquote_term_hnf (sel_lterm 1 kooo) p11_reif.
-Abort.
-(* let x:= blut1  na 1 [Set_reif]  list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo. *)
-
-(* declare_projs_aux kik 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2. *)
-
-(* \TODO change name *)
-
-Goal False.
-let x := declare_projs kik  1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose  x as kik.
-Abort.
-
-
-Ltac declare_projs1 na p lA_rev  I  indu llAunlift  ln nc 
-:= idtac "debut" ; 
-let llAu_rev := constr:(tr_rev llAunlift) in let ln_rev := 
-constr:(tr_rev ln) in idtac "let rec aux1" ; 
- let rec aux1 k  i  lAk' acc := 
- idtac "blut 0";  let x := constr:((i,lAk'))   in (* idtac "kikoo" ; *)
-  match eval hnf in x with
-   | (?i,?lAk') => match eval hnf in i with
-     | 0 => constr:(acc) 
-     | S ?i => match eval hnf in lAk' with
-       | ?Akiu :: ?lAk' => idtac "res1" ; let pki := constr:(proj_ki p lA_rev I indu k i llAunlift ln (Akiu)) in 
-       let name :=  fresh "proj_" na in let _ := match goal with _ => pose (name := pki ) end  in let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in let res1 := aux1 k i lAk'  acc0 in constr:(res1)
-       end end
-   (* | _ => idtac "error declare_projs 1" *)
-  end 
-  in 
- let rec aux2 llAu' ln' k  acc :=
-let y := constr:(((k,llAu'),ln')) 
-in (* idtac "loool" ;*) match eval hnf in y with
-| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
-  match eval cbv in ln0' with
-  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
-  | ?i :: ?ln1' => (*  idtac "blut 3" ;*)
-    match eval hnf in y0 with 
-    | (?k, ?lAu') => lazymatch eval hnf in k with
-      | S ?k => (* idtac "blut 5" ; *) match eval hnf in lAu' with
-        | ?lAk :: ?lAu'=> let res2 := aux2 llAu' ln' k constr:((aux1 k i (tr_rev lAk) (@nil term)) :: acc) in constr:(res2)
-  end 
-  end   
-  end
-  end 
-  (* |_ => idtac "error declare_projs 1" *)
-end
-in 
-let res := aux2 llAu_rev ln_rev nc (@nil term)  in constr:(res)
-. 
-
-
-Goal False.
-let x := declare_projs kik  1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose x as kik.
-Abort.
-
-(**** producing the generation statement *)
-Goal False.
-let x := constr:(map_iter 4 (fun x y => x * x + 2* y ) [1; 2 ; 3 ; 5]) in pose x as kik ;
-unfold map_iter in kik ; simpl in kik.  
-Abort.
-
-
-
-Goal false.
-clear.
-let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
-8) in pose x as gexcpex ; compute in gexcpex.
-Abort.
-
-
-Goal False.
-let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
-  [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [3 ; 2 ; 3]) in pose x as ggdex ; compute in ggdex.  clear.
-  Abort.
-
-(**** Old info function. To sort *)
-Ltac get_info2_quote I na := 
-let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_info2 I_rec  na; compute in na.
-
-
-
-Ltac pose_quote_term c idn :=
-  let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
-
-
-Ltac get_ind_param t idn := 
-    let tq := fresh "t_q" in pose_quote_term t tq ;
-    lazymatch eval hnf in tq with
-     | tInd ?indu ?u =>  pose (indu,u) as idn  ; clear tq
-     end.
-
-
-
-Goal 2 +  2 = 5.
-Proof.
-pose (2,3) as x. pose x.1 as y. Eval compute in y.
-let list_info := fresh "list_info" in get_info_quote list list_info. 
-pose list_info.2 as list_indu. compute in list_indu. (* \Q pq ça ne calcule pas ? *)
-pose list_info.1.2 as list_I_app. compute in list_I_app.
-pose list_info.1.1.2 as list_lpars. compute in list_lpars.
-pose list_info.1.1.1.2 as list_total_args. compute in list_total_args.
-pose list_info.1.1.1.1.2 as list_list_args. compute in list_list_args.
-pose list_info.1.1.1.1.1.2 as list_list_ty. compute in list_list_ty.
-pose list_info.1.1.1.1.1.1.2 as list_ty_pars. compute in list_ty_pars.
-pose list_info.1.1.1.1.1.1.1 as list_p.  hnf in list_p. 
-let truc := metacoq_get_value (tmQuote list) in pose truc as list_reif.
-(* let na := fresh "na" in get_ind_param list na ; pose na.1 as list_indu . 
- match constr:(na) with | (?indu,_) => pose indu as bid end.*)
-Fail let x := (get_one_eliminator_return list list_ty_pars 
-list_I_app list_reif (* list_ty_default *) list_indu list_p 2 (*list_nbproj *) 
-2 (*k*) list_list_args   list_return_ty  list_nb_args_prev list total_args )
-in pose x as truc.
-Abort.
-
-(* get_one_eliminator_return 
-I ty_pars I_app ty_default I_indu p i k 
-list_args return_ty nb_args_previous_construct total_args *)
-
-(* \TODO rename this function*)
-Ltac get_nbproj_nbargprevcons n I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb list_eq :=
-match n with
-| 0 => constr:(list_eq)
-| S ?n' => let prod := eval compute in (nth n' list_args (nil, 0)) in
-           let i := eval compute in (prod.2) in 
-           let c_reif := eval compute in (nth n' list_ctors_reif impossible_term_reif) in
-           let nb_args_previous_construct := eval compute in (nb - i) 
-in constr:((i,nb_args_previous_construct))
-end.
-
-(***********************************)
-
-(*****    fin tests    *************)
-
-(***********************************)
-
-
-
-Goal False.
-(* let x := get_ctors_and_types_i t *)
-clear.
-let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
-( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
-let x := constr:(proj_return_types [[tRel 0] ;  [ tRel 0; tApp list_reif [tRel 1] ]; [tRel 0 ; tRel 2 ; tApp (tRel 5) [tRel 4 ; tRel 8]]]) in pose x as prtex ; compute in prtex.
-Abort. 
-
-
-
-Goal False.
-let x := kooooo list blut in pose x as kik.
-Fail ltac:(let x := get_eliminators_st_return list ik in pose x as kik).
-Abort.
 
 Ltac split_info1 I na := 
    let I_info := fresh "I_info" in get_info_quote I  I_info ; 
@@ -655,15 +448,25 @@ list_app : list_reif [tRel 0]
 nelist_app = nelist_reif [Rel 0]
 *)
 
-Goal False.
-split_info1 list kik.
-let x := constr:(rev_list_map list_list_args ) in pose x as list_tycon ; compute in list_tycon. 
 
-let x := constr:(proj_one_ctor_params_default_var [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
-in pose x as kik ; compute in kik. 
-let x := constr:(proj_one_ctor_params_default_var0 [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
-in pose x as koo ; compute in koo. 
-Abort. 
+(**** Old info function. To sort *)
+Ltac get_info2_quote I na := 
+let I_rec := metacoq_get_value (tmQuoteRec I) in
+get_info2 I_rec  na; compute in na.
+
+
+
+Ltac pose_quote_term c idn :=
+  let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
+
+
+Ltac get_ind_param t idn := 
+    let tq := fresh "t_q" in pose_quote_term t tq ;
+    lazymatch eval hnf in tq with
+     | tInd ?indu ?u =>  pose (indu,u) as idn  ; clear tq
+     end.
+
+
 
 
 
@@ -680,6 +483,216 @@ Ltac split_info2 I na := (* \TODO supprimer list_args, qui est déjà récupér�
 
 (*   constr:(((((((list_args_len,list_args),list_ty_default0),list_ty_default),nbconstruct),list_ctors_reif),list_of_pars_rel)) *) 
  
+
+Goal False.
+split_info1 list kik.
+let x := constr:(rev_list_map list_list_args ) in pose x as list_tycon ; compute in list_tycon. 
+clear.
+split_info1 list "blut". clear -list_list_args.
+split_info2 list "blut". clear.
+split_info1 @nelist "blut". clear. (* clear -list_app nelist_app. *)
+split_info1 @biclist "blut". clear  - biclist_app biclist_list_args. clear.
+Abort.
+(**** Before producing the projections *)
+ 
+
+Goal False. (* \TMP *)
+let x := constr:(mkCase_list_param [2 ; 3 ; 1] 2 2) in pose x as mklistparamex ; compute in mklistparamex.
+Abort.
+
+
+
+
+(******* Producing the projections *)
+
+Goal False.
+(* \TODO commenter les exemples*)
+let x := constr:(proj_ij 0 [] nat_reif nat_indu 1 0 [[]; [tRel 0]] [0 ; 1]
+(nat_reif)) in pose x as pS_reif ; compute in pS_reif.
+pose_unquote_term_hnf pS_reif pS.
+clear.
+let x := constr:(proj_ij 1 [Set_reif] list_reif list_indu 1 1 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
+(tApp list_reif [tRel 0])) in pose x as proj_list11_reif ; compute in proj_list11_reif.
+pose_unquote_term_hnf proj_list11_reif proj_list_11.
+let x := constr:(proj_ij 1 [Set_reif] list_reif list_indu 1 0 [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]
+(tRel 0)) in pose x as proj_list10_reif ; compute in proj_list10_reif.
+pose_unquote_term_hnf proj_list10_reif proj_list_10. clear -proj_list_10 proj_list_11.
+Abort.
+
+
+Goal False. 
+let x := constr:(collect_projs 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2) in pose x as list_projs ; compute in list_projs. 
+
+let x := constr:(sel_llterm 1 0 list_projs)  
+in pose x as p10_reif ; compute in p10_reif.
+pose_unquote_term_hnf p10_reif p10.
+let x := constr:(sel_llterm 1 1 list_projs) in pose x as p11_reif ; compute in p11_reif.
+pose_unquote_term_hnf p11_reif p11.
+Abort.
+
+
+
+
+
+
+Goal False. 
+
+
+
+let x := declare_projs_ctor_i na 1  [Set_reif]   list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2]  1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo ;  compute in kooo .
+pose_unquote_term_hnf (sel_lterm 0 kooo) p10_reif.
+pose_unquote_term_hnf (sel_lterm 1 kooo) p11_reif.
+Abort.
+(* let x:= blut1  na 1 [Set_reif]  list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 1 [tRel 0 ; tApp list_reif [tRel 0]] 2 in pose x as kooo. *)
+
+(* declare_projs_aux kik 1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2. *)
+
+(* \TODO change name *)
+
+Goal False.
+let x := declare_projs kik  1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose  x as kik.
+Abort.
+
+
+Ltac declare_projs1 na p lA_rev  I  indu llAunlift  ln nc 
+:= idtac "debut" ; 
+let llAu_rev := constr:(tr_rev llAunlift) in let ln_rev := 
+constr:(tr_rev ln) in idtac "let rec aux1" ; 
+ let rec aux1 k  i  lAk' acc := 
+ idtac "blut 0";  let x := constr:((i,lAk'))   in (* idtac "kikoo" ; *)
+  match eval hnf in x with
+   | (?i,?lAk') => match eval hnf in i with
+     | 0 => constr:(acc) 
+     | S ?i => match eval hnf in lAk' with
+       | ?Akiu :: ?lAk' => idtac "res1" ; let pki := constr:(proj_ij p lA_rev I indu k i llAunlift ln (Akiu)) in 
+       let name :=  fresh "proj_" na in let _ := match goal with _ => pose (name := pki ) end  in let y := metacoq_get_value (tmQuote name)  in let acc0 := constr:(y :: acc) in let res1 := aux1 k i lAk'  acc0 in constr:(res1)
+       end end
+   (* | _ => idtac "error declare_projs 1" *)
+  end 
+  in 
+ let rec aux2 llAu' ln' k  acc :=
+let y := constr:(((k,llAu'),ln')) 
+in (* idtac "loool" ;*) match eval hnf in y with
+| (?y0 , ?ln0') => (* idtac "blut 1" ; *)
+  match eval cbv in ln0' with
+  | (@nil nat) =>  (* idtac "blut 3 0" ; *) constr:(acc) 
+  | ?i :: ?ln1' => (*  idtac "blut 3" ;*)
+    match eval hnf in y0 with 
+    | (?k, ?lAu') => lazymatch eval hnf in k with
+      | S ?k => (* idtac "blut 5" ; *) match eval hnf in lAu' with
+        | ?lAk :: ?lAu'=> let res2 := aux2 llAu' ln' k constr:((aux1 k i (tr_rev lAk) (@nil term)) :: acc) in constr:(res2)
+  end 
+  end   
+  end
+  end 
+  (* |_ => idtac "error declare_projs 1" *)
+end
+in 
+let res := aux2 llAu_rev ln_rev nc (@nil term)  in constr:(res)
+. 
+
+
+Goal False.
+let x := declare_projs kik  1 [Set_reif] list_reif list_indu [[]; [tRel 0 ; tApp list_reif [tRel 0]]] [0 ; 2] 2 in pose x as kik.
+Abort.
+
+(**** producing the generation statement *)
+
+Goal False.
+let x := constr:(map_iter 4 (fun x y => x * x + 2* y ) [1; 2 ; 3 ; 5]) in pose x as kik ;
+unfold map_iter in kik ; simpl in kik.  
+Abort.
+
+
+Goal False.
+let x := constr:(proj_return_types [[tRel 0] ;  [ tRel 0; tApp list_reif [tRel 1] ]; [tRel 0 ; tRel 2 ; tApp (tRel 5) [tRel 4 ; tRel 8]]]) in pose x as prtex ; compute in prtex. 
+let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
+( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
+Abort. 
+
+
+Goal false.
+clear.
+let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
+8) in pose x as gexcpex ; compute in gexcpex.
+Abort.
+
+
+Goal False.
+let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
+  [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [3 ; 2 ; 3]) in pose x as ggdex ; compute in ggdex.  clear.
+  Abort.
+
+
+Goal 2 +  2 = 5.
+Proof.
+pose (2,3) as x. pose x.1 as y. Eval compute in y.
+let list_info := fresh "list_info" in get_info_quote list list_info. 
+pose list_info.2 as list_indu. compute in list_indu. (* \Q pq ça ne calcule pas ? *)
+pose list_info.1.2 as list_I_app. compute in list_I_app.
+pose list_info.1.1.2 as list_lpars. compute in list_lpars.
+pose list_info.1.1.1.2 as list_total_args. compute in list_total_args.
+pose list_info.1.1.1.1.2 as list_list_args. compute in list_list_args.
+pose list_info.1.1.1.1.1.2 as list_list_ty. compute in list_list_ty.
+pose list_info.1.1.1.1.1.1.2 as list_ty_pars. compute in list_ty_pars.
+pose list_info.1.1.1.1.1.1.1 as list_p.  hnf in list_p. 
+let truc := metacoq_get_value (tmQuote list) in pose truc as list_reif.
+(* let na := fresh "na" in get_ind_param list na ; pose na.1 as list_indu . 
+ match constr:(na) with | (?indu,_) => pose indu as bid end.*)
+Fail let x := (get_one_eliminator_return list list_ty_pars 
+list_I_app list_reif (* list_ty_default *) list_indu list_p 2 (*list_nbproj *) 
+2 (*k*) list_list_args   list_return_ty  list_nb_args_prev list total_args )
+in pose x as truc.
+Abort.
+
+(* get_one_eliminator_return 
+I ty_pars I_app ty_default I_indu p i k 
+list_args return_ty nb_args_previous_construct total_args *)
+
+(* \TODO rename this function*)
+Ltac get_nbproj_nbargprevcons n I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb list_eq :=
+match n with
+| 0 => constr:(list_eq)
+| S ?n' => let prod := eval compute in (nth n' list_args (nil, 0)) in
+           let i := eval compute in (prod.2) in 
+           let c_reif := eval compute in (nth n' list_ctors_reif impossible_term_reif) in
+           let nb_args_previous_construct := eval compute in (nb - i) 
+in constr:((i,nb_args_previous_construct))
+end.
+
+(***********************************)
+
+(*****    fin tests    *************)
+
+(***********************************)
+
+
+
+Goal False.
+(* let x := get_ctors_and_types_i t *)
+clear.
+let x := constr:(args_of_prod_with_length (tProd (mkNamed "x") (tRel 8) (tProd (mkNamed "x") (tRel 13) ( tProd (mkNamed "x") (tRel 21) (tProd  (mkNamed "x") (tRel 33)
+( tRel 10 ))) )) 0 ) in pose x as aopex ; unfold args_of_prod_with_length in aopex  ; unfold skipn in aopex ; unfold map_iter in aopex ; unfold tr_rev in aopex ; simpl in aopex.
+let x := constr:(proj_return_types [[tRel 0] ;  [ tRel 0; tApp list_reif [tRel 1] ]; [tRel 0 ; tRel 2 ; tApp (tRel 5) [tRel 4 ; tRel 8]]]) in pose x as prtex ; compute in prtex.
+Abort. 
+
+
+
+Goal False.
+let x := kooooo list blut in pose x as kik.
+Fail ltac:(let x := get_eliminators_st_return list ik in pose x as kik).
+Abort.
+
+Goal False.
+
+
+let x := constr:(proj_one_ctor_params_default_var [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
+in pose x as kik ; compute in kik. 
+let x := constr:(proj_one_ctor_params_default_var0 [Set_reif] (tApp list_reif [tRel 0]) (tRel 70) list_indu 1 0 2  list_tycon (tRel 49))
+in pose x as koo ; compute in koo. 
+Abort. 
+
+
 
 (* Definition mkCase_eliminator_default_var (I : inductive) (npars : nat) (nbproj : nat) (nbconstruct : nat)
 (ty_arg_constr : list (list term)) (return_type : term) :=  *)
@@ -739,11 +752,7 @@ end.
 
 
 Goal False. (* PAS ENCORE COMPRIS*)
-Print cons_typ_reif.
-split_info1 list "blut". clear -list_list_args.
-split_info2 list "blut". clear.
-split_info1 @nelist "blut". clear. (* clear -list_app nelist_app. *)
-split_info1 @biclist "blut". clear  - biclist_app biclist_list_args. clear.
+
 (** branch_default_var **)
 (** mkCase_eliminator_default_var **)
 let x :=  constr:(mkCase_eliminator_default_var list_indu 1 0 2 [ [tRel 1 ; tRel 3 ; tRel 12]; [tRel 2 ; tRel 5; list_reif] ; [nat_reif ; tRel 0 ; tRel 5] ; [nat_reif ; tRel 13 ; tRel 11] ; [nat_reif ; tRel 20 ; tRel 25] ] 

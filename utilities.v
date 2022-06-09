@@ -34,12 +34,14 @@ MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
 
 
-(** \TODO see if needed *)
-Fixpoint leng (l : list nat) :=
+(** Tail-recursive (actually linear) version of List.length **)
+Definition leng {A : Type} (l : list A ) :=
+  let fix aux l acc :=
   match l with
-  | [] => 0
-  | _ :: l0 => S (leng l0)
-  end.
+  | [] => acc
+  | _ :: l0 => aux l0 (S acc) 
+  end
+  in aux l 0.
 
 
 (** Tail-recursive (actually linear) version of List.rev **)
