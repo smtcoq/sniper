@@ -21,6 +21,65 @@ Require Import interpretation_algebraic_types.
 
 Require Import SMTCoq.SMTCoq.
 
+(*********************)
+(** General specification **)
+
+(* The goal of this file is two-fold:
+(1) automatically declare the projections of an inductive datatype I. 
+For instance, for the type list, whose constructors are [] (0 argument) and :: (2 arguments ), we declare in the local context two functions proj_{1,0} : forall (A : Type), A -> list A -> list A and proj_{1,1} : forall (A : Type) list A -> list A -> list A such that:
+* proj_{1,0} def [] = def and proj_{1,0} d {a :: l} = a 
+* proj_{1,1} def [] = def and proj_{1,1} d {a :: l} = l 
+The metavariable d stands for a dummy default value, of respective types A (for proj_{1,0}) and list A (for proj_{1,1})
+
+(2) automatically prove in the local context the generation statement, specifying that every inhabitant t of I is equal to a constructor applying to the projections of t.
+For instance, in the case of list, the main tactic produces and proves the statement:
+forall (A : Type) (d_{1,0} : A)  (d_{1,1} l: list A), (l =  []) \/ (l = ((proj_{1,0} d_{1,0} l)) :: ((proj_{1,1} d_{1,1} l))
+
+Some implicit arguments have been omitted: technically,  proj_{1,0} : forall (A : Type), A -> list A -> list A and proj_{1,1} : forall (A : Type) list A -> list A -> list A and the generation statement is: 
+forall (A : Type) (d_{1,0} : A)  (d_{1,1} l: list A), (l = @nil A) \/ (l = (proj_{1,0} A d_{1,0} l) :: (proj_{1,1} A d_{1,1} l) *)
+
+(* 
+Let us get now into the technical details.
+Given an inductive datatype I, we use the following conventions:
+* p : number of parameters of I
+* A_0, ..., A_{p-1}: the types of the parameters of I
+  lA := [ A_0 ; ... ; A_{p-1} ]
+* C_1,...., C_k: the constructors of I
+  lctors = [ C_0 ; ... ; C_k ]
+* n_i is the number of arguments of C_i (withstanding parameters): thus, C_i has p + n_i arguments in total
+  ln := [ n_0 ; ... ; n_{k-1} ]
+* A_{i,j} is the type of the rank j argument of C_i (withstanding parameters): thus, C_i has the type (forall X_0 : .A_0) (X_{p-1} : A_{p-1}) (x_{i,0} : A_{i,0}) ... (x_{i,n_i-1} : A_{i, n_i-1}), B_i (* \TODO spécifier B_i: on en a besoin ?*)
+  llA := [ [A_{0,0} ; ... ; A_{0,n_0-1} ] ;
+            ... ;
+           [ A_{k-1,0} ; ... ; A_{k-1,n_{k-1}-1}] ]
+
+From the ???? point of view, a reified inductive type contains:
+* a term of type 'inductive' (metavariable indu)
+* a mutual_inductive_body (metavariable mind)
+* mind contains a list of one_inductive_body's (metavariable oind)
+* each one_inductive_body contains relevant information about, e.g., its constructors and their types
+
+We must define projections proj_{i,j} for i = 0, ... , k-1 and j = 0, ..., n_i-1
+proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : A_{i,j} x : (I X_0 ... X_{p-1}), match x with
+| C_i X_0 ... x_{i,0} ... x_{i,n_i-1} => x_{i,j} 
+| C_j X_0 ... x_{j,0} ... x_{j,n_j-1} => def_{i,j}
+end.
+
+The reification of proj_{i,j} is:
+tLam 
+
+
+
+
+
+
+
+ *)
+
+
+
+
+
 
 (* \TODO changer les metavariables 
 - nb --> rk ou k ou n tout court (avec spec )
