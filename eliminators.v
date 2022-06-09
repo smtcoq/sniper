@@ -53,6 +53,15 @@ Given an inductive datatype I, we use the following conventions:
             ... ;
            [ A_{k-1,0} ; ... ; A_{k-1,n_{k-1}-1}] ]
 
+(** lift and unlift **)
+
+A^{+i} (resp. A^{-i}) denotes A where all the free de Bruijn indices have been lifted with + i (resp. unlifted with -i)
+
+* We set Aunlift_{i,j}/Au_{i,j} := (A_{i,j}^{-j})
+  llAunlift/llAu := [ [Au_{0,0} ; Au_{0,1} ; ... ] ;
+                       ... ;
+                      [Au_{k-1,0} ; Au_{k-1,1} ; ... ] ]
+
 From the ???? point of view, a reified inductive type contains:
 * a term of type 'inductive' (metavariable indu)
 * a mutual_inductive_body (metavariable mind)
@@ -60,20 +69,40 @@ From the ???? point of view, a reified inductive type contains:
 * each one_inductive_body contains relevant information about, e.g., its constructors and their types
 
 We must define projections proj_{i,j} for i = 0, ... , k-1 and j = 0, ..., n_i-1
-proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : A_{i,j} x : (I X_0 ... X_{p-1}), match x with
+proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : Aunlift_{i,j} x : (I X_0 ... X_{p-1}), match x with
 | C_i X_0 ... x_{i,0} ... x_{i,n_i-1} => x_{i,j} 
 | C_j X_0 ... x_{j,0} ... x_{j,n_j-1} => def_{i,j}
 end.
 
+(
+
+We set I' = tApp I [A_0; ... ; A_{p-1}]
+
+Q ??? : A_{i,j} doit être appliqué ?
+
 The reification of proj_{i,j} is:
-tLam 
+tLam A_0 ... A_{p-1} tLam A_{i,j} tLam I' 
+mkCase .... ...
+[ ... () ... .. ]
 
+The reificaiton of the generation statement is
+tProd A_0 ... A_ {p-1} 
+tProd Au_{0,0}^{+0} Au_{0,1}^{+1} ... Au_{0,j}^{+j} ... Au_{0,n_0-1}^{+n_0-1}
+      Au_{1,0}^{+n_0} Au_{1,1}^{n_0+1} ...
+      .... Au_{i,j}^{L_j+j}... Au_{k-1,n_k-1}^{L_{k-1}-1}
+tProd (x : (I')^{+????} }  
+  or_reif 
+     eq_reif _ (tRel 0)  pstat_0 ; 
+     eq_reif _ (tRel 0) pstat_1 ; ... ;
+     eq_reif _ (tRel 0) pstat_{k-1}
 
-
-
-
-
-
+where L_i := n_0 + ... + n_{i-1} 
+and pstat_i := C_i [ _p ; 
+        proj_{i,0} [ _p ; tRel ??? ; tRel 0 ]
+        .... ;
+        proj_{i,j} [ _ p ; tRel ??? ; tRel 0] ; ...]
+       
+_p is a macro for p evars 
  *)
 
 
@@ -966,8 +995,8 @@ Ltac gen_statement t :=
         let _ := match goal with _ => pose (llprojs  := res3)  end in
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
         let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
-         let gent := fresh "gen" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "pr_gen_" t in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ;
-       clear indmind llprojs
+         let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "gen_" t in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ; 
+       clear gent indmind llprojs
         end
       end
     end
