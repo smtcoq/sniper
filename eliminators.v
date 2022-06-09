@@ -106,21 +106,9 @@ _p is a macro for p evars
  *)
 
 
-
-
-
-
-(* \TODO changer les metavariables 
-- nb --> rk ou k ou n tout court (avec spec )
-- une métavariable pour les rangs dans tCase 
-- i metavariable pour rang de la proj (anciennment nbproj)
-*)
-
-(* list_types_of_each_constructor  est déjà calculée, dans utilities
+(* list_types_of_each_constructor est déjà calculée, dans utilities
   \TODO unifier
 *)
-
-
 
 
 (* \TODO : renommer impossible_term, qui est un inductif vide *)
@@ -129,7 +117,7 @@ _p is a macro for p evars
 
 
 
-(* get_indu_app_to_params t n = tApp t [tRel (n-1) ; .... ; tRel 0]
+(* get_indu_app_to_params t p = tApp t [tRel (p-1) ; .... ; tRel 0]
    tail-recursive
    \TODO remove this function, the lift0 1 in the main function and use the one below (get_indu_app_to_params0) instead
 *)
@@ -141,7 +129,7 @@ Definition get_indu_app_to_params (t : term) (p : nat) :=
    end
 in tApp t (tr_rev (aux p [])). 
 
-(* get_indu_app_to_params t n = tApp t [tRel n ; .... ; tRel 1]
+(* get_indu_app_to_params t p = tApp t [tRel p ; .... ; tRel 1]
    tail-recursive
 *)
 Definition get_indu_app_to_params0 (t : term) (p n: nat) := 
@@ -223,7 +211,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 *)
 (* \Q what is n supposed to represent? *)
  
-(* branch_default_var l0 i k n 
+(* branch_default_var l0 i k n  (* \TODO metavariables *)
    = Prod x1 hole. ... Prod xlen hole. Rel (len - rkproj) if k = n
    = Prod x1 hole ... Prod xlen hole. Rel (len + 1) if k
    where len = length l0
@@ -241,26 +229,26 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
     *)
 (* same function, but when the length is given*)
 (* \TODO order of the parameters? *)
-Definition branch_default_var (n  : nat) (i : nat) (j : nat) (q : nat) := 
-    let kp := if Nat.eqb j q then n - i
-    else S n in
+Definition branch_default_var (ni  : nat) (i : nat) (j : nat) (q : nat) := 
+    let kp := if Nat.eqb j q then ni - i
+    else S ni in
     let fix aux j acc :=
     match j with 
     | 0 => acc 
     | S j => aux j (mkLam hole acc)
     end
-    in aux n (tRel kp).  
+    in aux ni (tRel kp).  
 (* \TODO metavariables i and j are perhaps swaooed in branch_default_var *)
 
-Definition branch_default_var1 (n : nat)  (i : nat) (j : nat) (q : nat) := 
-      let kp := if Nat.eqb i q then n - (S j)  
-      else S n in
+Definition branch_default_var1 (ni : nat)  (i : nat) (j : nat) (q : nat) := 
+      let kp := if Nat.eqb i q then ni - (S j)  
+      else S ni in
       let fix aux i acc :=
       match i with 
       | 0 => acc 
       | S i => aux i (mkLam hole acc)
       end
-      in aux n (tRel kp).  
+      in aux ni (tRel kp).  
 
    
 
@@ -329,36 +317,36 @@ mkLam_rec lA_rev
   \TODO some  tr_rev's could perhaps be avoided if collect_projs is merged with the Ltac function declare_projs below
 *)
 Definition collect_projs (p : nat) (lA_rev : list term) (I : term) (indu: inductive)
-(llAunlift : list (list term)) (ln : list nat) (nc : nat)
-:= let fix aux1 (k : nat) (nk :nat) lAk' acc :=
+(llAunlift : list (list term)) (ln : list nat) (k : nat)
+:= let fix aux1 (i : nat) (nk :nat) lAk' acc :=
   match (nk,lAk') with 
   | (0,[]) => acc 
-  | (S i, Akiu :: lAk') => aux1 k nk lAk' ((proj_ij p lA_rev I indu k i llAunlift ln (Akiu)):: acc)
+  | (S j, Aiju :: lAk') => aux1 i nk lAk' ((proj_ij p lA_rev I indu i j llAunlift ln (Aiju)):: acc)
   | _ => [] (* this case should not happen *)
   end 
 in 
-let fix aux2 llAu' ln' k  acc :=
-match (k,llAu',ln') with
+let fix aux2 llAu' ln' i'  acc :=
+match (i',llAu',ln') with
 | (0,[],[]) => acc
-| (S k,lAk :: llAu' , nk :: ln' ) => aux2 llAu' ln' k ((aux1 k nk (tr_rev lAk) []) :: acc)
+| (S i,lAi :: llAu' , ni :: ln' ) => aux2 llAu' ln' i ((aux1 i ni (tr_rev lAi) []) :: acc)
 | _ => []
 end in
-aux2 (tr_rev llAunlift) (tr_rev ln) nc []. 
+aux2 (tr_rev llAunlift) (tr_rev ln) k []. 
 
 
 (* \TODO améliorer le nommage *)
-Ltac declare_projs_ctor_i  na p lA_rev I indu llAu ln k lAk nk :=
-  let _ := match goal with _ =>  idtac end in let lAk' := constr:(tr_rev lAk) in 
-  let rec aux1 k i lAk' acc :=
-  lazymatch i with
+Ltac declare_projs_ctor_i  na p lA_rev I indu llAu ln i lAi ni :=
+  let _ := match goal with _ =>  idtac end in let lAi' := constr:(tr_rev lAi) in 
+  let rec aux1 i j lAi' acc :=
+  lazymatch j with
   | 0 => constr:(acc)
-  | S ?i0 => lazymatch eval hnf in lAk' with
-   | ?Akiu :: ?tlAk' =>  let pki := constr:(proj_ij p lA_rev I indu k i0 llAu ln Akiu) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pki name
-    end in let pki_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pki_tVar :: acc) in let z := aux1 k i0 tlAk' acc0 in constr:(z)
+  | S ?j0 => lazymatch eval hnf in lAi' with
+   | ?Aiju :: ?tlAi' =>  let pij := constr:(proj_ij p lA_rev I indu i j0 llAu ln Aiju) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pij name
+    end in let pij_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pij_tVar :: acc) in let z := aux1 i j0 tlAi' acc0 in constr:(z)
    end 
    | _ => idtac "erroc declare_projs_ctor_i"
   end
-  in   let res_dpk := aux1 k nk lAk' (@nil term) in constr:(res_dpk)
+  in   let res_dpi := aux1 i ni lAi' (@nil term) in constr:(res_dpi)
 .
 
 (* \TODO améliorer le nommage *)
@@ -691,55 +679,55 @@ in aux l [] 0.
 
 
 
-(* holes_n n = [hole ; ... ; hole] (n occurrences)
+(* holes_p p = [hole ; ... ; hole] (p occurrences)
    linear *)
-   Definition holes_n (n : nat) :=
-    let fix aux n acc := 
-    match n with
+   Definition holes_p (p : nat) :=
+    let fix aux p acc := 
+    match p with
     | 0 => acc 
-    | S n => aux n (hole :: acc)
-  end in aux n [].
+    | S p => aux p (hole :: acc)
+  end in aux p [].
   
-  (* holes_n n = [hole ; ... ; hole ; tRel db ; tRel 0] with n holes 
+  (* holes_p p = [hole ; ... ; hole ; tRel db ; tRel 0] with p holes 
       \TODO useful to pass the parameters to the projections,
-      cf. ??? and ??? *)
-  Definition holes_n' (n : nat) (db : nat) :=
-    let fix aux n acc := 
-    match n with
+      cf. get_elim_applied and get_eq_x_ctor_projs *)
+  Definition holes_p' (p : nat) (db : nat) :=
+    let fix aux p acc := 
+    match p with
     | 0 => acc 
-    | S n => aux n (hole :: acc)
-  end in aux n [tRel db; tRel 0].
+    | S p => aux p (hole :: acc)
+  end in aux p [tRel db; tRel 0].
 
 (* gets each elimination function applied to the parameters, the default and the term *)
-(* get_elim_applied [(p0 , d0 ); ... ; (pn , dn)] [A1 ; ... ; Ak ]
-     = [ tApp p0 [ A1 ; ... ; Ak ; tRel d0 ; tRel0 ] 
-     ; ... ; tApp pn [A1 ; ... ; An ; tRel dn ; tRel 0]]*)
+(* get_elim_applied [(proj0 , d0 ); ... ; (projn , dn)] [A1 ; ... ; Ap ]
+     = [ tApp proj0 [ A1 ; ... ; Ap ; tRel d0 ; tRel0 ] 
+     ; ... ; tApp projn [A1 ; ... ; Ap ; tRel dn ; tRel 0]]*)
 Fixpoint get_elim_applied (list_tVar : list (term * nat)) (lpars : list term) :=
 match list_tVar with
 | nil => nil
-| (elim, db) :: xs => (tApp elim (holes_n' (leng lpars) db)):: get_elim_applied xs lpars
+| (elim, db) :: xs => (tApp elim (holes_p' (leng lpars) db)):: get_elim_applied xs lpars
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
 (* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
 
 
-(* get_eq_x_ctor_proj p ctor [p_0, ..., p_{k-1}] db  
-   is the reification of the equality "tRel 0" = ctor (p0 [ _p ; tRel db  ; tRel 0] ; 
-     [ _p : tRel (db -1) ; tRel 0] ; ... ; [ _p ; tRel (db-k+1) ; tRel 0] ]
+(** get_eq_x_ctor_projs p ctor [proj_0, ..., proj_{n-1}] db  
+   is the reification of the equality "tRel 0" = ctor (proj0 [ _p ; tRel db  ; tRel 0] ; 
+ proj_{n-1} [ _p : tRel (db -1) ; tRel 0] ; ... ; [ _p ; tRel (db-n+1) ; tRel 0] ]
    where p is the number of parameters of the inductive
-   p_0,...., p_k are supposed to be the reified projections of the reified constructor ctor, k is the number of argument of this constructor (withstanding parameters) and _p is a sequence of p holes
-   That is, intuitively, the ouput represents an equality of the form x = ctor (proj_0 x) ... (proj_k) x, where x is tRel 0
-  tail-recursive 
-   *)
-  Definition get_eq_x_ctor_proj (p: nat) (ctor : term) (projs : list term)  (db: nat) :=  
+   proj_0,...., proj_{n-1} are supposed to be the reified projections of the reified constructor ctor, n is the number of argument of this constructor (withstanding parameters) and _p is a sequence of p holes
+   That is, intuitively, the ouput represents an equality of the form x = ctor (proj_0 x) ... (proj_{n-1} x), where x is tRel 0 
+   **)
+(** tail-recursive **)   
+  Definition get_eq_x_ctor_projs (p: nat) (ctor : term) (projs : list term)  (db: nat) :=  
 (* \tTODO see it one needs to give the parameters: probably not *)  
 let fix aux lprojs i  acc :=
    match (lprojs,i) with
    | ([],_) => acc 
-   | (pki :: lprojs, S i) => aux lprojs i ((tApp pki (holes_n' p i))::acc)
+   | (pki :: lprojs, S i) => aux lprojs i ((tApp pki (holes_p' p i))::acc)
    | _ => [] (* this case does not happen *)
   end in 
-  mkEq hole (tRel 0) (tApp ctor (rev_append (holes_n p) (tr_rev (aux projs (S db) [])))).
+  mkEq hole (tRel 0) (tApp ctor (rev_append (holes_p p) (tr_rev (aux projs (S db) [])))).
 
 
 (* \todo check that the db are computed somewhere *)
@@ -749,7 +737,7 @@ let fix aux lprojs i  acc :=
    outputs the reification of forall x : I, 
    x = C0 (projs0 x) \/ .... \/ x = Ck (projsk x)
    where lctors is the list of the (reified) constructors of an inductive, list_proj is the list of lists of their projections  (which are computed by the tactic declare_projs)
-  x = Ck (projsk x) is a shortening of x = Ck (proj_{k,0} d_{k,0} x) .... (proj_{k,nk-1} d_{k,nk-1} x) and d_{k,i} the default value for d_{k,i} (x = Ck (projsk x) is computed with get_eq_x_ctor_proj)
+  x = Ck (projsk x) is a shortening of x = Ck (proj_{k,0} d_{k,0} x) .... (proj_{k,nk-1} d_{k,nk-1} x) and d_{k,i} the default value for d_{k,i} (x = Ck (projsk x) is computed with get_eq_x_ctor_projs)
    ldb is the list of De Bruijn indices of ????
    L is the total number of the arguments of all constructors (withstanding type parameters )
    Note that mkProd tApp I (get_list_of_rel_lifted L p) _
@@ -762,16 +750,10 @@ let fix aux lprojs i  acc :=
   let fix aux lc list_proj lN acc := 
   match (lc,list_proj,lN) with
   | ([],[],[]) => acc
-  | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_proj p ctor projs db) :: acc)
+  | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_projs p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
  in tProd (mkNamed "x") (tApp I (get_list_of_rel_lifted p L)) (mkOr (aux lc list_proj lN [])) .
-
-
-(* \todo: coupler avec bind_def_val_in_gen *)
-(* \todo : gérer la liste des db, qui est 
-[[L; ... ; lk + ... + l2 +1 ] ; ....; [lk + l_{k-1}  ....; lk+2 ; lk+1 ] ;[ lk ...; 2 ; 1]]
-*)
 
 
 
@@ -781,29 +763,26 @@ let fix aux lprojs i  acc :=
     args_of_projs_in_disj [1 ; 3 ; 2 ] = [ [tRel 6 ] ; [tRel 5 ; tRel 4 ; tRel 3] ; [tRel 2 ; Rel 1]]
     This function helps specify the Db index of the default variable of each projection in the big disjunction
     **)
-(* \Q : do we need this function ? *)
+(* \Q : do we need this function? *)
 Definition args_of_projs_in_disj (ln : list nat) : list (list term) :=
   let ln_rev := tr_rev ln in
   let fix aux l0 acc res :=
   match l0 with
   | [] => res
-  | n :: l0 =>  aux l0 (n + acc) ((get_list_of_rel_lifted n acc) :: res)
+  | ni :: l0 =>  aux l0 (ni + acc) ((get_list_of_rel_lifted ni acc) :: res)
   end in aux ln_rev 1 [].
 
-Goal False.
-let x := constr:(args_of_projs_in_disj [3 ; 8 ; 2]) in pose x as kik ; compute in kik.
-Abort.
-(* maintenant, on doit collecter les constructeurs *)
 
 
-(* get_list_ctors_tConstruct_applied I k n := [tApp C0 holes_n ; ... ; tApp Ck holes_n ]
+
+(* get_list_ctors_tConstruct_applied I k n := [tApp C0 holes_p ; ... ; tApp Ck holes_p ]
   where C0, ..., Ck are the constructors of I
   k should be the number of ctors of I
   n the number of parameters of I
 *)
 (* linear *)
 Definition get_list_ctors_tConstruct_applied (I : term) (n : nat) (p : nat) :=
-let l := holes_n p in
+let l := holes_p p in
 match I with
 | tInd indu inst => let fix aux n acc  := match n with
           | 0 => acc
@@ -837,14 +816,6 @@ constr:((elim, db)).
 
 (*  mkLam I_app (lift0 1  ty_default) seems to compute a return type. Of what ? *)
 (*  -> ty_default   *)
-(* \TMP *)
-Ltac get_def_ret_ty n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
-match n with
-| S ?n' =>  let ty_default := eval compute in (nth n' (nth (k -1) list_args nil ) impossible_term_reif) 
-in 
-            let return_ty := eval compute in (lift0 2 (mkLam I_app (lift0 1  ty_default))) in constr:((ty_default,return_ty))
-            end.
-
 (* \TODO chercher get_equality *)
 
 (* Definition get_eq (c : term) (t : term) (l : list term) := 

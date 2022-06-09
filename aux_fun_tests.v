@@ -30,7 +30,7 @@ Open Scope string_scope.
 Import ListNotations MonadNotation. 
 
 
-Check nth.
+
 
 (* reified term selectors in lists and lists of lists *)
 Definition sel_lterm (i : nat) (l : list term) := nth i l impossible_term_reif.
@@ -38,15 +38,9 @@ Definition sel_lterm (i : nat) (l : list term) := nth i l impossible_term_reif.
 Definition sel_llterm (k : nat) (i : nat) (l : list (list term)) := 
   sel_lterm i (nth k l []).
 
-
-
-
 Inductive nelist {A : Type} : Type :=
 	sing :  A -> nelist    | necons : A -> nelist -> nelist .
-   
-   
-Example blut := @nelist nat.
-
+      
 Inductive biclist {A B : Type} : Type :=
 (*  sing1 : A -> biclist  
   | sing2 : B -> biclist *)
@@ -128,8 +122,10 @@ MetaCoq Quote Definition length_reif := @List.length.
 MetaCoq Quote Definition le_reif := le.
 MetaCoq Quote Definition S_reif := Eval cbn in S.
 MetaCoq Quote Recursively Definition S_env_reif := S.
-Print S_env_reif.
+
 Print S_reif. 
+Print S_env_reif.
+
 MetaCoq Quote Definition O_reif := O.
 MetaCoq Quote Definition add_reif := Eval cbn in Nat.add.
 MetaCoq Quote Definition nil_reif := nil.
@@ -141,8 +137,6 @@ MetaCoq Quote Definition list_reif := @list.
 MetaCoq Quote Recursively Definition list_env_reif := @list.
 
 MetaCoq Quote Definition nelist_reif := @nelist.
-Print nelist_reif.
-Print list_reif.
 MetaCoq Quote Recursively Definition nelist_env_reif := @nelist.
 
 MetaCoq Quote Definition biclist_reif := @biclist.
@@ -613,7 +607,7 @@ Abort.
 
 Goal false.
 clear.
-let x := constr:(get_eq_x_ctor_proj 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
+let x := constr:(get_eq_x_ctor_projs 3 (S_reif) [tRel 0; tRel 25; tRel 49] 
 8) in pose x as gexcpex ; compute in gexcpex.
 Abort.
 
@@ -621,10 +615,13 @@ Abort.
 Goal False.
 let x:= constr:(get_generation_disjunction 3 nat_reif  100 [S_reif ; O_reif ; O_reif ]
   [[tRel 13 ; tRel 15 ; tRel 8] ; [tRel 33 ; tRel 45] ; [tRel 60 ; tRel 70 ; tRel 72]] [3 ; 2 ; 3]) in pose x as ggdex ; compute in ggdex.  clear.
-  Abort.
+Abort.
 
-
-Goal 2 +  2 = 5.
+Goal False.
+let x := constr:(args_of_projs_in_disj [3 ; 8 ; 2]) in pose x as kik ; compute in kik.
+Abort.
+  
+Goal False.
 Proof.
 pose (2,3) as x. pose x.1 as y. Eval compute in y.
 let list_info := fresh "list_info" in get_info_quote list list_info. 
