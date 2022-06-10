@@ -133,7 +133,7 @@ in tApp t (tr_rev (aux p [])).
    tail-recursive
 *)
 Definition get_indu_app_to_params0 (t : term) (p n: nat) := 
-  tApp t (get_list_of_rel_lifted p n).
+  tApp t (Rel_list p n).
 
 (* \TODO transfer in utilities *)
 (* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
@@ -740,7 +740,7 @@ let fix aux lprojs i  acc :=
   x = Ck (projsk x) is a shortening of x = Ck (proj_{k,0} d_{k,0} x) .... (proj_{k,nk-1} d_{k,nk-1} x) and d_{k,i} the default value for d_{k,i} (x = Ck (projsk x) is computed with get_eq_x_ctor_projs)
    ldb is the list of De Bruijn indices of ????
    L is the total number of the arguments of all constructors (withstanding type parameters )
-   Note that mkProd tApp I (get_list_of_rel_lifted L p) _
+   Note that mkProd tApp I (Rel_list L p) _
    is forall x : I A1 ... Ap, _
    *)
 (* \TODO remove ldb argument *)
@@ -753,7 +753,7 @@ let fix aux lprojs i  acc :=
   | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_projs p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
- in tProd (mkNamed "x") (tApp I (get_list_of_rel_lifted p L)) (mkOr (aux lc list_proj lN [])) .
+ in tProd (mkNamed "x") (tApp I (Rel_list p L)) (mkOr (aux lc list_proj lN [])) .
 
 
 
@@ -769,7 +769,7 @@ Definition args_of_projs_in_disj (ln : list nat) : list (list term) :=
   let fix aux l0 acc res :=
   match l0 with
   | [] => res
-  | ni :: l0 =>  aux l0 (ni + acc) ((get_list_of_rel_lifted ni acc) :: res)
+  | ni :: l0 =>  aux l0 (ni + acc) ((Rel_list ni acc) :: res)
   end in aux ln_rev 1 [].
 
 
@@ -902,7 +902,7 @@ match opt with
   in
   (* idtac total_args *)
  (*   \Q pq idtac total_args fait planter le prog ? *) 
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (S total_args))) in
+  let list_of_pars_rel := eval compute in ((Rel_list p (S total_args))) in
   let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with

@@ -170,6 +170,14 @@ Definition biclist_mind :=  ltac:(let x := fresh in pose_mind_tac @biclist x ; c
 Print biclist_mind.
 
 
+MetaCoq Quote Definition bclist_reif := biclist.
+
+Goal False.
+Print bclist_reif.
+
+let x := constr:(cutEvar bclist_reif) in pose x as kik ; compute in kik.
+Abort.
+
 Goal False.
 let x:= constr:(get_params_from_mind biclist_mind) in pose x as biclist_params ; compute in biclist_params.
 Abort.
@@ -330,7 +338,7 @@ let list_ty_default0 := eval compute in (tr_flatten list_args) in
   let k := eval compute in (Datatypes.length list_args) in
   let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term k p) in 
   let total_args := eval compute in (total_arg_ctors list_args_len) in
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (total_args + 1))) in
+  let list_of_pars_rel := eval compute in ((Rel_list p (total_args + 1))) in
   let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with
@@ -364,7 +372,7 @@ let list_ty_default0 := eval compute in (tr_flatten list_args) in
   let k := eval compute in (Datatypes.length list_args) in
   let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term k p) in 
   let total_args := eval compute in (total_arg_ctors list_args_len) in
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted p (total_args + 1))) in
+  let list_of_pars_rel := eval compute in ((Rel_list p (total_args + 1))) in
   let I_app := eval compute in (get_indu_app_to_params I_rec_term p) in
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with
@@ -726,7 +734,7 @@ match opt with
   let list_ctors_reif := eval compute in (get_list_ctors_tConstruct_applied I_rec_term nbconstruct npars) in 
   let total_args := eval compute in (total_arg_ctors list_args_len) 
   in
-  let list_of_pars_rel := eval compute in ((get_list_of_rel_lifted npars (total_args + 1))) in
+  let list_of_pars_rel := eval compute in ((Rel_list npars (total_args + 1))) in
   let I_app := eval compute in (get_indu_app_to_params I_rec_term npars) in
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with
@@ -888,20 +896,31 @@ MetaCoq Quote Definition C_reif := C.
 
 
 
-(********************************************)
-(* Tests on utilities.v                     *)
-(********************************************)
+(***********************************************)
+(* Tests on utilities.v                        *)
+(***********************************************)
 
 
 Goal False.
 let x := constr:(mkProd_rec [tRel 3 ; tRel 5 ; tRel 8] (tRel 13)) in pose x as mprex ; compute in mprex.
 Abort.
 
+
+Goal False. 
+info_indu nat nat_info_indu.
+info_indu list list_info_indu.
+Abort.
+
+
 Goal False.
 let x := constr:(list_types_of_each_constructor list_env_reif) in pose x as ltoeclist ; compute in ltoeclist.
 Abort.
 
-Print get_info_params_inductive.
+Goal False.
+let x := constr:(Rel_list 8 4) in pose x as kik ; compute in kik.
+Abort.
+
+Print list_oind.
 
 (* d'après le code, get_info_params_inductive 
 renvoie npars et ty_pars*)
@@ -922,10 +941,30 @@ Abort.
 
 
 
+(***********************************************)
+(* Tests on interpretation_algebraic_types.v   *)
+(***********************************************)
 
-(********************************************)
-(* Tests on eliminators.v                   *)
-(********************************************)
+Goal False.
+info_indu nat natoblut.
+info_indu list listoblut.
+Abort.
+
+
+
+Goal False.
+let x := constr:(is_inj (tApp list_reif [tRel 2]) cons_reif [tRel 0 ; tApp list_reif [tRel 1]] 1 ) in pose x as is_inj_cons ; compute in is_inj_cons.
+Abort.
+
+
+
+Goal forall (n m k: nat), exists (x y z: nat), x = n /\ y = m /\ z = k .
+Proof. intros_exist_aux  3 ltac:(idtac).  let x := fresh "x" in let x:= fresh "x" in idtac. repeat split.
+Abort.
+
+(***********************************************)
+(* Tests on eliminators.v                      *)
+(***********************************************)
 
 (* meaning of the metavariables *)
 (* nbproj : rank of a projection e.g. *)

@@ -204,6 +204,7 @@ Definition no_prod (t: term) := match t with
   | _ => true
 end.
 
+(* no_prod* do not seem to be used --> \TODO remove   *)
 Fixpoint no_prod_after_params (t : term) (p : nat) := match t with
    | tProd _ _ u => match p with 
                    | 0 => false 
@@ -212,6 +213,7 @@ Fixpoint no_prod_after_params (t : term) (p : nat) := match t with
   | _ => true
 end.
  
+(* does not seem to be used anywhere ---> \TODO remove *)
 Definition find_index_constructor_of_arity_zero (o : option (list ((ident × term) × nat))) := match o with
   | None => None
   | Some l => let fix aux l' acc := 
@@ -221,6 +223,10 @@ Definition find_index_constructor_of_arity_zero (o : option (list ((ident × ter
       end in aux l 0
   end.
 
+(* \TODO 
+1) give a better name
+2) see if it is really useful
+*)
 Definition no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
@@ -234,7 +240,7 @@ end.
 
 Ltac remove_option o := match o with
 | Some ?x => constr:(x)
-| None => fail "None"
+| None => fail "failure remove_option"
 end.
 
 Definition get_nth_constructor (I : term) (n : nat) : term := 
@@ -243,11 +249,13 @@ let g := get_info_inductive I in match g with
   | Some (ind, inst) => tConstruct ind n inst
 end. 
 
+(* \TODO : not useful --> remove *)
 Definition mkApp_list (u : term) (l : list term) :=
 tApp u l.
 
 
 (* Implements beta reduction *)
+(* \TODO : not used --> remove *)
 Fixpoint typing_prod_list (T : term) (args : list term) := 
 match T with
 | tProd _ A U => match args with 
@@ -259,6 +267,7 @@ end.
 
 (* As the constructor contains a free variable to represent the inductive type, this fonction substitutes the given 
 inductive type and the parameters in the list of the type of the constructors *)
+(* \seems inefficient, and better handled by debruijn0 --> remove \TODO *)
 Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) :=
 let T := p.1 in 
 let args := p.2 in
@@ -419,24 +428,34 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
   end
   in dlaux B n [].
 
-Locate subst10.
 
+(* given an 'inductive' and i, the rank of an inductive body, 
+  outputs the 'inductive' associated to the same inductive type, whose rank is i 
+*)
 Definition switch_inductive ( indu : inductive) (i : nat) :=
   match indu with 
   | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
 end.
 
-
-
-
-
-Definition debruijn0 (indu : inductive) (n : nat) (u : Instance.t ) (B : term) :=
+(** in an inductive type I, the type of the constructors use de Bruijn indices to denote the inductive bodies of I.
+For instance, for I = list, which has a unique inductive body, the type of :: is represented with: 
+cons_type_decl := tProd "A" Type_reif (tProd _ (tRel 0) (tProd _ (tApp (tRel 2) [tRel 1]) (tApp (tRel 3) [tRel 2])))
+where the 1st occurrence of Rel 2 and the occurrence of Rel 3 represent the type list
+See the term list_oind in aux_fun_tests.v.
+Then if B is the type of the constructor as it is reified in the inductive type I, debruijn0 .... B outputs the real type of the constructor
+e.g. debruijn0 (list_indu) 1 [] cons_type_decl gives
+   tProd "A" Type_reif (tProd _ (tRel 0) (tProd _ (tApp list_reif [tRel 1]) (tApp list_reif [tRel 2])
+   i.e. the reification forall (A: Type), A -> list A -> list A 
+   where list_reif is the reification for list
+**) 
+(** tail-recursive **)
+Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) :=
   let fix aux1 k acc :=
     match k with
     | 0 => acc 
     | S k => aux1 k  ((tInd (switch_inductive indu k) u):: acc) 
     end in
-  let oind_list := tr_rev (aux1 n [] )
+  let oind_list := tr_rev (aux1 no [] )
   in  subst0 oind_list B .
 
 
@@ -444,6 +463,7 @@ Definition debruijn0 (indu : inductive) (n : nat) (u : Instance.t ) (B : term) :
 (***********************)
 
 (* Given a term recursively quoted, gives the list of the type of each of its constructor *)
+(* \TODO seems inefficient --> remove *)
 Definition list_types_of_each_constructor t :=
 let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
 let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
@@ -461,12 +481,10 @@ end.
 
 
 
-(** get_list_of_rel_lifted n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
+(** Rel_list n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
    (list of length n)
-   linear 
-   \todo : change the name
-**)
-Definition get_list_of_rel_lifted (n l : nat) :=
+**) (** linear **)
+Definition Rel_list (n l : nat) :=
   let  fix aux n  k acc  :=
   match n with
    | 0 => acc 
@@ -474,9 +492,6 @@ Definition get_list_of_rel_lifted (n l : nat) :=
    end
    in aux n l [].
 
-Goal False.
-let x := constr:(get_list_of_rel_lifted 8 4) in pose x as kik ; compute in kik.
-Abort.
 
 
 

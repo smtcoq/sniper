@@ -90,15 +90,27 @@ Definition mkAnd (A B : term) := tApp and_reif [A ; B].
 
 Definition mkOr (A B : term) := tApp or_reif [A ; B].
 
-Fixpoint and_nary_reif (l : list term):=
-  match l with
-  | [] => False_reif      
-  | t :: [] => t         
-  | t :: tll => mkAnd t (and_nary_reif tll)                
-  end.
+
+(** and_nary_reif [A1_reif ; ... ; An_reif ] = 
+    the reification of A1 /\ (A2 /\ ... An) (associates to the right)   **)
+(** tail-recursive (actually linear) *)
+(* \TODO check that it is SMTLib friendly *)
+Definition and_nary_reif (l : list term):=
+  let l_rev := tr_rev l in 
+  match l_rev with
+  | [] => True_reif
+  | t0 :: l0 => 
+    let fix aux l acc :=
+      match l with
+      | [] => acc             
+      | t :: tll => aux tll (mkAnd t acc)
+      end 
+    in aux  l0 t0 end.
 
 
-(* remove and replace by mkOr, which is tr *)
+
+
+(* remove and replace with mkOr, which is tr *)
 (* \todo check that it is SMTLib friendly *)
 Fixpoint or_nary_reif (l : list term):=
   match l with
@@ -139,30 +151,10 @@ Ltac get_env_ind_param t idn :=
      end
      end.
 
-Ltac facto_blut t := 
-  match eval hnf in t with
-  | tInd ?indu ?u => constr:((indu,u))
-  | tApp ?t_indu ?l =>
-     lazymatch eval hnf in t_indu with
-     | tInd ?indu ?u => constr:((indu,u))
-     end
-  end.
-
-  Goal False.
-  let x := facto_blut nat_reif  in pose x as ik.
-  Abort.
 
 
 
-(* Ltac get_blut t idn :=
-  let rqt := fresh "rqt" in rec_quote_term t rqt ; 
-    lazymatch eval hnf in rqt with
-    | (?Sigma,?ind) => idtac "wtf" ;  let induu := (facto_blut constr:(ind)) in idtac "bopiut" ; constr:(0) 
- end. *)
 
-(* Goal False.
- let x := get_blut 0  kik in pose x as kik.
-Abort.*)
 
 (* info_indu t idn takes a Coq term t which an *unquoted* inductive
      and outputs the pair (indu,mind) : inductive × mutual_inductive_body
@@ -196,11 +188,6 @@ Ltac info_indu t idn :=   (* \TODO factorize code!*)
      end
     .
 
-(* \TODO supprimer *)
-Goal False.
-info_indu list listoblut.
-info_indu nat natoblut.
-Abort.
 
 Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
@@ -235,6 +222,8 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
   where p is the number of parameters of mind and lA the list of the parameters types *in order*
   (note that mind.(ind_params)) stores the types in *reverse* order
 *)
+(* \TODO move in utilities *)
+(* \TODO in utilites, unify and factorize all the tactics which retrieve parameters from reified inductives *)
 Definition get_params_from_mind mind :=
   let p := mind.(ind_npars) in 
   let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
@@ -242,13 +231,10 @@ in (p, l0).
 (* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
 
 
-(* \TODO Finir ou supprimer 
-Ltac pose_params t idn :=
-  let t_mind := fresh in pose_mind_tac t t_mind ; pose  constr:(ind_params)
-  clear t_mind. *)
 
 
-(* \TODO ici, on ne semble considérer que le cas des inductifs *appliqués* *)
+(* \TODO here, it seems that only *applied* inductive types are considered *)
+(* \TODO modify or remove *)
 Ltac get_mind_tac t  :=  
     let rqt := fresh "rqt" in rec_quote_term t rqt ; 
       lazymatch eval hnf in rqt with
@@ -275,6 +261,9 @@ Ltac get_mind_tac t  :=
 (*** Injectivity ***)
 
 
+(** cutEvar (tApp t  [evar ; u_1 ; ... ; u_n ]) = t
+      i.e. cutEvar removes all the arguments of t if they start with an evar  
+**)
 Definition cutEvar (t: term) :=
   (* perhaps a bit naive *)
   match t with 
@@ -282,6 +271,11 @@ Definition cutEvar (t: term) :=
   | _ => t
   end.
 
+
+
+
+ (* is_inj B f [A1 ; ... ; An ] is the reification of 
+ *) 
 Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
   let n := List.length lA in 
   let d := n - p in let f' := cutEvar f in 
@@ -319,6 +313,8 @@ Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
       end in aux3 l1 (tProd mkNAnon (mkEq (lift0 d B) (tApp f' dB1) (tApp f' dB2)) andeq)   
     . 
 
+
+
 Ltac ctor_is_inj B f lA  n p := 
    match n with
    | 0 => idtac 
@@ -330,11 +326,6 @@ Ltac ctor_is_inj B f lA  n p :=
  repeat split  | ..]   ; subst Hu
    end.
 
-Definition nilterm := @nil term.
-
-(* Check nil. *)
-MetaCoq Quote Definition nil_type_reif := (forall (A : Set), list A).
-(* Print nil_type_reif. *)
 
 
 Ltac ctors_are_inj_tac lB lf lA ln p :=  
@@ -342,13 +333,13 @@ Ltac ctors_are_inj_tac lB lf lA ln p :=
   |  nil  => idtac 
   | ?A1 :: ?tlA => 
     match lf with 
-    | nil => idtac "Wrong branch ctors_are_inj" 
+    | nil => idtac "Wrong branch 1 ctors_are_inj" 
     | ?f1 :: ?tlf =>
       match lB with
-      | nil => idtac "Wrong branch ctors_are_inj"    
+      | nil => idtac "Wrong branch 2 ctors_are_inj"    
       | ?B1 :: ?tlB =>
         match ln with
-        | nil => idtac "Wrong branch ctors_are_inj"
+        | nil => idtac "Wrong branch 3 ctors_are_inj"
         | ?n1 :: ?tln  => let Hnew := fresh "H" in 
    ctor_is_inj B1 f1 A1 n1 p ;  
    ctors_are_inj_tac tlB tlf tlA tln p 
@@ -412,25 +403,10 @@ Ltac pairw_disj_codom_tac B lf  lA p := lazymatch eval hnf in lf with
   end.
 
 
-(*** Total constructors ***)
+(*** Generation statements ***)
 
-Ltac intros_exist_aux n e := 
-  lazymatch n with
-  | 0 => e
-  | S ?n =>
-    let h := fresh "x" in
-    intro h ;
-    let e' := e  ; exists h in
-    intros_exist_aux n e'
-  end.
 
- Goal forall (n m k: nat), exists (x y z: nat), x = n /\ y = m /\ z = k .
- Proof. intros_exist_aux  3 ltac:(idtac).  let x := fresh "x" in let x:= fresh "x" in idtac. repeat split.
-Abort.
         
-
-
-MetaCoq Quote Definition ex_ex_reif2 := Eval cbn in (@ex nat (fun n => True) ).  
 
 Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
   (* if t : A and f : Pi lx lA . A, tells when t is in the codomain of f: returns exist vecx : lA, f vecx = t  *)
@@ -510,22 +486,6 @@ end.
 
 Ltac revert_intro_ex_tac  := revert_intro_ex_tac_aux ltac:(idtac).
 
-Ltac n_right n :=
-  match n with
-  | O => idtac 
-  | S ?n => right; n_right n             
-  end.
-    
-Ltac right_k_n k n :=
-  match n with
-  | O => idtac 
-  | S ?n
-    => match k with
-      | O => idtac 
-      | S ?k => right ;  right_k_n k n
-      end
-  end.
-
 From Coq Require Import List Utf8.
 Import ListNotations.
 
@@ -542,7 +502,7 @@ Ltac codom_union_total_tac B lf lA :=
   let toto := fresh "H" in pose_unquote_term_hnf (codom_union_total B lf lA) toto ; assert toto; unfold toto ;[ (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. *) 
   
 
-
+(* \TODO see if useful / move in utilities *)
 Ltac dotac n t :=
   match constr:(n) with
   | 0 => idtac
@@ -579,27 +539,27 @@ Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
 
 
 (* metavariable i metavariable p *)
-Definition get_ctors_and_types_i (indu : inductive) (p :nat) (n: nat) (i : nat) (u : Instance.t) (oind : one_inductive_body ) :=
+Definition get_ctors_and_types_i (indu : inductive) (p :nat) (no: nat) (io : nat) (u : Instance.t) (oind : one_inductive_body ) :=
               (* p  : number of parameters of indu *)
-              (* n  : number of oind's *)
-              (* i  : index of oind in the mutual inductive block *)
+              (* no : number of oind's *)
+              (* io  : index of oind in the mutual inductive block *)
               (* lA : the (reified) types of the parameters *)
-let indui := switch_inductive indu i in 
+let indui := switch_inductive indu io in 
   let fix treat_ctor_oind_aux (indu : inductive) (n : nat) (j: nat)   (l : list ((ident * term) * nat  ))  :=
     match l with
       | [] => ([], [] , [], [])
       | ctor :: tll => let '((_ , typc) , nc ) := ctor in let nc' := nc + p in
-      let '((tll1,tll2),tll3,tll4) := (treat_ctor_oind_aux indu  n (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn0 indui n u   typc) nc' in
+      let '((tll1,tll2),tll3,tll4) := (treat_ctor_oind_aux indu  no (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn0 indui no u   typc) nc' in
       (B_ctor :: tll1,  (tConstruct indui j u)     :: tll2 , lA_ctor :: tll3 , nc :: tll4) 
-    end in  treat_ctor_oind_aux indu n 0  oind.(ind_ctors).
+    end in  treat_ctor_oind_aux indu no 0  oind.(ind_ctors).
 
-Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
+Ltac treat_ctor_list_oind_tac_i_gen statement indu p no io u  oind  :=
   (* p : number of parameters *)
   (* n : number of oind *)
   (* i : is the rank oind in the mutual inductive block *)
- let indui := constr:(switch_inductive indu i)
+ let indui := constr:(switch_inductive indu io)
  in  let gct :=
-  constr:(get_ctors_and_types_i indu p n i u  oind) 
+  constr:(get_ctors_and_types_i indu p no io u  oind) 
  in  lazymatch eval hnf in gct with 
   | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
     | (?lBf,?lA) =>  lazymatch eval cbv in lBf with
@@ -609,22 +569,22 @@ Ltac treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind  :=
   end.
 (* todo : supprimer le /\ True inutile dans l'injectivité *)
 
-Ltac treat_ctor_list_oind_tac_i indu p n i u oind := treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p n i u oind.
+Ltac treat_ctor_list_oind_tac_i indu p no io u oind := treat_ctor_list_oind_tac_i_gen inj_disj_tac indu p no io u oind.
 
 Ltac interpretation_alg_types_oind_i := treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
-Ltac treat_ctor_mind_aux_tac_gen statement indu p n  u  mind  i  loind :=
+Ltac treat_ctor_mind_aux_tac_gen statement indu p no  u  mind  io  loind :=
  lazymatch eval cbv in loind with
 | nil => idtac 
-| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p n i u  oind ; 
-treat_ctor_mind_aux_tac_gen statement indu p n u mind constr:(S i) tlloind
+| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p no io u  oind ; 
+treat_ctor_mind_aux_tac_gen statement indu p no u mind constr:(S io) tlloind
 end.
 
 
 
-Ltac treat_ctor_mind_tac_gen statement indu p n u  mind  
+Ltac treat_ctor_mind_tac_gen statement indu p no u  mind  
 :=  let loind := constr:(mind.(ind_bodies)) in 
-treat_ctor_mind_aux_tac_gen statement indu p n u mind 0   loind. 
+treat_ctor_mind_aux_tac_gen statement indu p no u mind 0   loind. 
    
 (* Ltac treat_ctor_mind_tac indu p n u  mind := treat_ctor_mind_tac_gen inj_total_disj_tac indu p n u  mind p. *)
 
@@ -651,7 +611,7 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
        | Some ?d =>    
          match d with
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
-            let n := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p n u  mind ; clear geip
+            let no := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u  mind ; clear geip
          end       
        end         
      end
