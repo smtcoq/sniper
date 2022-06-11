@@ -91,11 +91,11 @@ Definition mkAnd (A B : term) := tApp and_reif [A ; B].
 Definition mkOr (A B : term) := tApp or_reif [A ; B].
 
 
-(** and_nary_reif [A1_reif ; ... ; An_reif ] = 
+(** mkAnd_n [A1_reif ; ... ; An_reif ] = 
     the reification of A1 /\ (A2 /\ ... An) (associates to the right)   **)
 (** tail-recursive (actually linear) *)
 (* \TODO check that it is SMTLib friendly *)
-Definition and_nary_reif (l : list term):=
+Definition mkAnd_n0 (l : list term):=
   let l_rev := tr_rev l in 
   match l_rev with
   | [] => True_reif
@@ -108,6 +108,17 @@ Definition and_nary_reif (l : list term):=
     in aux  l0 t0 end.
 
 
+Definition mkAnd_n (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+  let fix aux l acc := match l with
+  | [] => acc
+  | t :: l => aux l (tApp and_reif (acc :: [t])) 
+  end
+  in aux l0 t0
+  end.
+          
 
 
 (* remove and replace with mkOr, which is tr *)
@@ -120,7 +131,7 @@ Fixpoint or_nary_reif (l : list term):=
   end.
 
 
-
+  
 
 
     
@@ -357,7 +368,7 @@ Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
    let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
       match (p, l)  with
-      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) 
+      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) (* \TODO optimize *)
       | ( S p , x :: l) => removeandlift p l 
       | ( S _, []) => [] (* this case doesn't happen *)
       end 

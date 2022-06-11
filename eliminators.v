@@ -38,6 +38,8 @@ forall (A : Type) (d_{1,0} : A)  (d_{1,1} l: list A), (l =  []) \/ (l = ((proj_{
 Some implicit arguments have been omitted: technically,  proj_{1,0} : forall (A : Type), A -> list A -> list A and proj_{1,1} : forall (A : Type) list A -> list A -> list A and the generation statement is: 
 forall (A : Type) (d_{1,0} : A)  (d_{1,1} l: list A), (l = @nil A) \/ (l = (proj_{1,0} A d_{1,0} l) :: (proj_{1,1} A d_{1,1} l) *)
 
+(* \TODO change metavariables A and lA into P and lP *)
+
 (* 
 Let us get now into the technical details.
 Given an inductive datatype I, we use the following conventions:
@@ -62,11 +64,19 @@ A^{+i} (resp. A^{-i}) denotes A where all the free de Bruijn indices have been l
                        ... ;
                       [Au_{k-1,0} ; Au_{k-1,1} ; ... ] ]
 
+Example: for I = nelist, the type of non-empty list, whose reification is denoted nelist_reif 
+* p = 1 and lP_0 = [ Type_Reif ]
+* k = 2, C_0 = sing and C_1 = necons
+* n_0 = 1 and n_1 = 2, ln = [1 ; 2]
+* llA =  [ [ tRel 0 ] ; [ tRel 0 ; tApp nelist_reif [tRel 1] ] ] 
+* llAu = [ [ tRel 0 ] ; [ tRel 0 ; tApp nelist_reif [tRel 0] ] ]
+
 From the ???? point of view, a reified inductive type contains:
 * a term of type 'inductive' (metavariable indu)
 * a mutual_inductive_body (metavariable mind)
 * mind contains a list of one_inductive_body's (metavariable oind)
 * each one_inductive_body contains relevant information about, e.g., its constructors and their types
+(* \TODO pointer vers le fonctions de aux_fun_list comme pose_mind etc *)
 
 We must define projections proj_{i,j} for i = 0, ... , k-1 and j = 0, ..., n_i-1
 proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : Aunlift_{i,j} x : (I X_0 ... X_{p-1}), match x with
@@ -74,18 +84,20 @@ proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : Aunlift_{i,
 | C_j X_0 ... x_{j,0} ... x_{j,n_j-1} => def_{i,j}
 end.
 
-(
 
-We set I' = tApp I [A_0; ... ; A_{p-1}]
 
-Q ??? : A_{i,j} doit être appliqué ?
 
-The reification of proj_{i,j} is:
-tLam A_0 ... A_{p-1} tLam A_{i,j} tLam I' 
-mkCase .... ...
-[ ... () ... .. ]
+We set I' = tApp I [tRel p ; ... ; tRel 1]
+Then, the reification of proj_{i,j} is:
+tLam P_0 ... P_{p-1} tLam Aunlift_{i,j} tLam I' 
+tCase (I_indu , p , relevant ) ( tProd ((I')^{+1}) -> (Aunlift_{i,j}^{+3}) ) (tRel 0) 
+tCase [ (n_0 ; tLam A_{0,0}^{+2} ... A_{0,n_0-1}^{+2}) (tRel (S n_0)) ) ; ... ;
+        (n_i ; tLam A_{0,i}^{+2} ... A_{i,n_i-1}^{+2}) (tRel (S n_i)) ) ; ... ;  
+        (n_j ; tLam A_{0,0}^{+2} ... A_{j,n_j-1}^{+2} tRel (n_j-1-i ) ) ; ...]  (* \TODO check if -1 *)
+        
 
-The reificaiton of the generation statement is
+
+The reificaiton of the generation statement is:
 tProd A_0 ... A_ {p-1} 
 tProd Au_{0,0}^{+0} Au_{0,1}^{+1} ... Au_{0,j}^{+j} ... Au_{0,n_0-1}^{+n_0-1}
       Au_{1,0}^{+n_0} Au_{1,1}^{n_0+1} ...
@@ -111,7 +123,7 @@ _p is a macro for p evars
 *)
 
 
-(* \TODO : renommer impossible_term, qui est un inductif vide *)
+(* \TODO : renommer impossible_term, qui est un inductif vide et qui sert surtout de marqueur *)
 
 (* \TODO éliminer la variable return_type, qui est probablement un lift de default_type *)
 
@@ -178,7 +190,7 @@ match goal with
 end.
 
 
-(* removes k to each de Brujin indexes: useful when variables are removed *)
+(* removes k to each de Brujin index: useful when variables are removed *)
 (* Remark: does not work with dependencies. Should perhaps use subst instead *)
 Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
   match t with
@@ -486,37 +498,22 @@ the parameters *)
 *)
 
 
-(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of An \/ (A_{n-1} ... (A_2 \/ A_1)..)  
-     (reverts list and associates to the *right* )
-     tail-recursive **)
-     Definition mkOr0 (l : list term) := 
-   (*  let l' := tr_rev l in  *)
-      match l with
-      | [] => impossible_term_reif 
-      | x0 :: l0 => 
-      let fix aux l acc :=
-    match l with
-    | [] => impossible_term_reif
-    | [x] => tApp or_reif (x :: [acc])
-    | x :: xs => aux xs (tApp or_reif (x :: [acc]))
-    end in aux l0 x0
-    end.
+(**  mkOr0 [A1_reif ; ... ; An_reif] produce the reification of(...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
+     i.e. reverts list and associates to the *left* (better for SMTLib) **)
+(**     tail-recursive **)
+(* \TODO rename into mkOr_n *)
+Definition mkOr (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+    let fix aux l acc := match l with
+    | [] => acc
+    | t :: l => aux l (tApp or_reif (acc :: [t])) 
+    end
+    in aux l0 t0
+  end.
     
-    (*  mkOr [A1_reif ; ... ; An_reif] produce the reification of (...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
-         (reverts list and associates to the *left*
-        not tail-recursive *)
-    (* \TODO replace mkOr with mkOr0 by suitably modifying tactics below *)    
-    Fixpoint mkOr (l : list term) := 
-    match l with
-    | nil => impossible_term_reif
-    | [ x ] => x
-    | cons x xs => tApp or_reif ([mkOr xs] ++ [x])
-    end.
-    
-    (* Goal False. (* \TMP *)
-    let x := constr:(mkOr0 [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOr0ex ; compute in mkOr0ex.
-    let x := constr:(mkOr [nat_reif; (tRel 0) ; (tRel 3)]) in pose x as mkOrex ; compute in mkOrex.
-    Abort. *)
+
     
     
     
