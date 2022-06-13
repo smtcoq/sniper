@@ -2,10 +2,10 @@ From elpi Require Import elpi.
 Require Import List.
 
 Elpi Tactic elimination_polymorphism.
-Elpi Accumulate File "utilities.elpi".
-Elpi Accumulate File "instantiate.elpi".
-Elpi Accumulate File "find_instances.elpi".
-Elpi Accumulate File "construct_cuts.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/instantiate.elpi".
+Elpi Accumulate File "elpi/find_instances.elpi".
+Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
@@ -47,10 +47,14 @@ Goal (forall (A : Type) (l : list A), A = A) -> (forall (B: Type), B = B) ->
 (l: list A) (p : A *A), l= l /\ p =p).
 intros H H1 H2 A l p. elimination_polymorphism. Abort. 
 
+
+(* Instances when we only look at constructors *)
+Goal (forall (A: Type), list A -> False).
+intros. assert (H1: forall A, List.nth_error (@nil A) 0 = None) by auto.
+elimination_polymorphism. assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort.
+
 Goal (forall (A : Type), 1 = 1) -> 1=1.
 Proof. intros. elimination_polymorphism. Abort.
-
-
 
 
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)

@@ -28,9 +28,16 @@ pred argument_of i: term, i: term, i: term, o: (list (pair term (list int))).
     argument_of U X (app L) R :- std.map L (argument_of U X) R', std.flatten R' R.
     argument_of _U _X _T [].
 
-pred globals_using_var i: term, o:  (list (pair term (list int))).
-    globals_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global G) x (F x) R, not (R = []), coq.typecheck (global G) TyG ok, codomain_not_prop TyG ok.
-    globals_using_var _ []. 
+pred indu_using_var i: term, o:  (list (pair term (list int))).
+    indu_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indt I)) x (F x) R, not (R = []), coq.typecheck (global (indt I)) TyG ok, codomain_not_prop TyG ok.
+    indu_using_var _ [].
+
+pred cstr_using_var i: term, o:  (list (pair term (list int))).
+    cstr_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indc C)) x (F x) R, not (R = []), coq.typecheck (global (indc C)) TyG ok, codomain_not_prop TyG ok.
+    cstr_using_var _ []. 
+
+pred globals_using_var i: term, o: (list (pair term (list int))).
+    globals_using_var T L :- indu_using_var T L1, cstr_using_var T L2, std.append L1 L2 L.
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
     instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
@@ -51,8 +58,14 @@ pred generate_instances_list i: term, i: (list (pair term (list int))), i: list 
     append_nodup R1 R2 R. 
     generate_instances_list _ [] _ [].
 
+
+pred cstr_corresponding_indu i: term, o: term. %compute the inductive of a constructor or return the inductive if the input is already one
+    cstr_corresponding_indu (global (indt _I) as U) U.
+    cstr_corresponding_indu (global (indc C)) Indu :- coq.typecheck (global (indc C)) Ty ok, codomain Ty (app [Indu| _ ]).
+
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
-    generate_instances T P L R :- fst P Trm, snd P Pos, filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
+    generate_instances T P L R :- fst P Trm1, cstr_corresponding_indu Trm1 Trm, snd P Pos,
+        filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
 
 pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
     generate_instances_aux1 H Trm L [LT1|LTS] R :- !, generate_instances_aux2 H Trm L LT1 R1,

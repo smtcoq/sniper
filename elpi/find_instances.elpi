@@ -17,11 +17,11 @@ pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list in
         pi x\ decl x Na Ty => find_instantiated_params Ctx (F x) R2,
         append_nodup R1 R2 R.
     find_instantiated_params Ctx (app [Hd |X]) [(pr Hd R)] :- coq.term->gref Hd G,
-    type_global (global G) Ty, codomain_not_prop Ty ok, %TODO one single call to coq.env.indt
-    get_number_of_parameters (global G) NB, NB > 0, !, 
+        coq.env.typeof G Ty, codomain_not_prop Ty ok,
+    get_number_of_parameters (global G) NB, NB > 0, !,
         std.take NB X R0, std.map R0 (find_pos_in_context Ctx) R.
     find_instantiated_params Ctx (app L) R :- !, std.map L (find_instantiated_params Ctx) R1, std.flatten R1 R.
-        find_instantiated_params _ _ [].
+    find_instantiated_params _ _ [].
 
 pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pair term (list instance))).
     find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, 

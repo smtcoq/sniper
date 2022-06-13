@@ -155,7 +155,7 @@ match l with
 | [] => t 
 | x :: xs => mkProd_rec xs (tProd (mkNamed "x")  x t)
 end.
-(* \TODO mkProd_rec n'est utilisée que dans get_eliminators_st_return, mais deux fois sur la même ligne
+(* \TODO mkProd_rec n'est utilisée que dans get_projs_st_return, mais deux fois sur la même ligne
 Voir si on peut éliminer ou facto du code.
 *)
 
@@ -265,7 +265,7 @@ Definition branch_default_var1 (ni : nat)  (i : nat) (j : nat) (q : nat) :=
    
 
 (* \TODO long term: recover the "relevant" parameter and not hard-code it *)
-(* Constructs the pattern matching in the eliminator
+(* Constructs the pattern matching in the proj
 for instance, given the right arguments to construct the predecessor function we get the reified
 < match x with
 | 0 => default
@@ -302,13 +302,13 @@ cf. branch_default_var *)
 
 
 (*  \TODO 
-  mkCase_eliminator_default_var0 indu p i k ty_arg_constr return_type 
+  mkCase_proj_default_var0 indu p i k ty_arg_constr return_type 
     denotes the pattern-matching of the projector p_{i,k} for an inductive type I
     whose 'inductive' is indu, which has p parameters
     ty_arg_constr is supposed to be \TODO
     return_type is supposed to be \TODO
 *)
-Definition mkCase_eliminator_default_var (indu : inductive) (p : nat) (i : nat) (k : nat)
+Definition mkCase_proj_default_var (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := 
 let llen := tr_map leng ty_arg_constr  in 
 tCase (indu, p, Relevant) return_type (tRel 0) (mkCase_list_param llen i k).
@@ -452,12 +452,12 @@ end
 
 
 
-(* The following two functions bind the arguments of the eliminators : the parameters and the default term *)
+(* The following two functions bind the arguments of the projs : the parameters and the default term *)
 (* \TODO : fusionner proj_one_ctor_default_var *)
 Definition proj_one_ctor_default_var (I_app : term) (ty_default : term) (indu : inductive) (p : nat) (i : nat) (k : nat)
 (ty_arg_constr : list (list term)) (return_type : term) := mkLam ty_default (* lambda truc du type par défaut *)
 (mkLam (lift0 1  I_app) (* \TODO intégrer le lift dans le calcul de I_app*)
-(mkCase_eliminator_default_var indu p i k ty_arg_constr return_type)).
+(mkCase_proj_default_var indu p i k ty_arg_constr return_type)).
 
 
 (* le premier arg est la valeur par défaut, qu'on instancie plus tard, à l'aide CompDec *)
@@ -600,7 +600,7 @@ in tr_rev (aux l []).
 *)
 Definition rev_list_map {A} (l : list (list A)) := @tr_map (list A) (list A) (@tr_rev A) l.
 (* \TODO voir si on ne peut pas se débarrasser de rev_list_map: une liste de listes probablement mal construite.
-Sa seule utilisation dans le code est effectif est dans get_one_eliminator_return sur list_args. Ainsi, la 1ère version de list_args doit être mal construite. Cf. pê le tr_rev ajouté sur une des fonctions plus haut (laquelle ? get_args_list_with_length ?)
+Sa seule utilisation dans le code est effectif est dans get_one_proj_return sur list_args. Ainsi, la 1ère version de list_args doit être mal construite. Cf. pê le tr_rev ajouté sur une des fonctions plus haut (laquelle ? get_args_list_with_length ?)
 *)
 
 (* total_arg_ctors [ (l1 , n1) ; ... ; (lk ; nk)] = 
@@ -613,7 +613,7 @@ match l with
 end
 in aux l 0.
 
-(* \TODO total_arg_ctors n'est utilisé que dans Ltac get_eliminators_st_return sur list_args_len. Une info est sans doute calculée deux fois. 
+(* \TODO total_arg_ctors n'est utilisé que dans Ltac get_projs_st_return sur list_args_len. Une info est sans doute calculée deux fois. 
 On peut s'en doute s'en débarrasser 
 *)
 
@@ -669,7 +669,7 @@ match l with
 | x :: xs => aux xs ((lift0 n  x) :: acc) (n + 1) 
 end
 in aux l [] 0.
-(* \TODO n'est utilisée que dans get_eliminators_st_return 
+(* \TODO n'est utilisée que dans get_projs_st_return 
     pas clair pourquoi on a besoin de retourner la liste 
     \TODO apparemment, bcp de listes sont calculées à l'envers. Voir si on ne peut pas optimiser l'utilisation de rev
 *)
@@ -705,7 +705,7 @@ match list_tVar with
 | (elim, db) :: xs => (tApp elim (holes_p' (leng lpars) db)):: get_elim_applied xs lpars
 end.
 (* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
-(* n'est utilisée que dans get_eliminators_one_ctor_return_aux sur list_elims *)
+(* n'est utilisée que dans get_projs_one_ctor_return_aux sur list_elims *)
 
 
 (** get_eq_x_ctor_projs p ctor [proj_0, ..., proj_{n-1}] db  
@@ -792,7 +792,7 @@ end.
 
 
 (* \TMP, ici, on calcule un projecteur cf. def de elim ci-dessous *)
-Ltac get_one_eliminator_return I ty_pars I_app ty_default I_indu p i k list_args return_ty nb_args_previous_construct total_args :=
+Ltac get_one_proj_return I ty_pars I_app ty_default I_indu p i k list_args return_ty nb_args_previous_construct total_args :=
   (* trackons les 9è (-4è) et 10è (-3è) arg, i.e. lists_args et return_type *)
 let p := eval compute in (proj_one_ctor_params_default_var ty_pars I_app ty_default I_indu p i (k - 1) (rev_list_map list_args) return_ty) in
 (* ici, l'avant-dernier param de proj_one_ctor_params_default_var est 
@@ -818,8 +818,8 @@ constr:((elim, db)).
 (* Definition get_eq (c : term) (t : term) (l : list term) := 
  tApp eq_reif [hole ; t ; tApp c  l].*) (*\Q pourquoi échange d'ordre entre c et t ?*) 
 
- (* \TODO get_elim_applied semble calculer le décalage total de dB quand on construit l'énorme disjonction. Noter que list_elims : list (term x nat) est le dernier arg de get_eliminators_one_ctor_return_aux, qui est construit progressivement  () *)
-Ltac get_eliminators_one_ctor_return_aux n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
+ (* \TODO get_elim_applied semble calculer le décalage total de dB quand on construit l'énorme disjonction. Noter que list_elims : list (term x nat) est le dernier arg de get_projs_one_ctor_return_aux, qui est construit progressivement  () *)
+Ltac get_projs_one_ctor_return_aux n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif list_elims :=
 match n with
 | 0 => let elim_app := eval compute in (get_elim_applied list_elims lpars) in
        let get_equ := constr:(tApp eq_reif [hole ; (tRel 0) ; tApp c_reif elim_app ])
@@ -832,24 +832,24 @@ in
 (*  idtac "kikooo"  return_ty ; *)
 (*let k1 := fresh "kikoooootydef" in pose ty_default as k1  ; *)
 (* let l2 := fresh "kikoooreturnty" in pose return_ty as k2  ; *)
-            let x := get_one_eliminator_return I ty_pars I_app ty_default I_indu p n k list_args return_ty nb_args_previous_construct total_args in 
-    (* list_args devient le 8ème  arg de    get_eliminators_one_ctor_return_aux  *)   
-     get_eliminators_one_ctor_return_aux n' I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
+            let x := get_one_proj_return I ty_pars I_app ty_default I_indu p n k list_args return_ty nb_args_previous_construct total_args in 
+    (* list_args devient le 8ème  arg de    get_projs_one_ctor_return_aux  *)   
+     get_projs_one_ctor_return_aux n' I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif  (x :: list_elims)
 end.
 
 
 (* Doit donner une égalité du type 
 (x = (Ci (proj_{0,i} x) ... (proj_{l_i-1,i} x))
 *)
-Ltac get_eliminators_one_ctor_return n I ty_pars I_app I_indu p k list_args0 nb_args_previous_construct total_args lpars c_reif :=
+Ltac get_projs_one_ctor_return n I ty_pars I_app I_indu p k list_args0 nb_args_previous_construct total_args lpars c_reif :=
 let list_args := eval compute in (split (list_args0)).1 in (* \Q pourquoi list_args calculé plusieurs fois ?
-la même chose est faite dans la fonction finale get_eliminators_st_return
+la même chose est faite dans la fonction finale get_projs_st_return
 dans laquelle list_args0 s'appelle list_args_len....
 *)
 (* maintenant, list_args := val compute in (split (list_args0)).1  
-   et list_args0 est le 8è param de get_eliminators_one_ctor_return
+   et list_args0 est le 8è param de get_projs_one_ctor_return
 *)
-get_eliminators_one_ctor_return_aux n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif (@nil (term*nat)).
+get_projs_one_ctor_return_aux n I ty_pars I_app I_indu p k list_args nb_args_previous_construct total_args lpars c_reif (@nil (term*nat)).
 
 
 (* \TODO spec 
@@ -859,7 +859,7 @@ forall A1.... Ap (v0 : A_{0,0}) ... (v_{l_{k-1},k-1} : A_{l_{k-1},k-1}) (x : I A
 \/ ... \/  (x = (Ci (proj_{0,i} x) ... (proj_{l_i-1,i} x)) 
 \/ ... \/ (x = (C_{k-1} (proj_{0,k-1} x) ... (proj_{l_{k-1}-1,k} x)) 
 *)
-Ltac get_eliminators_aux_st n I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb list_eq :=
+Ltac get_projs_aux_st n I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb list_eq :=
 match n with
 | 0 => constr:(list_eq)
 | S ?n' => let prod := eval compute in (nth n' list_args (nil, 0)) in
@@ -867,11 +867,11 @@ match n with
            let c_reif := eval compute in (nth n' list_ctors_reif impossible_term_reif) in
            let nb_args_previous_construct := eval compute in (nb - i) in
           let x :=
-          get_eliminators_one_ctor_return i I ty_pars I_app I_indu p n list_args nb_args_previous_construct total_args lpars c_reif in
- (* ici, le 8ème arg de get_eliminators_one_ctor_return s'appelle list_args et non list_args0.
- c'est aussi le 7ème arg de get_eliminators_aux_st, qui s'appelle list_args
+          get_projs_one_ctor_return i I ty_pars I_app I_indu p n list_args nb_args_previous_construct total_args lpars c_reif in
+ (* ici, le 8ème arg de get_projs_one_ctor_return s'appelle list_args et non list_args0.
+ c'est aussi le 7ème arg de get_projs_aux_st, qui s'appelle list_args
 *) 
-          get_eliminators_aux_st n' I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb_args_previous_construct constr:(x::list_eq)
+          get_projs_aux_st n' I ty_pars I_app I_indu p list_args total_args lpars list_ctors_reif nb_args_previous_construct constr:(x::list_eq)
 end.
 
 Ltac prove_by_destruct_varn n  := 
@@ -883,7 +883,7 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 end.
 
 (* Main tactic : from an inductive not applied, generates the generation statement and a projection function for each non dependent argument of each constructor *)
-Ltac get_eliminators_st_return I_rec na := 
+Ltac get_projs_st_return I_rec na := 
 let I_rec_term := eval compute in (I_rec.2) in
 let opt := eval compute in (get_info_params_inductive I_rec_term I_rec.1) in 
 match opt with 
@@ -904,8 +904,8 @@ match opt with
   let I_lifted := eval compute in (lift (total_args) 0 I_app) in
         match I_rec_term with
         | tInd ?I_indu _ =>
-                      let x := get_eliminators_aux_st k na ty_pars I_app I_indu p list_args_len total_args list_of_pars_rel list_ctors_reif total_args (@nil term) in 
-(* le 7ème arg de get_eliminators_aux_st est list_args_len, que l'on obtient dans get_info *)
+                      let x := get_projs_aux_st k na ty_pars I_app I_indu p list_args_len total_args list_of_pars_rel list_ctors_reif total_args (@nil term) in 
+(* le 7ème arg de get_projs_aux_st est list_args_len, que l'on obtient dans get_info *)
                       let t := eval compute in (mkProd_rec ty_pars (mkProd_rec list_ty_default (tProd {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} 
     I_lifted (mkOr x)))) in
                       let u := metacoq_get_value (tmUnquote t) in 
@@ -970,17 +970,17 @@ Ltac gen_statement t :=
    
 
  
-Ltac get_eliminators_st_return_quote I := 
+Ltac get_projs_st_return_quote I := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
-get_eliminators_st_return I_rec I.
+get_projs_st_return I_rec I.
 
 
 
-Ltac get_eliminators_st I :=
-let st := get_eliminators_st_return_quote I in idtac.
+Ltac get_projs_st I :=
+let st := get_projs_st_return_quote I in idtac.
 
 
-Section tests_eliminator.
+Section tests_proj.
 
 (* non-empty lists *)
 Inductive nelist {A : Type} : Type :=
@@ -1002,12 +1002,12 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
 Goal False.
-get_eliminators_st list. clear.
-get_eliminators_st nat. clear.
-get_eliminators_st @nelist. clear.
-get_eliminators_st @biclist. clear.
-get_eliminators_st Ind_test. clear.
-get_eliminators_st Ind_test2. clear.
+get_projs_st list. clear.
+get_projs_st nat. clear.
+get_projs_st @nelist. clear.
+get_projs_st @biclist. clear.
+get_projs_st Ind_test. clear.
+get_projs_st Ind_test2. clear.
 Abort.
 
 Goal False.
@@ -1020,7 +1020,7 @@ gen_statement Ind_test2. clear.
 Abort.
 
 
-End tests_eliminator.
+End tests_proj.
 
 Ltac instantiate_ident H x :=
   let T := type of H in
@@ -1056,14 +1056,14 @@ end.
 Ltac instantiate_tuple_terms_goal_inhab H t0 := let t0 := return_tuple_subterms_of_type_type in
 let t := eval compute in t0 in instantiate_tuple_terms_inhab H t t.
 
-Ltac get_eliminators_st_default I t0 :=
+Ltac get_projs_st_default I t0 :=
 let t := eval compute in t0 in 
-let H' := get_eliminators_st_return I in
+let H' := get_projs_st_return I in
 instantiate_tuple_terms_inhab H' t t.
 
-Ltac get_eliminators_st_default_quote I t0 :=
+Ltac get_projs_st_default_quote I t0 :=
 let t := eval compute in t0 in 
-let H' := get_eliminators_st_return_quote I in
+let H' := get_projs_st_return_quote I in
 instantiate_tuple_terms_inhab H' t t.
 
 Section tests_default.
@@ -1073,11 +1073,11 @@ Variable a : A.
 
 Goal nat -> A -> False.
 let t0 := return_tuple_subterms_of_type_type in 
-get_eliminators_st_default_quote list t0. clear -a.
+get_projs_st_default_quote list t0. clear -a.
 let t0 := return_tuple_subterms_of_type_type in 
-get_eliminators_st_default_quote Ind_test t0. clear -a.
+get_projs_st_default_quote Ind_test t0. clear -a.
 let t0 := return_tuple_subterms_of_type_type in 
-get_eliminators_st_default_quote Ind_test2 t0. clear -a.
+get_projs_st_default_quote Ind_test2 t0. clear -a.
 Abort.
 
 End tests_default.
@@ -1112,10 +1112,10 @@ match l with
 | nil => idtac 
 | cons ?x ?xs => let u := metacoq_get_value (tmUnquote x) in 
                  let I := eval hnf in (u.(my_projT2)) in 
-                 try (get_eliminators_st_default_quote I t) ; elims_on_list xs t
+                 try (get_projs_st_default_quote I t) ; elims_on_list xs t
 end.
 
-Ltac get_eliminators_in_goal := 
+Ltac get_projs_in_goal := 
 let t0 := return_tuple_subterms_of_type_type in
 let t := eval compute in t0 in
 match goal with 
@@ -1140,7 +1140,7 @@ let _ := match goal with _ => intro v end in constr:((v, acc))
 | _ => constr:(unit)
 end.
 
-Ltac get_eliminators_in_variables p := 
+Ltac get_projs_in_variables p := 
 let t := vars in 
 let rec tac_rec v tuple :=
 match v with
@@ -1148,7 +1148,7 @@ match v with
                 let I := get_head T in 
                 let params := get_tail T in 
                 try (is_not_in_tuple tuple T  ;
-                get_eliminators_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
+                get_projs_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
 | _ => idtac
 end
 in let prod_types0 := eval compute in p in tac_rec t prod_types0.
@@ -1165,7 +1165,7 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_eliminators_in_variables bool.
+Proof. intros. get_projs_in_variables bool.
 Abort.
 
 End tests.
