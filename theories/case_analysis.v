@@ -938,6 +938,7 @@ ind_relevance := Relevant |}.
 
 
 Ltac gen_statement t := 
+  let Helim := fresh in let _ := match goal with _ => 
   let indmind := fresh "indmind" in info_indu t indmind ; 
   lazymatch eval compute in indmind with
   | (?induu,?mind) => 
@@ -956,20 +957,28 @@ Ltac gen_statement t :=
         let lA_rev := eval compute in (tr_rev lA) in let llAu := eval compute in (tr_map ret_ty_proj llAtrunc) in let t_reif := constr:(tInd indu u) in  let L := constr:(fold_left Nat.add ln 0) in
         let res3 := 
          declare_projs t p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
-        let _ := match goal with _ => pose (llprojs  := res3)  end in
+         pose (llprojs  := res3) ; 
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
-        let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln)))  in  
-         let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ;  let L' := eval compute in (p + L) in  let Helim := fresh "gen_" t in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ; 
-       clear gent indmind llprojs
-        end
+        let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln))) in 
+          let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let L' := eval compute in (p + L) in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ; 
+       clear gent indmind llprojs (* \TODO add clearbody  *)
+        end 
       end
     end
     end
-  end end end
+  end end end end in Helim
   .       
    
+Goal False. (* \TMP *)
+let x := gen_statement list in idtac x.
+Abort. 
 
- 
+Ltac gen_statement_pose t :=
+  let gent := fresh "gen" t in let x := gen_statement t in pose x as gent.
+
+
+
+
 Ltac get_projs_st_return_quote I := 
 let I_rec := metacoq_get_value (tmQuoteRec I) in
 get_projs_st_return I_rec I.
@@ -1011,12 +1020,12 @@ get_projs_st Ind_test2. clear.
 Abort.
 
 Goal False.
-gen_statement nat. clear.
-gen_statement list. clear.
-gen_statement @nelist. clear.
-gen_statement @biclist. clear.
-gen_statement Ind_test. clear.
-gen_statement Ind_test2. clear.
+gen_statement_pose nat. clear.
+gen_statement_pose list. clear.
+gen_statement_pose @nelist. clear.
+gen_statement_pose @biclist. clear.
+gen_statement_pose Ind_test. clear.
+gen_statement_pose Ind_test2. clear.
 Abort.
 
 
