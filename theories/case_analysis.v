@@ -471,12 +471,6 @@ Definition ret_ty_proj lA
 (* warning: handles parameters but not dependent arguments *)
 
 
-
-
-
-
-
-
 (* \TODO : bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,l_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k-1}] ]
                                   [l0 ; ... ; lk ]
     = [ A_{k,l_k}^L ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
@@ -520,17 +514,6 @@ Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
     | S p => aux p (hole :: acc)
   end in aux p [tRel db; tRel 0].
 
-(* gets each elimination function applied to the parameters, the default and the term *)
-(* get_elim_applied [(proj0 , d0 ); ... ; (projn , dn)] [A1 ; ... ; Ap ]
-     = [ tApp proj0 [ A1 ; ... ; Ap ; tRel d0 ; tRel0 ] 
-     ; ... ; tApp projn [A1 ; ... ; Ap ; tRel dn ; tRel 0]]*)
-Fixpoint get_elim_applied (list_tVar : list (term * nat)) (lpars : list term) :=
-match list_tVar with
-| nil => nil
-| (elim, db) :: xs => (tApp elim (holes_p' (leng lpars) db)):: get_elim_applied xs lpars
-end.
-(* \TODO comprendre pq ici le default est Rel 0 et pas Rel 1, ou alors c'est tRel db ?  *)
-(* n'est utilisée que dans get_projs_one_ctor_return_aux sur list_elims *)
 
 
 (** get_eq_x_ctor_projs p ctor [proj_0, ..., proj_{n-1}] db  
@@ -607,20 +590,23 @@ end.
 
 
 
+
+(*  \TMP *)
+(* Ltac clearbody_tVar_list l :=
+  match eval hnf in l with
+  | [] => idtac 
+  | ?c :: ?l0 => match c with
+    | tVar ?idn => cbd idn ; clearbody_tVar_list l0
+end
+end. *)
+
+(* Ltac clearbody_tVar_llist l :=
+  match eval hnf in l with
+  | [] => idtac 
+  | ?l0 :: ?tl0 => clearbody_tVar_list l0 ; clearbody_tVar_llist tl0
+end. *)
+
 (* \TODO move up the definition of nat_oind. In utilities.v? *)
-Definition nat_oind := {|
-ind_name := "nat"%string;
-ind_type := tSort (Universe.of_levels (inr Level.lSet));
-ind_kelim := IntoAny;
-ind_ctors := [("O"%string, tRel 0, 0);
-             ("S"%string,
-             tProd
-               {|
-               binder_name := nAnon;
-               binder_relevance := Relevant |}
-               (tRel 0) (tRel 1), 1)];
-ind_projs := [];
-ind_relevance := Relevant |}.
 
 
 
@@ -648,7 +634,7 @@ Ltac gen_statement t :=
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
         let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln))) in 
           let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let L' := eval compute in (p + L) in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ; 
-       clear gent indmind llprojs (* \TODO add clearbody  *)
+      (* clearbody_tVar_llist llprojs; *) clear gent indmind llprojs (* \TODO add clearbody  *)
         end 
       end
     end
@@ -696,11 +682,13 @@ Inductive Ind_test2 (A B C : Type) :=
 Goal False.
 get_projs_st list. clear.
 get_projs_st nat. clear.
+get_projs_st option. clear.
 get_projs_st @nelist. clear.
 get_projs_st @biclist. clear.
 get_projs_st Ind_test. clear.
 get_projs_st Ind_test2. clear.
 Abort.
+
 
 Goal False.
 pose_gen_statement nat. clear.

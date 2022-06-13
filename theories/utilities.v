@@ -32,6 +32,19 @@ MetaCoq Quote Definition nat_reif := nat.
 Inductive impossible_term :=.
 MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
+Definition nat_oind := {|
+ind_name := "nat"%string;
+ind_type := tSort (Universe.of_levels (inr Level.lSet));
+ind_kelim := IntoAny;
+ind_ctors := [("O"%string, tRel 0, 0);
+             ("S"%string,
+             tProd
+               {|
+               binder_name := nAnon;
+               binder_relevance := Relevant |}
+               (tRel 0) (tRel 1), 1)];
+ind_projs := [];
+ind_relevance := Relevant |}.
 
 
 (** Tail-recursive (actually linear) version of List.length **)

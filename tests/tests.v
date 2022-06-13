@@ -70,7 +70,7 @@ Lemma nth_default_eq :
   - snipe2.
   - intros l ; destruct l.
     * snipe2.
-    * scope. get_projs_st (option). Fail specialize (H2 A a). (* verit. *)
+    * snipe2. get_projs_st (option). Fail specialize (H2 A a). (* verit. *)
 Abort.
 
 (* Test polymorphism *) 
