@@ -117,6 +117,10 @@ MetaCoq Quote Definition list_one_two_two_reif' := (List.app [1] [2 ; 2]).
 Definition cons_nat := @cons nat.
 
 
+MetaCoq Quote Definition eq_nat_reif := Eval cbn in (@eq nat).
+
+
+MetaCoq Quote Definition eq_term_reif := Eval cbn in (@eq term).
 
 MetaCoq Quote Definition length_reif := @List.length.
 MetaCoq Quote Definition le_reif := le.

@@ -16,13 +16,16 @@ Require Import utilities.
 Require Import ZArith.
 Require Import PArith.BinPos.
 
+(* \TODO the scanning of inductive types in this file should be unified
+   with that of case_analysis
+*)
 
 Open Scope string_scope.  
 
 Import ListNotations MonadNotation. 
 
-(* TODO : use metacoq_get_value in utilities to avoid continuations *)
-
+(* \TODO : use metacoq_get_value in utilities to avoid continuations *)
+(* \TODO : unify with various functions of utilities (and move them there) *)
 Ltac pose_quote_term c idn :=
   let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
 
@@ -47,28 +50,12 @@ Ltac assert_unquote_term_hnf t  idn := (run_template_program (tmUnquote t ) ltac
 
 Ltac unquote_term_cbv' t idn  := unquote_term t idn ltac:(fun x => cbv in x).
 
-MetaCoq Quote Definition eq_nat_reif := Eval cbn in (@eq nat).
-(* Print eq_nat_reif. *)
-
-MetaCoq Quote Definition eq_term_reif := Eval cbn in (@eq term).
-(* Print eq_term_reif.*)
-
-MetaCoq Quote Definition True_reif := Eval cbn in True.
-MetaCoq Quote Definition False_reif := Eval cbn in False.
-MetaCoq Quote Definition and_reif := Eval cbn in and.
-MetaCoq Quote Definition or_reif := Eval cbn in or.
-
-(** reified equalities **)
-
-(* Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
-Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
-
-Definition mkNamedtry := mkNamed (("B"%string) : ident).*)
 
 
-Definition consS_typ := tProd (mkNamed "A") (tSort (Universe.from_kernel_repr (Level.lSet, false) []))
-                                  (tProd mkNAnon (tRel 0)
-                                     (tProd mkNAnon (tApp (tRel 2) [tRel 1]) (tApp (tRel 3) [tRel 2]))).
+
+
+
+
 
 (** reified connectives **)
 
@@ -80,45 +67,9 @@ MetaCoq Quote Definition ex_intro_reif := Eval cbn in @ex_intro.
 (*** Useful operators ***)
 
 
-Definition mkImpl A B := tProd mkNAnon A (lift0 1 B). 
-
-(* write examples to check specif *)
-
-Definition mkNot (A :term) := mkImpl A False_reif.
-
-Definition mkAnd (A B : term) := tApp and_reif [A ; B]. 
-
-Definition mkOr (A B : term) := tApp or_reif [A ; B].
 
 
-(** mkAnd_n [A1_reif ; ... ; An_reif ] = 
-    the reification of A1 /\ (A2 /\ ... An) (associates to the right)   **)
-(** tail-recursive (actually linear) *)
-(* \TODO check that it is SMTLib friendly *)
-Definition mkAnd_n0 (l : list term):=
-  let l_rev := tr_rev l in 
-  match l_rev with
-  | [] => True_reif
-  | t0 :: l0 => 
-    let fix aux l acc :=
-      match l with
-      | [] => acc             
-      | t :: tll => aux tll (mkAnd t acc)
-      end 
-    in aux  l0 t0 end.
 
-
-Definition mkAnd_n (l : list term) :=
-  match l with
-  | [] => True_reif
-  | t0 :: l0 => 
-  let fix aux l acc := match l with
-  | [] => acc
-  | t :: l => aux l (tApp and_reif (acc :: [t])) 
-  end
-  in aux l0 t0
-  end.
-          
 
 
 (* remove and replace with mkOr, which is tr *)
@@ -229,18 +180,6 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
 
 
 
-(* get_params_from_mind mind = (p , lA) 
-  where p is the number of parameters of mind and lA the list of the parameters types *in order*
-  (note that mind.(ind_params)) stores the types in *reverse* order
-*)
-(* \TODO move in utilities *)
-(* \TODO in utilites, unify and factorize all the tactics which retrieve parameters from reified inductives *)
-Definition get_params_from_mind mind :=
-  let p := mind.(ind_npars) in 
-  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
-in (p, l0).
-(* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
-
 
 
 
@@ -288,7 +227,7 @@ Definition cutEvar (t: term) :=
  (* is_inj B f [A1 ; ... ; An ] is the reification of 
  *) 
 Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
-  let n := List.length lA in 
+  let n := leng lA in 
   let d := n - p in let f' := cutEvar f in 
   let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
     match (lA , p ) with 
@@ -364,11 +303,11 @@ Ltac ctors_are_inj_tac lB lf lA ln p :=
 
 
 Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
-  let (n,n') := (List.length lAf , List.length lAg) in 
+  let (n,n') := (leng lAf , leng lAg) in 
    let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
       match (p, l)  with
-      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) (* \TODO optimize *)
+      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) (* \TODO not tail-recursive, optimize *)
       | ( S p , x :: l) => removeandlift p l 
       | ( S _, []) => [] (* this case doesn't happen *)
       end 
@@ -405,7 +344,7 @@ Ltac pairw_aux B f lAf lf lA p :=
       end.
  
     
-Ltac pairw_disj_codom_tac B lf  lA p := lazymatch eval hnf in lf with
+Ltac pairw_disj_codom_tac B lf lA p := lazymatch eval hnf in lf with
   | [] => idtac  
   | ?f1 :: ?tllf => lazymatch eval hnf in lA with 
     ?A1 :: ?tllA  => pairw_aux B f1 A1 tllf tllA p  ; pairw_disj_codom_tac B tllf tllA p 
@@ -423,7 +362,7 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
   (* if t : A and f : Pi lx lA . A, tells when t is in the codomain of f: returns exist vecx : lA, f vecx = t  *)
   match lA with
   | [] => tApp eq_reif [B ; t ; f]
-  | A :: tllA => tApp ex_reif [A ;  tLambda (mkNamed "x") A   (is_in_codom B (lift0 1 t) (tApp (lift0 1 f) [tRel 0] )   tllA  )]
+  | A :: tllA => tApp ex_reif [A ;  tLambda (mkNamed "x") A   (is_in_codom B (lift0 1 t) (tApp (lift0 1 f) [tRel 0] ) tllA )]
   end.
 (* base case : f is 0-ary and  t is just f *)
 
@@ -431,7 +370,7 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
 
 Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
   let lD' := tr_map(fun l => (@List.skipn term p l)) lD in 
-  let lLen := tr_map  (fun l => (@List.length term l) ) lD' in 
+  let lLen := tr_map  (fun l => (@leng term l) ) lD' in 
   let fix aux0 k i l  :=
     (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
     match k with
@@ -622,7 +561,7 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
        | Some ?d =>    
          match d with
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
-            let no := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u  mind ; clear geip
+            let no := constr:(leng mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u  mind ; clear geip
          end       
        end         
      end

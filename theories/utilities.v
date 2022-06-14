@@ -21,6 +21,14 @@ MetaCoq Quote Definition unit_reif := unit.
 
 MetaCoq Quote Definition or_reif := Logic.or.
 
+
+MetaCoq Quote Definition and_reif := Logic.and.
+
+
+MetaCoq Quote Definition True_reif := True.
+
+MetaCoq Quote Definition False_reif := False.
+
 MetaCoq Quote Definition eq_reif := @eq.
 
 MetaCoq Quote Definition bool_reif := bool. 
@@ -144,13 +152,101 @@ end.
 Definition mkProdName na T u := (* \TODO use mkProdName in files *)
 tProd (mkNamed na) T u.
 
+
+(* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
+(* warning: t should have been previously lifted if necessary*)
+Fixpoint mkProd_rec (l : list term)  (t: term) := 
+match l with 
+| [] => t 
+| x :: xs => mkProd_rec xs (tProd (mkNamed "x")  x t)
+end.
+
+
+(* same thing but one provides a name for the bound variables *)
+Fixpoint mkProd_rec_n (na : ident) (l : list term)  (t: term) := 
+(* warning: t should have been previously lifted *)
+match l with 
+| [] => t 
+| x :: xs => mkProd_rec_n na xs (tProd (mkNamed na)  x t)
+end.
+
+
+
+(** mkLam [A1 ; .... ; An ] t = Lam "x/A" An. ... tProd "x/A" A1. t   (reverts list) **)
+(** tail-recursive **)
+(* warning: t should have been previously lifted if necessary*)
+Fixpoint mkLam_rec (l : list term)  (t: term) := 
+match l with 
+| [] => t 
+| x :: xs => mkLam_rec xs (mkLam x t)
+end.
+
+
 Close Scope string_scope.
 
+
+Definition mkImpl A B := tProd mkNAnon A (lift0 1 B). 
+
+
+Definition mkNot (A :term) := mkImpl A False_reif.
+
+Definition mkAnd (A B : term) := tApp and_reif [A ; B]. 
+
+Definition mkOr (A B : term) := tApp or_reif [A ; B].
+
+
+(** mkAnd_n [A1_reif ; ... ; An_reif ] = 
+    the reification of (A1 /\ A2) /\ ... An) (associates to the left **)
+(** tail-recursive (actually linear) *)
+Definition mkAnd_n (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+  let fix aux l acc := match l with
+  | [] => acc
+  | t :: l => aux l (tApp and_reif (acc :: [t])) 
+  end
+  in aux l0 t0
+  end.
+
+
+(**  mkOr_n0 [A1_reif ; ... ; An_reif] produce the reification of(...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
+     i.e. reverts list and associates to the *left* (better for SMTLib) **)
+(**     tail-recursive **)
+Definition mkOr_n (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+    let fix aux l acc := match l with
+    | [] => acc
+    | t :: l => aux l (tApp or_reif (acc :: [t])) 
+    end
+    in aux l0 t0
+  end.
+
+
+(* \TODO useless, remove *)
 Definition mkApp (u : term) (l : list term) :=
 tApp u l.
 
+(* \TODO useless, remove *)
 Definition mkApp_singl t u :=
 mkApp t [u].
+
+
+
+
+(* get_params_from_mind mind = (p , P) 
+  where p is the number of parameters of mind and lP the list of the parameters types *in order*
+  (note that mind.(ind_params)) stores the types in *reverse* order
+*)
+(* \TODO it would be perhaps better to recover the types of the parameters in the reverse order  *)
+Definition get_params_from_mind mind :=
+  let p := mind.(ind_npars) in 
+  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
+in (p, l0).
+(* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
+
 
 Fixpoint get_constructors_inductive (I : term) (e : global_env) :=
 match I with 
