@@ -66,12 +66,22 @@ Qed.
 
 Lemma nth_default_eq :
     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
-  Proof. intros A HA n ; induction n.  
+Proof. intros A HA n ; induction n.  
   - snipe2.
   - intros l ; destruct l.
     * snipe2.
-    * scope. get_projs_st (option). specialize (H A a). verit.
- Qed.
+    * scope. unfold nth_default. rewrite H2 with (H16 := a). simpl. rewrite <- IHn. remember (nth_error l n) as kik. 
+     destruct kik;  symmetry. apply H4. symmetry. assumption. 
+            apply H10. symmetry. assumption.
+                  
+ (* get_projs_st (option). simpl. rewrite <- IHn. destruct (nth_error l n) as [ x | ].      
+ unfold nth_default. simpl.   rewrite -> IHn.
+
+  apply H4. simpl. rewrite <- IHn. assert (H : nth_erro l n
+
+specialize (gen_option A a) as kik. destruct kik with (x := nth_error l n).
+  Fail specialize (H2 A a). (* verit. *) *)
+Qed.
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
