@@ -79,42 +79,41 @@ From the ???? point of view, a reified inductive type contains:
 (* \TODO pointer vers le fonctions de aux_fun_list comme pose_mind etc *)
 
 We must define projections proj_{i,j} for i = 0, ... , k-1 and j = 0, ..., n_i-1
-proj_{i,j} = lam X_0 : A_0 ... lam X_{p-1} : A_{p-1} Lam def_{i,j} : Aunlift_{i,j} x : (I X_0 ... X_{p-1}), match x with
-| C_i X_0 ... x_{i,0} ... x_{i,n_i-1} => x_{i,j} 
-| C_j X_0 ... x_{j,0} ... x_{j,n_j-1} => def_{i,j}
+proj_{i,j} = fun (X_0 : A_0) ...  (X_{p-1} : A_{p-1)} (def_{i,j} : Aunlift_{i,j}) (x : (I X_0 ... X_{p-1})), 
+match x with
+| C_i x_{i,0} ... x_{i,n_i-1} => x_{i,j}  
+| C_q x_{q,0} ... x_{q,n_q-1} => def_{i,j} (* q <> i, the default value is returned *)
 end.
 
 
-
-
-We set I' = tApp I [tRel p ; ... ; tRel 1]
-Then, the reification of proj_{i,j} is:
+To obtain the reification of reification of proj_{i,j}, we e set I' = tApp I [tRel p ; ... ; tRel 1]
+Then proj_{i,j}_reif is:
 tLam P_0 ... P_{p-1} tLam Aunlift_{i,j} tLam I' 
 tCase (I_indu , p , relevant ) ( tProd ((I')^{+1}) -> (Aunlift_{i,j}^{+3}) ) (tRel 0) 
-tCase [ (n_0 ; tLam A_{0,0}^{+2} ... A_{0,n_0-1}^{+2}) (tRel (S n_0)) ) ; ... ;
-        (n_i ; tLam A_{0,i}^{+2} ... A_{i,n_i-1}^{+2}) (tRel (S n_i)) ) ; ... ;  
-        (n_j ; tLam A_{0,0}^{+2} ... A_{j,n_j-1}^{+2} tRel (n_j-1-i ) ) ; ...]  (* \TODO check if -1 *)
+        [ (n_0 ; tLam A_{0,0}^{+2} ... A_{0,n_0-1}^{+2}) (tRel (S n_0)) ) ; ... ;
+        (n_q ; tLam A_{0,q}^{+2} ... A_{q,n_q-1}^{+2}) (tRel (S n_q)) ) ; ... ;  (* for q <> i *)
+        (n_i ; tLam A_{0,0}^{+2} ... A_{i,n_i-1}^{+2} tRel (n_i-1-j ) ) ; ...]  
         
 
-
-The reificaiton of the generation statement is:
+To obtain the reificaiton of the generation statement, we set
+N_i = n_0 + ... + n_{i-1} 
+N'_i := n_{i+1} + ... + n_{k-1} 
+and N = n_0 + ... + n_{k-1} = N_k = N'_{-1} 
+Then, the reification of the statement is:
 tProd A_0 ... A_ {p-1} 
 tProd Au_{0,0}^{+0} Au_{0,1}^{+1} ... Au_{0,j}^{+j} ... Au_{0,n_0-1}^{+n_0-1}
       Au_{1,0}^{+n_0} Au_{1,1}^{n_0+1} ...
-      .... Au_{i,j}^{L_j+j}... Au_{k-1,n_k-1}^{L_{k-1}-1}
-tProd (x : (I')^{+????} }  
+      .... Au_{i,j}^{N_i+j}... Au_{k-1,n_k-1}^{N-1}
+tProd (x : (I')^{+N})
   or_reif 
      eq_reif _ (tRel 0)  pstat_0 ; 
      eq_reif _ (tRel 0) pstat_1 ; ... ;
      eq_reif _ (tRel 0) pstat_{k-1}
-
-where L_i := n_0 + ... + n_{i-1} 
-and pstat_i := C_i [ _p ; 
-        proj_{i,0} [ _p ; tRel ??? ; tRel 0 ]
+where pstat_i := C_i [ _p ; 
+        proj_{i,0} [ _p ; tRel (N'_{i-1}) ; tRel 0 ]
         .... ;
-        proj_{i,j} [ _ p ; tRel ??? ; tRel 0] ; ...]
-       
-_p is a macro for p evars 
+        proj_{i,j} [ _ p ; tRel (N'_{i-1}-j) ; tRel 0] ; ... ]
+where _p is a macro for p evars 
  *)
 
 
@@ -218,11 +217,8 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 (** version with default = tRel 1 **)
 
 (* constructs the function associated with the branchs which should return a default value *)
-(* l0 is supposed to be the list of types of the parameters of the constructors, e.g. for cons: 
-[tRel 0 ; tApp list_reif [tRel 1]]
-*)
 (* \Q what is n supposed to represent? *)
- 
+(* spec: \TODO *)
 (* branch_default_var l0 i k n  (* \TODO metavariables *)
    = Prod x1 hole. ... Prod xlen hole. Rel (len - rkproj) if k = n
    = Prod x1 hole ... Prod xlen hole. Rel (len + 1) if k
@@ -232,7 +228,7 @@ Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
 
 (* branch_default_var l0 i k j  =  (* \TODO update *)
     tRel kp _  ... _ (with len0 holes)
-    where len0 is the length of l0
+    where len0 is the length of l0 
     kp = len0 - i if j = k
     kp = len0 + 1 if j <> k 
     * If j <> k then, tRel kp denotes def, the default variable
@@ -358,7 +354,7 @@ constr:(tr_rev ln)
 in 
  let rec aux llAu' ln' k  acc :=
 let y := constr:(((k,llAu'),ln')) 
-in match eval hnf in y with
+in lazymatch eval hnf in y with
 | (?y0 , ?ln0') => 
   match eval cbv in ln0' with
   | (@nil nat) =>   constr:(acc) 
@@ -446,12 +442,11 @@ Definition mkOr (l : list term) :=
 
 
 (*
-proj_return_types [[A_{0,0} ; ... ; A_{0,l_0}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k}] ]
-    = [ [A_{0,0}] ; A_ {1,1} ^{-1} ; ... ; A_{l_0}^{-l_0} ] ; ... ;
-         [A_{k,0}] ; A_ {k,1} ^{-1} ; ... ; A_{l_k}^{-l_k}] ]
+proj_return_types [[A_{0,0} ; ... ; A_{0,n_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k-1,n_{k-1}}] ]
+    = [ [A_{0,0}] ; A_ {0,1} ^{-1} ; ... ; A_{0,n_0-1}^{-n_0+1} ] ; ... ;
+         [A_{k-1,0}] ; A_ {k-1,1} ^{-1} ; ... ; A_{k-1,n_{k-1}}^{-n_k+1}] ]
       \TODO helps compute the return types of the projections
 *)
-(* \TODO choose between proj_return_types and ret_ty_proj (the former is the latter + tr_map )*)
 Definition proj_return_types (llA: list (list term)) :=
   let fix aux acc i lA :=
     match lA with
@@ -460,25 +455,18 @@ Definition proj_return_types (llA: list (list term)) :=
   end  in  (tr_map (fun lA => tr_rev(aux [] 0  lA)) llA).
 
 
-Definition ret_ty_proj lA 
-  := let fix aux l k acc := 
-    match l with
-    | [] => acc 
-    | A :: l => aux l (S k) ((unlift k A) :: acc)
-    end in tr_rev (aux lA 0 []).
-
 
 (* warning: handles parameters but not dependent arguments *)
 
 
-(* \TODO : bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,l_0-1}] ; ... ; [A_{k,0} ; .... ; A_{k,l_k-1}] ]
-                                  [l0 ; ... ; lk ]
-    = [ A_{k,l_k}^L ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
-      where L = l_0 + ... + l_k
+(* \TODO : bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,n_0-1}] ; ... ; [A_{k-1,0} ; .... ; A_{k-1,n_k-1}] ]
+                                  [ n_0 ; ... ; n_{k-1} ]
+    = [ A_{k,n_k}^N ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
+      where N = n_0 + ... + n_{k-1}
       Thus, bind_def_val_in_gen performs a flattening, a revert and a incremental lift of all the elements of the initial list of lists
     *)
-(* \TODO peut-être conserver les accumulateurs l0, l0+l1, l0+l1+l2, ou alors les calculer séparément et faire 
-l'incrémentation à partir de la liste lnacc *)
+(* \TODO the accumulators n0, n0+n1, n0+n1+n2..., or should perhaps be computed in a separate place
+ *)
 Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
   let fix aux1  acc i (lA : list term) : list term  := 
   match lA with
@@ -544,26 +532,26 @@ let fix aux lprojs i  acc :=
    where lctors is the list of the (reified) constructors of an inductive, list_proj is the list of lists of their projections  (which are computed by the tactic declare_projs)
   x = Ck (projsk x) is a shortening of x = Ck (proj_{k,0} d_{k,0} x) .... (proj_{k,nk-1} d_{k,nk-1} x) and d_{k,i} the default value for d_{k,i} (x = Ck (projsk x) is computed with get_eq_x_ctor_projs)
    ldb is the list of De Bruijn indices of ????
-   L is the total number of the arguments of all constructors (withstanding type parameters )
-   Note that mkProd tApp I (Rel_list L p) _
+   N is the total number of the arguments of all constructors (withstanding type parameters )
+   Note that mkProd tApp I (Rel_list N p) _
    is forall x : I A1 ... Ap, _
    *)
 (* \TODO remove ldb argument *)
 
 
- Definition get_generation_disjunction  (p : nat) (I: term) (L : nat) (lc : list term) (list_proj : list (list term)) (ln : list nat) :=
+ Definition get_generation_disjunction  (p : nat) (I: term) (N : nat) (lc : list term) (list_proj : list (list term)) (ln : list nat) :=
   let fix aux lc list_proj lN acc := 
   match (lc,list_proj,lN) with
   | ([],[],[]) => acc
   | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_projs p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
- in tProd (mkNamed "x") (tApp I (Rel_list p L)) (mkOr (aux lc list_proj lN [])) .
+ in tProd (mkNamed "x") (tApp I (Rel_list p N)) (mkOr (tr_rev (aux lc list_proj lN []))) .
 
 
 
-(** args_of_projs_in_disj [ n1 ; .... ; nk ] = [[tRel L ; tRel L-1 ; ....; tRel (L-n1+1) ] ; ... ; [tRel nk ; ... ; tRel 1]  ] 
-    where L = n1 + ... + n1
+(** args_of_projs_in_disj [ n1 ; .... ; nk ] = [[tRel N ; tRel N-1 ; ....; tRel (N-n1+1) ] ; ... ; [tRel nk ; ... ; tRel 1]  ] 
+    where N = n1 + ... + n1
     i.e. the sublists have respective lengths ni and the de Bruijn index decreases at each step
     args_of_projs_in_disj [1 ; 3 ; 2 ] = [ [tRel 6 ] ; [tRel 5 ; tRel 4 ; tRel 3] ; [tRel 2 ; Rel 1]]
     This function helps specify the Db index of the default variable of each projection in the big disjunction
@@ -627,14 +615,14 @@ Ltac gen_statement t :=
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
         | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
-        let lA_rev := eval compute in (tr_rev lA) in let llAu := eval compute in (tr_map ret_ty_proj llAtrunc) in let t_reif := constr:(tInd indu u) in  let L := constr:(fold_left Nat.add ln 0) in
+        let lA_rev := eval compute in (tr_rev lA) in let llAu := eval compute in (proj_return_types llAtrunc) in let t_reif := constr:(tInd indu u) in  let N := constr:(fold_left Nat.add ln 0) in
         let res3 := 
          declare_projs t p lA_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
          pose (llprojs  := res3) ; 
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
-        let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif L  lc  llprojs  ln))) in 
-          let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let L' := eval compute in (p + L) in assert (Helim : gent) by  prove_by_destruct_varn L' ; unfold gent in Helim ; 
-      (* clearbody_tVar_llist llprojs; *) clear gent indmind llprojs (* \TODO add clearbody  *)
+        let ggd := constr:(mkProd_rec_n "A" lA_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
+          let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let N' := eval compute in (p + N) in assert (Helim : gent) by prove_by_destruct_varn N' ; unfold gent in Helim ; 
+      (* clearbody_tVar_llist llprojs; *) (* unfold gent in Helim ; *) clear gent indmind llprojs (* \TODO add clearbody  *)
         end 
       end
     end
@@ -644,7 +632,7 @@ Ltac gen_statement t :=
    
 
 Ltac pose_gen_statement t :=
-  let gent := fresh "gen_st_" t in let x := gen_statement t in pose x as gent.
+let x := gen_statement t in idtac. (* pose x as gent *)
 
 
 (* \TMP *)
@@ -736,10 +724,6 @@ end.
 Ltac instantiate_tuple_terms_goal_inhab H t0 := let t0 := return_tuple_subterms_of_type_type in
 let t := eval compute in t0 in instantiate_tuple_terms_inhab H t t.
 
-Ltac get_projs_st_default I t0 :=
-let t := eval compute in t0 in 
-let H' := gen_statement I in
-instantiate_tuple_terms_inhab H' t t.
 
 Ltac get_projs_st_default_quote I t0 :=
 let t := eval compute in t0 in 

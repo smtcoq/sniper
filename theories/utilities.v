@@ -475,23 +475,6 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
 
 (***********************)
 
-(* Given a term recursively quoted, gives the list of the type of each of its constructor *)
-(* \TODO seems inefficient --> remove *)
-Definition list_types_of_each_constructor t :=
-let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
-let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
-match x with
-| Some y => match y with 
-          | nil => nil
-          | cons y' _ => let z := y'.(ind_ctors) in let u := 
-subst_type_constructor_list z v in u
-          end
-| None => nil
-end.
-(* global_env × term -> list term *)
-(* \TODO compare list_types_of_each_constructor and the 3rd proj of get_ctors_and_types_i *)
-
-
 
 
 (** Rel_list n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
@@ -527,7 +510,7 @@ Fixpoint list_of_subterms (t: term) : list term := match t with
 | tFix l _  => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
 | tCoFix l _ => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
 | _ => [t]
-end.
+end. 
 
 Definition filter_closed (l: list term) := List.filter (closedn 0) l.
 
