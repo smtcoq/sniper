@@ -5,7 +5,6 @@ Add Rec LoadPath "../theories" as Sniper.theories.
 Require Import Sniper.theories.Sniper.
 Require Import List.
 Require Import Bool.
-Require Import ZArith.
 Import ListNotations.
 
 Tactic Notation "get_projs_in_variables" := get_projs_in_variables unit.
@@ -35,7 +34,7 @@ Section demo.
   Qed.
 
 
-(* Variable app_def_nil_bool: forall (l : list A), eqb_of_compdec HlA (app [] l) l.
+ (* Variable app_def_nil_bool: forall (l : list A), eqb_of_compdec HlA (app [] l) l.
  Variable app_def_cons_bool: forall
  (x: A) (l l': list A), eqb_of_compdec HlA ((x :: l) ++ l') (x :: (l ++ l')).
  Variable list_inj_bool: forall (x x' : A) (l l' : list A),
@@ -53,7 +52,7 @@ Theorem app_eq_unit_bool:
       ((eqb_of_compdec HlA x [a]) && (eqb_of_compdec HlA y []))).
   Proof. verit_bool. Qed.  *)
 
-(*  Variable app_def_nil: forall (l : list A), [] ++ l = l.
+ (* Variable app_def_nil: forall (l : list A), [] ++ l = l.
  Variable app2_def_cons: forall
  (x: A) (l l': list A),  ((x :: l) ++ l') = (x :: (l ++ l')).
  Variable list_inj : forall (x x' : A) (l l' : list A),
@@ -62,12 +61,12 @@ Theorem app_eq_unit_bool:
  Variable proj_21' : A -> list A -> A.
  Variable proj_22' : list A -> list A -> list A. 
  Variable gen_list : forall (inh : A) (l : list A), l = [] \/
-  l = (proj_21' inh l) :: (proj_22' [] l). *)
+  l = (proj_21' inh l) :: (proj_22' [] l).  *)
 
 Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
-  Proof.
+  Proof. 
 intros x y a. 
 get_def app.
 expand_hyp app_def; clear app_def.
@@ -76,7 +75,7 @@ eliminate_dependent_pattern_matching H0.
 interp_alg_types (list).
 elimination_polymorphism.
 get_projs_in_variables. verit.
-Undo. snipe. Qed. 
+Undo. clear - HA. snipe. Qed. 
 
 End demo.
 
