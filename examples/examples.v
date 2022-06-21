@@ -22,6 +22,85 @@ Require Import Bool.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
+Section Paper_examples.
+
+  Variable A : Type.
+  Variable HA : CompDec A.
+
+  Lemma app_length (l l' : list A) : length (l ++ l') = (length l + length l')%nat.
+  Proof. induction l ; snipe. Qed.
+
+  Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
+  Proof. snipe. Qed.
+  
+  Lemma arith_and_uninterpreted_symbol (T : Type) (HT : CompDec T)
+  (x y : nat) (b : bool) (f : nat -> T) :
+    True /\ b = true \/ f (x + y ) = f (y + x ).
+    Proof. snipe. Qed.
+
+  (*** Examples from CompCert ***)
+
+
+  Local Open Scope Z_scope.
+
+  Inductive memory_chunk : Type :=
+  | Mint8signed     (**r 8-bit signed integer *)
+  | Mint8unsigned   (**r 8-bit unsigned integer *)
+  | Mint16signed    (**r 16-bit signed integer *)
+  | Mint16unsigned  (**r 16-bit unsigned integer *)
+  | Mint32          (**r 32-bit integer, or pointer *)
+  | Mint64          (**r 64-bit integer *)
+  | Mfloat32        (**r 32-bit single-precision float *)
+  | Mfloat64        (**r 64-bit double-precision float *)
+  | Many32          (**r any value that fits in 32 bits *)
+  | Many64.         (**r any value *)
+
+
+
+  Instance CD_memory_chunk : CompDec memory_chunk. Admitted. 
+
+  Definition size_chunk (chunk: memory_chunk) : Z :=
+    match chunk with
+    | Mint8signed => 1
+    | Mint8unsigned => 1
+    | Mint16signed => 2
+    | Mint16unsigned => 2
+    | Mint32 => 4
+    | Mint64 => 8
+    | Mfloat32 => 4
+    | Mfloat64 => 8
+    | Many32 => 4
+    | Many64 => 8
+    end.
+
+  Lemma size_chunk_pos: forall chunk, size_chunk chunk > 0.
+  Proof. snipe. Qed. 
+
+  Inductive permission: Type :=
+    | Freeable: permission
+    | Writable: permission
+    | Readable: permission
+    | Nonempty: permission.
+
+  Instance CD_permission : CompDec permission. Admitted.
+
+  Definition perm_order p p'  :=
+    match (p,p') with
+    | (Writable, Writable) => true 
+    | (Readable, Readable) => true
+    | (Freeable, _) => true
+    | (Writable, Readable) => true
+    | (_, Nonempty) => true
+    | _ => false
+    end.
+
+  (* transitivity is now automatically proved *)
+  Lemma perm_order_trans:
+    forall p1 p2 p3, perm_order p1 p2 -> perm_order p2 p3 -> perm_order p1 p3.
+  Proof. snipe. Qed.
+
+End Paper_examples.
+
 
 Local Open Scope Z_scope.
 
@@ -51,7 +130,7 @@ Section Generic.
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof. snipe. Qed.
-
+  
 End Generic.
 
 
@@ -134,7 +213,11 @@ Proof. snipe (rev_elements_app, app_nil_r). Qed.
 
 (* Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
+<<<<<<< HEAD:examples/examples.v
 Proof. intros B HB l1 l2 l3. snipe length_app. Qed. *)
+=======
+Proof. intros B HB l1 l2 l3. snipe length_app. Qed.
+>>>>>>> smtcoq/itp22:examples.v
 
 
 (* Example of search an element in a list *)
@@ -194,3 +277,6 @@ Proof. intros A H; induction l; snipe. Qed.
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
+
+
+

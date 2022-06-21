@@ -1,0 +1,51 @@
+CoqHammer 1.3.2 for Coq 8.13
+Found 10057 accessible Coq objects.
+Detecting provers...
+sh: 1: eprover: not found
+Eprover not found
+Vampire found
+sh: 1: z3_tptp: not found
+Z3 not found
+CVC4 found
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-64) succeeded
+- dependencies: ZArith.BinInt.Z.le_gt_cases
+Reconstructing the proof...
+Tactic sfirstorder succeeded.
+Replace the hammer tactic with:
+	sfirstorder use: Z.le_gt_cases.
+Finished transaction in 8.21 secs (6.903u,0.601s) (successful)
+Extracting features...
+Running provers (8 threads)...
+Error: Error running eprover.
+Error: Error running z3_tptp.
+CVC4 (nbayes-128) succeeded
+- dependencies: ZArith.BinInt.Z.ltb_antisym, ZArith.BinInt.Z.ltb_ge, Bool.Bool.negb_true_iff, ZArith.BinInt.Z.leb_le
+- definitions: Init.Datatypes.orb, Init.Datatypes.negb, ZArith.BinIntDef.Z.leb
+Reconstructing the proof...
+Trying reconstruction batch 1...
+Tactic hauto succeeded.
+Replace the hammer tactic with:
+	hauto use: Z.ltb_antisym, Z.ltb_ge, negb_true_iff, Z.leb_le unfold: orb, negb, BinIntDef.Z.leb.
+Finished transaction in 9.251 secs (3.222u,0.66s) (successful)
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: Arith.PeanoNat.Nat.add_comm
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: Nat.add_comm.
+Finished transaction in 2.425 secs (0.19u,0.545s) (successful)
+Extracting features...
+Running provers (8 threads)...
+CVC4 (knn-256) succeeded
+- dependencies: Arith.PeanoNat.Nat.add_comm
+Reconstructing the proof...
+Tactic srun eauto succeeded.
+Replace the hammer tactic with:
+	srun eauto use: Nat.add_comm.
+Finished transaction in 2.447 secs (0.189u,0.592s) (successful)
+Replace the hammer tactic with: sauto 
+Finished transaction in 1.34 secs (0.38u,0.317s) (successful)

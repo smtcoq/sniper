@@ -12,7 +12,12 @@ The translation is implemented through a combination of modular, small
 transformations that independently eliminate specific aspects of Coq
 logic towards first-order logic. These small transformations are safe,
 either generating proof terms on the fly (*certifying* transformations)
-or being proved once and for all in Coq (*certified* transformations).
+or being proved once and for all in Coq (*certified* transformations). A
+crucial transformation is given by the
+[Trakt](https://github.com/ecranceMERCE/trakt) plugin.
+
+This release is for the submission to the conference Interactive Theorem
+Proving 2022.
 
 
 ## Installation and use
@@ -32,9 +37,9 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-It requires OCaml between 4.07 and 4.10:
+It requires OCaml between 4.09 and 4.10:
 ```
-opam switch create 4.07.1
+opam switch create 4.09.1
 eval $(opam env)
 ```
 
@@ -68,6 +73,8 @@ opam install coq-sniper
 
 ### Installation of the automatic prover and use
 
+It works with Coq-8.13.
+
 You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
 ```
@@ -82,13 +89,30 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-You can see examples in the
-[examples.v](https://github.com/smtcoq/sniper/blob/master/examples.v)
-file. Have fun!
+## Examples, tests and benchmarks
 
+Commented examples are available at ``examples.v``.
 
-## Companion paper
-[General automation in Coq through modular transformations](https://pxtp.gitlab.io/2021/papers/Blot-et-al_Automation-modular-transformation.pdf), at PxTP'21
+The benchmarks are in the `benchs` folder.
+You need to install ``coq-hammer`` by running the command
+```
+opam install coq-hammer
+```
+Then to test ``snipe`` you can run
+```
+make bench_snipe
+```
+To test ``hammer`` you can run 
+```
+make bench_hammer
+```
+And to run the tests on both tactics, the command is
+```
+make bench
+```
+
+The other files in this folder are the orginal not automatized ``List`` library (``List_no_automation.v``)
+and the outputs obtained by running the benchs on the computer mentioned in the paper.
 
 
 ## License
