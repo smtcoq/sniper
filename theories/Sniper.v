@@ -186,11 +186,11 @@ Tactic Notation "snipe" constr(t) := snipe_param prod_of_symb prod_types t.
 Tactic Notation "snipe" := snipe_no_param prod_of_symb prod_types.
 
 
-Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
+(* Tactic Notation "snipe_no_check_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_no_check_timeout n.
 Tactic Notation "snipe_no_check_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_no_check_timeout n.
 
 Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_timeout n.
-Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n.
+Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n. *)
 
 
 Ltac scope_param_no_nat_var p1 p2 t := let p2' := eval unfold p2 in p2 in
