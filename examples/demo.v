@@ -12,9 +12,6 @@ Tactic Notation "get_projs_in_variables" := get_projs_in_variables unit.
 Section demo.
 
  Variable A : Type.
- Variable HA : CompDec A.
- Lemma HlA : CompDec (list A). auto with typeclass_instances. Qed.
- Lemma inh : A. Proof. apply Inh. Qed.
 
  Theorem app_eq_unit (x y:list A) (a:A) :
       x ++ y = [a] -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
@@ -33,6 +30,9 @@ Section demo.
     apply app_cons_not_nil in H1 as [].
   Qed.
 
+ Variable HA : CompDec A.
+ Lemma HlA : CompDec (list A). auto with typeclass_instances. Qed.
+ Lemma inh : A. Proof. apply Inh. Qed.
 
  (* Variable app_def_nil_bool: forall (l : list A), eqb_of_compdec HlA (app [] l) l.
  Variable app_def_cons_bool: forall
@@ -50,9 +50,9 @@ Theorem app_eq_unit_bool:
       (eqb_of_compdec HlA (x ++ y) [a]) ---> 
       (((eqb_of_compdec HlA x []) && (eqb_of_compdec HlA y [a])) || 
       ((eqb_of_compdec HlA x [a]) && (eqb_of_compdec HlA y []))).
-  Proof. verit_bool. Qed.  *)
+  Proof. verit_bool. Qed. *)
 
- (* Variable app_def_nil: forall (l : list A), [] ++ l = l.
+(*  Variable app_def_nil: forall (l : list A), [] ++ l = l.
  Variable app2_def_cons: forall
  (x: A) (l l': list A),  ((x :: l) ++ l') = (x :: (l ++ l')).
  Variable list_inj : forall (x x' : A) (l l' : list A),
@@ -66,7 +66,7 @@ Theorem app_eq_unit_bool:
 Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
-  Proof. 
+  Proof.
 intros x y a. 
 get_def app.
 expand_hyp app_def; clear app_def.
