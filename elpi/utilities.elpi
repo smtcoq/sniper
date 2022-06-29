@@ -40,6 +40,7 @@ pred polymorphic_hypotheses i: (list (pair term term)), o: (list (pair term term
 
 pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair term term).
     collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- !, collect_hypotheses_from_context XS R R'.
+    collect_hypotheses_from_context [def _ _ _ _ | XS] R R' :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [] [] [].
 
 pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.

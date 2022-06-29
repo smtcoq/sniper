@@ -63,6 +63,12 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 p' = p'.
 intros. elimination_polymorphism app_length. reflexivity. Qed. 
 
+(* TODO: should do nothing on let-ins *) 
+Goal False.
+pose (x := fun (A : Type) (x : A) => x).
+elimination_polymorphism. Abort.
+
+
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 

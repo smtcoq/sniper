@@ -15,7 +15,6 @@
    From Sniper Require Import instantiate.
 *)
 Require Import Sniper.
-Require Import instantiate.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
@@ -128,7 +127,8 @@ Import ListNotations.
 
 Lemma search_append_neq : 
 forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
-Proof.  Time snipe2.
+Proof. 
+Time snipe2.
 Undo. Time snipe. Qed.
 
 
