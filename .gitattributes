@@ -1,1 +1,2 @@
 *.elpi linguist-language=prolog
+Makefile linguist-detectable=false
