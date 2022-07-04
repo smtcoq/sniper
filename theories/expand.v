@@ -8,8 +8,6 @@
 (*   This file is distributed under the terms of the CeCILL-C licence     *)
 (*                                                                        *)
 (**************************************************************************)
-(* 
-Add Rec LoadPath "/Users/pierrevial/depots/smtcoq" as SMTCoq. *)
 
 Require Import SMTCoq.SMTCoq.
 
@@ -104,7 +102,7 @@ expand_fun Datatypes.length.
 Abort.
 
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac )).
+get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac)).
 Abort.
 
 

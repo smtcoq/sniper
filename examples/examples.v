@@ -118,6 +118,11 @@ induction l1.
 Qed.
 
 
+Ltac def_fix_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
+get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+eliminate_fix_ho H' ltac:(fun H'' =>
+try (eliminate_dependent_pattern_matching H'')))).
+
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
