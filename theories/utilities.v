@@ -450,6 +450,13 @@ lazymatch constr:(p) with
 | _ => constr_neq p z 
 end.
 
+Ltac generalize_dependent_tuple p := 
+lazymatch constr:(p) with
+| (?x, ?y) => generalize_dependent_tuple constr:(x) ; generalize_dependent_tuple constr:(y)
+| impossible_term => idtac
+| ?x => try (generalize dependent x)
+end.
+
 Ltac notHyp T  :=
 repeat match goal with
   | [H : _ |- _] => let U := type of H in constr_eq U T ; fail 2

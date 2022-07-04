@@ -15,7 +15,6 @@
    From Sniper Require Import instantiate.
 *)
 Require Import Sniper.
-Require Import instantiate.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
@@ -48,7 +47,7 @@ Goal ((forall (x : nat) (a : nat) (l : list nat),
 | nil => x
 | y :: xs => y
 end)).
-def_and_pattern_matching_mono prod_types.
+def_and_pattern_matching_mono prod_types get_definitions_theories_no_generalize.
 assumption.
 Qed.
 
@@ -60,7 +59,7 @@ Abort.
 Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
 intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
-def_and_pattern_matching_mono prod_of_symb.     
+def_and_pattern_matching_mono prod_of_symb get_definitions_theories_no_generalize.     
 verit.
 Qed.
 
@@ -70,17 +69,7 @@ Proof. intros A HA n ; induction n.
   - snipe2.
   - intros l ; destruct l.
     * snipe2.
-    * scope. unfold nth_default. rewrite H2 with (H16 := a). simpl. rewrite <- IHn. remember (nth_error l n) as kik. 
-     destruct kik;  symmetry. apply H4. symmetry. assumption. 
-            apply H10. symmetry. assumption.
-                  
- (* get_projs_st (option). simpl. rewrite <- IHn. destruct (nth_error l n) as [ x | ].      
- unfold nth_default. simpl.   rewrite -> IHn.
-
-  apply H4. simpl. rewrite <- IHn. assert (H : nth_erro l n
-
-specialize (gen_option A a) as kik. destruct kik with (x := nth_error l n).
-  Fail specialize (H2 A a). (* verit. *) *)
+    * scope. get_projs_st option. specialize (gen_option A d). verit.
 Qed.
 
 (* Test polymorphism *) 
@@ -128,7 +117,8 @@ Import ListNotations.
 
 Lemma search_append_neq : 
 forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
-Proof.  Time snipe2.
+Proof. 
+Time snipe2.
 Undo. Time snipe. Qed.
 
 

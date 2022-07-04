@@ -98,25 +98,24 @@ Definition prod_of_symb := (impossible_term,
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le).
 
 
-Ltac def_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
-get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_dependent_pattern_matching H')).
 
-
-Ltac def_fix_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
-get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
+Ltac def_fix_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
 try (eliminate_dependent_pattern_matching H'')))).
 
 
-Ltac def_and_pattern_matching_mono p1 :=
-def_and_pattern_matching p1 ; inst.
+Ltac def_and_pattern_matching_mono p1 k :=
+def_and_pattern_matching p1 k ; inst.
 
-Ltac def_and_pattern_matching_mono_param p1 t :=
-def_and_pattern_matching p1 ; inst t.
+Ltac def_and_pattern_matching_mono_param p1 t k :=
+def_and_pattern_matching p1 k ; inst t.
 
-Ltac def_fix_and_pattern_matching_mono_param p1 t :=
-def_fix_and_pattern_matching p1 ; inst t.
+Ltac def_fix_and_pattern_matching_mono_param p1 t k :=
+def_fix_and_pattern_matching p1 k ; inst t.
 
 Ltac scope_param p1 p2 t := 
 let p2' := eval unfold p2 in p2 in
@@ -125,7 +124,8 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t 
+ltac:(get_definitions_theories_no_generalize)) ;
 get_projs_in_variables p2'.
 
 Ltac scope_no_param p1 p2 := 
@@ -135,7 +135,7 @@ repeat match goal with
 | H : _  |- _ => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros ; inst) ;
 get_projs_in_variables p2'.
 
 Ltac snipe_param_no_check p1 p2 t :=
@@ -160,7 +160,7 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ; 
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
 get_projs_in_variables p2'.
 
@@ -171,7 +171,7 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ; 
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ltac:(get_definitions_theories_no_generalize); intros ;
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
 get_projs_in_variables p2' ; verit.
 
