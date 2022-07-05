@@ -3,23 +3,46 @@ From mathcomp Require Import all_ssreflect zify.
 From Sniper Require Import Sniper.
 From Trakt Require Import Trakt.
 
+Lemma nat_Z_gof_id (n : nat) : n = Z.to_nat (Z.of_nat n).
+Proof. exact/esym/Nat2Z.id. Qed.
+
+Lemma nat_Z_bool_fog_cond_id (z : Z) : (0 <=? z)%Z -> Z.of_nat (Z.to_nat z) = z.
+Proof. by move=> HPz; apply/Z2Nat.id/Z.leb_spec0. Qed.
+
+Lemma nat_Z_bool_cond_f_always_true (n : nat) : (0 <=? Z.of_nat n)%Z.
+Proof. exact/Z.leb_spec0/Nat2Z.is_nonneg. Qed.
+
+Trakt Add Embedding
+  (nat) (Z) (Z.of_nat) (Z.to_nat) (nat_Z_gof_id) (nat_Z_bool_fog_cond_id)
+    (nat_Z_bool_cond_f_always_true).
+
+Trakt Add Symbol (O%N) (0%Z) (erefl).
+
+Trakt Add Symbol (S) (fun x => Z.add x 1%Z) (Nat2Z.inj_succ).
+
+Trakt Add Symbol (addn) (Z.add) (Nat2Z.inj_add).
+
+Trakt Add Relation (Nat.eqb) (Z.eqb) (ZifyBool.Z_of_nat_eqb_iff).
+
+Trakt Add Relation (Nat.leb) (Z.leb) (ZifyBool.Z_of_nat_leb_iff).
+
 (* lambda terms *)
 
-Inductive term : Type :=
-  | var : nat -> term
-  | app : term -> term -> term
-  | abs : term -> term.
+Inductive term : Type := var of nat | app of term & term | abs of term.
+
+Instance CD_term : CompDec term. Admitted.
 
 Fixpoint shift (d c : nat) (t : term) : term :=
   match t with
-    | var n => var (if c <= n then n + d else n)
+    | var n => var (if c <=? n then n + d else n)
     | app t1 t2 => app (shift d c t1) (shift d c t2)
     | abs t1 => abs (shift d (S c) t1)
   end.
 
 Fixpoint subst (n : nat) (u t : term) : term :=
   match t with
-    | var m => if m == n then shift n 0 u else var (if m <= n then m else m - 1)
+    | var m =>
+      if m =? n then shift n 0 u else var (if m <=? n then m else m - 1)
     | app t1 t2 => app (subst n u t1) (subst n u t2)
     | abs t' => abs (subst (S n) u t')
   end.
@@ -35,6 +58,8 @@ Inductive betared1 : term -> term -> Prop :=
 
 Lemma shiftzero n t : shift 0 n t = t.
 Proof.
+(* Trakt does not seem to properly handle universal quantifiers in hypotheses. *)
+(* elim: t n; scope; trakt Z Prop. *)
 elim: t n; simpl; try congruence.
 by move=> n m; rewrite addn0 if_same.
 Qed.
