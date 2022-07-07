@@ -29,9 +29,6 @@ Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
 
-(* Elpi Accumulate File "pm_in_goal.elpi". *)
-
-
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
 Definition prod_of_symb := (impossible_term,
@@ -192,35 +189,5 @@ Tactic Notation "snipe_no_check_timeout" int_or_var(n) := scope_no_param prod_of
 Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := scope_param prod_of_symb prod_types t ; verit_timeout n.
 Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n. *)
 
-
-Ltac scope_param_no_nat_var p1 p2 t := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t) ;
-get_projs_in_variables p2'.
-
-Ltac scope_no_param_no_nat_var p1 p2 := let p2' := eval unfold p2 in p2 in
-intros ; try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ; inst) ;
-get_projs_in_variables p2'.
-
-
-Ltac snipe_param_no_nat_no_check p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit_no_check.
-
-Ltac snipe_no_param_no_nat_no_check p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit_no_check.
-
-Ltac snipe_param_no_nat_var p1 p2 t :=
-scope_param_no_nat_var p1 p2 t ; verit.
-
-Ltac snipe_no_param_no_nat_var p1 p2 :=
-scope_no_param_no_nat_var p1 p2 ; verit.
-
-Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_nat_no_check prod_of_symb prod_types t.
-Tactic Notation "snipe_no_check" := snipe_no_param_no_nat_no_check prod_of_symb prod_types.
-
-Tactic Notation "scope" constr(t) := scope_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "scope" := scope_no_param_no_nat_var prod_of_symb prod_types.
-
-Tactic Notation "snipe" constr(t) := intros ; snipe_param_no_nat_var prod_of_symb prod_types t.
-Tactic Notation "snipe" := intros ; snipe_no_param_no_nat_var prod_of_symb prod_types.
 
 
