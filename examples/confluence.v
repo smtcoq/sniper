@@ -1,7 +1,8 @@
 From Coq Require Import ZArith.
 From mathcomp Require Import all_ssreflect zify.
-From Sniper Require Import Sniper.
+From SMTCoq Require Import SMTCoq.
 From Trakt Require Import Trakt.
+From Sniper Require Import Sniper.
 
 Lemma nat_Z_gof_id (n : nat) : n = Z.to_nat (Z.of_nat n).
 Proof. exact/esym/Nat2Z.id. Qed.
@@ -60,6 +61,22 @@ Lemma shiftzero n t : shift 0 n t = t.
 Proof.
 (* Trakt does not seem to properly handle universal quantifiers in hypotheses. *)
 (* elim: t n; scope; trakt Z Prop. *)
+(* With Trakt-like manual preprocessing, SMTCoq does not work. *)
+(*
+elim: t n; scope.
+- have {}H13 (d c v : Z) :
+    (0 <=? d)%Z -> (0 <=? c)%Z -> (0 <=? v)%Z -> (c <=? v)%Z -> t (Z.to_nat d) (Z.to_nat c) (var (Z.to_nat v)) = var (Z.to_nat (v + d)).
+    admit.
+  have {}H10 (d c v : Z) :
+    (0 <=? d)%Z -> (0 <=? c)%Z -> (0 <=? v)%Z -> (c <=? v)%Z = false -> t (Z.to_nat d) (Z.to_nat c) (var (Z.to_nat v)) = var (Z.to_nat v).
+    admit.
+  have {}H8 (d c : Z) (t0 : term) :
+    (0 <=? d)%Z -> (0 <=? c)%Z -> t (Z.to_nat d) (Z.to_nat c) (abs t0) = abs (t (Z.to_nat d) (Z.to_nat (c + 1)) t0).
+    admit.
+  Fail smt.
+  Fail verit.
+  Fail cvc4.
+*)
 elim: t n; simpl; try congruence.
 by move=> n m; rewrite addn0 if_same.
 Qed.
