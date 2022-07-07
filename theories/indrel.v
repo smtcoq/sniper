@@ -1,4 +1,5 @@
 From MetaCoq Require Import All.
+From MetaCoq Require Import PCUIC.PCUICSize.
 Require Import utilities.
 Require Import List.
 Require Import String.
@@ -103,3 +104,107 @@ assert_types_constructors add.
 assert_types_constructors @Add.
 clear. 
 Abort.
+
+Fixpoint currify (t: term) :=
+match t with
+| tApp (tApp u l1) l2 => let u' := currify u in tApp u' (app l1 l2)
+| _ => t
+end.
+
+Definition find_args (t: term) (npars : nat) :=
+let t' := currify t in
+match t' with
+| tApp u l => Some (List.skipn npars l)
+| _ => None
+end.
+
+
+(* We need to compute the number of existential quantifiers 
+that we want to introduce.
+Our criterion is to quantify existentially on all the variables which are
+binded by a dependent product 
+(so used somwhere in the term after their introduction), and stop whenever we 
+meet a non-dependent product *)
+
+Ltac infer_nb_vars T := 
+let n := fresh "n" in 
+epose (n := ?[n_evar] : nat) ;
+let Hfalse := fresh "Hfalse" in
+assert (Hfalse : False -> T) by 
+(let Hf := fresh in intro Hf ; 
+let rec tac_rec k := tryif (let H := fresh "H" in intro H ; 
+match goal with
+| |- context C[H] => idtac end ) 
+(* checks if the new variable is used in the goal, otherwise it is a non-dependent product *)
+then
+(tac_rec (S k)) else (instantiate (n_evar := k)) 
+in tac_rec constr:(0) ;  destruct Hf) ; clear Hfalse.
+
+Goal False.
+infer_nb_vars (forall n m k, add (S n) m k -> add n m k).
+infer_nb_vars (forall n m k, add n m k).
+infer_nb_vars (forall n k, 1=1 -> 2=2 -> add n 0 k).
+Abort.
+
+
+(* l2 should be the arguments of the inductive in the conclusion of 
+a constructor *)
+Fixpoint gen_and_eq (l1 : list term) (l2 : list term) :=
+match l1, l2 with
+| [x], [y] => tApp <% @eq %> [hole ; x ; y]
+| x :: xs, y :: ys => tApp <% @and %> [tApp <% @eq %> [hole ; x ; y] ; gen_and_eq xs ys]
+| _, _ => impossible_term_reif (* should not happen *)
+end.
+
+(* TODO : unlift the term -> tRel 0 is a variable not used here so we
+can safely substitute it *) 
+Compute (subst10 (tRel 0) (tRel 2)).
+
+Definition inv_under_binders (t : term) (npars : nat) (l1 : list term) :=
+match t with
+| tApp u l => let l2 := List.skipn npars l in gen_and_eq l1 l2
+| _ => impossible_term_reif (* the conclusion is necessarily an applied inductive so we should not consider other cases *)
+end.
+
+Print term.
+
+(* TODO : write a size function to prove the termination of the function 
+
+Fixpoint size (t : term) :=
+match t with
+  | PCUICAst.tEvar _ args =>
+      S (list_size size args)
+  | PCUICAst.tProd _ A B =>
+      S (size A + size B)
+  | PCUICAst.tLambda _ T M =>
+      S (size T + size M)
+  | PCUICAst.tLetIn _ b t0 b' =>
+      S (size b + size t0 + size b')
+  | PCUICAst.tApp u v =>
+      S (size u + size v)
+  | PCUICAst.tCase _ p c brs =>
+      S
+        (size p + size c +
+         list_size
+           (fun x : nat × PCUICAst.term =>
+            size x.2) brs)
+  | PCUICAst.tProj _ c => S (size c)
+  | PCUICAst.tFix mfix _ |
+    PCUICAst.tCoFix mfix _ =>
+      S (mfixpoint_size size mfix)
+  | _ => 1
+  end.
+ *)
+
+(* Works only if the non dependent products have their arguments in Prop 
+TODO : add an infer to fix this *)
+Program Fixpoint inv_principle_one_constructor 
+(t: term) (npars : nat) (nb_vars : nat) (l1 : list term) {measure (PCUICSize.size t)} :=
+match t, nb_vars with
+| tProd na Ty u, (S n') => tApp <% ex %> [Ty ; tLambda na Ty (inv_principle_one_constructor u npars n' l1)]
+| tProd na Ty u, 0 => tApp <% @and %> [Ty ; inv_principle_one_constructor (subst10 (tRel 0) u) npars 0 l1]
+| t', 0 => inv_under_binders t' npars l1
+| _, _ => impossible_term_reif
+end.
+
+
