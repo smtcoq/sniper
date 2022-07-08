@@ -4,7 +4,7 @@ Require Import utilities.
 Require Import List.
 Require Import String.
 
-(** Examples for testing inductive predicates **)
+(** Examples for testing inductive relations **)
 
 Inductive add : nat -> nat -> nat -> Prop :=
 | add0 : forall n, add 0 n n
@@ -35,6 +35,8 @@ with a codomain in Prop.
 Each constructor is an equation for add.
 In order to use an hypothesis of the form add n m k, we also 
 generate an inversion principle: **)
+
+(** Example to understand the transformation *)
 
 Lemma inv_add : forall n m k, (add n m k <-> 
 (exists (n' : nat), n = 0 /\ m = n' /\ k = n') \/
@@ -70,7 +72,7 @@ match I with
 | _ => (impossible_term_indu, [])
 end.
 
-Compute get_constructors_inductive add_reif_rec.2 add_reif_rec.1. (* TODO : make this work for mutuals *)
+(* Compute get_constructors_inductive add_reif_rec.2 add_reif_rec.1.  *)(* TODO : make this work for mutuals *)
 
 Ltac assert_list_constructors_aux l I I_reif i n :=
 lazymatch l with
@@ -364,8 +366,6 @@ Definition add_app := <% forall n m k, add n m k %>.
 
 Definition c1' := <%forall (A : Type) (a : A) (l : list A), Add a l (a :: l) %>.
 
-Print c1'.
-
 
 Fixpoint add_prod_nat (n : nat) (t : term) :=
 match n with
@@ -479,9 +479,6 @@ intros; split ;
 [let H:= fresh in intro H; inversion H; right_or_left_auto | 
 intros; repeat destruct_or; repeat destruct_exists; repeat destruct_and; subst; constructor; try assumption].
 
-
-
-(* TODO factorize with having the constructors in the context *) 
 Ltac inversion_principle I := 
 let I_reif_rec := metacoq_get_value (tmQuoteRec I) in 
 let I_reif := eval cbv in I_reif_rec.2 in 
@@ -496,6 +493,10 @@ let I_reif_app := eval cbv in (app_to_args I_reif npars) in
 lazymatch list_constr_opt with
 | Some ?list_constr0 => let list_constr := eval cbv in (list_fst_snd list_constr0) in 
                        let l := ltac:(compute_nb_vars I_reif list_constr (@nil nat) npars) in 
+                       let p := eval cbv in (get_ind_and_instance I_reif) in
+                       let indu := eval cbv in p.1 in
+                       let inst := eval cbv in p.2 in
+                       assert_list_constructors list_constr0 indu I_reif inst ;
                        let len := eval cbv in (Datatypes.length l) in 
                        clear_evars len ;  
                        let p := eval cbv in (create_applied_term I_reif T_reif nb_args npars) in 
@@ -517,17 +518,3 @@ inversion_principle @Exists.
 clear.
 inversion_principle le.
 Abort.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
