@@ -4,7 +4,6 @@ Require Import utilities.
 Require Import List.
 Require Import String.
 
-
 (** Examples for testing inductive predicates **)
 
 Inductive add : nat -> nat -> nat -> Prop :=
@@ -156,55 +155,197 @@ match l1, l2 with
 | _, _ => impossible_term_reif (* should not happen *)
 end.
 
-(* TODO : unlift the term -> tRel 0 is a variable not used here so we
-can safely substitute it *) 
-Compute (subst10 (tRel 0) (tRel 2)).
-
 Definition inv_under_binders (t : term) (npars : nat) (l1 : list term) :=
 match t with
-| tApp u l => let l2 := List.skipn npars l in gen_and_eq l1 l2
+| tApp u l => let l2 := List.skipn npars l in gen_and_eq l1 l2 (* TODO : lift parameters *)
 | _ => impossible_term_reif (* the conclusion is necessarily an applied inductive so we should not consider other cases *)
 end.
 
-Print term.
+(* Ltac unfold_subst := unfold subst10; unfold subst0.
 
-(* TODO : write a size function to prove the termination of the function 
+Lemma subst_a_variable_does_not_change_size (n : nat) (t : term) : 
+size (subst10 (tRel n) t) = size t.
+Proof.
+generalize dependent n ; 
+induction t ; intros.
+- destruct (PeanoNat.Nat.leb 0 n) eqn:E.
+unfold_subst. rewrite E. simpl. destruct n; simpl; auto. 
+destruct n; simpl; auto.
+unfold_subst. rewrite E. reflexivity.
+- unfold_subst; reflexivity.
+- Print subst.
+Admitted. (* TODO : better induction principles for term *)
 
-Fixpoint size (t : term) :=
-match t with
-  | PCUICAst.tEvar _ args =>
-      S (list_size size args)
-  | PCUICAst.tProd _ A B =>
-      S (size A + size B)
-  | PCUICAst.tLambda _ T M =>
-      S (size T + size M)
-  | PCUICAst.tLetIn _ b t0 b' =>
-      S (size b + size t0 + size b')
-  | PCUICAst.tApp u v =>
-      S (size u + size v)
-  | PCUICAst.tCase _ p c brs =>
-      S
-        (size p + size c +
-         list_size
-           (fun x : nat × PCUICAst.term =>
-            size x.2) brs)
-  | PCUICAst.tProj _ c => S (size c)
-  | PCUICAst.tFix mfix _ |
-    PCUICAst.tCoFix mfix _ =>
-      S (mfixpoint_size size mfix)
-  | _ => 1
-  end.
- *)
-
-(* Works only if the non dependent products have their arguments in Prop 
-TODO : add an infer to fix this *)
 Program Fixpoint inv_principle_one_constructor 
-(t: term) (npars : nat) (nb_vars : nat) (l1 : list term) {measure (PCUICSize.size t)} :=
+(t: term) (npars : nat) (nb_vars : nat) (l1 : list term) {measure (size t)} :=
 match t, nb_vars with
 | tProd na Ty u, (S n') => tApp <% ex %> [Ty ; tLambda na Ty (inv_principle_one_constructor u npars n' l1)]
 | tProd na Ty u, 0 => tApp <% @and %> [Ty ; inv_principle_one_constructor (subst10 (tRel 0) u) npars 0 l1]
 | t', 0 => inv_under_binders t' npars l1
 | _, _ => impossible_term_reif
 end.
+Next Obligation.
+apply Lt.le_lt_n_Sm. assert (H :  size Ty + size u = size u + size Ty).
+apply PeanoNat.Nat.add_comm. rewrite H. eapply PeanoNat.Nat.le_add_r. Defined. 
+Next Obligation. rewrite subst_a_variable_does_not_change_size. 
+apply Lt.le_lt_n_Sm. assert (H :  size Ty + size u = size u + size Ty).
+apply PeanoNat.Nat.add_comm. rewrite H. eapply PeanoNat.Nat.le_add_r. Defined.
+Next Obligation. unfold "~"; split. intros na Ty u. intros H1;
+destruct H1 as [H2 H3]; discriminate H2.
+split. intros t'. intros H1 ; 
+destruct H1 as [H2 H3]. discriminate H3.
+intros na Ty u n' H1. destruct H1 as [H2 H3]. discriminate H2. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1 ; destruct H1 as [H2 H3]. discriminate H3.
+split.
+intros t'. intros H1 ; destruct H1 as [H2 H3]. discriminate H3.
+intros na Ty u n H1; destruct H1 as [H2 H3]. discriminate H2. Defined.
+Next Obligation. 
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2 H3]. discriminate H3.
+split.
+intros t'. intros H1' ; destruct H1' as [H2 H3]. discriminate H3.
+intros na Ty u n H1' ; destruct H1' as [H2 H3]. discriminate H2. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1 ; destruct H1 as [H2 H3]. discriminate H3.
+split.
+intros t'. intros H1 ; destruct H1 as [H2 H3]. discriminate H3.
+intros na Ty u n H1; destruct H1 as [H2 H3]. discriminate H2. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3]. discriminate H3.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3]. discriminate H3.
+intros na Ty u n H1' ; destruct H1' as [H2' H3]. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3]. discriminate H3.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3]. discriminate H3.
+intros na Ty u n H1' ; destruct H1' as [H2' H3]. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n' H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+unfold "~"; split. intros na Ty u H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+split.
+intros t'. intros H1' ; destruct H1' as [H2' H3']. discriminate H3'.
+intros na Ty u n H1' ; destruct H1' as [H2' H3']. discriminate H2'. Defined.
+Next Obligation.
+apply Acc_intro. unfold Wf.MR. intros.
+
+ Admitted. *)
+
+Fixpoint inv_principle_one_constructor_fuel
+(t: term) (npars : nat) (nb_vars : nat) (l1 : list term) (n : nat) :=
+match n with
+| 0 => impossible_term_reif
+| S n =>
+match t, nb_vars with
+| tProd na Ty u, (S n') => tApp <% ex %> [Ty ; tLambda na Ty (inv_principle_one_constructor_fuel u npars n' l1 n)]
+| tProd na Ty u, 0 => tApp <% @and %> [Ty ; inv_principle_one_constructor_fuel (subst10 (tRel 0) u) npars 0 l1 n]
+| t', 0 => inv_under_binders t' npars l1
+| _, _ => impossible_term_reif
+end
+end.
+
+Definition inv_principle_one_constructor t npars nb_vars l1 := 
+let fuel := size t in
+inv_principle_one_constructor_fuel t npars nb_vars l1 fuel.
+
+Fixpoint mkIff (t : term) (t' : term) :=
+match t with
+| tProd na Ty u => tProd na Ty (mkIff u t')
+| _ => tApp <%iff%> [t ; t']
+end. 
+
+Definition inv_principle_all_constructors (l_ty_cstr : list term) (npars : nat) (list_nb_vars : list nat)
+(t : term) (* t is forall x1, ..., xm, I x1 ... xm *)
+(l1 : list term) (* l1 is [x1 ; ... ; xm] *)  
+:= 
+let fix aux l_ty_cstr npars list_nb_vars l1 :=
+match l_ty_cstr, list_nb_vars with
+| [Ty], [nb_vars] => let l1' := (List.map (fun x => lift nb_vars 0 x) l1) in 
+                       inv_principle_one_constructor Ty npars nb_vars l1'
+| Ty :: Tys, nb_vars:: ln => let l1' := (List.map (fun x => lift nb_vars 0 x) l1) in 
+                             tApp <%or%> [inv_principle_one_constructor Ty npars nb_vars l1' ; 
+                             aux Tys npars ln l1]
+| _, _ => impossible_term_reif 
+end
+in mkIff t (aux l_ty_cstr npars list_nb_vars l1).
+
+Section test.
+
+Definition c1 := <% forall n, add 0 n n %>.
+Definition c2 := <% forall n m k, add n m k -> add (S n) m (S k) %>.
+
+Fixpoint add_prod_nat (n : nat) (t : term) :=
+match n with
+| 0 => t
+| S n' => mkProd <% nat %> (add_prod_nat n' t)
+end.
+
+Definition test_add0 := add_prod_nat 3 (inv_principle_one_constructor c1 0 1 [tRel 3 ; tRel 2 ; tRel 1]).
+Definition test_addS := add_prod_nat 3 (inv_principle_one_constructor c2 0 3 [tRel 5 ; tRel 4 ; tRel 3]).
+
+MetaCoq Unquote Definition test_add0_unq := test_add0.
+MetaCoq Unquote Definition test_addS_unq := test_addS.
+
+End test.
+
+
+
+
+
+
+
+
+
+
+
 
 
