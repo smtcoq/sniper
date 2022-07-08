@@ -303,7 +303,7 @@ match n with
 | 0 => impossible_term_reif
 | S n =>
 match t, nb_vars with
-| tProd na Ty u, (S n') => tApp <% ex %> [hole ; tLambda na hole (inv_principle_one_constructor_fuel u npars n' l1 n)]
+| tProd na Ty u, (S n') => tApp <% ex %> [Ty ; tLambda na Ty (inv_principle_one_constructor_fuel u npars n' l1 n)]
 | tProd na Ty u, 0 => tApp <% @and %> [Ty ; inv_principle_one_constructor_fuel (subst10 (tRel 0) u) npars 0 l1 n]
 | t', 0 => inv_under_binders t' npars l1
 | _, _ => impossible_term_reif
@@ -312,7 +312,8 @@ end.
 
 Definition inv_principle_one_constructor t npars nb_vars l1 := 
 let fuel := size t in
-let t' := skipn_forall t npars in
+let nb_new_args := Datatypes.length l1 in
+let t' := lift nb_new_args 0 (skipn_forall t npars) in
 inv_principle_one_constructor_fuel t' npars nb_vars l1 fuel.
 
 Fixpoint mkIff (t : term) (t' : term) :=
@@ -375,31 +376,26 @@ end.
 Fixpoint add_prod_hole (n : nat) (t : term) :=
 match n with
 | 0 => t
-| S n' => mkProd <% hole %> (add_prod_hole n' t)
+| S n' => mkProd hole (add_prod_hole n' t)
 end.
 
 Definition test_add0 := add_prod_nat 3 (inv_principle_one_constructor c1 0 1 [tRel 3 ; tRel 2 ; tRel 1]).
 Definition test_addS := add_prod_nat 3 (inv_principle_one_constructor c2 0 3 [tRel 5 ; tRel 4 ; tRel 3]).
 
-Definition test_Add0 := add_prod_hole 4 (inv_principle_one_constructor c1' 2 1 [tRel 2 ; tRel 1]).
+Definition test_Add0 := mkProd <% Type %> 
+(mkProd (tRel 0) 
+(mkProd (tApp <%@list%> [tRel 1])
+(mkProd (tApp <%@list%> [tRel 2]) (inv_principle_one_constructor c1' 2 1 [tRel 2 ; tRel 1])))).
 
 Unset Strict Unquote Universe Mode.
 
 MetaCoq Unquote Definition test_add0_unq := test_add0.
-Print test_add0_unq.
 MetaCoq Unquote Definition test_addS_unq := test_addS.
 
-Compute test_Add0.
 
 Definition goal_Add0 := <% forall (A : Type) (a : A) (l : list A)
 (l' : list A), exists l'' : list A, l = l'' /\ l' = (a::l'') %>.
-
-Print goal_Add0.
-
-
-MetaCoq Unquote Definition test_Add0_unq := test_Add0. *)
-
-
+MetaCoq Unquote Definition test_Add0_unq := test_Add0. 
 
 Definition test_add := 
 (inv_principle_all_constructors [c1 ; c2] 0 [1 ; 3] add_app [tRel 2 ; tRel 1 ; tRel 0]).
@@ -494,12 +490,12 @@ let T_reif := metacoq_get_value (tmQuote T) in
 let x0 := eval cbv in (get_info_params_inductive I_reif I_reif_rec.1) in 
 let x1 := remove_opt x0 in
 let npars := eval cbv in x1.1 in
-let nb_args := compute_nb_args T in idtac nb_args ;
+let nb_args := compute_nb_args T in 
 let list_constr_opt := eval cbv in (get_constructors_inductive I_reif I_reif_rec.1) in 
 let I_reif_app := eval cbv in (app_to_args I_reif npars) in
 lazymatch list_constr_opt with
 | Some ?list_constr0 => let list_constr := eval cbv in (list_fst_snd list_constr0) in 
-                       let l := ltac:(compute_nb_vars I_reif list_constr (@nil nat) npars) in idtac l ;
+                       let l := ltac:(compute_nb_vars I_reif list_constr (@nil nat) npars) in 
                        let len := eval cbv in (Datatypes.length l) in 
                        clear_evars len ;  
                        let p := eval cbv in (create_applied_term I_reif T_reif nb_args npars) in 
@@ -507,7 +503,6 @@ lazymatch list_constr_opt with
                        let l1 := eval cbv in p.2 in
                        let inv_principle_reif := eval cbv in
                        (inv_principle_all_constructors (List.map (fun x => subst10 I_reif x) list_constr) npars l t l1) in
-                      idtac inv_principle_reif ;
                       let inv_principle := metacoq_get_value (tmUnquoteTyped Prop inv_principle_reif)
                       in let H := fresh "Hinv" in assert (H : inv_principle) by (prove_inv_principle_auto)                  
 | None => fail "wrong argument"
@@ -516,6 +511,12 @@ end.
 Goal False -> forall (n: nat), False. intros H n.
 inversion_principle add.
 inversion_principle @Add.
+clear.
+inversion_principle @Forall.
+inversion_principle @Exists.
+clear.
+inversion_principle le.
+Abort.
 
 
 
