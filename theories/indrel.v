@@ -1,5 +1,4 @@
 From MetaCoq Require Import All.
-From MetaCoq Require Import PCUIC.PCUICSize.
 Require Import utilities.
 Require Import List.
 Require Import String.
@@ -14,10 +13,6 @@ Inductive Add {A : Type} (a : A) : list A -> list A -> Prop :=
   | Add_head : forall l : list A, Add a l (a :: l)
   | Add_cons : forall (x : A) (l l' : list A),
                Add a l l' -> Add a (x :: l) (x :: l').
-
-Derive Inversion Add_inv with (forall n m k, add n m k) Sort Prop.
-
-Print Add_inv.
 
 MetaCoq Quote Recursively Definition add_reif_rec := add.
 
@@ -312,7 +307,7 @@ match t, nb_vars with
 end
 end.
 
-Definition inv_principle_one_constructor t npars nb_vars l1 := 
+Definition inv_principle_one_constructor (t : term) npars nb_vars l1 := 
 let fuel := size t in
 let nb_new_args := Datatypes.length l1 in
 let t' := lift nb_new_args 0 (skipn_forall t npars) in
