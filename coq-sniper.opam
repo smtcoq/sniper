@@ -23,7 +23,7 @@ depends: [
   "coq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-trakt.dev" "git+https://github.com/ecranceMERCE/trakt.git" ]
+  [ "coq-trakt.dev" "git+https://github.com/ckeller/trakt.git#1.1+50c0f3e" ]
   [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt" ]
 ]
 tags: [
