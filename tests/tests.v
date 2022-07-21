@@ -10,9 +10,8 @@
 (**************************************************************************)
 
 
-(* If you have Sniper installed, change these two lines into:
+(* If you have Sniper installed, change this line into:
    From Sniper Require Import Sniper.
-   From Sniper Require Import instantiate.
 *)
 Require Import Sniper.
 Require Import String.
