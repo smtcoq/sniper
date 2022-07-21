@@ -21,6 +21,14 @@ MetaCoq Quote Definition unit_reif := unit.
 
 MetaCoq Quote Definition or_reif := Logic.or.
 
+
+MetaCoq Quote Definition and_reif := Logic.and.
+
+
+MetaCoq Quote Definition True_reif := True.
+
+MetaCoq Quote Definition False_reif := False.
+
 MetaCoq Quote Definition eq_reif := @eq.
 
 MetaCoq Quote Definition bool_reif := bool. 
@@ -32,27 +40,213 @@ MetaCoq Quote Definition nat_reif := nat.
 Inductive impossible_term :=.
 MetaCoq Quote Definition impossible_term_reif := impossible_term.
 
+Definition nat_oind := {|
+ind_name := "nat"%string;
+ind_type := tSort (Universe.of_levels (inr Level.lSet));
+ind_kelim := IntoAny;
+ind_ctors := [("O"%string, tRel 0, 0);
+             ("S"%string,
+             tProd
+               {|
+               binder_name := nAnon;
+               binder_relevance := Relevant |}
+               (tRel 0) (tRel 1), 1)];
+ind_projs := [];
+ind_relevance := Relevant |}.
+
+
+(** Tail-recursive (actually linear) version of List.length **)
+Definition leng {A : Type} (l : list A ) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc
+  | _ :: l0 => aux l0 (S acc) 
+  end
+  in aux l 0.
+
+
+(** Tail-recursive (actually linear) version of List.rev **)
+
+Definition tr_rev {A : Type} (l : list A) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (x :: acc ) end
+  in aux l []. 
+
+
+(** Tail-recursive (actually linear) version of flatten **)
+Definition tr_flatten {A : Type} (l : list (list A)) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | l0 :: l => aux l (rev_append l0 acc)
+  end in tr_rev (aux l []).
+
+
+
+
+(** tr_revmap f [a1 ; ... ; an ] = [f an ; .... ; f a1 ]
+ tail-recursive (actually linear)
+**)
+Definition tr_revmap {A B : Type } ( f : A -> B) (l : list A) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (f x :: acc ) end
+  in aux l [].
+
+(** rec_acc_add [n_1 ; .... ; n_c ] = [n ]
+**)
+Definition rev_acc_add l :=
+let fix aux l s acc :=
+match l with
+  | [] => acc
+  | x :: l => let s' := x+s in aux l s'  (s' :: acc)
+end in aux l 0 [].
+
+Goal False.
+let x := constr:(rev_acc_add [2 ; 3 ; 8]) in pose x as kik ; compute in kik.
+Abort.
+
+
+
+(** Tail-recursive (actually linear) version of List.map 
+    Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
+**)
+
+Definition tr_map {A B : Type} (f: A -> B) (l : list A) :=
+  let l0 := tr_rev l in 
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (f x :: acc ) end
+  in aux l0 [].
+
+
 
 (** Functions to build MetaCoq terms **)
+
+
+(*  declaring variables   *)
+Open Scope string_scope.
+
+Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
+Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
+
+
+Definition mkNamedtry := mkNamed (("B"%string) : ident).
 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
 Definition mkProd T u :=
-tProd {| binder_name := nAnon; binder_relevance := Relevant |} T u.
+tProd mkNAnon T u.
 
 Definition mkLam Ty t := match Ty with 
-| tSort _ => tLambda {| binder_name := nNamed "A"%string ; binder_relevance := Relevant |} Ty t
-| _ => tLambda {| binder_name := nNamed "x"%string ; binder_relevance := Relevant |} Ty t
+| tSort _ => tLambda (mkNamed "A") Ty t
+| _ => tLambda (mkNamed "x") Ty t
 end.
 
-Definition mkProdName na T u :=
-tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
 
+
+Definition mkProdName na T u := (* \TODO use mkProdName in files *)
+tProd (mkNamed na) T u.
+
+
+(* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
+(* warning: t should have been previously lifted if necessary*)
+Fixpoint mkProd_rec (l : list term)  (t: term) := 
+match l with 
+| [] => t 
+| x :: xs => mkProd_rec xs (tProd (mkNamed "x")  x t)
+end.
+
+
+(* same thing but one provides a name for the bound variables *)
+Fixpoint mkProd_rec_n (na : ident) (l : list term)  (t: term) := 
+(* warning: t should have been previously lifted *)
+match l with 
+| [] => t 
+| x :: xs => mkProd_rec_n na xs (tProd (mkNamed na)  x t)
+end.
+
+
+
+(** mkLam [A1 ; .... ; An ] t = Lam "x/A" An. ... tProd "x/A" A1. t   (reverts list) **)
+(** tail-recursive **)
+(* warning: t should have been previously lifted if necessary*)
+Fixpoint mkLam_rec (l : list term)  (t: term) := 
+match l with 
+| [] => t 
+| x :: xs => mkLam_rec xs (mkLam x t)
+end.
+
+
+Close Scope string_scope.
+
+
+Definition mkImpl A B := tProd mkNAnon A (lift0 1 B). 
+
+
+Definition mkNot (A :term) := mkImpl A False_reif.
+
+Definition mkAnd (A B : term) := tApp and_reif [A ; B]. 
+
+Definition mkOr (A B : term) := tApp or_reif [A ; B].
+
+
+(** mkAnd_n [A1_reif ; ... ; An_reif ] = 
+    the reification of (A1 /\ A2) /\ ... An) (associates to the left **)
+(** tail-recursive (actually linear) *)
+Definition mkAnd_n (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+  let fix aux l acc := match l with
+  | [] => acc
+  | t :: l => aux l (tApp and_reif (acc :: [t])) 
+  end
+  in aux l0 t0
+  end.
+
+
+(**  mkOr_n0 [A1_reif ; ... ; An_reif] produce the reification of(...(An \/ (A_{n-1}) ... A_2) \/ A_1)..)
+     i.e. reverts list and associates to the *left* (better for SMTLib) **)
+(**     tail-recursive **)
+Definition mkOr_n (l : list term) :=
+  match l with
+  | [] => True_reif
+  | t0 :: l0 => 
+    let fix aux l acc := match l with
+    | [] => acc
+    | t :: l => aux l (tApp or_reif (acc :: [t])) 
+    end
+    in aux l0 t0
+  end.
+
+
+(* \TODO useless, remove *)
 Definition mkApp (u : term) (l : list term) :=
 tApp u l.
 
+(* \TODO useless, remove *)
 Definition mkApp_singl t u :=
 mkApp t [u].
+
+
+
+
+(* get_params_from_mind mind = (p , P) 
+  where p is the number of parameters of mind and lP the list of the parameters types *in order*
+  (note that mind.(ind_params)) stores the types in *reverse* order
+*)
+(* \TODO it would be perhaps better to recover the types of the parameters in the reverse order  *)
+Definition get_params_from_mind mind :=
+  let p := mind.(ind_npars) in 
+  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
+in (p, l0).
+(* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
+
 
 Fixpoint get_constructors_inductive (I : term) (e : global_env) :=
 match I with 
@@ -73,6 +267,8 @@ end
 | _ => None
 end.
 
+
+
 (* Get the pair of the number of parameters of an inductive and the list of their types *)
 Fixpoint get_info_params_inductive (I : term) (e : global_env) :=
 match I with 
@@ -82,7 +278,7 @@ match I with
                       | (na,d) :: e' => 
                                 (match d with
                                   | InductiveDecl mind => if (String.eqb
-ident na.2) then let prod := (ind_npars mind, List.map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
+ident na.2) then let prod := (ind_npars mind, tr_map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
                                   | _ => get_info_params_inductive I e'
                                end)    
     end
@@ -90,6 +286,10 @@ end
 | _ => None
 end.
 
+
+
+(** computes the list of one_inductive_body's in a term I which is a reified inductive **)
+(* \TODO should problably also test the equality between paths, not only on the names *)
 Fixpoint get_decl_inductive (I : term) (e : global_env) :=
 match I with 
 | tInd ind _ => match ind.(inductive_mind) with
@@ -106,19 +306,23 @@ end
 | _ => None
 end.
 
+
+
 Definition no_prod (t: term) := match t with 
   | tProd _ _ _ => false 
   | _ => true
 end.
 
-Fixpoint no_prod_after_params (t : term) (npars : nat) := match t with
-   | tProd _ _ u => match npars with 
+(* no_prod* do not seem to be used --> \TODO remove   *)
+Fixpoint no_prod_after_params (t : term) (p : nat) := match t with
+   | tProd _ _ u => match p with 
                    | 0 => false 
                    | S n' => no_prod_after_params u n'
                   end
   | _ => true
 end.
  
+(* does not seem to be used anywhere ---> \TODO remove *)
 Definition find_index_constructor_of_arity_zero (o : option (list ((ident × term) × nat))) := match o with
   | None => None
   | Some l => let fix aux l' acc := 
@@ -128,6 +332,10 @@ Definition find_index_constructor_of_arity_zero (o : option (list ((ident × ter
       end in aux l 0
   end.
 
+(* \TODO 
+1) give a better name
+2) see if it is really useful
+*)
 Definition no_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
@@ -141,7 +349,7 @@ end.
 
 Ltac remove_option o := match o with
 | Some ?x => constr:(x)
-| None => fail "None"
+| None => fail "failure remove_option"
 end.
 
 Definition get_nth_constructor (I : term) (n : nat) : term := 
@@ -150,11 +358,13 @@ let g := get_info_inductive I in match g with
   | Some (ind, inst) => tConstruct ind n inst
 end. 
 
+(* \TODO : not useful --> remove *)
 Definition mkApp_list (u : term) (l : list term) :=
 tApp u l.
 
 
 (* Implements beta reduction *)
+(* \TODO : not used --> remove *)
 Fixpoint typing_prod_list (T : term) (args : list term) := 
 match T with
 | tProd _ A U => match args with 
@@ -166,6 +376,7 @@ end.
 
 (* As the constructor contains a free variable to represent the inductive type, this fonction substitutes the given 
 inductive type and the parameters in the list of the type of the constructors *)
+(* \seems inefficient, and better handled by debruijn0 --> remove \TODO *)
 Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) :=
 let T := p.1 in 
 let args := p.2 in
@@ -173,6 +384,11 @@ match l with
 | nil => nil
 | ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
 end.
+(* \TMP
+ | cons y' _ => let z := y'.(ind_ctors) in let u := 
+subst_type_constructor_list z v in u
+*)
+
 
 Fixpoint get_decl (e : global_env) := match e with 
 | [] => []
@@ -232,6 +448,13 @@ Ltac is_not_in_tuple p z :=
 lazymatch constr:(p) with
 | (?x, ?y) => is_not_in_tuple constr:(x) z ; is_not_in_tuple constr:(y) z
 | _ => constr_neq p z 
+end.
+
+Ltac generalize_dependent_tuple p := 
+lazymatch constr:(p) with
+| (?x, ?y) => generalize_dependent_tuple constr:(x) ; generalize_dependent_tuple constr:(y)
+| impossible_term => idtac
+| ?x => try (generalize dependent x)
 end.
 
 Ltac notHyp T  :=
@@ -304,41 +527,72 @@ run_template_program (tmQuoteRec i) ltac:(fun i_reif_rec => let n :=
 eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
 pose (id := n)).
 
-(* Given a term recursively quoted, gives the list of the type of each of its constructor *)
-Definition list_types_of_each_constructor t :=
-let v := (no_app t.2) in (* the inductive not applied to its parameters and the list of its parameters *)
-let x := get_decl_inductive v.1 t.1 in (* the first inductive declaration in a mutual inductive block  *)
-match x with
-| Some y => match y with 
-          | nil => nil
-          | cons y' _ => let z := y'.(ind_ctors) in let u := 
-subst_type_constructor_list z v in u
-          end
-| None => nil
+(*********************)
+(* \TODO temporary inserts before putting order into auxiliary functions 
+         These functions should be removed from interp_alg_types *)
+
+Definition dom_list_f ( B  :  term) (n : nat)  := 
+  (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
+  (* does not handle debruijn indices *)
+  let fix dlaux B n acc :=
+  match n with
+  | 0 => (B,tr_rev acc) 
+  | S n => match B with
+          | tProd na A B' =>  dlaux B' n (A :: acc)
+          | _ => (B,[]) (* this case shouldn't happen *)
+          end            
+  end
+  in dlaux B n [].
+
+
+(* given an 'inductive' and i, the rank of an inductive body, 
+  outputs the 'inductive' associated to the same inductive type, whose rank is i 
+*)
+Definition switch_inductive ( indu : inductive) (i : nat) :=
+  match indu with 
+  | {| inductive_mind := kn ; inductive_ind := k |} => {| inductive_mind := kn ; inductive_ind := i |}
 end.
 
-Definition get_list_of_rel (n : nat) :=  let fix aux n k acc :=
-match n with 
-| 0 => acc
-| S n' => aux n' (k + 1) ((tRel k) :: acc)
-end in aux n 0 nil.
+(** in an inductive type I, the type of the constructors use de Bruijn indices to denote the inductive bodies of I.
+For instance, for I = list, which has a unique inductive body, the type of :: is represented with: 
+cons_type_decl := tProd "A" Type_reif (tProd _ (tRel 0) (tProd _ (tApp (tRel 2) [tRel 1]) (tApp (tRel 3) [tRel 2])))
+where the 1st occurrence of Rel 2 and the occurrence of Rel 3 represent the type list
+See the term list_oind in aux_fun_tests.v.
+Then if B is the type of the constructor as it is reified in the inductive type I, debruijn0 .... B outputs the real type of the constructor
+e.g. debruijn0 (list_indu) 1 [] cons_type_decl gives
+   tProd "A" Type_reif (tProd _ (tRel 0) (tProd _ (tApp list_reif [tRel 1]) (tApp list_reif [tRel 2])
+   i.e. the reification forall (A: Type), A -> list A -> list A 
+   where list_reif is the reification for list
+**) 
+(** tail-recursive **)
+Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) :=
+  let fix aux1 k acc :=
+    match k with
+    | 0 => acc 
+    | S k => aux1 k  ((tInd (switch_inductive indu k) u):: acc) 
+    end in
+  let oind_list := tr_rev (aux1 no [] )
+  in  subst0 oind_list B .
 
-Definition get_list_of_rel_lifted (n l : nat) := let fix aux n k acc :=
-match n with 
-| 0 => acc
-| S n' => aux n' (k + 1) ((tRel (k + l)) :: acc)
-end in aux n 0 nil.
 
-Fixpoint flatten_aux {A} (l : list (list A)) (acc : list A) := 
-match l with 
-| nil => acc
-| x :: xs => let fix aux l acc' := match l with
-              | nil => acc'
-              | y :: ys => aux ys (acc' ++ [y]) end in
-              flatten_aux xs (acc ++ (aux x []))
-end.
 
-Definition flatten {A} (l : list (list A)) := flatten_aux l  [].
+(***********************)
+
+
+
+(** Rel_list n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
+   (list of length n)
+**) (** linear **)
+Definition Rel_list (n l : nat) :=
+  let  fix aux n  k acc  :=
+  match n with
+   | 0 => acc 
+   | S n => aux n  (S k) ((tRel k)::acc)
+   end
+   in aux n l [].
+
+
+
 
 (* Reifies a term and calls is_type *)
 Ltac is_type_quote t := let t' := eval hnf in t in let T :=
@@ -359,7 +613,7 @@ Fixpoint list_of_subterms (t: term) : list term := match t with
 | tFix l _  => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
 | tCoFix l _ => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
 | _ => [t]
-end.
+end. 
 
 Definition filter_closed (l: list term) := List.filter (closedn 0) l.
 

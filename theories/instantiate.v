@@ -47,10 +47,14 @@ Goal (forall (A : Type) (l : list A), A = A) -> (forall (B: Type), B = B) ->
 (l: list A) (p : A *A), l= l /\ p =p).
 intros H H1 H2 A l p. elimination_polymorphism. Abort. 
 
+
+(* Instances when we only look at constructors *)
+Goal (forall (A: Type), list A -> False).
+intros. assert (H1: forall A, List.nth_error (@nil A) 0 = None) by auto.
+elimination_polymorphism. assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort.
+
 Goal (forall (A : Type), 1 = 1) -> 1=1.
 Proof. intros. elimination_polymorphism. Abort.
-
-
 
 
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
@@ -58,6 +62,12 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
 intros. elimination_polymorphism app_length. reflexivity. Qed. 
+
+(* TODO: should do nothing on let-ins *) 
+Goal False.
+pose (x := fun (A : Type) (x : A) => x).
+elimination_polymorphism. Abort.
+
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 

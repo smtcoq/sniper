@@ -30,22 +30,39 @@ end ;
  assert (H: x = x') by (unfold x ; reflexivity))
 end.
 
-Ltac get_definitions_aux p := fun k =>
+Ltac get_definitions_aux p p' := fun k =>
  match goal with 
 | |- context C[?x] => 
 let x' := eval unfold x in x in is_not_in_tuple p x ; 
 let H := fresh x "_def" in 
  (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
-get_definitions_aux (p, x) k)
+get_definitions_aux (p, x) (p', x) k)
 | _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; 
 let H := fresh x "_def" in (
  assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ; 
- get_definitions_aux (p, x) k)
-| _ => idtac 
+ get_definitions_aux (p, x) (p', x) k)
+| _ => generalize_dependent_tuple p'
 end.
 
-Ltac get_definitions_theories := fun p0 k => 
-get_definitions_aux p0 k.
+Ltac get_definitions_aux_no_generalize p := fun k =>
+ match goal with 
+| |- context C[?x] => 
+let x' := eval unfold x in x in is_not_in_tuple p x ; 
+let H := fresh x "_def" in 
+ (assert (H: x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
+get_definitions_aux_no_generalize (p, x) k)
+| _ : context C[?x] |- _ => let x' := eval unfold x in x in is_not_in_tuple p x ; 
+let H := fresh x "_def" in (
+ assert (H : x = x') by (unfold x ; reflexivity) ; k H ; clear H ;
+ get_definitions_aux_no_generalize (p, x) k)
+| _ => idtac
+end.
+
+Ltac get_definitions_theories p0 := fun k =>
+get_definitions_aux p0 impossible_term k.
+
+Ltac get_definitions_theories_no_generalize p0 := fun k =>
+get_definitions_aux_no_generalize p0 k.
 
 (* The basic tactic, not recursive *)
 Ltac get_def x := 

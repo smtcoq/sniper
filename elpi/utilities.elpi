@@ -1,17 +1,18 @@
 
 pred type_global i: term, o: term.
   type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
+  type_global (global (indc C)) Ty :- coq.env.indc C _ _ _ Ty.
 
 pred codomain i:term, o:term.
   codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
   codomain T T.
 
 pred is_not_prop i: term, o: diagnostic.
-  is_not_prop T ok :- coq.unify-leq T {{Prop}} (error S_).
-  is_not_prop _T (error "the term is Prop").
+  is_not_prop T ok :- not (coq.unify-leq T {{Prop}} ok).
 
 pred codomain_not_prop i: term, o: diagnostic.
-codomain_not_prop T ok :- codomain T U, is_not_prop U ok.
+  codomain_not_prop (prod Na Ty F) D :- !, pi x\ decl x Na Ty => codomain_not_prop (F x) D.
+  codomain_not_prop T ok :- !, is_not_prop T ok.
 
 pred get_number_of_parameters i: term, o: int.
     get_number_of_parameters (global (indt I)) NB :- coq.env.indt I _ NB _ _ _ _.
@@ -39,6 +40,7 @@ pred polymorphic_hypotheses i: (list (pair term term)), o: (list (pair term term
 
 pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair term term).
     collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- !, collect_hypotheses_from_context XS R R'.
+    collect_hypotheses_from_context [def _ _ _ _ | XS] R R' :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [] [] [].
 
 pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.
