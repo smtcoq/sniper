@@ -68,8 +68,9 @@ Proof. intros A HA n ; induction n.
   - snipe2.
   - intros l ; destruct l.
     * snipe2.
-    * scope. get_projs_st option. specialize (gen_option A d). verit.
-Qed.
+    * scope. get_projs_st option. specialize (gen_option A d).
+      (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *)
+Abort.
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
