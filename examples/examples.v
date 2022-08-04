@@ -181,6 +181,7 @@ Theorem app_eq_unit_auto :
 End destruct_auto.
 
 
+<<<<<<< HEAD
 (* An example with polymorphism *)
 Lemma length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat (length (l1 ++ l2)) =? Z.of_nat (length l1) + Z.of_nat (length l2)).
@@ -220,8 +221,6 @@ Lemma length_app_auto : forall B (HB: CompDec B), forall (l1 l2 l3 : list B),
 ((length (l1 ++ l2 ++ l3)) =? (length l1 + length l2 + length l3))%nat.
 Proof. intros B HB l1 l2 l3. snipe length_app. Qed.
 
-
-(* Example of search an element in a list *)
 Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
   match l with
   | [] => false
@@ -279,5 +278,6 @@ Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
 
-
-
+Lemma rev_elements_node c (H: CompDec c) l x r :
+ rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
+Proof. snipe (rev_elements_app, app_nil_r). Qed.

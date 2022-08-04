@@ -10,9 +10,8 @@
 (**************************************************************************)
 
 
-(* If you have Sniper installed, change these two lines into:
+(* If you have Sniper installed, change this line into:
    From Sniper Require Import Sniper.
-   From Sniper Require Import instantiate.
 *)
 Require Import Sniper.
 Require Import String.
@@ -21,6 +20,30 @@ Require Import Bool.
 Require Import List.
 Import ListNotations.
 
+Section tests_for_decidable_relations.
+
+Variable (A : Type).
+Variable (HA : CompDec A).
+
+Fixpoint smaller_dec_bis (l l' : list A) :=
+match l with
+| nil => true
+| cons x xs => false 
+end
+|| 
+match l with
+| nil => false
+| cons x xs => match l' with
+          | nil => false
+          | cons x' xs' => smaller_dec_bis xs xs'
+end
+end.
+
+Goal forall (l l' l'' : list A) (x : A), 
+smaller_dec_bis l l' -> l' = [] -> l <> cons x l''.
+Proof. snipe. Qed.
+
+End tests_for_decidable_relations.
 
 Section tests.
 
