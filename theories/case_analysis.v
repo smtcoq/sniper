@@ -12,6 +12,7 @@
 
 Require Import utilities. 
 Require Import elimination_polymorphism.
+Require Export clearbodies.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
@@ -518,6 +519,13 @@ end. *)
 
 (* \TODO move up the definition of nat_oind. In utilities.v? *)
 
+Ltac clearbody_list_of_list l :=
+match l with
+| @nil (list term) => idtac
+| cons ?x ?xs => clearbody_list_tVar x ; clearbody_list_of_list xs
+end.
+
+
 
 
 Ltac gen_statement t := 
@@ -543,8 +551,9 @@ Ltac gen_statement t :=
          pose (llprojs  := res3) ; 
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
         let ggd := constr:(mkProd_rec_n "A" lP_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
-          let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let N' := eval compute in (p + N) in assert (Helim : gent) by prove_by_destruct_varn N' ; unfold gent in Helim ; 
-      (* clearbody_tVar_llist llprojs; *) (* unfold gent in Helim ; *) clear gent indmind llprojs (* \TODO add clearbody  *)
+          let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let N' := eval compute in (p + N) in assert (Helim : gent) by prove_by_destruct_varn N' ; 
+        unfold gent in Helim ; let llprojs2 := eval unfold llprojs in llprojs in 
+       clearbody_list_of_list llprojs2; (* unfold gent in Helim ; *) clear gent indmind llprojs (* \TODO add clearbody  *)
         end 
       end
     end
