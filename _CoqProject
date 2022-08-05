@@ -9,6 +9,7 @@ theories/elimination_pattern_matching.v
 theories/expand.v
 theories/elimination_fixpoints.v
 theories/interpretation_algebraic_types.v
+theories/clearbodies.v
 theories/case_analysis.v
 theories/tree.v
 theories/Sniper.v
