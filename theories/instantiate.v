@@ -31,7 +31,9 @@ Elpi Accumulate lp:{{
 Elpi Typecheck.
 
 Ltac clear_prenex_poly_hyps_in_context := repeat match goal with 
-| H : forall (A : ?T), _ |- _ => first [ constr_eq T Set | constr_eq T Type] ; try (clear H)
+| H : forall (A : ?T), _ |- _ => first [ constr_eq T Set | constr_eq T Type] ; 
+let T := type of H in let U := type of T in tryif (constr_eq U Prop) then try (clear H)
+else fail
 end.
 
 Tactic Notation "elimination_polymorphism" uconstr_list_sep(l, ",") :=
@@ -63,11 +65,9 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 p' = p'.
 intros. elimination_polymorphism app_length. reflexivity. Qed. 
 
-(* TODO: should do nothing on let-ins *) 
 Goal False.
 pose (x := fun (A : Type) (x : A) => x).
 elimination_polymorphism. Abort.
-
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
