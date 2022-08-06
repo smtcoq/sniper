@@ -90,7 +90,10 @@ Definition prod_of_symb := (impossible_term,
          @FArray.select,
          @FArray.diff,
          is_true,
-         @eqb_of_compdec).
+         @eqb_of_compdec, 
+         Z_compdec,
+         list_compdec,
+         prod_compdec).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le).
 
@@ -132,7 +135,7 @@ repeat match goal with
 | H : _  |- _ => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros ; inst) ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros; inst) ;
 get_projs_in_variables p2'.
 
 Ltac snipe_param_no_check p1 p2 t :=
@@ -158,8 +161,8 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
-elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2'.
+get_projs_in_variables p2';
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context).
 
 Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
 let p2' := eval unfold prod_types in prod_types in
@@ -169,8 +172,8 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ltac:(get_definitions_theories_no_generalize); intros ;
-elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2' ; verit.
+get_projs_in_variables p2' ;
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ; verit.
 
 
 Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.

@@ -19,7 +19,7 @@ Elpi Accumulate lp:{{
   pred unwrap_idents i: term, o: list term.
     unwrap_idents (app [{{@cons }}, _ , X, X'])  [ID|IDS] :- unwrap_ident X ID, unwrap_idents X' IDS.
     unwrap_idents (app [{{@nil}} | _])  [].
-    unwrap_idents _ [] :- coq.say "error".
+    unwrap_idents T [] :- coq.say "wrong argument for clearbody" T.
 
   pred clearbody_metacoq i: list term, i: goal, o: list (sealed-goal).
     clearbody_metacoq [Str | Strs] ((goal Ctx _ _ _ _) as G) GL :- coq.term->string Str SQ,  rex.split "\"" SQ [S], 

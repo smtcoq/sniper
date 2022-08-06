@@ -181,8 +181,6 @@ Theorem app_eq_unit_auto :
 End destruct_auto.
 
 
-<<<<<<< HEAD
-(* An example with polymorphism *)
 Lemma length_app : forall A, forall (l1 l2: list A),
        (Z.of_nat (length (l1 ++ l2)) =? Z.of_nat (length l1) + Z.of_nat (length l2)).
 Proof.
@@ -197,20 +195,12 @@ induction l1.
   reflexivity.
 Qed.
 
-
-Ltac def_fix_and_pattern_matching p1 := let p1' := eval unfold p1 in p1 in
-get_definitions_theories p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
-eliminate_fix_ho H' ltac:(fun H'' =>
-try (eliminate_dependent_pattern_matching H'')))).
-
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
 - snipe app_nil_r.
 - snipe (app_ass, app_nil_r).
 Qed.
-
-
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
@@ -277,7 +267,3 @@ Proof. intros A H; induction l; snipe. Qed.
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
-
-Lemma rev_elements_node c (H: CompDec c) l x r :
- rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. snipe (rev_elements_app, app_nil_r). Qed.
