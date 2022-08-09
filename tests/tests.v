@@ -57,6 +57,15 @@ eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
 
+(* Test for inversion principle *)
+
+Lemma Add_in (A : Type) (a : A) l l' : Add a l l' ->
+   forall x, In x l' <-> In x (a::l).
+Proof.
+scope_no_param_intuitionistic.
+clear -H.
+scope_param_intuitionistic @app_nil_r. Abort.
+
 Definition true_hidden := true.
 Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
 
