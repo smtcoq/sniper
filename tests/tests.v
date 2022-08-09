@@ -57,6 +57,15 @@ eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
 
+(* Test for inversion principle *)
+
+Lemma Add_in (A : Type) (a : A) l l' : Add a l l' ->
+   forall x, In x l' <-> In x (a::l).
+Proof.
+scope_no_param_intuitionistic.
+clear -H.
+scope_param_intuitionistic @app_nil_r. Abort.
+
 Definition true_hidden := true.
 Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
 
@@ -92,8 +101,8 @@ Proof. intros A HA n ; induction n.
   - snipe2.
   - intros l ; destruct l.
     * snipe2.
-    * scope. get_projs_st option. specialize (gen_option A d). verit.
-Qed.
+    * scope. get_projs_st option. specialize (gen_option A d). (* verit. *)
+(* Qed. *) Abort.
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
@@ -231,7 +240,7 @@ Undo. Time snipe.
   Qed.
 
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. Time snipe app_nil_r. Undo. Time snipe2 app_nil_r. Qed.
+  Proof. Time snipe app_nil_r. (* Undo. Time snipe2 app_nil_r. *) Qed.
 
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
@@ -240,7 +249,7 @@ Undo. Time snipe.
 
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     Time snipe app_assoc. Undo. Time snipe2 app_assoc. Qed.
+     Time snipe app_assoc. (* Undo. Time snipe2 app_assoc. *) Qed.
 
   Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
   Proof.

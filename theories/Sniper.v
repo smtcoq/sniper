@@ -24,11 +24,13 @@ Require Export elimination_polymorphism.
 Require Export case_analysis.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
+Require Export indrel.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
 
+(** Preprocessing for SMTCoq (first-order classical logic with interpreted theories) **)
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
 Definition prod_of_symb := (impossible_term,
@@ -97,7 +99,6 @@ Definition prod_of_symb := (impossible_term,
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le).
 
-
 Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_dependent_pattern_matching H')).
@@ -106,7 +107,6 @@ Ltac def_fix_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
 try (eliminate_dependent_pattern_matching H'')))).
-
 
 Ltac def_and_pattern_matching_mono p1 k :=
 def_and_pattern_matching p1 k ; inst.
@@ -193,4 +193,26 @@ Tactic Notation "snipe_timeout" constr(t) int_or_var(n) := scope_param prod_of_s
 Tactic Notation "snipe_timeout" int_or_var(n) := scope_no_param prod_of_symb prod_types ; verit_timeout n. *)
 
 
+(** Preprocessing for first-order intuitionistic logic with no interpreted symbols **)
 
+Definition tuple_def := (iff, not).
+
+Ltac scope_param_intuitionistic t := 
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal impossible_term ; try (def_fix_and_pattern_matching_mono_param tuple_def t 
+ltac:(get_definitions_theories_no_generalize); inv_principle_all; inst) ; 
+get_projs_in_variables tuple_def.
+
+Ltac scope_no_param_intuitionistic := 
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal impossible_term ; try (def_fix_and_pattern_matching tuple_def 
+ltac:(get_definitions_theories_no_generalize) ; inv_principle_all ; inst) ; 
+get_projs_in_variables tuple_def.
