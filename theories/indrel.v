@@ -513,3 +513,22 @@ inversion_principle @Exists.
 clear.
 inversion_principle le.
 Abort.
+
+Ltac inversion_principle_all_subterms p := 
+ match goal with 
+| |- context C[?x] => is_not_in_tuple p x ;
+inversion_principle x ; inversion_principle_all_subterms (p, x) 
+| _ : context C[?x] |- _ => is_not_in_tuple p x ;
+inversion_principle x ; inversion_principle_all_subterms (p, x)
+| _ => idtac
+end.
+
+Goal forall (A: Type) (a : A) (n : nat), add 0 n n -> forall (l l' : list A), Add a l l' -> 
+le n n.
+Proof.
+intros.
+inversion_principle_all_subterms impossible_term.
+Abort.
+
+Ltac inv_principle_all := inversion_principle_all_subterms 
+(and, or, ex, ex2, False, True).
