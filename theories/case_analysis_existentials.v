@@ -11,16 +11,18 @@
 
 
 Require Import utilities. 
-Require Import case_analysis.
 Require Import elimination_polymorphism.
-Require Export clearbodies.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import interpretation_algebraic_types. 
-Require Import SMTCoq.SMTCoq.
+Require Import case_analysis.
 Unset Strict Unquote Universe Mode.
+
+(** Generates the generation statement in a non-constructive way:
+the projection functions are replaced by existentials : 
+see the example st_list *)
 
 Fixpoint statement_one_constructor
 (n : nat) (* De Brujin index of the list we consider *)
@@ -83,17 +85,15 @@ end in aux t' 0.
 
 (* generates two lists : the constructors and the number of their arguments *)
 Fixpoint find_nb_args_constructors_and_ctors 
-(I : inductive) (inst : Instance.t) (npars : nat) (l : list ((ident × term) × nat))
+(I : inductive) (inst : Instance.t) (npars n : nat) (l : list ((ident × term) × nat))
 :=
 match l with
 | [] => ([], [])
 | x :: xs => 
-  let resu := find_nb_args_constructors_and_ctors I inst npars xs in
+  let resu := find_nb_args_constructors_and_ctors I inst npars (S n) xs in
   let nb := get_nb_args_not_params x.1.2 npars in
-  (tConstruct I x.2 inst :: resu.1, nb :: resu.2)
+  (tConstruct I n inst :: resu.1, nb :: resu.2)
 end.
-
-Print impossible_term_reif.
 
 Definition get_indu_and_instance (t : term) :=
 match t with
@@ -106,6 +106,12 @@ match t with
   |}, [])
 end.
 
+Definition dest_app (t : term) :=
+match t with
+| tApp u v => (u, v)
+| _ => (t, [])
+end.
+
 Ltac prove_by_destruct_varn n  := 
 match n with 
 | 0 =>
@@ -114,40 +120,63 @@ intro x ; destruct x; repeat eexists ; repeat first [ left ; progress (eauto) | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
-Ltac gen_statement_existentials I :=
+Ltac gen_statement_existentials I H :=
 let I_reif := metacoq_get_value (tmQuoteRec I) in
-let constructors := eval cbv in (get_constructors_inductive I_reif.2 I_reif.1) in
-let info_params := eval cbv in (get_info_params_inductive I_reif.2 I_reif.1) in
-match info_params with
-| Some ?info_params =>
-let npars := eval cbv in info_params.1 in 
-let typars := eval cbv in info_params.2 in
-let res1 := eval cbv in (get_indu_and_instance I_reif.2) in 
-let indu := eval cbv in res1.1 in
-let inst := eval cbv in res1.2 in
-  match constructors with
-  | Some ?cstrs => let res2 := eval cbv in (find_nb_args_constructors_and_ctors indu inst npars cstrs) in 
+let res0 := eval cbv in (dest_app I_reif.2) in
+let I_no_app := eval cbv in (res0.1) in
+let params := eval cbv in (res0.2) in
+let len_params := eval cbv in (Datatypes.length params) in
+let constructors := eval cbv in (get_constructors_inductive I_no_app I_reif.1) in
+let info_params := eval cbv in (get_info_params_inductive I_no_app I_reif.1) in
+  match info_params with
+  | Some ?info_params =>
+    let npars := eval cbv in info_params.1 in 
+    let typars := eval cbv in info_params.2 in
+    let res1 := eval cbv in (get_indu_and_instance I_no_app) in 
+    let indu := eval cbv in res1.1 in
+    let inst := eval cbv in res1.2 in
+      match constructors with
+      | Some ?cstrs => let res2 := eval cbv in (find_nb_args_constructors_and_ctors indu inst npars 0 cstrs) in 
                    let largs := eval cbv in res2.2 in
                    let lc := eval cbv in res2.1 in 
-                   let gen_st_reif := eval cbv in (statement_constructors I_reif.2 typars lc largs) in idtac gen_st_reif ;
-                   let H := fresh in 
-                   let gen_st := metacoq_get_value (tmUnquoteTyped Prop  gen_st_reif) in idtac gen_st ;
-                   assert (H : gen_st) by (prove_by_destruct_varn npars)
+                   let gen_st_reif := eval cbv in (statement_constructors I_no_app typars lc largs) in
+                   let gen_st_reif_instances := eval cbv in (subst params 0 (skipn_forall len_params gen_st_reif)) in
+                   let gen_st := metacoq_get_value (tmUnquoteTyped Prop  gen_st_reif_instances) in
+                   let nb_vars_intro := eval cbv in (npars-len_params) in 
+                   assert (H : gen_st) by (prove_by_destruct_varn (nb_vars_intro))
+      | None => fail
+      end
   | None => fail
- end
-| None => fail
 end.
 
 Section test_gen_statement.
 
 Goal False.
-gen_statement_existentials nat. clear.
-gen_statement_existentials list. clear.
-pose_gen_statement @nelist. clear.
-pose_gen_statement @biclist. clear.
-pose_gen_statement Ind_test. clear.
-pose_gen_statement Ind_test2. clear.
+gen_statement_existentials nat H. clear.
+gen_statement_existentials list H. clear.
+gen_statement_existentials @nelist H. clear.
+gen_statement_existentials @biclist H. clear.
+gen_statement_existentials Ind_test H. clear.
+gen_statement_existentials Ind_test2 H. clear.
+gen_statement_existentials (@list nat) H. clear.
 Abort.
 
+End test_gen_statement.
 
-End tests_proj.
+Ltac get_gen_statement_for_variables_in_context :=
+let t := vars in 
+let rec tac_rec v :=
+match v with
+| (?v1, ?v') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec v'  |
+                first [let H := fresh in 
+                gen_statement_existentials T H; specialize (H v1) ; try (tac_rec v')  | tac_rec v' ]]
+| _ => idtac
+end in tac_rec t.
+
+Section test_vars_in_context.
+
+Goal forall (A: Type) (x : list nat) (y : nat) (u : list A), 1 = 2 -> False.
+Proof. intros ; get_gen_statement_for_variables_in_context. inversion H. Qed.
+
+End test_vars_in_context.
+

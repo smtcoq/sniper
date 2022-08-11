@@ -22,6 +22,7 @@ Require Export expand.
 Require Export elimination_pattern_matching. 
 Require Export elimination_polymorphism.
 Require Export case_analysis.
+Require Export case_analysis_existentials.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
 Require Export indrel.
