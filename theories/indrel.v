@@ -514,11 +514,18 @@ clear.
 inversion_principle le.
 Abort.
 
+Ltac first_arg_not_in_prop T :=
+let U := type of T in 
+lazymatch U with
+| forall (x : Prop), _ => fail 
+| _ => idtac
+end.
+
 Ltac inversion_principle_all_subterms p := 
  match goal with 
-| |- context C[?x] => is_not_in_tuple p x ;
+| |- context C[?x] => is_not_in_tuple p x ; first_arg_not_in_prop x; 
 inversion_principle x ; inversion_principle_all_subterms (p, x) 
-| _ : context C[?x] |- _ => is_not_in_tuple p x ;
+| _ : context C[?x] |- _ => is_not_in_tuple p x ; first_arg_not_in_prop x;
 inversion_principle x ; inversion_principle_all_subterms (p, x)
 | _ => idtac
 end.
@@ -531,4 +538,11 @@ inversion_principle_all_subterms impossible_term.
 Abort.
 
 Ltac inv_principle_all := inversion_principle_all_subterms 
-(and, or, ex, ex2, False, True).
+(False, True).
+
+Goal forall (A: Type) (a : A) (n : nat), add 0 n n -> forall (l l' : list A), Add a l l' -> 
+le n n.
+Proof.
+intros.
+inv_principle_all.
+Abort.

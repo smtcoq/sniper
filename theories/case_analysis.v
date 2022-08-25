@@ -17,9 +17,7 @@ Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 Require Import ZArith.
-
 Require Import interpretation_algebraic_types. 
-
 Require Import SMTCoq.SMTCoq.
 
 (*********************)
@@ -27,12 +25,16 @@ Require Import SMTCoq.SMTCoq.
 
 (* The goal of this file is two-fold:
 (1) automatically declare the projections of an inductive datatype I. 
-For instance, for the type list, whose constructors are [] (0 argument) and :: (2 arguments ), we declare in the local context two functions proj_{1,0} : forall (A : Type), A -> list A -> list A and proj_{1,1} : forall (A : Type) list A -> list A -> list A such that:
+For instance, for the type list, whose constructors are [] (0 argument) and :: (2 arguments ), 
+we declare in the local context two functions proj_{1,0} : forall (A : Type), A -> list A -> list A and 
+proj_{1,1} : forall (A : Type) list A -> list A -> list A such that:
 * proj_{1,0} def [] = def and proj_{1,0} d {a :: l} = a 
 * proj_{1,1} def [] = def and proj_{1,1} d {a :: l} = l 
-The metavariable d stands for a dummy default value, of respective types A (for proj_{1,0}) and list A (for proj_{1,1})
+The metavariable d stands for a dummy default value, 
+of respective types A (for proj_{1,0}) and list A (for proj_{1,1})
 
-(2) automatically prove in the local context the generation statement, specifying that every inhabitant t of I is equal to a constructor applying to the projections of t.
+(2) automatically prove in the local context the generation statement, specifying that every inhabitant t of I 
+is equal to a constructor applying to the projections of t.
 For instance, in the case of list, the main tactic produces and proves the statement:
 forall (A : Type) (d_{1,0} : A)  (d_{1,1} l: list A), (l =  []) \/ (l = ((proj_{1,0} d_{1,0} l)) :: ((proj_{1,1} d_{1,1} l))
 
@@ -405,7 +407,6 @@ Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
   in  aux2 [] 0 0  llAunlift ln.
 
 
-
 (* holes_p p = [hole ; ... ; hole] (p occurrences)
    linear *)
    Definition holes_p (p : nat) :=
@@ -488,9 +489,6 @@ Definition args_of_projs_in_disj (ln : list nat) : list (list term) :=
   | ni :: l0 =>  aux l0 (ni + acc) ((Rel_list ni acc) :: res)
   end in aux ln_rev 1 [].
 
-
-
-
 Ltac prove_by_destruct_varn n  := 
 match n with 
 | 0 =>
@@ -499,34 +497,11 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
-
-
-
-(*  \TMP *)
-(* Ltac clearbody_tVar_list l :=
-  match eval hnf in l with
-  | [] => idtac 
-  | ?c :: ?l0 => match c with
-    | tVar ?idn => cbd idn ; clearbody_tVar_list l0
-end
-end. *)
-
-(* Ltac clearbody_tVar_llist l :=
-  match eval hnf in l with
-  | [] => idtac 
-  | ?l0 :: ?tl0 => clearbody_tVar_list l0 ; clearbody_tVar_llist tl0
-end. *)
-
-(* \TODO move up the definition of nat_oind. In utilities.v? *)
-
 Ltac clearbody_list_of_list l :=
 match l with
 | @nil (list term) => idtac
 | cons ?x ?xs => clearbody_list_tVar x ; clearbody_list_of_list xs
 end.
-
-
-
 
 Ltac gen_statement t := 
   let Helim := fresh "gen_" t in let _ := match goal with _ => 
@@ -544,7 +519,7 @@ Ltac gen_statement t :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lc) =>    let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
+        | (?lB,?lc) => let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
         let lP_rev := eval compute in (tr_rev lP) in let llAu := eval compute in (proj_return_types llAtrunc) in let t_reif := constr:(tInd indu u) in  let N := constr:(fold_left Nat.add ln 0) in
         let res3 := 
          declare_projs t p lP_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
@@ -553,13 +528,12 @@ Ltac gen_statement t :=
         let ggd := constr:(mkProd_rec_n "A" lP_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
           let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let N' := eval compute in (p + N) in assert (Helim : gent) by prove_by_destruct_varn N' ; 
         unfold gent in Helim ; let llprojs2 := eval unfold llprojs in llprojs in 
-       clearbody_list_of_list llprojs2; (* unfold gent in Helim ; *) clear gent indmind llprojs (* \TODO add clearbody  *)
+       clearbody_list_of_list llprojs2; (* unfold gent in Helim ; *) clear gent indmind llprojs
         end 
       end
     end
     end
-  end end end end in Helim
-  .       
+  end end end end in Helim.       
    
 
 Ltac pose_gen_statement t :=
@@ -599,7 +573,7 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
 Goal False.
-get_projs_st list. clear.
+get_projs_st list. generalize proj_list. clear.
 get_projs_st nat. clear.
 get_projs_st option. clear.
 get_projs_st @nelist. clear.
