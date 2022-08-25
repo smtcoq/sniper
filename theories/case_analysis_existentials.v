@@ -116,8 +116,7 @@ Ltac prove_by_destruct_varn n  :=
 match n with 
 | 0 =>
 let x := fresh in 
-intro x ; destruct x; repeat eexists ; 
-repeat first [right ; progress (eauto) | first [left | progress (eauto)] ]
+intro x ; destruct x; repeat eexists ; repeat first [ left ; progress (eauto) | first [right | eauto]]
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
@@ -152,21 +151,8 @@ end.
 
 Section test_gen_statement.
 
-Inductive enum :=
-| en1 
-| en2 
-| en3
-| en4 
-| en5
-| en6
-| en7
-| en8
-| en9.
-
 Goal False.
 gen_statement_existentials nat H. clear.
-gen_statement_existentials enum H. clear.
-gen_statement_existentials bool H. clear.
 gen_statement_existentials list H. clear.
 gen_statement_existentials @nelist H. clear.
 gen_statement_existentials @biclist H. clear.
@@ -189,7 +175,7 @@ end in tac_rec t.
 
 Section test_vars_in_context.
 
-Goal forall (A: Type) (x : list nat) (b : bool) (y : nat) (u : list A), 1 = 2 -> False.
+Goal forall (A: Type) (x : list nat) (y : nat) (u : list A), 1 = 2 -> False.
 Proof. intros ; get_gen_statement_for_variables_in_context. inversion H. Qed.
 
 End test_vars_in_context.
