@@ -192,7 +192,8 @@ repeat match goal with
 [intros; try (rewrite H); reflexivity | first [
 let foo := fresh in assert (foo := H) ; intros; rewrite foo ;
 match goal with 
-| Hinv : _ |- context [match ?expr with _ => _ end] => destruct expr; 
+| Hinv : ?U |- context [match ?expr with _ => _ end] => let U' := type of
+U in constr_eq U' Prop ; destruct expr; try intros ;
 try inversion Hinv ;
  auto end |
 repeat match goal with 
