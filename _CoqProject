@@ -1,4 +1,6 @@
 -R . Sniper
+#-R /home/louise/github.com/louiseddp/smtcoq/src SMTCoq
+#-I /home/louise/github.com/louiseddp/smtcoq/src
 
 theories/utilities.v
 theories/indrel.v
