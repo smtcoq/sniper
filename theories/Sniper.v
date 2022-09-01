@@ -217,3 +217,28 @@ end ;
 try interp_alg_types_context_goal impossible_term ; try (def_fix_and_pattern_matching tuple_def 
 ltac:(get_definitions_theories_no_generalize) ; inv_principle_all ; inst) ; 
 get_projs_in_variables tuple_def.
+
+(** Preprocessing using trakt **)
+
+Ltac get_codomain t := 
+lazymatch t with
+| forall (x: ?A), ?B => get_codomain B
+| _ => t
+end.
+
+Ltac unfold_terms_whose_codomain_are_in_Prop :=
+let p := eval unfold prod_of_symb in prod_of_symb in
+repeat match goal with
+| |- context[?x] => is_not_in_tuple p x ; 
+                    let T := type of x in 
+                    let U := get_codomain T in
+                    constr_eq U Prop ; unfold x
+end.
+
+Tactic Notation "snipe_with_trakt" := 
+unfold_terms_whose_codomain_are_in_Prop ;
+trakt Z bool ; snipe.
+
+Tactic Notation "snipe_with_trakt" constr(t) := 
+unfold_terms_whose_codomain_are_in_Prop ;
+trakt Z bool ; snipe t.
