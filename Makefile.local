@@ -9,6 +9,6 @@ tests: tests/tests.v
 test: examples tests
 
 clean::
-	rm -f examples/examples.glob examples/examples.vo examples/examples.vok examples/examples.vos tests/tests.glob tests/tests.vo tests/tests.vok tests/tests.vos
+	rm -f examples/examples.glob examples/examples.vo examples/examples.vok examples/examples.vos tests/tests.glob tests/tests.vo tests/tests.vok tests/tests.vos benchs/*.glob benchs/*.vo benchs/*.vok benchs/*.vos
 
 .PHONY: examples tests

@@ -16,8 +16,7 @@ or being proved once and for all in Coq (*certified* transformations). A
 crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
-This release is for the submission to the conference Interactive Theorem
-Proving 2022.
+This version is an experimental version using the Trakt plugin.
 
 
 ## Installation and use
@@ -43,23 +42,6 @@ opam switch create 4.09.1
 eval $(opam env)
 ```
 
-Then choose either of the following two sections, install the automatic
-prover, and enjoy!
-
-### Installation of release 1.0
-
-You need to add this opam repository:
-```
-opam repo add coq-released https://coq.inria.fr/opam/released
-```
-
-Then simply install `Sniper`:
-```
-opam install coq-sniper
-```
-
-### Installation of the development version
-
 You need to add two opam repositories:
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
@@ -72,8 +54,6 @@ opam install coq-sniper
 ```
 
 ### Installation of the automatic prover and use
-
-It works with Coq-8.13.
 
 You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
@@ -89,31 +69,9 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-## Examples, tests and benchmarks
+## Examples
 
 Commented examples are available at ``examples.v``.
-
-The benchmarks are in the `benchs` folder.
-You need to install ``coq-hammer`` by running the command
-```
-opam install coq-hammer
-```
-Then to test ``snipe`` you can run
-```
-make bench_snipe
-```
-To test ``hammer`` you can run 
-```
-make bench_hammer
-```
-And to run the tests on both tactics, the command is
-```
-make bench
-```
-
-The other files in this folder are the orginal not automatized ``List`` library (``List_no_automation.v``)
-and the outputs obtained by running the benchs on the computer mentioned in the paper.
-
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
