@@ -116,7 +116,8 @@ Ltac prove_by_destruct_varn n  :=
 match n with 
 | 0 =>
 let x := fresh in 
-intro x ; destruct x; repeat eexists ; repeat first [ left ; progress (eauto) | first [right | eauto]]
+intro x ; destruct x; repeat eexists ; 
+repeat (tryif (right; progress eauto) then idtac else first [left ; progress eauto | left])
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
@@ -143,7 +144,7 @@ let info_params := eval cbv in (get_info_params_inductive I_no_app I_reif.1) in
                    let gen_st_reif_instances := eval cbv in (subst params 0 (skipn_forall len_params gen_st_reif)) in
                    let gen_st := metacoq_get_value (tmUnquoteTyped Prop  gen_st_reif_instances) in
                    let nb_vars_intro := eval cbv in (npars-len_params) in 
-                   assert (H : gen_st) by (prove_by_destruct_varn (nb_vars_intro))
+                   assert (H : gen_st) by ( prove_by_destruct_varn (nb_vars_intro))
       | None => fail
       end
   | None => fail
@@ -174,6 +175,21 @@ match v with
 end in tac_rec t.
 
 Section test_vars_in_context.
+
+Inductive memory_chunk : Type :=
+  | Mint8signed     (**r 8-bit signed integer *)
+  | Mint8unsigned   (**r 8-bit unsigned integer *)
+  | Mint16signed    (**r 16-bit signed integer *)
+  | Mint16unsigned  (**r 16-bit unsigned integer *)
+  | Mint32          (**r 32-bit integer, or pointer *)
+  | Mint64          (**r 64-bit integer *)
+  | Mfloat32        (**r 32-bit single-precision float *)
+  | Mfloat64        (**r 64-bit double-precision float *)
+  | Many32          (**r any value that fits in 32 bits *)
+  | Many64.         (**r any value *)
+
+Lemma memory_chunk_to_Z_eq (x y : memory_chunk) : x = y <-> x = y.
+get_gen_statement_for_variables_in_context. Abort.
 
 Goal forall (A: Type) (x : list nat) (y : nat) (u : list A), 1 = 2 -> False.
 Proof. intros ; get_gen_statement_for_variables_in_context. inversion H. Qed.
