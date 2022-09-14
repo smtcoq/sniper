@@ -1,17 +1,17 @@
 From Coq Require Import ZArith.
-From mathcomp Require Import all_ssreflect zify.
+From mathcomp Require Import all_ssreflect zify. 
 From Sniper Require Import Sniper.
 From Trakt Require Import Trakt.
 
-Trakt Add Symbol (addn) (Z.add) (Nat2Z.inj_add).
+(* Trakt Add Symbol (addn) (Z.add) (Nat2Z.inj_add).
 
 Trakt Add Symbol (subn)
   (fun n m => (if Z.leb n m  then 0 else n - m)%Z)
   (Natsub_Zsub_embedding_equality).
+ *)
+Trakt Add Relation 2 (Nat.eqb) (Z.eqb) (ZifyBool.Z_of_nat_eqb_iff).
 
-Trakt Add Relation (Nat.eqb) (Z.eqb) (ZifyBool.Z_of_nat_eqb_iff).
-
-Trakt Add Relation (Nat.leb) (Z.leb) (ZifyBool.Z_of_nat_leb_iff).
+Trakt Add Relation 2 (Nat.leb) (Z.leb) (ZifyBool.Z_of_nat_leb_iff).
 
 (* lambda terms *)
 

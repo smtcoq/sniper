@@ -53,14 +53,21 @@ Section Paper_examples.
 Tactic Notation "inst_with_subterms_of_type_type" := inst.
 Tactic Notation "inst_with_chosen_parameters" := elimination_polymorphism.
 
+(*  Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : list B), 
+ (x1 = x2 /\ y1 = y2) -> x1 =x2) -> ((forall (x1 x2 : bool) (y1 y2 : list Z), 
+(x1 = x2 /\ y1 = y2) -> x1 =x2) /\ (forall (x1 x2 : Z) (y1 y2 : list unit), 
+(x1 = x2 /\ y1 = y2) -> x1 =x2) /\ (forall (x1 x2 : bool) (y1 y2 : list bool), 
+(x1 = x2 /\ y1 = y2) -> x1 =x2)).
+Proof. intros. inst. split ; [|split]. Undo. verit. *)
+
   Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
-(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
-(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : nat) (y1 y2 : bool), 
-(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
+      (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> 
+((forall (x1 x2 : unit*Z) (y1 y2 : list Z), (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ 
+(forall (x1 x2 : int) (y1 y2 : option Z), 
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
-Proof. intro H. inst_with_subterms_of_type_type. (* 27 instances *)
-Undo. inst_with_chosen_parameters.  (* 4 instances *)
-auto. (* TODO verit *)
+Proof. intro H. inst_with_subterms_of_type_type. (* 64 instances *)
+Undo. inst_with_chosen_parameters. (* 7 instances *) 
+split; [ |split]; verit. 
 Qed. 
 
 End Polymorphism.
