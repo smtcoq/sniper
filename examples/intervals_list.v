@@ -1,8 +1,16 @@
 Require Import ZArith Lia.
+From Sniper Require Import Sniper.
 From SMTCoq Require Import SMTCoq.
 Require Import Bool OrderedType OrderedTypeEx.
 Open Scope Z_scope.
 Import BinInt.
+
+(** This file is adapted from Amélie Ledein and Catherine 
+Dubois's development: 
+https://gitlab.com/finite_set_Coq/real_intervals_list **)
+
+
+(*** 1 : Definitions and proofs ***)
 
 Definition extractionOption (A : Type)  (op : option A) (val_def : A) :=
  match op with
@@ -101,8 +109,6 @@ assumption. rewrite Z.eqb_neq in E2. elim E2; reflexivity.
 rewrite Z.eqb_neq in E1. elim E1; reflexivity.   
 rewrite Z.eqb_neq in E2. elim E2; reflexivity. Qed. 
 
- Instance elt_list_eqbtype : EqbType (elt_list) := Build_EqbType _ _ elt_list_eqb_spec.
-
   Fixpoint elt_list_lt (t1 t2 : elt_list) : Prop :=
     match t1, t2 with
     | Nil, Nil => False
@@ -112,48 +118,36 @@ rewrite Z.eqb_neq in E2. elim E2; reflexivity. Qed.
 \/ (Z.eqb a1 a2 /\ Z.eqb b1 b2 /\ elt_list_lt t1' t2')
     end.
 
+
 Lemma elt_list_lt_trans : forall (x y z : elt_list),
       elt_list_lt x y -> elt_list_lt y z -> elt_list_lt x z.
 Proof.
 intros x.
 induction x; intros y y'.
 - intros H1 H2. destruct y ; inversion H1. destruct y' ; auto.
-- intros H H1.
-destruct y; simpl in H. inversion H.
-destruct y'; simpl in H1. inversion H1.
-destruct H as [H0 | H0]. 
-destruct H1 as [H1 | H1].
-assert (ineq: z < z3) by lia.
-simpl. left. assumption.
-destruct H1 as [H1 | H1].
-destruct H1 as [H1 H1'].
-apply Z.eqb_eq in H1. rewrite <- H1. simpl; left; assumption.
-destruct H1 as [H1 [H1' H1'']]. apply Z.eqb_eq in H1. 
-rewrite <- H1. simpl; left; assumption.
-destruct H0 as [H0 | H0].
-destruct H1 as [H1 | H1].
-simpl. destruct H0 as [H0 H0']. apply Z.eqb_eq in H0. left. rewrite H0.
-assumption. destruct H0 as [H0 H0'].
-destruct H1 as [H1 | H1].
-destruct H1 as [H1 H1'].
-simpl. right. left. 
-split. apply Z.eqb_eq in H0, H1. apply Z.eqb_eq.
-rewrite <- H1; assumption. lia.
-destruct H1 as [H1 [H1' H1'']]. simpl.
-right. left. split. apply Z.eqb_eq in H0, H1, H1'. apply Z.eqb_eq.
-rewrite <- H1. assumption.
-apply Z.eqb_eq in H1'. rewrite <- H1'. assumption.
-destruct H0 as [H0 [H0' H0'']].
-destruct H1 as [H1 | H1]. apply Z.eqb_eq in H0, H0'.
-simpl. left. lia.
-destruct H1 as [H1 | H1].
-simpl. destruct H1 as [H1 H1']. apply Z.eqb_eq in H0, H0'.
-right. left. split. rewrite H0. assumption. lia.
-destruct H1 as [H1 [H1' H1'']]. simpl.
-right. right. split. apply Z.eqb_eq in H0, H0', H1'.
-rewrite <- H0 in H1. assumption. 
-split. apply Z.eqb_eq in H0'. rewrite H0'. assumption.
-eapply IHx. apply H0''. assumption. Qed.
+- intros H H1. simpl. destruct y'.
+    + destruct y ; inversion H1.
+    + destruct y.
+      * inversion H.
+      * inversion H; inversion H1; try lia.
+        destruct H2 as [H2 | H3]. left. 
+        destruct H2 as [H2 H2']. apply Z.eqb_eq in H2. subst; assumption.
+        destruct H3 as [H3 [H4 H5]]. left. apply Z.eqb_eq in H3. subst; assumption.
+        destruct H0 as [H0 | H0']. destruct H0 as [H0' H0''].  apply Z.eqb_eq in H0'. 
+        subst; lia. destruct H0' as [H01 [H02 H03]]. apply Z.eqb_eq in H01. subst; lia.
+        destruct H0 as [H0 | H0']. destruct H0 as [H01 H02]. destruct H2 as [H2 | H2'].
+        destruct H2 as [H2 H2']. apply Z.eqb_eq in H01. subst. apply Z.eqb_eq in H2. subst.
+        right. left. split. apply Z.eqb_eq; reflexivity. eapply Z.lt_trans. 
+        eauto; assumption. assumption.
+        destruct H2' as [H20 [H21  H22]]. apply Z.eqb_eq in H01. apply Z.eqb_eq in H20.
+        apply Z.eqb_eq in H21. subst. right. left. split; try apply Z.eqb_eq; auto.
+        destruct H2 as [H2 | H2']. destruct H0' as [H01 [H02 H03]]. 
+        destruct H2 as [H21 H22]. apply Z.eqb_eq in H21. apply Z.eqb_eq in H01.
+        apply Z.eqb_eq in H02. subst. right. left. split; try apply Z.eqb_eq; auto.
+        destruct H0' as [H01 [H02 H03]]. destruct H2' as [H21 [H22 H23]]. 
+        apply Z.eqb_eq in H01. apply Z.eqb_eq in H02. apply Z.eqb_eq in H21.
+        apply Z.eqb_eq in H22. subst. right. right. split ; try split; try apply Z.eqb_eq; auto.
+        eapply IHx; eauto. Qed.
 
 Lemma elt_list_lt_not_eq : forall (x y : elt_list), elt_list_lt x y -> x <> y.
 Proof.
@@ -164,11 +158,6 @@ Proof.
       + lia. 
       + apply IHx1 in H5. elim H5. reflexivity. 
   Qed.
-
-  Instance elt_list_ord : OrdType (elt_list) :=
-    Build_OrdType _ _ elt_list_lt_trans elt_list_lt_not_eq.
-
-Instance elt_list_inh : Inhabited (elt_list) := Build_Inhabited _ Nil.
 
 Definition elt_list_compare : forall (x y : elt_list), Compare elt_list_lt Logic.eq x y.
   Proof.
@@ -184,29 +173,24 @@ Definition elt_list_compare : forall (x y : elt_list), Compare elt_list_lt Logic
 intros l1 H2.
 apply LT.
  right. right. split. apply Z.eqb_eq. assumption. split.
-apply Z.eqb_eq. assumption. assumption.
+apply Z.eqb_eq. all: try assumption.
 intros l0. intros H2. apply GT. simpl. 
 right. left. split; auto. apply Z.eqb_eq. symmetry. assumption.
      * case_eq (compare b b'); intros l1 H1. apply LT. simpl. right. left. 
-split. apply Z.eqb_eq. assumption. assumption.
+split. apply Z.eqb_eq. all: try assumption.
 apply EQ. rewrite l. rewrite l1. rewrite H2. reflexivity.
-apply GT. simpl. right. left. split. apply Z.eqb_eq. symmetry. assumption. assumption. 
+apply GT. simpl. right. left. split. apply Z.eqb_eq. symmetry. all: try assumption.
         * case_eq (compare b b'); intros l1 H1. apply LT. simpl. right. left. 
-split. apply Z.eqb_eq. assumption. assumption.
+split. apply Z.eqb_eq. all: try assumption.
 apply GT. simpl. right; right; split. apply Z.eqb_eq. symmetry. assumption.
-split. apply Z.eqb_eq. symmetry. assumption. assumption.  
-apply GT. simpl. right. left. split. apply Z.eqb_eq. symmetry. assumption. assumption.
+split. apply Z.eqb_eq. symmetry. all: try assumption.  
+apply GT. simpl. right. left. split. apply Z.eqb_eq. symmetry. all: try assumption.
       +  apply GT. simpl. left. assumption.
   Defined.
 
- Instance elt_list_comp : Comparable (elt_list) := Build_Comparable _ _ elt_list_compare.
-
-Instance elt_list_compdec : CompDec (elt_list) := {|
-    Eqb := elt_list_eqbtype;
-    Ordered := elt_list_ord;
-    Comp := elt_list_comp;
-    Inh := elt_list_inh
-  |}.
+Instance elt_list_compdec : CompDec elt_list :=
+    CompDec_from _ _ elt_list_eqb_spec _ elt_list_lt_trans elt_list_lt_not_eq
+                 elt_list_compare Nil.
 
 #[export] Hint Resolve elt_list_compdec : typeclass_instances.
 
@@ -259,8 +243,6 @@ trakt Z Prop.
 pose proof elt_list_eqb_spec. rewrite H. 
 pose proof Z.eqb_eq. repeat rewrite H0. auto. Qed. 
 
- Instance t_eqbtype : EqbType t := Build_EqbType _ _ t_eqb_spec.
-
 Definition t_lt (t1 t2 : t) : Prop :=
  match t1, t2 with
 | {| domain := d1; size := s1; max := max1 ; min := min1 |},
@@ -309,12 +291,6 @@ elim H0; reflexivity.
 inversion H0. lia. lia.
   Qed.
 
-  Instance t_ord : OrdType t :=
-    Build_OrdType _ _ t_lt_trans t_lt_not_eq.
-
-Instance t_inh : Inhabited (t) := Build_Inhabited _ 
-{| domain := Nil; size := 0; max := 0 ; min := 0 |}. 
-
 Definition t_compare : forall (x y : t), Compare t_lt Logic.eq x y.
   Proof.
     destruct x as [domain0 size0 max0 min0]; intros y ; 
@@ -333,14 +309,9 @@ apply GT. subst. simpl. firstorder.
 apply GT. subst. simpl. firstorder.
 - apply GT. simpl. firstorder. Defined.
 
- Instance t_comp : Comparable t := Build_Comparable _ _ t_compare.
-
-Instance t_compdec : CompDec t := {|
-    Eqb := t_eqbtype;
-    Ordered := t_ord;
-    Comp := t_comp;
-    Inh := t_inh
-  |}.
+Instance t_compdec : CompDec t :=
+    CompDec_from _ _ t_eqb_spec _ t_lt_trans t_lt_not_eq
+                 t_compare {| domain := Nil; size := 0; max := 0 ; min := 0 |}.
 
 #[export] Hint Resolve t_compdec : typeclass_instances.
 
@@ -360,3 +331,72 @@ split.
 Qed.
 
 Trakt Add Relation 1 (Inv_t) (Inv_t_bool) (Inv_t_decidable).
+
+(*** 2 : Some examples ***) 
+
+Section Paper_examples.
+
+Theorem inv_elt_list_monoton : forall l y z, 
+Inv_elt_list y l -> z <= y -> Inv_elt_list z l.
+Proof.
+induction l; snipe_with_trakt.
+Qed.
+
+
+Theorem inv_elt_list_restrict : forall l a b c d y, c <= d ->
+((a<=c)/\(c<=b)) /\ ((a<=d)/\(d<=b)) ->
+Inv_elt_list y (Cons a b l) -> Inv_elt_list y (Cons c d l).
+Proof.
+snipe_with_trakt inv_elt_list_monoton. Qed.
+
+
+Lemma inv_elt_list_simpl : forall l z1 z2 z0 z y, 
+Inv_elt_list y (Cons z1 z2 (Cons z z0 l)) -> 
+Inv_elt_list y (Cons z1 z2 l).
+Proof. snipe_with_trakt inv_elt_list_monoton.
+Qed.
+
+Lemma evenLength : forall (l : elt_list), Init.Nat.even (elt_list_length l) = true.
+Proof. induction l ; snipe. Qed. 
+
+(** Example: invariant on empty domain **) 
+
+
+(************************************)
+(** * Definition                    *)
+(************************************)
+Definition empty : t := mk_t Nil 0 min_int min_int.
+
+(************************************)
+(** * Construction of the invariant *)
+(************************************)
+
+Theorem empty_inv : Inv_t (empty).
+Proof. snipe_with_trakt. Qed.
+
+(************************************)
+(** * Specification                 *)
+(************************************)
+Lemma equiv_empty_Nil : forall d, Inv_t d -> 
+domain d = Nil <-> d = empty.
+Proof. snipe_with_trakt. Qed.
+
+(* Manual proof : split;intro Hyp.
+- unfold Inv_t in H. decompose [and] H. destruct d. unfold empty.
+  rewrite Hyp in H2;simpl in H2;rewrite H2.
+  rewrite Hyp in H1;unfold process_max in H1;unfold pm in H1;
+  simpl in H1;rewrite H1.
+  rewrite Hyp in H4;unfold process_size in H4;unfold ps in H4;
+  simpl in H4;rewrite H4.  
+  simpl in Hyp;rewrite Hyp. reflexivity.
+- unfold Inv_t in H. decompose [and] H. unfold empty in Hyp. 
+  rewrite Hyp. unfold domain. reflexivity. 
+Qed. *)
+
+
+
+
+
+
+
+
