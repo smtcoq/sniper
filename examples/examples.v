@@ -27,9 +27,9 @@ Section Paper_examples.
 
   Section Simple_examples.
 
-  Variable A : Type.
-  Variable HA : CompDec A.
-
+  Variable A: Type.
+  Variable HA: CompDec A.
+  
   Lemma app_length (l l' : list A) : length (l ++ l') = (length l + length l')%nat.
   Proof. induction l ; snipe. Qed.
 
@@ -43,6 +43,27 @@ Section Paper_examples.
 
   End Simple_examples.
 
+  Section Polymorphism.
+  
+  (* In this section, we illustrate the two ways of instantiating 
+  lemmas: 
+  - one version uses as ground terms all the terms of type Type in the goal
+  - the other version uses the parameters of polymorphic terms as instances *)
+
+Tactic Notation "inst_with_subterms_of_type_type" := inst.
+Tactic Notation "inst_with_chosen_parameters" := elimination_polymorphism.
+
+  Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : nat) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
+Proof. intro H. inst_with_subterms_of_type_type. (* 27 instances *)
+Undo. inst_with_chosen_parameters.  (* 4 instances *)
+auto. (* TODO verit *)
+Qed. 
+
+End Polymorphism.
 
   (*** Examples from CompCert ***)
 
