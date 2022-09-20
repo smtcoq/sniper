@@ -284,40 +284,49 @@ Proof. trakt Z Prop. Abort.
 
 
 (* Examples from Section 4 *)
+(* 4.1  Single-component pre-processing *)
 
-(* Pre-processing for itauto *)
+(* Example 4.1: Pre-processing for itauto *)
 
-Trakt Add Conversion GRing.mul.
+(* We add multiplication and comparison to the database of Trakt... *)
 
 Lemma mulz_Zmul_embed_eq : forall (x y : int),
   Z_of_int (intRing.mulz x y) = (Z_of_int x * Z_of_int y)%Z.
-Proof.
-  apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_mulz).
-Qed.
+Proof. apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_mulz). Qed.
 
 Trakt Add Symbol intRing.mulz Z.mul mulz_Zmul_embed_eq.
+Trakt Add Conversion GRing.mul.
 
-Lemma Z_of_int_id_embed_eq : forall (x : int), Z_of_int x = Z_of_int x.
+Definition Order_le_int_Prop : int -> int -> Prop := fun x y => (x <= y)%R = true.
+
+Lemma Order_le_int_bool_Prop (x y:int) : (x <= y)%R = true <-> Order_le_int_Prop x y.
 Proof. reflexivity. Qed.
-
-Trakt Add Symbol Z_of_int (@id Z) Z_of_int_id_embed_eq.
-
-Lemma Orderle_int_Zleb_equiv : forall (x y : int), (x <= y)%R = (Z_of_int x <=? Z_of_int y)%Z.
-Proof.
-  apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_le).
-Qed.
 
 Trakt Add Relation 2
   (@Order.le ring_display int_porderType)
-  Z.leb
-  Orderle_int_Zleb_equiv.
+  Order_le_int_Prop
+  Order_le_int_bool_Prop.
 
-Trakt Add Conversion GRing.Zmodule.sort.
-Trakt Add Conversion Num.NumDomain.porderType.
+Lemma Orderle_int_Zle_equiv (x y : int) :
+  Order_le_int_Prop x y <-> (Z_of_int x <= Z_of_int y)%Z.
+Proof.
+  unfold Order_le_int_Prop.
+  assert (H: (x <= y)%R = (Z_of_int x <=? Z_of_int y)%Z)
+    by apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_le).
+  now rewrite H Z.leb_le.
+Qed.
+
+Trakt Add Relation 2
+  Order_le_int_Prop
+  Z.le
+  Orderle_int_Zle_equiv.
+
+(* ... in order to fully pre-process this goal *)
 
 Goal forall (f : int -> int) (x : int),
-(f (2%:Z * x) <= f (x + x))%R = true.
+    (f (2%:Z * x) <= f (x + x))%R = true.
 Proof. Fail smt_itauto. trakt Z Prop. smt_itauto. Qed.
+
 
 (* Overloading *)
 
