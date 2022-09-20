@@ -333,21 +333,32 @@ Goal forall (f : int -> int) (x : int),
     (f (2%:Z * x) <= f (x + x))%R = true.
 Proof. Fail smt_itauto. trakt Z Prop. smt_itauto. Qed.
 
-
-(* Example 4.2: Overloading *)
+(* Example 4.2: Pre-processing for itauto *)
 (* Everything is already in the database of Trakt *)
 Goal forall (f : int -> int) (x : int), (f x + 0)%R = f x.
 Proof. trakt Z Prop. smt_itauto. Qed.
 
-(* Pre-processing for sauto (hammer) *)
+(* Example 4.3: Pre-processing for firstorder congruence *)
+Inductive ev : nat -> Prop :=
+| ev_0 : ev 0
+| ev_SS (n : nat) (H : ev n) : ev (S (S n)).
 
-Lemma app_eq_nil (A : Type) (l l' : list A):
-l ++ l' = [] -> l = [] /\ l' = [].
+Theorem SSSSev_ev : forall (n : nat),
+ev (S (S (S (S n)))) -> ev n.
 Proof.
-Fail sauto.
-get_gen_statement_for_variables_in_context; sauto.
+  Fail firstorder congruence.
+  inv_principle_all; firstorder congruence.
 Qed.
 
+(* Example 4.4: Pre-processing for sauto (hammer) *)
+Lemma app_eq_nil (A : Type) (l l' : list A):
+  l ++ l' = [] -> l = [] /\ l' = [].
+Proof.
+  Fail sauto.
+  get_gen_statement_for_variables_in_context; sauto.
+Qed.
+
+(* Example 4.5: Pre-processing for sauto (hammer), on a CompCert goal *)
  Inductive memory_chunk : Type :=
   | Mint8signed     (**r 8-bit signed integer *)
   | Mint8unsigned   (**r 8-bit unsigned integer *)
@@ -375,23 +386,11 @@ Definition memory_chunk_to_Z mc :=
       end.
 
 Lemma memory_chunk_to_Z_eq x y:
-x = y <-> memory_chunk_to_Z x = memory_chunk_to_Z y.
+  x = y <-> memory_chunk_to_Z x = memory_chunk_to_Z y.
 Proof. Fail sauto. get_gen_statement_for_variables_in_context; sauto. Qed.
 
-(* Pre-processing for firstorder congruence *)
-
-Inductive ev : nat -> Prop :=
-| ev_0 : ev 0
-| ev_SS (n : nat) (H : ev n) : ev (S (S n)).
-
-Theorem SSSSev_ev : forall (n : nat),
-ev (S (S (S (S n)))) -> ev n.
-Proof.
-Fail firstorder congruence.
-inv_principle_all; firstorder congruence.
-Qed.
-
 End small_examples.
+
 
 Module solution_examples.
 
