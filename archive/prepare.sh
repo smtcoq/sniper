@@ -22,7 +22,7 @@ git clone https://github.com/smtcoq/sniper.git
 cd sniper
 git checkout preparing-CPP
 rm -rf examples archive
-mv examples_CPP examples
+mv examples_CPP ../examples
 cd ..
 
 # Create zip
