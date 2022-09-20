@@ -426,13 +426,13 @@ Import ZifyClasses ZifyBool ZifyInst ssrZ zify_algebra AlgebraZifyInstances.
    integers, as long as they have been added to Trakt's database *)
 Lemma Orderle_int_Zleb_equiv :
   forall (x y : int), (x <= y)%R = Z.leb (Z_of_int x) (Z_of_int y).
-Admitted.
+Proof. apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_le). Qed.
 
 Trakt Add Relation 2 (@Order.le ring_display (Num.NumDomain.porderType int_numDomainType)) Z.leb Orderle_int_Zleb_equiv.
 
 Lemma Orderlt_int_Zltb_equiv :
   forall (x y : int), (x < y)%R = Z.ltb (Z_of_int x) (Z_of_int y).
-Admitted.
+Proof. apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_lt). Qed.
 
 Trakt Add Relation 2 (@Order.lt ring_display int_porderType) Z.ltb Orderlt_int_Zltb_equiv.
 
