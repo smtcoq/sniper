@@ -9,9 +9,9 @@ Trakt Add Symbol (subn)
   (fun n m => (if Z.leb n m  then 0 else n - m)%Z)
   (Natsub_Zsub_embedding_equality).
 
-Trakt Add Relation (Nat.eqb) (Z.eqb) (ZifyBool.Z_of_nat_eqb_iff).
+Trakt Add Relation 2 (Nat.eqb) (Z.eqb) (ZifyBool.Z_of_nat_eqb_iff).
 
-Trakt Add Relation (Nat.leb) (Z.leb) (ZifyBool.Z_of_nat_leb_iff).
+Trakt Add Relation 2 (Nat.leb) (Z.leb) (ZifyBool.Z_of_nat_leb_iff).
 
 (* lambda terms *)
 
@@ -19,7 +19,7 @@ Inductive term : Type := var of nat | app of term & term | abs of term.
 
 Instance CD_term : CompDec term. Admitted.
 
-Trakt Add Relation (@eq term) (@SMT_classes.eqb_of_compdec term CD_term)
+Trakt Add Relation 2 (@eq term) (@SMT_classes.eqb_of_compdec term CD_term)
           (@SMT_classes.compdec_eq_eqb term CD_term).
 
 Fixpoint shift (d c : nat) (t : term) : term :=
