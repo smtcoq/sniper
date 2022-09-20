@@ -15,6 +15,7 @@ cd ..
 git clone https://github.com/smtcoq/smtcoq.git
 cd smtcoq
 git checkout with-trakt
+echo "-R ../../trakt/theories Trakt" >> src/_CoqProject
 cd ..
 
 # Clone Sniper
@@ -23,6 +24,9 @@ cd sniper
 git checkout preparing-CPP
 rm -rf examples archive
 mv examples_CPP ../examples
+echo "-R ../../trakt/theories Trakt" >> _CoqProject
+echo "-R ../../smtcoq/src SMTCoq" >> _CoqProject
+echo "-I ../../smtcoq/src" >> _CoqProject
 cd ..
 
 # Create zip
