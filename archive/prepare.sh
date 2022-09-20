@@ -24,9 +24,9 @@ cd sniper
 git checkout preparing-CPP
 rm -rf examples archive
 mv examples_CPP ../examples
-echo "-R ../../trakt/theories Trakt" >> _CoqProject
-echo "-R ../../smtcoq/src SMTCoq" >> _CoqProject
-echo "-I ../../smtcoq/src" >> _CoqProject
+echo "-R ../trakt/theories Trakt" >> _CoqProject
+echo "-R ../smtcoq/src SMTCoq" >> _CoqProject
+echo "-I ../smtcoq/src" >> _CoqProject
 cd ..
 
 # Create zip
