@@ -1,4 +1,10 @@
-From Sniper Require Import Sniper. 
+(**********************************************************************)
+(* This file linearly presents the examples of the submission to      *)
+(*   CPP'23, in order to be followed along with the paper.            *)
+(**********************************************************************)
+
+
+From Sniper Require Import Sniper.
 From SMTCoq Require SMTCoq.
 Require Import ZArith Psatz.
 From Trakt Require Trakt.
@@ -9,31 +15,33 @@ Require Cdcl.NOlia.
 Import ListNotations.
 From Coq Require ZifyClasses ZifyBool ZifyInst.
 
+
+(* We start with the small illustrating examples. *)
 Module small_examples.
 Import Trakt.
 Import Hammer.
 
 
-(* SMTCoq provides a smt tactic, but itauto provides a tactic with 
-the same name so we introduce notations to prevent the confusion *)
-
+(* Both SMTCoq and itauto provide a tactic named `smt`. We introduce
+   notations to prevent the confusion. *)
 Tactic Notation "smt_SMTCoq" := smt.
-
 Tactic Notation "smt_itauto" := Cdcl.NOlia.smt.
 
-(* Examples from section 2 *)
+
+(* Examples from Section 2 *)
 
 (* An example completely automatized by the hammer tactic *)
 Lemma length_rev_app : forall B (l l' : list B),
 length (rev (l ++ l')) = length l + length l'.
 Proof. scongruence use: app_length, rev_length. Qed.
- 
-(* A variant that hammer cannot solve because it lacks arithmetical features *)
+
+(* A variant that hammer cannot solve because it lacks arithmetical
+   features *)
 Lemma length_rev_app_cons :
 forall B (l l' : list B) (b : B),
 length (rev (l ++ (b::l'))) =
 (length l) + (length l') + 1.
-Proof. (* Fail hammer. *) Fail scongruence use: app_length, rev_length. 
+Proof. (* Fail hammer. *) Fail scongruence use: app_length, rev_length.
 Abort.
 
 (* sauto and SMTCoq cannot perform case analysis in general *)
@@ -42,37 +50,33 @@ l1 ++ l2 = [] -> l1 = [] /\ l2 = [].
 Proof. Fail sauto. Fail smt_SMTCoq. Fail verit.
 Abort.
 
-
+(* SMTCoq can solve goals about aritmetic... *)
 Lemma eZ : forall (z : Z), (z >= 0 -> z < 1 -> z = 0)%Z.
 Proof. smt_SMTCoq. Qed.
 
-Lemma enat : forall (x : nat), ~ (x + 1 = 0)%nat.
-Proof. (* Fail smt_SMTCoq. *) Abort. (* TODO : should fail (use SMTCoq 2.0) *)
-
 Import all_ssreflect all_algebra.
-Import ssrZ zify_algebra.
-Import AlgebraZifyInstances. 
 
-(* SMTCoq cannot reason about the mathcomp's representation of integers *)
+(* ... but only on type Z. *)
 Lemma eint : forall (z : int), (z >= 0 -> z < 1 -> z = 0)%R.
 Proof. Fail smt_SMTCoq. Abort.
 
+(* Thanks to zify, lia can prove goals about configured types of integers... *)
 Lemma eint : forall (z : int), (z >= 0 -> z < 1 -> z = 0)%R.
 Proof. lia. Qed.
 
-Lemma congr_int : forall (z : int),
-((z + 1) :: nil = (1 + z) :: nil)%R.
+(* ... but not in the presence of symbols oustide arithmetic, such as _::_ *)
+Lemma congr_int : forall (z : int), ((z + 1) :: nil = (1 + z) :: nil)%R.
 Proof. Fail lia. Abort.
 
-(* itauto's smt tactic is able to solve this goal*)
-
+(* itauto's smt tactic is able to solve this goal... *)
 Lemma eintb : forall (z : int), (z + 1 == 1 + z)%R = true.
 Proof. smt_itauto. Abort.
 
-(* but it fails on this one because of the uninterpreted function f *)
+(* ... but it fails on this one because of the uninterpreted function f *)
 Lemma eintcb : forall (f : int -> int) (z : int),
 (f (z + 1) == f (1 + z))%R = true.
 Proof. Fail smt_itauto. Abort.
+
 
 (* Examples from section 3 *)
 
@@ -133,8 +137,8 @@ Trakt Add Conversion GRing.zero.
 Trakt Add Conversion GRing.add.
 
 Lemma trakt_int_Z_Prop : forall (f : int -> int -> int) (x y : int),
-f x (y + 0)%R = f (x + 0)%R y. 
-Proof. trakt Z Prop. Abort. 
+f x (y + 0)%R = f (x + 0)%R y.
+Proof. trakt Z Prop. Abort.
 
 Lemma eq_int_equivalence_property : forall (x y : int),
 x = y <-> (Z_of_int x =? Z_of_int y)%Z = true.
@@ -142,9 +146,9 @@ Proof. lia. Qed.
 
 (* Example 3.3: trakt's translation can target a boolean logic *)
 Lemma trakt_int_Z_bool : forall (f : int -> int) (x : int), (f x + 0 = f x)%R.
-Proof. trakt Z bool. Abort. 
+Proof. trakt Z bool. Abort.
 
-(* Example 3.4: trakt's translation can deal with partial embeddings *) 
+(* Example 3.4: trakt's translation can deal with partial embeddings *)
 Lemma trakt_nat_Z_Prop : forall (f : nat -> nat) (n : nat), (f n + 0 = f n)%nat.
 Proof. trakt Z Prop. Abort.
 
@@ -158,7 +162,7 @@ Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B),
 forall (x1 x2 : option Z) (y1 y2 : list unit),
 (x1, y1) = (x2, y2) -> x1 = x2 /\ y1 = y2.
 Proof. intro H. inst_with_subterms_of_type_type. (* 25 instances *)
-Undo. inst_with_chosen_parameters. verit. (* 1 instance *) 
+Undo. inst_with_chosen_parameters. verit. (* 1 instance *)
 Qed.
 
 (* Examples from section 4 *)
@@ -199,15 +203,15 @@ Proof. Fail smt_itauto. trakt Z Prop. smt_itauto. Qed.
 
 (* Overloading *)
 
-Goal forall (f : int -> int) (x : int), (f x + 0)%R = f x. 
-Proof. trakt Z Prop. smt_itauto. Qed.  
+Goal forall (f : int -> int) (x : int), (f x + 0)%R = f x.
+Proof. trakt Z Prop. smt_itauto. Qed.
 
 (* Pre-processing for sauto (hammer) *)
 
 Lemma app_eq_nil (A : Type) (l l' : list A):
 l ++ l' = [] -> l = [] /\ l' = [].
 Proof.
-Fail sauto. 
+Fail sauto.
 get_gen_statement_for_variables_in_context; sauto.
 Qed.
 
@@ -258,8 +262,8 @@ End small_examples.
 
 Module solution_examples.
 
-(* A working version of problematic examples in section 2: 
-We need to add a CompDec hypothesis on the type variable as SMTCoq uses 
+(* A working version of problematic examples in section 2:
+We need to add a CompDec hypothesis on the type variable as SMTCoq uses
 classical reasoning (so B should be decidable) *)
 
 Lemma length_rev_app_cons :
@@ -282,7 +286,7 @@ Import small_examples.
 
 Import all_ssreflect all_algebra.
 Import ssrZ zify_algebra.
-Import AlgebraZifyInstances. 
+Import AlgebraZifyInstances.
 
 (* TODO find the right trakt's lemmas *)
 
@@ -316,9 +320,5 @@ End solution_examples.
 
 
 
-(* For the use cases of section 4: see intervals_list.v and confluence.v in the 
+(* For the use cases of section 4: see intervals_list.v and confluence.v in the
 same directory *)
-
-
-
-
