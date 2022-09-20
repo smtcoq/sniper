@@ -392,65 +392,75 @@ Proof. Fail sauto. get_gen_statement_for_variables_in_context; sauto. Qed.
 End small_examples.
 
 
+(* 4.2  Combining tactics *)
+
+(* 4.2.1 We first showcase how `snipe` can solve all the examples of
+   Section 2 *)
+
 Module solution_examples.
 
-(* A working version of problematic examples in section 2:
-We need to add a CompDec hypothesis on the type variable as SMTCoq uses
-classical reasoning (so B should be decidable) *)
-
+(* Remember that no tactic was able to prove length_rev_app_cons, since
+   it involved a combination of arithmetic reasoning on `nat` and
+   congruence. `snipe` can solve it, with an additional hypothesis
+   `CompDec`: SMTCoq requires all types it reasons about to have a
+   decidable equality *)
 Lemma length_rev_app_cons :
-forall (B: Type) (HB : CompDec B) (l l' : list B) (b : B),
-length (rev (l ++ (b::l'))) =
-(length l) + (length l') + 1.
+  forall (B: Type) (HB : CompDec B) (l l' : list B) (b : B),
+    length (rev (l ++ (b::l'))) =
+      (length l) + (length l') + 1.
 Proof. snipe (app_length, rev_length). Qed.
 
-(* sauto and SMTCoq cannot perform case analysis in general *)
+(* sauto and SMTCoq cannot perform case analysis in general, but `snipe`
+   does *)
 Lemma app_nilI : forall B (HB : CompDec B) (l1 l2 : list B),
-l1 ++ l2 = [] -> l1 = [] /\ l2 = [].
+    l1 ++ l2 = [] -> l1 = [] /\ l2 = [].
 Proof. snipe. Qed.
-
-(* trakt translates the goal in Z and the SMT solver verit from the SMTCoq plugin
-is then able to prove it *)
-Lemma enat : forall (x : nat), ~ (x + 1 = 0)%nat.
-Proof. trakt Z bool; verit. Qed.
 
 Import small_examples.
 
 Import all_ssreflect all_algebra.
-Import ssrZ zify_algebra.
-Import AlgebraZifyInstances.
+Import ZifyClasses ZifyBool ZifyInst ssrZ zify_algebra AlgebraZifyInstances.
 
-(* TODO find the right trakt's lemmas *)
 
-Lemma Orderle_int_Zleb_equiv : forall (x y : int), (x < y)%R = (Z_of_int x <? Z_of_int y)%Z.
-Proof.
-  apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_le).
-Qed.
+(* Thanks to Trakt, `snipe` is able to reason on different types of
+   integers, as long as they have been added to Trakt's database *)
+Lemma Orderle_int_Zleb_equiv :
+  forall (x y : int), (x <= y)%R = Z.leb (Z_of_int x) (Z_of_int y).
+Admitted.
 
-(* SMTCoq can now reason about the mathcomp's representation of integers *)
+Trakt Add Relation 2 (@Order.le ring_display (Num.NumDomain.porderType int_numDomainType)) Z.leb Orderle_int_Zleb_equiv.
+
+Lemma Orderlt_int_Zltb_equiv :
+  forall (x y : int), (x < y)%R = Z.ltb (Z_of_int x) (Z_of_int y).
+Admitted.
+
+Trakt Add Relation 2 (@Order.lt ring_display int_porderType) Z.ltb Orderlt_int_Zltb_equiv.
+
+Lemma eqint_eqbZ_equiv (x y : int) : x = y <-> Z.eqb (Z_of_int x) (Z_of_int y) = true.
+Proof. now rewrite eqint_eqZ_equiv Z.eqb_eq. Qed.
+
+Trakt Add Relation 2 (@eq int) Z.eqb eqint_eqbZ_equiv.
+
+Lemma int_1 : Z_of_int 1 = Zpos 1.
+Proof. reflexivity. Qed.
+
+Trakt Add Symbol (GRing.one (Num.NumDomain.porder_ringType int_numDomainType)) (Zpos 1) int_1.
+Trakt Add Conversion GRing.one.
+
 Lemma eint : forall (z : int), (z >= 0 -> z < 1 -> z = 0)%R.
-Proof. trakt Z bool. Abort.
+Proof. trakt Z bool; snipe. Qed.
 
+(* It also works in the presence of uninterpreted functions *)
+Lemma eq_op_Zeqb (x y:int) : x == y = Z.eqb (Z_of_int x) (Z_of_int y).
+Admitted.
 
-Lemma eint : forall (z : int), (z >= 0 -> z < 1 -> z = 0)%R.
-Proof. lia. Qed.
+Trakt Add Relation 2 (@eq_op int_eqType) Z.eqb eq_op_Zeqb.
 
-Lemma congr_int : forall (z : int),
-((z + 1) :: nil = (1 + z) :: nil)%R.
-Proof. trakt Z Prop. lia. Abort.
+Lemma eintcb : forall (f : int -> int) (z : int), (f (z + 1) == f (1 + z))%R.
+Proof. trakt Z bool; snipe. Qed.
 
-(* itauto's smt tactic is able to solve this goal*)
-
-Lemma eintb : forall (z : int), (z + 1 == 1 + z)%R = true.
-Proof. smt_itauto. Abort.
-
-(* but it fails on this one because of the uninterpreted function f *)
-Lemma eintcb : forall (f : int -> int) (z : int),
-(f (z + 1) == f (1 + z))%R = true.
-Proof. Fail smt_itauto. Abort.
 End solution_examples.
 
 
-
-(* For the use cases of section 4: see intervals_list.v and confluence.v in the
-same directory *)
+(* For the use cases of Section 4: see intervals_list.v and confluence.v
+   in the same directory *)
