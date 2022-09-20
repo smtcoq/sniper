@@ -196,6 +196,7 @@ Lemma eqint_eqZ_equiv : forall (x y : int), x = y <-> Z_of_int x = Z_of_int y.
 Proof. apply (@TRInj _ _ _ _ Op_int_eq). Qed.
 
 Trakt Add Relation 2 (@eq int) (@eq Z) eqint_eqZ_equiv.
+Trakt Add Conversion GRing.Zmodule.sort.
 
 (* ... which allows Trakt to actually go from int to Z *)
 Lemma trakt_Z_predicate :  forall (P : int -> Prop) (x : int), P x <-> P x.
@@ -321,6 +322,11 @@ Trakt Add Relation 2
   Z.le
   Orderle_int_Zle_equiv.
 
+Lemma int_2 : Z_of_int (2%:Z)%R = 2%Z.
+Proof. reflexivity. Qed.
+
+Trakt Add Symbol ((2%:Z)%R) (2%Z) int_2.
+
 (* ... in order to fully pre-process this goal *)
 
 Goal forall (f : int -> int) (x : int),
@@ -328,8 +334,8 @@ Goal forall (f : int -> int) (x : int),
 Proof. Fail smt_itauto. trakt Z Prop. smt_itauto. Qed.
 
 
-(* Overloading *)
-
+(* Example 4.2: Overloading *)
+(* Everything is already in the database of Trakt *)
 Goal forall (f : int -> int) (x : int), (f x + 0)%R = f x.
 Proof. trakt Z Prop. smt_itauto. Qed.
 
