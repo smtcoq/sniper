@@ -18,4 +18,4 @@ depends: [
   "coq-mathcomp-algebra"
   "coq-mathcomp-zify"
 ]
-synopsis: "This is the source code accompanying the submission entitled \"Compositional pre-processing for automated reasoning in dependent type theory\". It is the property of its authors."
+synopsis: "This is the source code accompanying the submission entitled \"Compositional pre-processing for automated reasoning in dependent type theory\""
