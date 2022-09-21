@@ -448,7 +448,7 @@ Trakt Add Symbol (GRing.one (Num.NumDomain.porder_ringType int_numDomainType)) (
 Trakt Add Conversion GRing.one.
 
 Lemma eint : forall (z : int), (z >= 0 -> z < 1 -> z = 0)%R.
-Proof. trakt Z bool; snipe. Qed.
+Proof. snipe_with_trakt. Qed.
 
 (* It also works in the presence of uninterpreted functions *)
 Lemma eq_op_Zeqb (x y:int) : x == y = Z.eqb (Z_of_int x) (Z_of_int y).
@@ -457,7 +457,7 @@ Admitted.
 Trakt Add Relation 2 (@eq_op int_eqType) Z.eqb eq_op_Zeqb.
 
 Lemma eintcb : forall (f : int -> int) (z : int), (f (z + 1) == f (1 + z))%R.
-Proof. trakt Z bool; snipe. Qed.
+Proof. snipe_with_trakt. Qed.
 
 End solution_examples.
 
