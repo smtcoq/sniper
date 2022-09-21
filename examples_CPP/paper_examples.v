@@ -45,7 +45,7 @@ Proof. (* Fail hammer. *) Fail scongruence use: app_length, rev_length.
 Abort.
 
 (* sauto and SMTCoq cannot perform case analysis in general *)
-Lemma app_nil_rev B (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] \/ l' = [].
+Lemma app_nil_rev B (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] /\ l' = [].
 Proof. Fail sauto dep: on. Fail smt_SMTCoq. Fail verit.
 Abort.
 
@@ -411,7 +411,7 @@ Proof. snipe (app_length, rev_length). Qed.
 
 (* sauto and SMTCoq cannot perform case analysis in general, but `snipe`
    does *)
-Lemma app_nil_rev B (HB: CompDec B) (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] \/ l' = [].
+Lemma app_nil_rev B (HB: CompDec B) (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] /\ l' = [].
 Proof. snipe. Qed.
 
 Import small_examples.
