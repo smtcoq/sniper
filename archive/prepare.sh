@@ -2,7 +2,7 @@
 
 # Create directory
 mkdir paper24
-cp coq-paper24.opam Makefile README.md paper24
+cp coq-paper24.opam Makefile README.md paper24.docker paper24
 cd paper24
 
 # Clone Trakt

@@ -1,0 +1,52 @@
+############################################################
+# Dockerfile to build the docker image for the submission
+# entitled "Compositional pre-processing for automated
+# reasoning in dependent type theory".
+#
+# Based on the debian image
+# Build with `docker build -t paper24 -f paper24.docker .`
+# Run with `docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash`
+#   or `docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide`
+# Warning:
+#   To build the container, dockers needs more that 2GB of memory (8GB is enough).
+#   On Mac, see: https://docs.docker.com/docker-for-mac/#advanced.
+############################################################
+
+FROM coqorg/base:4.09.1-flambda
+USER coq
+
+##################### PREREQUISITES ########################
+
+RUN sudo apt-get -y update && \
+    sudo apt-get -y install wget atool bison flex
+
+############## INSTALL THE OCaml AND Coq CODE ##############
+
+WORKDIR /home/coq
+
+COPY . /home/coq/paper24
+
+RUN opam update && \
+    opam repo add coq-released https://coq.inria.fr/opam/released && \
+    opam depext -y coq coqide coq-metacoq-pcuic coq-elpi coq-hammer coq-itauto coq-mathcomp-algebra coq-mathcomp-zify && \
+    cd paper24 && \
+    opam install -y .
+
+###################### COMPILE veriT #######################
+
+WORKDIR /home/coq
+
+RUN wget https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz && \
+    aunpack veriT9f48a98.tar.gz && \
+    cd veriT9f48a98 && \
+    autoconf && \
+    ./configure && \
+    make
+
+######################### BINARIES #########################
+
+WORKDIR /home/coq/bin
+
+RUN ln -s /home/coq/veriT9f48a98/veriT
+
+ENV PATH="/home/coq/bin:${PATH}"

@@ -3,8 +3,26 @@ This is the source code accompanying the submission entitled
 theory". It is the property of its authors.
 
 
-# Installation
-All the OCaml and Coq source code can be easily installed in an opam
+# Build
+## Using docker
+This is the simplest way of building the code. Simply run:
+```bash
+docker build -t paper24 -f paper24.docker .
+```
+
+You can then access the image through a shell using
+```bash
+docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash
+```
+or through coqide using
+```bash
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide
+```
+
+## Natively
+This procedure has only been tested on Linux.
+
+All the OCaml and Coq source code can be installed in an opam
 switch:
 ```bash
 opam switch create paper24 ocaml-base-compiler.4.09.1
@@ -29,11 +47,17 @@ it is designed to be executed throughout the reading of the paper.
 
 It can be evaluated by running:
 ```bash
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide paper24/examples/paper_examples.v
+```
+if you built the code with docker, or
+```bash
 coqide examples/paper_examples.v
 ```
+if you built the code natively.
 
-If you get the error "veriT: not found", or "code 127", it is probably
-because veriT is not installed in your PATH (see above).
+In the latter case, if you get the error "veriT: not found", or "code
+127", it is probably because veriT is not installed in your PATH (see
+above).
 
 
 # Overview
