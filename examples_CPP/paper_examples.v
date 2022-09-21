@@ -450,7 +450,10 @@ Proof. snipe_with_trakt. Qed.
 
 (* It also works in the presence of uninterpreted functions *)
 Lemma eq_op_Zeqb (x y:int) : x == y = Z.eqb (Z_of_int x) (Z_of_int y).
-Admitted.
+Proof.
+  apply/eqP/Z.eqb_spec; first by move->.
+  by move/(@TRInj _ _ _ _ Op_int_eq).
+Qed.
 
 Trakt Add Relation 2 (@eq_op int_eqType) Z.eqb eq_op_Zeqb.
 
