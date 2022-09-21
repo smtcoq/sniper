@@ -45,9 +45,8 @@ Proof. (* Fail hammer. *) Fail scongruence use: app_length, rev_length.
 Abort.
 
 (* sauto and SMTCoq cannot perform case analysis in general *)
-Lemma app_nilI : forall B (l1 l2 : list B),
-l1 ++ l2 = [] -> l1 = [] /\ l2 = [].
-Proof. Fail sauto. Fail smt_SMTCoq. Fail verit.
+Lemma app_nil_rev B (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] \/ l' = [].
+Proof. Fail sauto dep: on. Fail smt_SMTCoq. Fail verit.
 Abort.
 
 (* SMTCoq can solve goals about aritmetic... *)
@@ -412,8 +411,7 @@ Proof. snipe (app_length, rev_length). Qed.
 
 (* sauto and SMTCoq cannot perform case analysis in general, but `snipe`
    does *)
-Lemma app_nilI : forall B (HB : CompDec B) (l1 l2 : list B),
-    l1 ++ l2 = [] -> l1 = [] /\ l2 = [].
+Lemma app_nil_rev B (HB: CompDec B) (l l' : list B) (a : B) : (rev l) ++ l' = nil -> l = [] \/ l' = [].
 Proof. snipe. Qed.
 
 Import small_examples.
