@@ -18,6 +18,8 @@ or through coqide using
 ```bash
 docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide
 ```
+For the latter, you may need to set a `DISPLAY` environment variable,
+e.g. `export DISPLAY=:0`.
 
 ## Natively
 This procedure has only been tested on Linux.
@@ -47,7 +49,7 @@ it is designed to be executed throughout the reading of the paper.
 
 It can be evaluated by running:
 ```bash
-docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide paper24/examples/paper_examples.v
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide /home/coq/paper24/examples/paper_examples.v
 ```
 if you built the code with docker, or
 ```bash

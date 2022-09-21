@@ -7,6 +7,8 @@
 # Build with `docker build -t paper24 -f paper24.docker .`
 # Run with `docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash`
 #   or `docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide`
+# For the latter, you may need to set a `DISPLAY` environment variable,
+#   e.g. `export DISPLAY=:0`.
 # Warning:
 #   To build the container, dockers needs more that 2GB of memory (8GB is enough).
 #   On Mac, see: https://docs.docker.com/docker-for-mac/#advanced.
