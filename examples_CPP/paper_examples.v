@@ -321,10 +321,12 @@ Trakt Add Relation 2
   Z.le
   Orderle_int_Zle_equiv.
 
-Lemma int_2 : Z_of_int (2%:Z)%R = 2%Z.
-Proof. reflexivity. Qed.
+Lemma Posz_id_embed_eq : forall (n : nat), Z_of_int (Posz n) = Z.of_nat n.
+Proof.
+  apply (@TUOpInj _ _ _ _ _ _ _ Op_Posz).
+Qed.
 
-Trakt Add Symbol ((2%:Z)%R) (2%Z) int_2.
+Trakt Add Symbol Posz (@id Z) Posz_id_embed_eq.
 
 (* ... in order to fully pre-process this goal *)
 
