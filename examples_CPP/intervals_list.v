@@ -1,14 +1,21 @@
+(** This file is adapted from Amélie Ledein and Catherine Dubois's
+development:
+
+  https://gitlab.com/finite_set_Coq/real_intervals_list
+
+which defines interval lists as a new type of lists where each node
+contains two integers, with the invariant that they must be ordered.
+
+We first provide the definitions, before showing some automated
+examples. **)
+
+
 Require Import ZArith Lia.
 From Sniper Require Import Sniper.
 From SMTCoq Require Import SMTCoq.
 Require Import Bool OrderedType OrderedTypeEx.
 Open Scope Z_scope.
 Import BinInt.
-
-(** This file is adapted from Amélie Ledein and Catherine 
-Dubois's development: 
-https://gitlab.com/finite_set_Coq/real_intervals_list **)
-
 
 (*** 1 : Definitions and proofs ***)
 
@@ -86,7 +93,10 @@ Fixpoint elt_list_length (l : elt_list) : nat := match l with
  | Cons _ _ q => 2 + elt_list_length q
 end.
 
-(** elt_list_is_compdec **)
+
+(* Here starts the automated part. Our backend, SMTCoq, requires the
+    manipulated types to have a decidable equality, in a typeclass named
+    CompDec. We thus first prove that elt_list is CompDec. *)
 
 Fixpoint elt_list_eqb e1 e2 :=
 match e1, e2 with
@@ -194,7 +204,9 @@ Instance elt_list_compdec : CompDec elt_list :=
 
 #[export] Hint Resolve elt_list_compdec : typeclass_instances.
 
-(* Boolean version of the invariant *)
+
+(* SMTCoq also reason about Boolean predicates, so we define a Boolean
+   version of the invariant, and add it to the database of Trakt *)
 
 Fixpoint Inv_elt_list_bool (z : Z) (e : elt_list) : bool :=
 match e with
@@ -219,6 +231,9 @@ revert H1; trakt Z Prop ; intros H1 ; destruct H1 as [H1 H1']; try (apply Zle_bo
 apply IHe. assumption. Qed.
 
 Trakt Add Relation 2 (Inv_elt_list) (Inv_elt_list_bool) (Inv_elt_list_decidable).
+
+
+(* We also prove that the domain, `t`, is CompDec *)
 
 Definition t_eqb (t1 t2 : t) :=
 match t1, t2 with
@@ -316,7 +331,9 @@ Instance t_compdec : CompDec t :=
 #[export] Hint Resolve t_compdec : typeclass_instances.
 
 
-(* Boolean version of the invariant on domain *)
+(* We provide the Boolean version of the invariant on domain and add it
+   to Trakt's database *)
+
 Definition Inv_t_bool (d : t) := Inv_elt_list_bool (min d) (domain d)
                               && ((min d) =? get_min (domain d) min_int)
                               && ((max d) =? process_max (domain d))
@@ -332,7 +349,8 @@ Qed.
 
 Trakt Add Relation 1 (Inv_t) (Inv_t_bool) (Inv_t_decidable).
 
-(*** 2 : Some examples ***) 
+
+(*** 2 : We are now able to automate some proofs of this development ***)
 
 Section Paper_examples.
 
@@ -343,6 +361,8 @@ induction l; snipe_with_trakt.
 Qed.
 
 
+(* Here, notice that `snipe` and `sniper_with_trakt` may take as
+   hypotheses a tuple of lemmas to be used in the automated proof *)
 Theorem inv_elt_list_restrict : forall l a b c d y, c <= d ->
 ((a<=c)/\(c<=b)) /\ ((a<=d)/\(d<=b)) ->
 Inv_elt_list y (Cons a b l) -> Inv_elt_list y (Cons c d l).
@@ -393,10 +413,4 @@ Proof. snipe_with_trakt. Qed.
   rewrite Hyp. unfold domain. reflexivity. 
 Qed. *)
 
-
-
-
-
-
-
-
+End Paper_examples.
