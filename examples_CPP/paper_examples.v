@@ -240,7 +240,7 @@ Proof.
 Qed.
 
 Trakt Add Relation 2
-  (@eq (GRing.Zmodule.sort int_ZmodType)) Z.eqb eq_int_equivalence_property.
+  (@eq int) Z.eqb eq_int_equivalence_property.
 
 (* ... which allows Trakt to go towards Boolean logic *)
 
@@ -433,11 +433,6 @@ Lemma Orderlt_int_Zltb_equiv :
 Proof. apply (@TBOpInj _ _ _ _ _ _ _ _ _ _ Op_int_lt). Qed.
 
 Trakt Add Relation 2 (@Order.lt ring_display int_porderType) Z.ltb Orderlt_int_Zltb_equiv.
-
-Lemma eqint_eqbZ_equiv (x y : int) : x = y <-> Z.eqb (Z_of_int x) (Z_of_int y) = true.
-Proof. now rewrite eqint_eqZ_equiv Z.eqb_eq. Qed.
-
-Trakt Add Relation 2 (@eq int) Z.eqb eqint_eqbZ_equiv.
 
 Lemma int_1 : Z_of_int 1 = Zpos 1.
 Proof. reflexivity. Qed.
