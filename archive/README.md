@@ -17,7 +17,7 @@ We use automated backends that rely on external theorem provers:
 - the SMT solver veriT for the SMTCoq plugin must be installed by
   following [these
   instructions](https://github.com/smtcoq/smtcoq/blob/coq-8.13/INSTALL.md#verit);
-- solvers for the CoqHammer plugin can be installed by following [these
+- solvers for the CoqHammer plugin may be installed by following [these
   instructions](https://coqhammer.github.io/#installation-of-first-order-provers)
   (but it is not mandatory).
 
@@ -26,6 +26,14 @@ We use automated backends that rely on external theorem provers:
 The file `examples/paper_examples.v` is the entry point for the
 examples. It presents all the examples of this paper, in the same order;
 it is designed to be executed throughout the reading of the paper.
+
+It can be evaluated by running:
+```bash
+coqide examples/paper_examples.v
+```
+
+If you get the error "veriT: not found", or "code 127", it is probably
+because veriT is not installed in your PATH (see above).
 
 
 # Overview
