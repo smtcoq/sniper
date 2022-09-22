@@ -26,7 +26,7 @@ RUN sudo apt-get -y update && \
 
 WORKDIR /home/coq
 
-COPY . /home/coq/paper24
+COPY --chown=coq:coq . /home/coq/paper24
 
 RUN opam update && \
     opam repo add coq-released https://coq.inria.fr/opam/released && \

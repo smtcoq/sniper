@@ -18,8 +18,10 @@ or through coqide using
 ```bash
 docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide
 ```
-For the latter, you may need to set a `DISPLAY` environment variable,
-e.g. `export DISPLAY=:0`.
+For the latter, you may need to set the `DISPLAY`, e.g. by doing `export
+DISPLAY=:0` under Linux, or following [these
+explanations](https://cntnr.io/running-guis-with-docker-on-mac-os-x-a14df6a76efc)
+under MacOS.
 
 ## Natively
 This procedure has only been tested on Linux.
@@ -51,7 +53,7 @@ It can be evaluated by running:
 ```bash
 docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide /home/coq/paper24/examples/paper_examples.v
 ```
-if you built the code with docker, or
+if you built the code with docker (see above if the display fails), or
 ```bash
 coqide examples/paper_examples.v
 ```
