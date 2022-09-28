@@ -11,35 +11,15 @@
 
 
 Require Import MetaCoq.Template.All.
-Require Import List String.  
+Require Import List String.
+Import ListNotations.  
 Require Import utilities. 
 Require Import ZArith.
-Require Import PArith.BinPos.
-
-(* \TODO the scanning of inductive types in this file should be unified
-   with that of case_analysis
-*)
-
-Open Scope string_scope.  
+Require Import PArith.BinPos. 
 
 Import ListNotations MCMonadNotation. 
 
-(* \TODO : use metacoq_get_value in utilities to avoid continuations *)
-(* \TODO : unify with various functions of utilities (and move them there) *)
-Ltac pose_quote_term c idn :=
-  let X :=  c in  quote_term X ltac:(fun Xast => pose Xast as idn).
-
-Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t ) ltac:(fun x =>  (pose  x as idn))).
-
-Fixpoint get_decl (I : term) (e : global_env) :=
-  match e with
-  | [] => None 
-  | (na,d) :: e' => 
-      (match d with
-        | InductiveDecl mind =>  let loind := ind_bodies mind in Some loind
-        | _ => get_decl I e'
-      end)    
-    end.
+Ltac pose_quote_term c idn := let x := metacoq_get_value (tmQuote c) in (pose x as idn).
 
 Ltac unquote_term t idn e := (run_template_program (tmUnquote t ) ltac:(fun x =>  (pose (my_projT2 x) as idn))); e idn.
 
@@ -47,33 +27,18 @@ Ltac pose_unquote_term_hnf t idn  := (run_template_program (tmUnquote t ) ltac:(
 
 Ltac assert_unquote_term_hnf t  idn := (run_template_program (tmUnquote t ) ltac:(fun x =>  (assert (idn : my_projT2 x)))).
 
-
 Ltac unquote_term_cbv' t idn  := unquote_term t idn ltac:(fun x => cbv in x).
-
-
-
-
-
-
 
 
 (** reified connectives **)
 
 
-MetaCoq Quote Definition ex_reif := Eval cbn in @ex.
-MetaCoq Quote Definition ex_intro_reif := Eval cbn in @ex_intro.
+MetaCoq Quote Definition ex_reif := <%@ex%>.
+MetaCoq Quote Definition ex_intro_reif := <%@ex_intro%>.
 
 
 (*** Useful operators ***)
 
-
-
-
-
-
-
-(* remove and replace with mkOr, which is tr *)
-(* \todo check that it is SMTLib friendly *)
 Fixpoint or_nary_reif (l : list term):=
   match l with
   | [] => False_reif           
@@ -81,16 +46,6 @@ Fixpoint or_nary_reif (l : list term):=
   | t :: tll => tApp or_reif [t ; or_nary_reif tll ]                
   end.
 
-
-  
-
-
-    
-(***  Marks impossible cases ***)
-
-Inductive impossible_type : Type  := .
-
-MetaCoq Quote Definition imposs_mark :=  impossible_type  .
 
 
 (*** Extracting parameters ****)
@@ -112,11 +67,6 @@ Ltac get_env_ind_param t idn :=
      | tInd ?indu ?u => pose (Sigma,(indu,u)) as idn ; clear rqt
      end
      end.
-
-
-
-
-
 
 (* info_indu t idn takes a Coq term t which an *unquoted* inductive
      and outputs the pair (indu,mind) : inductive × mutual_inductive_body
@@ -177,33 +127,6 @@ Ltac pose_mind_tac t idn :=   (* \TODO factorize code!*)
      end
      end
     .
-
-
-
-
-
-
-(* \TODO here, it seems that only *applied* inductive types are considered *)
-(* \TODO modify or remove *)
-Ltac get_mind_tac t  :=  
-    let rqt := fresh "rqt" in rec_quote_term t rqt ; 
-      lazymatch eval hnf in rqt with
-       | (?Sigma,?ind) =>  lazymatch eval hnf in ind with 
-       | tApp ?iu ?lA =>   
-         lazymatch eval hnf in iu with
-         | tInd ?indu ?u => 
-       let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
-         lazymatch eval cbv in lkup  with
-         | Some ?d =>   
-           match d with
-           |  InductiveDecl ?mind =>   clear rqt ;constr:(mind) 
-           end       
-         end
-         end         
-       end
-       end
-      .
-
   
 
 (*** Properties of inductives ***)
@@ -259,7 +182,7 @@ Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
     let fix aux3 l1 t :=
       match l1 with 
       | [] => t
-      |  A :: l1 => aux3 l1 (tProd (mkNamed "x") A t)
+      |  A :: l1 => aux3 l1 (tProd (mkNamed "x"%bs) A t)
       end in aux3 l1 (tProd mkNAnon (mkEq (lift0 d B) (tApp f' dB1) (tApp f' dB2)) andeq)   
     . 
 
@@ -326,7 +249,7 @@ Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
       in let (l1,l2) := aux3 p (d + d') dB1 dB2 in
       let fix aux3  l t := match l with
       | [] => t 
-      | A' :: l => aux3 l (tProd (mkNamed "x") A' t)
+      | A' :: l => aux3 l (tProd (mkNamed "x"%bs) A' t)
       end in   aux3 lQ (mkNot (mkEq (lift0 d' B) (tApp (cutEvar f) l1) (tApp (cutEvar g) l2))).  
 
 Ltac codom_disj_discr B f g lAf lAg p:=
@@ -362,7 +285,7 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
   (* if t : A and f : Pi lx lA . A, tells when t is in the codomain of f: returns exist vecx : lA, f vecx = t  *)
   match lA with
   | [] => tApp eq_reif [B ; t ; f]
-  | A :: tllA => tApp ex_reif [A ;  tLambda (mkNamed "x") A   (is_in_codom B (lift0 1 t) (tApp (lift0 1 f) [tRel 0] ) tllA )]
+  | A :: tllA => tApp ex_reif [A ;  tLambda (mkNamed "x"%bs) A   (is_in_codom B (lift0 1 t) (tApp (lift0 1 f) [tRel 0] ) tllA )]
   end.
 (* base case : f is 0-ary and  t is just f *)
 
@@ -381,7 +304,7 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
   let fix aux1 lArev t :=
     match lArev with
     | [] => t 
-    | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x") (lift0 1 A) t])
+    | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x"%bs) (lift0 1 A) t])
     end 
   in 
   let aux2 B f lA k := aux1 (tr_rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
@@ -413,7 +336,7 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
       let fix aux5 lA t := 
         match lA with
         | [] => t
-        | A :: lA => aux5 lA (tProd (mkNamed "x") A t)
+        | A :: lA => aux5 lA (tProd (mkNamed "x"%bs) A t)
         end
         in aux5 lAforall lExist.
 
@@ -426,7 +349,7 @@ Definition codom_union_total (B : term) (lf : list term) (lA : list (list term))
       | ([], []) => []
       | _ => [False_reif]               
       end
-  in tProd (mkNamed "x") B  (or_nary_reif (arg_org B (tRel 0)  lf lA)).
+  in tProd (mkNamed "x"%bs) B  (or_nary_reif (arg_org B (tRel 0)  lf lA)).
 
 
 Ltac revert_intro_ex_tac_aux e :=
@@ -435,9 +358,6 @@ Ltac revert_intro_ex_tac_aux e :=
 end.
 
 Ltac revert_intro_ex_tac  := revert_intro_ex_tac_aux ltac:(idtac).
-
-From Coq Require Import List Utf8.
-Import ListNotations.
 
 Ltac ctor_ex_case := 
   match goal with
@@ -462,7 +382,8 @@ Ltac dotac n t :=
 
 
 Ltac codom_union_total_tac lB lf lD p :=
-  let toto := fresh "H" in pose_unquote_term_hnf (union_direct_total lB lf lD p) toto ; assert toto; unfold toto ;[ dotac p intro ; (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. 
+  let toto := fresh "H" in pose_unquote_term_hnf (union_direct_total lB lf lD p) toto ; assert toto; unfold toto ;
+[ dotac p intro ; (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. 
 
 (*** Global properties of constructors ***)
 
@@ -474,18 +395,6 @@ Ltac inj_disj_tac lB lf lA ln p  :=
   lazymatch eval hnf in lB with
    | ?B :: ?tlB => ctors_are_inj_tac lB lf lA ln p ; pairw_disj_codom_tac B lf lA  p
     end.
-
-
-    (* list_ctor_oind is probably redundant. Remove it ? \TODO *)
-Definition list_ctor_oind ( oind : one_inductive_body ) : list term :=
-  let fix list_lctor ( l : list ((ident × term) × nat )) acc :=
-  match l with
-  | [] => acc
-  | ((idc , ty) , n ) :: tlctor => list_lctor  tlctor  (ty :: acc) 
-  end in  tr_rev (list_lctor oind.(ind_ctors) []).
-  
-
-(* \TODO integrate get_blut in the functions below *)
 
 
 (* metavariable i metavariable p *)
@@ -501,16 +410,17 @@ let indui := switch_inductive indu io in
       | ctor :: tll => let '((_ , typc) , nc ) := ctor in let nc' := nc + p in
       let '((tll1,tll2),tll3,tll4) := (treat_ctor_oind_aux indu  no (j+1)  tll) in let (B_ctor, lA_ctor) :=  dom_list_f (debruijn0 indui no u   typc) nc' in
       (B_ctor :: tll1,  (tConstruct indui j u)     :: tll2 , lA_ctor :: tll3 , nc :: tll4) 
-    end in  treat_ctor_oind_aux indu no 0  oind.(ind_ctors).
+    end in  treat_ctor_oind_aux indu no 0  (get_na_nb_args_type_list_constructor_body oind.(ind_ctors)).
 
 Ltac treat_ctor_list_oind_tac_i_gen statement indu p no io u  oind  :=
   (* p : number of parameters *)
   (* n : number of oind *)
   (* i : is the rank oind in the mutual inductive block *)
- let indui := constr:(switch_inductive indu io)
- in  let gct :=
-  constr:(get_ctors_and_types_i indu p no io u  oind) 
- in  lazymatch eval hnf in gct with 
+ let indui := constr:(switch_inductive indu io) in 
+ let gct :=
+  constr:(get_ctors_and_types_i indu p no io u  oind) in
+  let gct' := eval cbv in gct in
+ lazymatch gct' with 
   | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
     | (?lBf,?lA) =>  lazymatch eval cbv in lBf with
       | (?lB,?lf) =>  statement lB lf lA ln p 
@@ -523,10 +433,11 @@ Ltac treat_ctor_list_oind_tac_i indu p no io u oind := treat_ctor_list_oind_tac_
 
 Ltac interpretation_alg_types_oind_i := treat_ctor_list_oind_tac_i_gen inj_disj_tac.
 
+
 Ltac treat_ctor_mind_aux_tac_gen statement indu p no  u  mind  io  loind :=
  lazymatch eval cbv in loind with
-| nil => idtac 
-| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p no io u  oind ; 
+| nil => idtac
+| ?oind :: ?tlloind => treat_ctor_list_oind_tac_i_gen statement indu p no io u oind ;
 treat_ctor_mind_aux_tac_gen statement indu p no u mind constr:(S io) tlloind
 end.
 
@@ -548,28 +459,25 @@ Ltac  checkProp t :=  (* improve this function *)
   | [  |- Prop] => fail
   | _ => idtac
   end ; elim H 
-  |clear blut]. 
+  |clear blut].  
 
 Ltac fo_prop_of_cons_tac_gen statement t := 
   let ty := type of t in 
   let _ := match goal with  _ => checkProp ty end in
-    let geip := fresh "geip" in get_env_ind_param t geip ; 
+    let geip := fresh "geip" in get_env_ind_param t geip ;
     lazymatch eval hnf in geip with
     | (?Sigma,?induu) => lazymatch eval hnf in induu with
       | (?indu,?u) =>      let indu_kn := constr:(indu.(inductive_mind)) in   let lkup := constr:(lookup_env Sigma indu_kn) in 
        lazymatch eval cbv in lkup  with
-       | Some ?d =>    
+       | Some ?d =>   
          match d with
          |  InductiveDecl ?mind => let indu_p := constr:(mind.(ind_npars)) in 
-            let no := constr:(leng mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u  mind ; clear geip
+            let no := constr:(leng mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u mind ; clear geip
          end       
        end         
      end
      end 
     .
-
-
-
 
 
 Ltac fo_prop_of_cons_tac := fo_prop_of_cons_tac_gen inj_total_disj_tac.
@@ -594,7 +502,7 @@ match u with
 end.
 
 Goal True.
-Fail contains_not_eq (1=1). contains_not_eq (fun x: nat => x). exact I. Qed.
+Fail contains_not_eq (1 = 1). contains_not_eq (fun x: nat => x). exact I. Qed.
 
 
 (* In the goal, we look for the terms whose type is an algebraic type 
