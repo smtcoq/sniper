@@ -10,8 +10,6 @@
 (**************************************************************************)
 
 
-Require Import SMTCoq.SMTCoq.
-
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import String.
@@ -20,6 +18,7 @@ Require Import definitions.
 Require Import elimination_fixpoints.
 Require Import expand.
 Require Import List.
+Import ListNotations.
 
 Ltac create_evars_for_each_constructor i := 
 let y := metacoq_get_value (tmQuoteRec i) in 

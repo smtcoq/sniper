@@ -22,7 +22,7 @@ Require Import PArith.BinPos.
 
 Open Scope string_scope.  
 
-Import ListNotations MonadNotation. 
+Import ListNotations MCMonadNotation. 
 
 (* \TODO : use metacoq_get_value in utilities to avoid continuations *)
 (* \TODO : unify with various functions of utilities (and move them there) *)
