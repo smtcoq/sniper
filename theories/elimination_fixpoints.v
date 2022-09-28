@@ -10,13 +10,13 @@
 (**************************************************************************)
 
 
-Require Import SMTCoq.SMTCoq.
-
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import expand.
 Require Import ZArith.
+Require Import List.
+Import ListNotations.
 Require Import String.
 
 
@@ -99,7 +99,7 @@ let H' := fresh in let w := eval hnf in z.(my_projT2)
 in assert (H' :w) 
 by (repeat (let x := fresh in intro x ; try (destruct x ; auto))).
 
-Ltac eliminate_fix_ho H := fun k =>
+Ltac eliminate_fix_cont H := fun k =>
 first [
 let T := type of H in
 let T := metacoq_get_value (tmQuote T) in
@@ -122,10 +122,6 @@ let H' := fresh in let w := eval hnf in z.(my_projT2)
 in assert (H' :w) 
 by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ; k H' ; clear H| k H].
 
-
-
-
-
 Section tests.
 
 Goal Nat.add = (fun n m : nat => match n with
@@ -145,24 +141,11 @@ expand_hyp length_def.
 eliminate_fix_hyp H1.
 Abort.
 
-Fixpoint search { A : Type } { H : CompDec A } ( x : A ) l :=
-match l with
-| [] => false
-| x0 :: l0 => if eqb_of_compdec H x x0 then true else search x l0
-end.
-
-
-
-
 Goal False.
 get_def @Datatypes.length.
 get_def Nat.add.
-let x:= eval unfold search in search in pose x.
-get_def @search.
-expand_hyp search_def.
-eliminate_fix_hyp H.
 expand_hyp add_def.
-eliminate_fix_ho H ltac:(fun H0 => let t := type of H0 in idtac).
+eliminate_fix_cont H ltac:(fun H0 => let t := type of H0 in idtac).
 expand_hyp length_def.
 eliminate_fix_hyp H.
 Abort.
