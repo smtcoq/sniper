@@ -315,6 +315,18 @@ match l with
 | x :: xs => cstr_type x :: get_type_constructors xs
 end.
 
+(* Useful to pass from the coq-8.13 representation of constructors 
+to the coq-8.14 one
+the list constructor_body becomes a list of triples with the 
+name of the constructors, their type and the number of their args *) 
+Fixpoint get_na_nb_args_type_list_constructor_body
+(l : list constructor_body) :=
+match l with
+| [] => []
+| x :: xs => ((cstr_name x, cstr_type x), Datatypes.length (cstr_args x)) :: get_na_nb_args_type_list_constructor_body xs
+end.
+
+
 
 (** Generic tactics **) 
 
