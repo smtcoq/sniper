@@ -18,7 +18,7 @@ Require Import List.
 Require Import ZArith.
 Require Import interpretation_algebraic_types. 
 Require Import case_analysis.
-Unset Strict Unquote Universe Mode.
+Unset MetaCoq Strict Unquote Universe Mode.
 
 (** Generates the generation statement in a non-constructive way:
 the projection functions are replaced by existentials : 
@@ -126,26 +126,25 @@ let res0 := eval cbv in (dest_app I_reif.2) in
 let I_no_app := eval cbv in (res0.1) in
 let params := eval cbv in (res0.2) in
 let len_params := eval cbv in (Datatypes.length params) in
-let constructors := eval cbv in (get_constructors_inductive I_no_app I_reif.1) in
-let info_params := eval cbv in (get_info_params_inductive I_no_app I_reif.1) in
-  match info_params with
-  | Some ?info_params =>
+let indu := eval cbv in (info_inductive I_reif.1 I_no_app ) in
+let constructors := eval cbv in (info_nonmutual_inductive I_reif.1 I_no_app).2 in
+  match indu with
+  | Some ?i => 
+    let info_params := eval cbv in (get_params_from_mind i) in 
     let npars := eval cbv in info_params.1 in 
     let typars := eval cbv in info_params.2 in
-    let res1 := eval cbv in (get_indu_and_instance I_no_app) in 
+    let res1 := eval cbv in (get_indu_and_instance I_no_app) in
     let indu := eval cbv in res1.1 in
     let inst := eval cbv in res1.2 in
-      match constructors with
-      | Some ?cstrs => let res2 := eval cbv in (find_nb_args_constructors_and_ctors indu inst npars 0 cstrs) in 
-                   let largs := eval cbv in res2.2 in
-                   let lc := eval cbv in res2.1 in 
-                   let gen_st_reif := eval cbv in (statement_constructors I_no_app typars lc largs) in
-                   let gen_st_reif_instances := eval cbv in (subst params 0 (skipn_forall len_params gen_st_reif)) in
-                   let gen_st := metacoq_get_value (tmUnquoteTyped Prop  gen_st_reif_instances) in
-                   let nb_vars_intro := eval cbv in (npars-len_params) in 
-                   assert (H : gen_st) by (prove_by_destruct_varn (nb_vars_intro))
-      | None => fail
-      end
+    let res2 := eval cbv in (find_nb_args_constructors_and_ctors indu inst npars 0 
+    (get_na_nb_args_type_list_constructor_body constructors)) in
+    let largs := eval cbv in res2.2 in
+    let lc := eval cbv in res2.1 in 
+    let gen_st_reif := eval cbv in (statement_constructors I_no_app typars lc largs) in
+    let gen_st_reif_instances := eval cbv in (subst params 0 (skipn_forall len_params gen_st_reif)) in
+    let gen_st := metacoq_get_value (tmUnquoteTyped Prop  gen_st_reif_instances) in
+    let nb_vars_intro := eval cbv in (npars-len_params) in 
+    assert (H : gen_st) by (prove_by_destruct_varn (nb_vars_intro))
   | None => fail
 end.
 
