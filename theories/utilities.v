@@ -210,6 +210,8 @@ Definition mkOr_n (l : list term) :=
     in aux l0 t0
   end.
 
+Definition mknAnon := {| binder_name := nAnon ; binder_relevance := Relevant |}.
+
 
 Definition default_error_kn := (MPfile [], "error"%bs).
 
@@ -237,6 +239,11 @@ match res with
 | Some (InductiveDecl mind) => Some mind
 | None => None
 end.
+
+Definition get_params_from_mind mind :=
+  let p := mind.(ind_npars) in 
+  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
+in (p, l0).
 
 Definition default_body :=
 {|
@@ -326,7 +333,18 @@ match l with
 | x :: xs => ((cstr_name x, cstr_type x), Datatypes.length (cstr_args x)) :: get_na_nb_args_type_list_constructor_body xs
 end.
 
+(* List of holes to benefit from Coq's type inference while unquoting *)
+Fixpoint list_of_holes (n : nat) :=
+match n with
+| 0 => []
+| S n' => hole :: list_of_holes n'
+end.
 
+Fixpoint list_aname (n : nat) :=
+match n with
+| 0 => []
+| S n' => mknAnon :: list_aname n'
+end.
 
 (** Generic tactics **) 
 
