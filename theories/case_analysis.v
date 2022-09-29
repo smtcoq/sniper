@@ -486,15 +486,6 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar1 : C -> Ind_test2 A B C
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
-MetaCoq Quote Recursively Definition proj := 
-(fun (A : Type) (l l' : list A) => 
-match l with
-| [] => l'
-| x :: xs => xs
-end).
-
-Print proj.
-
 Goal False. 
 get_projs_st @list. generalize proj_list. clear.
 get_projs_st nat. clear.

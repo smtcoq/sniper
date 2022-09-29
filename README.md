@@ -73,28 +73,6 @@ cd ..
 
 Commented examples are available at ``examples.v``.
 
-The benchmarks are in the `benchs` folder.
-You need to install ``coq-hammer`` by running the command
-```
-opam install coq-hammer
-```
-Then to test ``snipe`` you can run
-```
-make bench_snipe
-```
-To test ``hammer`` you can run 
-```
-make bench_hammer
-```
-And to run the tests on both tactics, the command is
-```
-make bench
-```
-
-The other files in this folder are the orginal not automatized ``List`` library (``List_no_automation.v``)
-and the outputs obtained by running the benchs on the computer mentioned in the paper.
-
-
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
 as SMTCoq: CeCILL-C. See the file LICENSE for details.
