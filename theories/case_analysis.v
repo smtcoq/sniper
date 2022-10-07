@@ -18,7 +18,7 @@ Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import interpretation_algebraic_types. 
-(* Require Import SMTCoq.SMTCoq. TODO *)
+Require Import SMTCoq.SMTCoq.
 
 (*********************)
 (** General specification **)
@@ -130,8 +130,8 @@ Definition get_term_applied (t : term) (p n: nat) :=
 (***************)
 
 Ltac find_inhabitant_context t := 
-first[ constructor ; assumption | (* TODO when SMTCoq 8.14 is available 
-apply Inh | *) epose (inhab := ?[t_evar] : t)]. 
+first[ constructor ; assumption | 
+apply Inh | epose (inhab := ?[t_evar] : t)]. 
 
 Ltac find_inh t :=
 match goal with
@@ -607,34 +607,76 @@ match goal with
           elims_on_list l t
 end.
 
-(* Checks if a given term is a variable *)
-Ltac is_var v :=
-let v_reif := metacoq_get_value (tmQuote v) in 
-match v_reif with 
-| tVar _ => idtac
-| _ => fail
+From Ltac2 Require Import Ltac2.
+
+(* Checks if a given term is a variable of type which is not Prop *)
+Ltac2 is_var (v : constr) :=
+let k := Constr.Unsafe.kind v in
+match k with
+| Constr.Unsafe.Var id => true
+| _ => false
 end.
+
 
 (* Returns the tuple of variables in a local context *)
-Ltac vars := 
-match goal with
-| v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
-let _ := match goal with _ => intro v end in constr:((v, acc))
-| _ => constr:(unit)
+Ltac2 vars () := 
+let hyps := Control.hyps () in
+List.map (fun x => match x with
+            | (x1, x2, x3) => x1 end) 
+(List.filter (fun x => match x with
+            | (x1, x2, x3) => let x' := Control.hyp x1 in is_var (x') end) hyps).
+
+Ltac2 rec is_not_in_tuple (p : constr) (z : constr) := 
+match! p with
+| (?x, ?y) =>  if is_not_in_tuple x z then is_not_in_tuple y z else false
+| _ => if Constr.equal p z then false else true
 end.
 
-Ltac get_projs_in_variables p := 
-let t := vars in 
-let rec tac_rec v tuple :=
-match v with
-| (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
-                let I := get_head T in 
-                let params := get_tail T in 
-                try (is_not_in_tuple tuple T  ;
-                get_projs_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
-| _ => idtac
+Ltac2 get_head (c : constr) :=
+let k := Constr.Unsafe.kind c in 
+match k with
+| Constr.Unsafe.App c1 carr => c1 
+| _ => c
+end.
+
+Ltac2 rec list_constr_printer (l : constr list) :=
+match l with
+| [] => (Message.print (Message.of_string "empty"))
+| x :: xs => Message.print (Message.of_constr x) ; list_constr_printer xs
+end.
+
+Ltac2 message_of_bool (b: bool) :=
+match b with
+| true => (Message.print (Message.of_string "true"))
+| false => (Message.print (Message.of_string "false"))
+end.
+
+Ltac2 is_sort (c: constr) :=
+  match Constr.Unsafe.kind c with
+  | Constr.Unsafe.Sort _ => true
+  | _ => false
+  end.
+
+Ltac2 get_projs_in_variables (p : constr) := 
+let var := vars () in 
+let rec aux (p : constr) (l: ident list) := 
+match l with
+| [] => ()
+| x :: xs =>  let x' := Control.hyp x in
+    let ty := Constr.type x' in
+    let tyty := Constr.type ty in 
+    if is_sort ty then aux p xs else
+    if Constr.equal tyty 'Prop then aux p xs else
+    if
+    is_not_in_tuple p ty then
+    let ind := get_head ty in
+    if is_not_in_tuple p ind then 
+    (ltac1:(ind ty |- try (let params := get_tail ty in (* removing this idtac may cause infinite loops *)
+    get_projs_st_default_quote ind params)) (Ltac1.of_constr ind) (Ltac1.of_constr ty)) ; 
+    aux constr:(($p, $ty)) xs 
+    else aux p xs else aux p xs
 end
-in let prod_types0 := eval compute in p in tac_rec t prod_types0.
+in aux p var.
 
 Section tests.
 
@@ -648,7 +690,16 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_projs_in_variables bool.
+Proof. intros. get_projs_in_variables 'bool.
 Abort.
+
+Variable A : Type.
+Variable HA : CompDec A.
+
+Goal (forall (A : Type) (HA : CompDec A) (l : list A), False -> False).
+Proof. intros. get_projs_in_variables 'bool. Abort.
+
+Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
+  Proof. get_projs_in_variables 'unit. Abort. 
 
 End tests.

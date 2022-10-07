@@ -162,6 +162,22 @@ Abort.
 
 End test_gen_statement.
 
+(* Checks if a given term is a variable *)
+Ltac is_var v :=
+let v_reif := metacoq_get_value (tmQuote v) in 
+match v_reif with 
+| tVar _ => idtac
+| _ => fail
+end.
+
+(* Returns the tuple of variables in a local context *)
+Ltac vars := 
+match goal with
+| v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
+let _ := match goal with _ => intro v end in constr:((v, acc))
+| _ => constr:(unit)
+end.
+
 Ltac get_gen_statement_for_variables_in_context :=
 let t := vars in 
 let rec tac_rec v :=

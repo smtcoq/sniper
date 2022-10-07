@@ -128,12 +128,12 @@ Goal
 Proof.
 get_projs_in_goal.
 clear. intros s1 s2.
-let p:= eval unfold prod_types in prod_types in get_projs_in_variables p.
+ltac2:(get_projs_in_variables 'prod_types).
 Abort.
 
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
-intros. let p:= eval unfold prod_types in prod_types in get_projs_in_variables p. 
+intros. ltac2:(get_projs_in_variables 'prod_types). 
 Abort.
 
 Variable HA : CompDec A.
