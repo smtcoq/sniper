@@ -428,8 +428,6 @@ match constr:(l) with
 | cons ?x ?xs => unquote_term x ; unquote_list xs
 end.
 
-Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
-
 (* Allows to use MetaCoq without continuations *)
 Ltac metacoq_get_value p :=
   let id := fresh in
@@ -438,6 +436,16 @@ Ltac metacoq_get_value p :=
   let x := eval cbv delta [id] in id in
   let _ := match goal with _ => clear id end in
   x.
+
+(* TODO for compatibility reasons this creates a fake global environement but 
+we should replace everything with tmQuoteInductive *) 
+Ltac rec_quote_term t idn := 
+let x := metacoq_get_value (tmQuote t) in 
+match x with
+| tInd (?indu ?kn _) ?inst => let y := metacoq_get_value (tmQuoteInductive kn) in 
+                              let y' := constr:((y, x)) in pose y' as idn
+| _ => idtac 
+end.
 
 (* Examples for metacoq_get_value *)
 Goal True.

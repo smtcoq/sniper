@@ -30,12 +30,13 @@ Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
+From Ltac2 Require Import Ltac2.
 
 (** Preprocessing for SMTCoq (first-order classical logic with interpreted theories) **)
 
 (* Tuple of symbols we do not want to unfold 
 in the default tactic *)
-Definition prod_of_symb := (impossible_term,
+Definition prod_of_symb := (default,
          Zplus,
          Zminus, 
          Zmult,
@@ -96,7 +97,8 @@ Definition prod_of_symb := (impossible_term,
          is_true,
          @eqb_of_compdec).
 
-Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le).
+Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
+CompDec).
 
 Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
@@ -104,7 +106,7 @@ eliminate_dependent_pattern_matching H')).
 
 Ltac def_fix_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
-eliminate_fix_ho H' ltac:(fun H'' =>
+eliminate_fix_cont H' ltac:(fun H'' =>
 try (eliminate_dependent_pattern_matching H'')))).
 
 Ltac def_and_pattern_matching_mono p1 k :=
@@ -124,8 +126,8 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t 
-ltac:(get_definitions_theories_no_generalize)) ;
-get_projs_in_variables p2'.
+ltac:(get_definitions_theories_no_generalize)).
+
 
 Ltac scope_no_param p1 p2 := 
 let p2' := eval unfold p2 in p2 in
@@ -135,7 +137,8 @@ repeat match goal with
 | _ => fail
 end ;
 try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros ; inst) ;
-get_projs_in_variables p2'.
+let function := ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
+with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
 
 Ltac snipe_param_no_check p1 p2 t :=
 scope_param p1 p2 t ; verit_no_check.
@@ -161,7 +164,8 @@ repeat match goal with
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2'.
+ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
+with | None => fail | Some pr => get_projs_in_variables pr end).
 
 Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
 let p2' := eval unfold prod_types in prod_types in
@@ -172,7 +176,9 @@ repeat match goal with
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ltac:(get_definitions_theories_no_generalize); intros ;
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2' ; verit.
+let function :=
+ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
+with | None => fail | Some pr => get_projs_in_variables pr end) in function p2' ; verit.
 
 
 Tactic Notation "snipe_no_check" constr(t) := snipe_param_no_check prod_of_symb prod_types t.
@@ -201,9 +207,11 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal impossible_term ; try (def_fix_and_pattern_matching_mono_param tuple_def t 
+try interp_alg_types_context_goal default; try (def_fix_and_pattern_matching_mono_param tuple_def t 
 ltac:(get_definitions_theories_no_generalize); inv_principle_all; inst) ; 
-get_projs_in_variables tuple_def.
+let function := 
+ltac2:(tuple_def |- match (Ltac2.Ltac1.to_constr (tuple_def))
+with | None => fail | Some pr => get_projs_in_variables pr end) in function tuple_def.
 
 Ltac scope_no_param_intuitionistic := 
 intros ; 
@@ -211,6 +219,8 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal impossible_term ; try (def_fix_and_pattern_matching tuple_def 
+try interp_alg_types_context_goal default ; try (def_fix_and_pattern_matching tuple_def 
 ltac:(get_definitions_theories_no_generalize) ; inv_principle_all ; inst) ; 
-get_projs_in_variables tuple_def.
+let function :=
+ltac2:(tuple_def |- match (Ltac2.Ltac1.to_constr (tuple_def))
+with | None => fail | Some pr => get_projs_in_variables pr end) in function tuple_def.
