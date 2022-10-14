@@ -1,8 +1,8 @@
 From MetaCoq.Template Require Import utils All.
-Require Import SMT_classes_instances.
-Require Import add_hypothesis_on_parameters.
+From SMTCoq Require Import SMTCoq.
 Unset MetaCoq Strict Unquote Universe Mode.
 Import MCMonadNotation.
+Require Import add_hypothesis_on_parameters.
 From MetaCoq.PCUIC Require Import PCUICReflect.
 From MetaCoq.PCUIC Require Import TemplateToPCUIC.
 

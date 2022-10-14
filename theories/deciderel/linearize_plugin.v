@@ -8,7 +8,7 @@ Import ListNotations.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
-Require Import SMT_classes.
+From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Unset MetaCoq Strict Unquote Universe Mode.

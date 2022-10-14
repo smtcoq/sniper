@@ -20,4 +20,4 @@ theories/deciderel/compdec_plugin.v
 theories/deciderel/linearize_plugin.v
 theories/deciderel/generate_fix.v
 theories/deciderel/proof_correctness.v
-theories/deciderel/Deciderel.v
+#theories/deciderel/Deciderel.v

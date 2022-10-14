@@ -9,8 +9,6 @@ Require Import String.
 Require Import ZArith.
 Require Import Bool.
 From SMTCoq Require Import SMTCoq.
-From SMTCoq Require Import SMT_classes.
-From SMTCoq Require Import SMT_classes_instances.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Require Import linearize_plugin.

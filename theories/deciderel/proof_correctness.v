@@ -8,8 +8,7 @@ Import ListNotations.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
-Require Import SMT_classes.
-Require Import SMT_classes_instances.
+From SMTCoq Require Import SMTCoq.
 Require Import generate_fix.
 From Ltac2 Require Import Ltac2.
 Unset MetaCoq Strict Unquote Universe Mode.

@@ -1,5 +1,5 @@
 From MetaCoq Require Import All.
-Require Import SMT_classes. 
+From SMTCoq Require Import SMTCoq.
 Require Import String.
 Require Import List. 
 Import ListNotations.
