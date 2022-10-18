@@ -23,14 +23,10 @@ Inductive mem : nat -> list nat -> Prop :=
 (* running the main command *)
 MetaCoq Run (decide mem []). 
 Next Obligation.
-(* the proof can be partially automatized thanks to tactics :
-completeness_auto_npars takes the name of the fixpoint generated and the number of parameters 
-as input and tries to generate the proof automatically 
-soundness_auto_recarg_npars takes the name of the initial inductive, the argument 
-on which to recur and the number of parameters of the inductive *)
-split.
-- revert_all. ltac2:(completeness_auto_npars 'mem_linear_decidable 1).
-- revert_all. ltac2:(soundness_auto_recarg_npars 'mem_linear_decidable 1 0). Qed.
+(* the proof can be automatized thanks to tactics :
+it generates a proof term decidable_proof that we use here
+*)
+apply decidable_proof. Qed.
 
 (* Another parametric example : 
 the predicate smaller_than_all holds between a
@@ -44,6 +40,9 @@ Inductive smaller_than_all : Z -> list Z -> Prop :=
  | sNil  : forall n, smaller_than_all n nil
  | sCons : forall n n' l, BinInt.Z.le n n' -> smaller_than_all n l -> smaller_than_all n (n' :: l).
 
+
+(* Here the proof should be done manually because we need to use an
+intermediate lemma Z.leb_le *)
 MetaCoq Run (decide (smaller_than_all) [(<%Z.le%>, <%Z.leb%>, <%Z.leb_le%>)]).
 Next Obligation.
 split.
@@ -60,13 +59,34 @@ is a decidable version of mem and the proof of this fact *)
 Trakt Add Relation 2 mem mem_linear_decidable decidable_lemma.
 
 Lemma test1 : (forall (n : nat), mem n [n]).
-Proof. trakt bool. snipe. Abort.
+Proof. snipe. Abort.
 
 Trakt Add Relation 2 smaller_than_all smaller_than_all_decidable decidable_lemma0.
 
 Lemma test2 : (forall (z: Z), smaller_than_all z nil).
-Proof. trakt bool. snipe. Qed.
+Proof. snipe. Qed.
 
- 
+(* An example with an inductive type which takes a parameter: 
+all the elements of the list are smaller than the one given as parameters *)
+
+Inductive smaller_than (n : nat) : list nat -> Prop :=
+| smThanNil : smaller_than n nil
+| smThanCons : forall (n' : nat) (l : list nat), Nat.le n' n -> smaller_than n l -> 
+smaller_than n (n' :: l).
+
+MetaCoq Run (decide (smaller_than) [(<%Nat.le%>, <%Nat.leb%>, <%Nat.leb_le%>)]).
+Next Obligation.
+split.
+- intro Hyp. induction Hyp. auto. simpl. rewrite IHHyp. simpl. rewrite Nat.leb_le. 
+assumption.
+- intros Hyp. induction H. constructor. constructor; simpl in Hyp; 
+elim_and_and_or. apply Nat.leb_le. assumption. apply IHlist. assumption. Qed.
+
+  
+
+
+
+
+
 
 

@@ -539,7 +539,7 @@ Definition tmDef name {A} a := @tmDefinitionRed name (Some (unfold (solve_ltac_m
 
 (* Local definition adding a new tactic *)
 
-Local Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) => unfold solve_ltac ;
+Global Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) => unfold solve_ltac ;
 let x := eval hnf in P.1.1.1 in
 let x' := eval hnf in P.1.1.2 in
 let n := eval hnf in P.1.2 in
