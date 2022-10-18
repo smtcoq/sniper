@@ -382,7 +382,7 @@ Ltac2 soundness_auto_recarg_npars
 :=
 induction_nth recarg; (* TODO: may need generalize dependent *) 
 Control.enter (fun () => intros *; intro H_new; destruct_to_continue_computation trm npars ; 
- simpl in * ; ltac1:(try (inversion H_new) ; if_contains_match_then_destruct &H_new) ;  ltac1:(elim_is_true; elim_and_and_or; simpl in *;
+ simpl in * ; ltac1:(try (inversion H_new) ; if_contains_match_then_destruct &H_new) ;  ltac1:(elim_is_true; simpl in *; elim_and_and_or;
 elim_trivial_or ; elim_is_true ; simpl in * ; elim_eq; subst; constructor ; solve [elim_eq; auto])).
 
 Lemma soundness_auto_Add_linear:
@@ -533,6 +533,7 @@ ltac2:(t1 t2 n n' |- let t1' := ltac1_to_constr_unsafe t1 in
                   let n0' := constr_to_int (ltac1_to_constr_unsafe n') in correctness_auto t1' t2' n0 n0') in 
 timeout 5 (tac t t' n n').
 
+Ltac correctness_ltac1 t t' n n' := correctness t t' n n'.
 
 (* Thanks to Yannick Forster's trick, we can run Ltac from the TemplateMonad *)
 MetaCoq Run (tmCurrentModPath tt >>= tmDefinition "solve_ltac_mp").
@@ -549,7 +550,7 @@ let x := eval hnf in P.1.1.1 in
 let x' := eval hnf in P.1.1.2 in
 let n := eval hnf in P.1.2 in
 let n' := eval hnf in P.2 in
-correctness x x' n n' : typeclass_instances. Print tmDefinition.
+correctness_ltac1 x x' n n' : typeclass_instances. Print tmDefinition.
  
 
 Definition apply_correctness_lemma {A B : Type}
@@ -574,7 +575,7 @@ Inductive is_integer : nat -> Prop :=
 | isi0 : is_integer 0
 | isiS : forall n, is_integer n -> is_integer (S n).
 
-Definition decided_term {A: Type} 
+Definition decide {A: Type} 
 (t : A) 
 (l : list (term*term*term)) :=
 res <- linearize_and_fixpoint_auto t [] ;; 
@@ -594,12 +595,15 @@ _ <- (@apply_correctness_lemma _ (my_projT1 fixpoint_unq_term) t (my_projT2 fixp
 ;; name_fresh <-tmFreshName "decidable_lemma" ;; 
 tmLemma name_fresh st_unq ;; tmWait.
 
-MetaCoq Run (decided_term (is_integer) []).
+Inductive mem : nat -> list nat -> Prop :=
+    MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
+  | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
+
+MetaCoq Run (decide (mem) []).
 Next Obligation.
- exact (decidable_proof0 H). Qed.
+ exact (decidable_proof0 H H0). Qed.
 
-
-MetaCoq Run (decided_term (member2) []). (* FIXME *) 
+MetaCoq Run (decide (member2) []). (* FIXME *) 
 Next Obligation.
 exact (decidable_proof1 H H0).
 Qed.

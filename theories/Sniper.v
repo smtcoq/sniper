@@ -26,6 +26,10 @@ Require Export case_analysis_existentials.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
 Require Export indrel.
+Require Export add_hypothesis_on_parameters.
+Require Export compdec_plugin.
+Require Export generate_fix.
+Require Export proof_correctness.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.

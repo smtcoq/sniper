@@ -421,7 +421,6 @@ match mind_entry.(mind_entry_inds) with
 | [] => tmFail "empty entry"
 | [x] => new_name <- tmFreshName (x.(mind_entry_typename)^"_linear") ;;
 res <- tmEval all (linearize_oind_entry_list Σ mind_entry.(mind_entry_inds) params_to_linearize lpars npars new_compdecs new_name) ;;
-tmPrint res ;;
 let entry :=
 {| 
   mind_entry_record := None;
@@ -446,7 +445,7 @@ Inductive add : nat -> nat -> nat -> Prop :=
 
 
 MetaCoq Run (reif_env_and_ind (@Add Z) >>= 
-linearize_from_mind_entry >>= tmPrint). 
+linearize_from_mind_entry). 
 
 Inductive smaller {A : Type} : list A -> list A -> Prop :=
 | sm_nil : forall l, smaller nil l
@@ -461,14 +460,12 @@ Inductive test3occ : nat -> nat -> nat -> Prop :=
 
 MetaCoq Run (reif_env_and_ind test3occ >>= 
 linearize_from_mind_entry).
-Print test3occ_linear.
 
 Inductive test4occ : nat -> nat -> nat -> nat -> Prop :=
 | test4occ_constructor : forall n, test4occ n n n n.
 
 MetaCoq Run (reif_env_and_ind test4occ >>= 
 linearize_from_mind_entry).
-Print test4occ_linear.
 
 Inductive test22occ : nat -> nat -> nat -> nat -> Prop :=
 | test22occ_constructor : forall n k, test22occ 1 2 3 k -> test22occ n n k k.
@@ -480,9 +477,7 @@ Inductive test_poly_param (A: Type) : list A -> list A -> list A -> Prop :=
 | test2poly : forall (l: list A), test_poly_param A l l l.
 
 MetaCoq Run (reif_env_and_ind test_poly_param >>= 
-
 linearize_from_mind_entry). 
-Print test_poly_paramCompDectest_poly_param0_linear .
 
 Inductive test2pars (A : Type) (a b : A) : A -> A -> Prop :=
 | test2pars_constructor :
@@ -497,21 +492,17 @@ Inductive test2pars2 (A : Type) (HA : CompDec A) (a b : A) : A -> A -> Prop :=
 test2pars2 A HA a b a b.
 
 MetaCoq Quote Recursively Definition entry_test := test2pars2.
-Print entry_test.
 
 MetaCoq Quote Recursively Definition goal_test := test2pars_linear.
-Print goal_test.
 
 Inductive bar : nat -> nat -> nat -> nat -> Prop :=
 | barc : forall n k, bar k n k n.
 
 MetaCoq Run (reif_env_and_ind bar >>= 
 linearize_from_mind_entry). 
-Print bar_linear.
 
 MetaCoq Run (reif_env_and_ind (@test2pars) >>= 
 linearize_from_mind_entry). 
-Print test2parsCompDectest2pars0_linear.
 
 (* Linearization in functions *) 
 Inductive square : nat -> nat -> Prop :=
@@ -519,14 +510,12 @@ Inductive square : nat -> nat -> Prop :=
 
 MetaCoq Run (reif_env_and_ind square >>= 
 linearize_from_mind_entry).
-Print square_linear.
 
 Inductive foo : nat -> nat -> Prop :=
 | fooc : forall n, foo n n -> foo n n.
 
 MetaCoq Run (reif_env_and_ind foo >>= 
 linearize_from_mind_entry).
-Print foo_linear.
 
 End tests.
 
