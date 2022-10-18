@@ -12,6 +12,8 @@ taken as parameters *)
 
 MetaCoq Quote Recursively Definition CompDec_reif_rec := CompDec.
 
+MetaCoq Quote Definition CompDec_reif := CompDec.
+
 MetaCoq Quote Definition Prop_reif := Prop.
 
 Section utilities.
@@ -66,7 +68,7 @@ end.
 
 
 (* We look at the terms under a product and we keep the inductives, 
-the constants and the context variables *)
+and the context variables *)
 Definition find_list_var_and_terms (t : term) : list (term*(list term)) :=
 let fix aux acc t :=
 match t with
@@ -74,7 +76,7 @@ match t with
         match p.1 with
         | tInd _ _ => aux (p :: acc) u
         | tVar _ => aux (p :: acc) u
-        | tConst _ _ => aux (p::acc) u
+        | tConst _ _ => aux acc u
         | _ => aux acc u
         end
 | _ => acc
@@ -115,7 +117,7 @@ match t, n with
 end.
 
 Definition find_arity (t : term) (n : nat) trm : term :=
-skipn_forall (add_trm_parameter trm t) n. MetaCoq Quote Recursively Definition bar := @Add. Print bar.
+skipn_forall (add_trm_parameter trm t) n. MetaCoq Quote Recursively Definition bar := @Add.
 
 Definition ctors_types_compdecs Σ (l : list constructor_body) n trm lpars := 
 (List.map (fun x =>
@@ -328,26 +330,26 @@ Definition add_compdec_inductive_and_pose_compdecs_lemmas (p : program*term)
 
 Definition monadic_compdec_inductive (p : program*term)
   := match p.2 with
-     | tInd ind0 _ => let Σ := (trans_global_env p.1.1) in
+     | tInd ind0 _ => let Σ := (trans_global_env p.1.1) in 
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
        fresh_ident <- match (ind_bodies decl) with
               | x :: xs => let x_name := ind_name x in tmFreshName x_name
               | [] => tmFreshName "empty_indu"
               end ;;
        let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif fresh_ident []) in
-       res <- tmEval all ind'.2 ;;
+       res <- tmEval all ind'.2 ;; 
        res2 <- find_compdecs res [] ;; 
        if contains_prenex_poly_mind decl then
        tmMkInductive true ind'.1 ;; tmReturn (Σ, (res2, []), ind'.1)
        else 
-       decl' <- tmEval all (mind_body_to_entry decl) ;;
+       decl' <- tmEval all (mind_body_to_entry decl) ;; 
        tmReturn (Σ, (res2, []), decl')
-     | tApp (tInd ind0 _) u =>
+     | tApp (tInd ind0 _) u => 
        (* inductive applied case, we do not consider partials applications *) 
        let Σ := (trans_global_env p.1.1) in
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
        let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif "no_used" u) in
-       res <- tmEval all ind'.2 ;;
+       res <- tmEval all ind'.2 ;; 
        res2 <- find_compdecs res [] ;;
        decl' <- tmEval all (mind_body_to_entry decl) ;;
        tmReturn (Σ, (res2, u), decl')
@@ -360,8 +362,22 @@ u <- tmQuote t ;;
 tmReturn (p, u).
 
 End commands.
-
+(*
 Section tests.
+
+Inductive elt_list :=
+ |Nil : elt_list
+ |Cons : Z -> Z -> elt_list -> elt_list.
+
+Inductive Inv_elt_list : Z -> elt_list -> Prop :=
+ | invNil  : forall b, Inv_elt_list b Nil
+ | invCons : forall (a b  j: Z) (q : elt_list),
+     (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
+     Inv_elt_list j (Cons a b q).
+
+MetaCoq Run (reif_env_and_ind (Inv_elt_list) >>= 
+
+ add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint).
 
 MetaCoq Run (reif_env_and_ind (@Add Z) >>= add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint).
 MetaCoq Run (reif_env_and_ind Add >>= add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint). 
@@ -374,4 +390,4 @@ Inductive Ind_test (A B : Type) : A*B -> Prop :=
 MetaCoq Run (reif_env_and_ind Ind_test >>= add_compdec_inductive_and_pose_compdecs_lemmas  >>= tmPrint).
 MetaCoq Run (reif_env_and_ind (@Add nat) >>= monadic_compdec_inductive). 
 
-End tests.
+End tests. *)

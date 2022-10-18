@@ -33,8 +33,6 @@ match t with
 | _ => default_error_kn
 end.
 
-Print inductive_mind.
-
 Definition find_name_gref (t : term) :=
 match t with
 | tConst kn _ => kn.2
@@ -140,45 +138,6 @@ match constructors with
    end in aux' c' (npars + Datatypes.length c' - 1) :: aux cs 
 end
 in aux constructors.
-
-(* Inductive test {A B : Type} : Type :=
-| test1 : test -> test -> test
-| test2 : A -> B -> test.
-
-MetaCoq Quote Recursively Definition test_reif := @test.
-
-Print test_reif.
-
-Compute info_nonmutual_inductive test_reif.1 test_reif.2.
-
-Compute get_type_of_args_of_each_constructor test_reif.1 test_reif.2.
-
-
-Compute get_type_of_args_of_each_constructor list_reif_rec.1 list_reif_rec.2. *)
-
-
-
-(* Record constructor_body : Type := Build_constructor_body
-  { cstr_name : ident;
-    cstr_args : context;
-    cstr_indices : list term;
-    cstr_type : term;
-    cstr_arity : nat }. *)
-
-
-Compute get_args_inductive Add_reif_rec.1 Add_reif_rec.2.
-(* 
-Require Export MetaCoq.Template.Checker.
-
-Print global_env_ext.
-
-Existing Instance config.default_checker_flags.
-Existing Instance default_fuel.
-
-Print universes_decl.
-
-Definition try_infer `{config.checker_flags} `{Fuel} (Σ : global_env_ext) Γ t :=
-  match infer' Σ Γ t with Checked res => res | TypeError _ => tApp (tVar "error") [t] end. *)
 
 Definition types_of_args_ctors (e : global_env_ext) (i : term) :=
 let res := info_nonmutual_inductive e.1 i in rev (
@@ -296,8 +255,6 @@ match l with
           | cons x' xs' => aux xs xs'
 end
 end %>.
-
-Print smaller_dec_bis_reif.
 
 Lemma smaller_dec_correct_and_complete (A : Type) (l l' : list A) : smaller l l' <-> 
 smaller_dec l l' = true.
@@ -948,8 +905,6 @@ Inductive member : nat -> list nat -> Prop :=
 Definition member_cons_reif := 
 <% forall xs n n', Nat.eqb n n' -> member n (n'::xs) %>.
 
-Print member_cons_reif.
-
 Definition member_cons_free := 
 tProd {| binder_name := nNamed "xs"; binder_relevance := Relevant |}
   (tApp
@@ -1256,8 +1211,6 @@ Definition ty_Add_cons_info := {|
 
 Definition c2 := split_conclusion ty_Add_cons_info.
 
-Print c2.
-
 Compute initial_mapping e Add_reif_rec.1 Add_reif_rec.2 ty_Add_cons_reif_free 3.
 
 End tests.
@@ -1303,8 +1256,6 @@ end in
 pparams := list_of_holes npars; (* TODO ??? *)
 pcontext := [mknAnon]; (* TODO ?? as clause (should not be a problem) *)
 preturn := <% bool %> |}).
-
-Print build_list_of_vars.
 
 Definition apply_term (t : term) (n : nat) :=
 let l := List.map (fun x => tRel x) (build_list_of_vars n)
@@ -1648,20 +1599,11 @@ MetaCoq Quote Recursively Definition even_reif_rec := even.
 
 Definition test_even := (build_fixpoint_aux2 e even_reif_rec.1 even_reif_rec.2 [] 0).1.
 
-Compute test_even.
-
 MetaCoq Unquote Definition even_decidable := test_even.
-
-Print even_decidable.
 
 Definition test := (build_fixpoint_aux2 e smaller_reif_rec.1 smaller_reif_rec.2 [] 1).1.
 
-
-Compute test.
-
 MetaCoq Unquote Definition smaller_decidable := test.
-
-Print smaller_decidable.
 
 Lemma test_unq : forall (A : Type) (l l' : list A), 
  smaller l l' <-> smaller_decidable A l l' = true.
@@ -1683,8 +1625,6 @@ Definition test3 := (build_fixpoint_aux2 e Add_linear_rec.1 Add_linear_rec.2 [] 
 MetaCoq Unquote Definition add_decidable := test2.
 
 MetaCoq Unquote Definition Add_decidable := test3.
-
-Print Add_decidable.
 
 Lemma dec_Add : forall (A : Type) (HA : CompDec A) (a: A) (l l': list A),
 Add_linear A HA a l l' <-> Add_decidable A HA a l l' = true.
@@ -1951,7 +1891,7 @@ curmodpath <- tmCurrentModPath tt ;;
 let name_indu := (curmodpath, name_indu_linear) in
 let indu := tInd {| inductive_mind := name_indu ;
                   inductive_ind := 0 |} [] in
-mind <- tmQuoteInductive name_indu ;; tmPrint mind ;;
+mind <- tmQuoteInductive name_indu ;;
 let genv := res0.1.1 in
 let new_gdecl := (name_indu, (InductiveDecl mind)) :: (declarations genv ) in 
 let new_genv := {| universes := universes genv ; declarations := new_gdecl ; retroknowledge :=
@@ -1987,10 +1927,10 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
 
-MetaCoq Run (linearize_and_fixpoint_auto (@smallernat) [] >>= tmPrint).
-MetaCoq Run (linearize_and_fixpoint_auto (add) [] >>= tmPrint).  
-MetaCoq Run (linearize_and_fixpoint_auto (@smaller Z) [] >>= tmPrint). 
-Fail MetaCoq Run (linearize_and_fixpoint_auto (@Add Z) [] >>= tmPrint). (* FIXME *) 
+MetaCoq Run (linearize_and_fixpoint_auto (@smallernat) []).
+MetaCoq Run (linearize_and_fixpoint_auto (add) []).  
+MetaCoq Run (linearize_and_fixpoint_auto (@smaller Z) []). 
+Fail MetaCoq Run (linearize_and_fixpoint_auto (@Add Z) []). (* FIXME *) 
  
 
 MetaCoq Run (build_fixpoint_auto even []).
@@ -2016,10 +1956,7 @@ Inductive smaller2 : list nat -> list nat -> Prop :=
 
 
 MetaCoq Run (build_fixpoint_auto (@smaller2) []).
-Print smaller2_decidable.
-MetaCoq Run (build_fixpoint_auto (@Add_linear2) []). Print Add_linear.
-
-Print member.
+MetaCoq Run (build_fixpoint_auto (@Add_linear2) []).
 
 Inductive member2 : nat -> list nat -> Prop :=
 | MemMatch2 : forall xs n , member2 n (n ::xs)
@@ -2045,14 +1982,11 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
 
 MetaCoq Run (build_fixpoint_auto (Inv_elt_list) [(<%Z.le%>, <%Z.leb%>, <%Zle_is_le_bool%>)]).
 
-Print Inv_elt_list_decidable.
-
 Inductive smaller_Z : list Z -> list Z -> Prop :=
 | sm_nil_Z : forall l, smaller_Z [] l
 | sm_cons_Z : forall x x' l l', smaller_Z l l' -> smaller_Z (x :: l) (x' :: l').
 
 MetaCoq Run (build_fixpoint_auto (smaller_Z) []). 
-Print smaller_Z_decidable.
 
 Inductive lset : list nat -> Prop :=
 | Empty : lset []
@@ -2061,9 +1995,6 @@ Inductive lset : list nat -> Prop :=
            lset xs ->
            lset (n::xs).
 MetaCoq Run (build_fixpoint_recarg lset [] 0).
-
-
-Print lset_decidable.
 
 
 

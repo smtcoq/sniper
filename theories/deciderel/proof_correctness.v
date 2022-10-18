@@ -61,13 +61,9 @@ end in aux lrel I I_dec args.
 (** Tests **)
 
 MetaCoq Unquote Definition correctness_test := 
-(correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>). Print correctness_test.
+(correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>).
 MetaCoq Unquote Definition correctness_test' := 
 (correctness_statement Add_linear_rec.1 Add_linear_rec.2 <%Add_decidable%>).
-
-Print correctness_test.
-
-Print correctness_test'.
 
 (** Proofs **)
 
@@ -268,7 +264,7 @@ repeat (rewrite -> eqb_of_compdec_reflexive).
 Ltac2 completeness_auto_npars 
 (f_dec : constr)
 (npars : int) :=
-intros *; intro H_new;
+try (intros *; intro H_new) ;
 (* let fr := Fresh.fresh (Fresh.of_constr f_dec) in *)
 let h := Control.hyps () in
 let h1 := hyps_minus_term h @H_new in
@@ -331,8 +327,6 @@ repeat match goal with
 | H : ?a || ?b = true |- _ => apply orb_prop in H ; elim_trivial_or ; destruct_hyp H 
 end.
 
-
-Print compdec_eq_eqb.
 Ltac elim_eq :=
 repeat match goal with
 | H : @eqb_of_compdec ?T ?HT ?x ?y = true |- _ => apply compdec_eq_eqb in H
@@ -477,7 +471,7 @@ Section StrongInduction.
     eauto using strong_induction_all.
   Qed.
 
-End StrongInduction.  Print strong_induction.
+End StrongInduction. 
 
 Lemma soundness_ev :
 forall (n : nat), even_decidable n -> even n.
@@ -550,7 +544,7 @@ let x := eval hnf in P.1.1.1 in
 let x' := eval hnf in P.1.1.2 in
 let n := eval hnf in P.1.2 in
 let n' := eval hnf in P.2 in
-correctness_ltac1 x x' n n' : typeclass_instances. Print tmDefinition.
+correctness_ltac1 x x' n n' : typeclass_instances. 
  
 
 Definition apply_correctness_lemma {A B : Type}
@@ -578,7 +572,7 @@ Inductive is_integer : nat -> Prop :=
 Definition decide {A: Type} 
 (t : A) 
 (l : list (term*term*term)) :=
-res <- linearize_and_fixpoint_auto t [] ;; 
+res <- linearize_and_fixpoint_auto t l ;; 
 let (ty_id_fix_recarg_npars_fix_qu, initial_genv) := res : (((((A × ident) × nat) × nat) × term)
    × program) in
 let (ty_id_fix_recarg_npars, fix_qu) := ty_id_fix_recarg_npars_fix_qu in

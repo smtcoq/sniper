@@ -93,7 +93,7 @@ let fuel := fuel_trm t in add_trm_for_each_poly_var t [] fuel.
 
 End trm.
 
-Section tests_CompDec.
+(* Section tests_CompDec.
 
 
 MetaCoq Quote Recursively Definition Add_reif_rec := Add.
@@ -252,4 +252,4 @@ MetaCoq Quote Definition goal2 := (forall A HA B HB, test_two_params_compdec A H
 MetaCoq Unquote Definition test_two_params_comp := (subst10 test_two_params_compdec_reif.2 (add_trm_parameter CompDec_reif ty_test0_reif )).
 MetaCoq Unquote Definition test3 := (subst10 Add_compdec_reif (add_trm_parameter CompDec_reif test)).
 
-End tests_CompDec.
+End tests_CompDec. *)

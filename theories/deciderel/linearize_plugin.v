@@ -352,6 +352,43 @@ match t with
 | _ => t
 end.
 
+Fixpoint nb_occ_db_index (l : list term) (n : nat) (fuel : nat) :=
+match fuel with
+| 0 => 0
+| S fuel' =>
+match l with
+| [] => 0
+| x :: xs => match x with
+        | tRel j => if Nat.eqb j n then (S (nb_occ_db_index xs n fuel')) else nb_occ_db_index xs n fuel'
+        | tApp u l' => nb_occ_db_index l' n fuel' 
+        | _ => nb_occ_db_index xs n fuel'
+        end
+end
+end.
+
+Fixpoint contains_nat_above_two (l : list nat) :=
+match l with
+| [] => false
+| x :: xs => if Nat.leb 2 x then true else contains_nat_above_two xs
+end.
+(* warning: handles terms with no parameters only (or instantiated ones)
+say if a term should be linearized or not, in order to avoid unecessary computations *) 
+
+Fixpoint linearizable_term (t : term) (db_indexes : list nat) :=
+match t with
+| tProd na Ty u =>  if linearizable_term Ty db_indexes then true else 
+linearizable_term u (0 :: (List.map S db_indexes))
+| tApp x l => let lnat := List.map (fun x => nb_occ_db_index l x 1000) db_indexes in 
+contains_nat_above_two lnat (* TODO fuel *)
+| tRel j => false   
+| _ => false
+end.
+
+Fixpoint linearizable_list_term (l : list term) : bool :=
+match l with
+| [] => false
+| x :: xs => linearizable_term x [] || linearizable_list_term xs
+end.
 
 Definition linearize_oind_entry Σ (oinde : one_inductive_entry) 
 (params : list context_decl) (* list of params not instantiated: obtained by getting the mind entry *)
@@ -364,24 +401,27 @@ let nb_shift := Datatypes.length lpars in
 let new_arity := (subst lpars (npars - nb_shift) oinde.(mind_entry_arity)) in
 let params2 := list_pars_to_linearize2 Σ params in
 let new_consnames := List.map (fun x => x^"_linear") oinde.(mind_entry_consnames) in
-let new_lc := if nb_shift =? 0 then
+let lc := oinde.(mind_entry_lc) in
+let b := linearizable_list_term lc in 
+let new_lc := 
+if b then
+if nb_shift =? 0 then
 List.map (fun x => linearize_parameter_compdec Σ list_compdecs
-(linearize_compdec Σ x list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) oinde.(mind_entry_lc)
+(linearize_compdec Σ x list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) lc
 else
 List.map (fun x => eliminate_first_nargs (linearize_parameter_compdec Σ list_compdecs
 (linearize_compdec Σ (subst lpars (npars - nb_shift) x) list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) nb_shift)
- oinde.(mind_entry_lc)
-in 
+ lc
+else lc
+in (
 {| mind_entry_typename := new_name;
     mind_entry_arity := new_arity ;
     mind_entry_consnames := new_consnames;
     mind_entry_lc := new_lc 
-|}. 
+|}, b). 
 
 Definition remove_lastn {A : Type} (n : nat) (l : list A) :=
 rev (List.skipn n (rev l)).
-
-Compute remove_lastn 3 [1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ; 8].
 
 Definition replace_params (m : mutual_inductive_entry) (lpars : list term) :=
 let c := mind_entry_params m in
@@ -402,10 +442,20 @@ match c with
 end in aux c' (rev lpars)
 end.
 
+Fixpoint contains_true (l : list bool) :=
+match l with
+| [] => false
+| x :: xs => x || contains_true xs
+end.
+
 (* Warning: because of the only one ident, does not work for mutuals *)
 Definition linearize_oind_entry_list Σ (l : list one_inductive_entry) (params : list context_decl) lpars npars
-list_compdecs new_name : list one_inductive_entry :=
-List.map (fun x => linearize_oind_entry Σ x params lpars npars list_compdecs new_name) l.
+list_compdecs new_name : (list one_inductive_entry)*bool :=
+let interm_res :=
+List.map (fun x => linearize_oind_entry Σ x params lpars npars list_compdecs new_name) l
+in let l1 := (split interm_res).1 
+in let l2 := (split interm_res).2 in 
+(l1, contains_true l2).
 
 Definition linearize_from_mind_entry (p : program*term) :=  
 tuple <- monadic_compdec_inductive p ;;
@@ -421,23 +471,27 @@ match mind_entry.(mind_entry_inds) with
 | [] => tmFail "empty entry"
 | [x] => new_name <- tmFreshName (x.(mind_entry_typename)^"_linear") ;;
 res <- tmEval all (linearize_oind_entry_list Σ mind_entry.(mind_entry_inds) params_to_linearize lpars npars new_compdecs new_name) ;;
+b <- tmEval all res.2 ;;
+match b with
+| true =>
 let entry :=
 {| 
   mind_entry_record := None;
   mind_entry_finite := Finite;
   mind_entry_params := params;
-  mind_entry_inds := res;
+  mind_entry_inds := res.1;
   mind_entry_universes := Monomorphic_entry (LevelSet.empty, ConstraintSet.empty);
   mind_entry_template := false;
   mind_entry_variance := None;
   mind_entry_private := None;
 |} in tmMkInductive true entry ;; tmReturn new_name
+| false => tmReturn x.(mind_entry_typename)
+end
 | x :: xs => tmFail "mutuals not supported"
 end.
 
 Section tests.
 
-Print TemplateMonad.
 
 Inductive add : nat -> nat -> nat -> Prop :=
 | add0 : forall n, add 0 n n
@@ -454,6 +508,18 @@ Inductive smaller {A : Type} : list A -> list A -> Prop :=
 MetaCoq Run (reif_env_and_ind (@smaller Z) >>= 
 linearize_from_mind_entry).
 
+Inductive elt_list :=
+ |Nil : elt_list
+ |Cons : Z -> Z -> elt_list -> elt_list.
+
+Inductive Inv_elt_list : Z -> elt_list -> Prop :=
+ | invNil  : forall b, Inv_elt_list b Nil
+ | invCons : forall (a b  j: Z) (q : elt_list),
+     (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
+     Inv_elt_list j (Cons a b q).
+
+MetaCoq Run (reif_env_and_ind (Inv_elt_list) >>= 
+monadic_compdec_inductive).
 
 Inductive test3occ : nat -> nat -> nat -> Prop :=
 | test3occ_constructor : forall n, test3occ n n n.
