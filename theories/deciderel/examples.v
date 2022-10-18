@@ -59,7 +59,7 @@ elim_and_and_or. constructor. apply Z.leb_le. assumption. apply IHlist. assumpti
 Trakt Add Relation 2 mem mem_linear_decidable decidable_lemma.
 
 Lemma test1 : (forall (n : nat), mem n [n]).
-Proof. trakt nat bool. scope. snipe.
+Proof. trakt bool. scope. clear - H6 H4 H1 H12. verit. (*TODO *)
 
  
 

@@ -99,10 +99,10 @@ Definition prod_of_symb := (default,
          @FArray.select,
          @FArray.diff,
          is_true,
-         @eqb_of_compdec).
+         @eqb_of_compdec, CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
-CompDec).
+CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
 
 Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
