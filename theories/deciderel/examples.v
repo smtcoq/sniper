@@ -55,11 +55,17 @@ elim_and_and_or. constructor. apply Z.leb_le. assumption. apply IHlist. assumpti
 
 (* Example of proof automation with snipe and the decided predicates *)
 
-
+(* We add to Trakt's database the information that mem_linear_decidable
+is a decidable version of mem and the proof of this fact *)
 Trakt Add Relation 2 mem mem_linear_decidable decidable_lemma.
 
 Lemma test1 : (forall (n : nat), mem n [n]).
-Proof. trakt bool. Print mem_linear_decidable. scope. clear - H6 H4 H1 H12. verit. (*TODO *)
+Proof. trakt bool. snipe. Abort.
+
+Trakt Add Relation 2 smaller_than_all smaller_than_all_decidable decidable_lemma0.
+
+Lemma test2 : (forall (z: Z), smaller_than_all z nil).
+Proof. trakt bool. snipe. Qed.
 
  
 
