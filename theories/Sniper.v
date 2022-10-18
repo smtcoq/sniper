@@ -99,10 +99,19 @@ Definition prod_of_symb := (default,
          @FArray.select,
          @FArray.diff,
          is_true,
-         @eqb_of_compdec, CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
+         @eqb_of_compdec, 
+         CompDec, 
+         Nat_compdec,
+         list_compdec,
+         prod_compdec,
+         Z_compdec).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
 CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
+
+(* Whenever a constant is defined as foo : CompDec A, 
+we do not want to unfold foo *) 
+Definition tuple_type_of_opaque_def := CompDec.
 
 Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
