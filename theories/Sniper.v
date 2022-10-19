@@ -26,10 +26,15 @@ Require Export case_analysis_existentials.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
 Require Export indrel.
+Require Export add_hypothesis_on_parameters.
+Require Export compdec_plugin.
+Require Export generate_fix.
+Require Export proof_correctness.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
+From Trakt Require Import Trakt.
 From Ltac2 Require Import Ltac2.
 
 (** Preprocessing for SMTCoq (first-order classical logic with interpreted theories) **)
@@ -95,10 +100,19 @@ Definition prod_of_symb := (default,
          @FArray.select,
          @FArray.diff,
          is_true,
-         @eqb_of_compdec).
+         @eqb_of_compdec, 
+         CompDec, 
+         Nat_compdec,
+         list_compdec,
+         prod_compdec,
+         Z_compdec).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
-CompDec).
+CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
+
+(* Whenever a constant is defined as foo : CompDec A, 
+we do not want to unfold foo *) 
+Definition tuple_type_of_opaque_def := CompDec.
 
 Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
@@ -118,7 +132,7 @@ def_and_pattern_matching p1 k ; inst t.
 Ltac def_fix_and_pattern_matching_mono_param p1 t k :=
 def_fix_and_pattern_matching p1 k ; inst t.
 
-Ltac scope_param p1 p2 t := 
+Ltac scope_param p1 p2 t := revert_all ; trakt bool ;
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with
@@ -129,7 +143,7 @@ try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_p
 ltac:(get_definitions_theories_no_generalize)).
 
 
-Ltac scope_no_param p1 p2 := 
+Ltac scope_no_param p1 p2 := revert_all ; trakt bool ; 
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with
