@@ -33,8 +33,8 @@ match t with
 | _ => []
 end.
 
-
-Compute (get_list_of_args (get_type_nonmutual_inductive Add_reif_rec.1 Add_reif_rec.2)).
+(* 
+Compute (get_list_of_args (get_type_nonmutual_inductive Add_reif_rec.1 Add_reif_rec.2)). *)
 
 Definition mkIff (t1 t2 : term) :=
 tApp <% iff %> [t1 ; t2].
@@ -67,10 +67,6 @@ MetaCoq Unquote Definition correctness_test' :=
 
 (** Proofs **)
 
-
-From Ltac2 Require Import Ltac2.
-
-Ltac2 Eval Control.hyps.
 
 Ltac2 Type exn ::= [ Not_an_application ].
 Ltac2 Type exn ::= [ Not_a_product ].
