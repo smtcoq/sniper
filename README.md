@@ -16,9 +16,9 @@ or being proved once and for all in Coq (*certified* transformations). A
 crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
-This version is an experimental version using the Trakt plugin.
-It also uses the deciderel plugin in `./theories/deciderel` which 
-decides automatically inductive relations.
+This version is an experimental version for the JFLA 2023 conference
+using the new Deciderel plugin in `./theories/deciderel` which 
+decides automatically inductive relations and the Trakt plugin.
 
 
 ## Installation and use
