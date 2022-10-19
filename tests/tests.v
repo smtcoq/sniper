@@ -83,10 +83,10 @@ def_and_pattern_matching_mono prod_types get_definitions_theories_no_generalize.
 assumption.
 Qed.
 
-Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
+(* Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
 intros H.
 scope.
-Abort.
+Abort. *)
 
 Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
@@ -241,7 +241,7 @@ Undo. Time snipe.
   Qed.
 
   Theorem app_nil_end : forall (l:list A), l = l ++ [].
-  Proof. Time snipe app_nil_r. Undo. Time snipe2 app_nil_r. Qed.
+  Proof. (* Time snipe app_nil_r. Undo. *) Time snipe2 app_nil_r. Qed.
 
   Theorem app_assoc : forall l m n:list A, (l ++ m ++ n) = ((l ++ m) ++ n).
   Proof.
@@ -250,7 +250,7 @@ Undo. Time snipe.
 
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     Time snipe app_assoc. Undo. Time snipe2 app_assoc. Qed.
+     (* Time snipe app_assoc. Undo.  *)Time snipe2 app_assoc. Qed.
 
   Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
   Proof.
