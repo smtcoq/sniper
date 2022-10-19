@@ -17,12 +17,14 @@ crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
 This version is an experimental version using the Trakt plugin.
+It also uses the deciderel plugin in `./theories/deciderel` which 
+decides automatically inductive relations.
 
 
 ## Installation and use
 
 This part describes the steps required to try the `snipe` tactic. It can
-be used with Coq-8.13.
+be used with Coq-8.14.
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
@@ -71,7 +73,7 @@ cd ..
 
 ## Examples, tests and benchmarks
 
-Commented examples are available at ``examples.v``.
+Commented examples are available at ``theories/deciderel/examples.v``.
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
