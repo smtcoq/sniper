@@ -132,7 +132,7 @@ def_and_pattern_matching p1 k ; inst t.
 Ltac def_fix_and_pattern_matching_mono_param p1 t k :=
 def_fix_and_pattern_matching p1 k ; inst t.
 
-Ltac scope_param p1 p2 t := trakt bool ;
+Ltac scope_param p1 p2 t := revert_all ; trakt bool ;
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with
@@ -143,7 +143,7 @@ try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_p
 ltac:(get_definitions_theories_no_generalize)).
 
 
-Ltac scope_no_param p1 p2 := trakt bool ; 
+Ltac scope_no_param p1 p2 := revert_all ; trakt bool ; 
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with

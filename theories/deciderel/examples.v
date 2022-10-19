@@ -10,15 +10,18 @@ Require Import ZArith.
 Require Import Bool.
 
 (* A first example :
-mem n l is true whenever n belongs to l 
-the plugin linearize the type of MemMatch because n is mentionned twice 
-so we have an equivalent version linearized of member and then it generates an 
-equivalent boolean fixpoint and the correctness lemma
+- mem n l is true whenever n belongs to l 
+- the plugin linearize the type of MemMatch because n is mentionned twice (and 
+we want to define a function by pattern matching so we need fresh pattern variables)
+- then it generates an equivalent boolean fixpoint defined by pattern matching
+on the list 
+- it also generates the correctness lemma and uses a tactic based on
+heuristics to inhabitate it
 *) 
 
-Inductive mem : nat -> list nat -> Prop :=
-    MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
-  | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
+Inductive mem : Z -> list Z -> Prop :=
+    MemMatch : forall (xs : list Z) (n : Z), mem n (n :: xs)
+  | MemRecur : forall (xs : list Z) (n n' : Z), mem n xs -> mem n (n' :: xs).
 
 (* running the main command *)
 MetaCoq Run (decide mem []). 
@@ -54,33 +57,50 @@ elim_and_and_or. constructor. apply Z.leb_le. assumption. apply IHlist. assumpti
 
 (* Example of proof automation with snipe and the decided predicates *)
 
+Lemma mem_imp_not_nil_fail : (forall (n : Z) (l : list Z), 
+mem n l -> l <> []).
+Proof. Fail snipe. (* snipe does not know about inductive predicates *) Abort.
+
 (* We add to Trakt's database the information that mem_linear_decidable
-is a decidable version of mem and the proof of this fact *)
+is a decidable version of mem and the proof of this fact 
+and snipe will use it to reason about the boolean function instead
+of the predicate *)
+
 Trakt Add Relation 2 mem mem_linear_decidable decidable_lemma.
 
-Lemma test1 : (forall (n : nat), mem n [n]).
-Proof. snipe. Abort.
+Lemma mem_imp_not_nil : (forall (n : Z) (l : list Z), 
+mem n l -> l <> []).
+Proof. snipe. Qed.
 
+(* We do the same for smaller_than_all *)
 Trakt Add Relation 2 smaller_than_all smaller_than_all_decidable decidable_lemma0.
 
-Lemma test2 : (forall (z: Z), smaller_than_all z nil).
+Lemma smaller_than_all_nil : (forall (z: Z), smaller_than_all z nil).
 Proof. snipe. Qed.
 
 (* An example with an inductive type which takes a parameter: 
 all the elements of the list are smaller than the one given as parameters *)
 
-Inductive smaller_than (n : nat) : list nat -> Prop :=
-| smThanNil : smaller_than n nil
-| smThanCons : forall (n' : nat) (l : list nat), Nat.le n' n -> smaller_than n l -> 
-smaller_than n (n' :: l).
+Inductive elt_smaller_than (n : nat) : list nat -> Prop :=
+| smThanNil : elt_smaller_than n nil
+| smThanCons : forall (n' : nat) (l : list nat), Nat.le n' n -> elt_smaller_than n l -> 
+elt_smaller_than n (n' :: l).
 
-MetaCoq Run (decide (smaller_than) [(<%Nat.le%>, <%Nat.leb%>, <%Nat.leb_le%>)]).
+MetaCoq Run (decide (elt_smaller_than) [(<%Nat.le%>, <%Nat.leb%>, <%Nat.leb_le%>)]).
 Next Obligation.
 split.
 - intro Hyp. induction Hyp. auto. simpl. rewrite IHHyp. simpl. rewrite Nat.leb_le. 
 assumption.
 - intros Hyp. induction H. constructor. constructor; simpl in Hyp; 
 elim_and_and_or. apply Nat.leb_le. assumption. apply IHlist. assumption. Qed.
+
+Trakt Add Relation 2 elt_smaller_than elt_smaller_than_decidable decidable_lemma1.
+
+Lemma smaller_than_mem : 
+forall (n n' : Z) (l : list Z), smaller_than_all n l -> mem n' l -> Z.le n n'.
+Proof.
+intros n n' l H1 H2. induction l; snipe. Qed.
+
 
   
 
