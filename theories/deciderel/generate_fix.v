@@ -103,10 +103,10 @@ MetaCoq Quote Recursively Definition cons_reif_rec := @cons.
 MetaCoq Quote Recursively Definition Add_reif_rec := @Add.
 
 MetaCoq Quote Recursively Definition list_reif_rec := @list.
-
+(* 
 Compute info_nonmutual_inductive list_reif_rec.1 list_reif_rec.2.
 
-Compute info_inductive Add_reif_rec.1 Add_reif_rec.2.
+Compute info_inductive Add_reif_rec.1 Add_reif_rec.2. *)
 
 Definition all_type_to_fresh := fun t =>
 match t with
@@ -313,7 +313,7 @@ match m with
 (i', j') :: (replace_in_mapping i j m')
 end.
 
-Compute in_mapping 2 3 [(1, 2); (3, 4)].
+(* Compute in_mapping 2 3 [(1, 2); (3, 4)]. *)
 
 Definition add_variable_in_mapping (i j : nat) (m : option_unif mapping) :=
 match m with
@@ -952,7 +952,7 @@ tProd {| binder_name := nNamed "xs"; binder_relevance := Relevant |}
                    |} []; tRel 1; tRel 3]])))).
 
 MetaCoq Quote Recursively Definition member_reif_rec := member.
-Compute initial_mapping e member_reif_rec.1 member_reif_rec.2 member_cons_free 0.
+(* Compute initial_mapping e member_reif_rec.1 member_reif_rec.2 member_cons_free 0.
 
 Compute  split_conclusion ({|
          db_parameters := [];
@@ -984,16 +984,16 @@ Compute find_cstr_info e 0 member_cons_reif [].
 Compute find_cstr_info e 1 smaller_cons_reif [].
 
 Compute find_cstr_info e 3 ty_Add_head_reif [].
-
+ *)
 MetaCoq Quote Recursively Definition Add_linear_reif := Add_linear.
 
 MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller.
-
+(* 
 Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_head_free 3.
 Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_cons_free 3.
 
 Compute initial_mapping e smaller_reif_rec.1 smaller_reif_rec.2 smaller_cons_free 1.
-
+ *)
 Definition smaller_cons_info := 
 {|
          db_parameters := [4];
@@ -1026,7 +1026,7 @@ Definition smaller_cons_info :=
 
 Definition c1 := split_conclusion smaller_cons_info.
 
-Compute build_initial_mapping_and_vars c1.
+(* Compute build_initial_mapping_and_vars c1. *)
 
 
 Definition ty_Add_cons_reif_free := 
@@ -1148,9 +1148,9 @@ Inductive add_interm : nat -> nat -> nat -> Prop :=
 Definition ty_add_interm0_reif := 
 <% forall n m, Nat.eqb n m = true -> add_interm 0 n m %>.
 
-Compute find_cstr_info e 0 ty_add_interm0_reif [].
+(* Compute find_cstr_info e 0 ty_add_interm0_reif [].
 
-Compute find_cstr_info e 3 ty_Add_cons_reif [].
+Compute find_cstr_info e 3 ty_Add_cons_reif []. *)
 
 Definition ty_Add_cons_info := {|
          db_parameters := [4; 5; 6];
@@ -1211,7 +1211,7 @@ Definition ty_Add_cons_info := {|
 
 Definition c2 := split_conclusion ty_Add_cons_info.
 
-Compute initial_mapping e Add_reif_rec.1 Add_reif_rec.2 ty_Add_cons_reif_free 3.
+(* Compute initial_mapping e Add_reif_rec.1 Add_reif_rec.2 ty_Add_cons_reif_free 3. *)
 
 End tests.
 
@@ -1375,9 +1375,9 @@ Section test_cstr_handler.
 
 Definition genv_test := smaller_reif_rec.1.
 
-Compute get_type_of_args_of_each_constructor genv_test <%@list%>.
+(* Compute get_type_of_args_of_each_constructor genv_test <%@list%>.
 Compute list_ctors_applied_to_params genv_test <%@list%> [<%nat%>].
-
+ *)
 Definition vars_test := [1 ; 0].
 
 Definition ty_vars_test : list term := [tApp <%@list%> [tRel 2] ; tApp <%@list%> [tRel 2]].
@@ -1414,7 +1414,7 @@ Definition test_cstr_handler :=
 cstr_handler e genv_test vars_test ty_vars_test premises_test pc_test initial_mapping_test []
 fuel.
 
-Compute test_cstr_handler.
+(* Compute test_cstr_handler. *)
 
 MetaCoq Quote Recursively Definition foo := Nat.add.
 
@@ -1476,7 +1476,7 @@ let patterns_conclusion := (split_conclusion c).2 in
 let premises := c.(premises) in
  cstr_handler Σ e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000(* TODO fuel *).
 
-Compute cstr_handler e member_reif_rec.1 
+(* Compute cstr_handler e member_reif_rec.1 
 [1; 0] [<% nat %> ; <% list nat %>] [tVar "test"] [tRel 1;
        tApp
          (tConstruct
@@ -1488,14 +1488,13 @@ Compute cstr_handler e member_reif_rec.1
             {|
               inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
               inductive_ind := 0
-            |} []; tRel 0; tRel 2]] [(2, 2)] [] 1000.
+            |} []; tRel 0; tRel 2]] [(2, 2)] [] 1000. *)
 
 (* Compute call_cstr_handler (trans_global_env member_reif_rec.1) member_reif_rec.1 member_reif_rec.2 member_cons_free 0.
 
  *)
 MetaCoq Quote Recursively Definition add_interm_reif_rec := add_interm.
 
-Compute add_interm_reif_rec.1.
 
 Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Relevant |}
   (tInd
@@ -1541,11 +1540,11 @@ Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Re
                 inductive_ind := 0
               |} 0 []; tRel 2; tRel 1]))).
 
-Compute (let c := find_cstr_info e 0 add_int [] in
+(* Compute (let c := find_cstr_info e 0 add_int [] in
 (split_conclusion c).2).
 
 Compute call_cstr_handler e add_interm_reif_rec.1 add_interm_reif_rec.2 add_int 0.
-
+ *)
 Definition build_list_of_cstr_handlers 
 (Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
 (e : global_env) (* the global envronment to look for information about inductives *)
