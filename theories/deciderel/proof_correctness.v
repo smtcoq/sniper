@@ -26,7 +26,8 @@ match res with
 end.
 
 (* if t is forall (x1 : T1) ... (xn : Tn), ..., 
-returns [(name x1, T1); ... ; (name xn, Tn)] *)
+returns [(name x1, T1); ... ; (name xn, Tn)] and
+ *)
 Fixpoint get_list_of_args (t : term) :=
 match t with
 | tProd na Ty t' => (na, Ty) :: get_list_of_args t'
@@ -62,9 +63,9 @@ end in aux lrel I I_dec args.
 
 MetaCoq Unquote Definition correctness_test := 
 (correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>).
-MetaCoq Unquote Definition correctness_test' := 
+(* MetaCoq Unquote Definition correctness_test' := 
 (correctness_statement Add_linear_rec.1 Add_linear_rec.2 <%Add_decidable%>).
-
+ *)
 (** Proofs **)
 
 
@@ -285,8 +286,8 @@ let n' := constr_to_int n in completeness_auto_npars t n'. *)
 
 
 Goal forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
-Add_linear A HA a x y -> Add_decidable A HA a x y = true.
-Proof. completeness_auto_npars 'Add_decidable 3. Qed. 
+Add_linear A HA a x y -> Add_linear_decidable A HA a x y = true.
+Proof. completeness_auto_npars 'Add_linear_decidable 3. Qed. 
 
 
 Goal forall (n: nat), even n -> even_decidable n = true.
@@ -377,7 +378,7 @@ elim_trivial_or ; elim_is_true ; simpl in * ; elim_eq; subst; constructor ; solv
 
 Lemma soundness_auto_Add_linear:
 forall (A : Type) (HA : CompDec A) (a: A) (x y : list A),
-Add_decidable A HA a x y = true -> Add_linear A HA a x y.
+Add_linear_decidable A HA a x y = true -> Add_linear A HA a x y.
 Proof. soundness_auto_recarg_npars 'Add_linear 3 3.
 Qed.
 
@@ -483,8 +484,8 @@ destruct m.
 apply H1. ltac1:(lia). inversion H2. unfold is_true. assumption. Qed.
 
 Lemma test : forall (A : Type) (HA: CompDec A) (a : A) (l : list A) (l' : list A),
-Add a l l' <-> Add_decidable A HA a l l' = true.
-Proof. correctness_auto '@Add '@Add_decidable 3 3. Qed. 
+Add a l l' <-> Add_linear_decidable A HA a l l' = true.
+Proof. correctness_auto '@Add '@Add_linear_decidable 3 3. Qed. 
 
 Lemma soundness_auto_ev :
 forall (n : nat), even_decidable n -> even n.
@@ -557,9 +558,9 @@ the following proof term for your equivalence proof :" ;; tmPrint name
              | my_None => tmPrint "no proof found, you should prove the equivalence manually"
              end. 
 
-MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_decidable) 
+MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
 (forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
-Add_linear A HA a x y <-> Add_decidable A HA a x y = true) 3 3). 
+Add_linear A HA a x y <-> Add_linear_decidable A HA a x y = true) 3 3). 
 
 Inductive is_integer : nat -> Prop :=
 | isi0 : is_integer 0
@@ -593,10 +594,8 @@ MetaCoq Run (decide (mem) []).
 Next Obligation.
  exact (decidable_proof0 H H0). Qed.
 
-MetaCoq Run (decide (member2) []). (* FIXME *) 
+MetaCoq Run (decide (member2) []). 
 Next Obligation.
 exact (decidable_proof1 H H0).
 Qed.
-
-
 

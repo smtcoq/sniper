@@ -459,20 +459,27 @@ end. *)
 Fixpoint unlift_dbs (l : list nat) (t : term) :=
 match l with
 | [] => t
-| x :: xs => subst1 (tRel 0) x (unlift_dbs xs t)
+| x :: xs => subst1 (tVar "wrong_substitution") x (unlift_dbs xs t)
 end.
 
 (* Transforms the type of a constructor (parameters already introduced) 
 into a record cstr_info *) 
 Fixpoint find_cstr_info_aux 
-(Σ : PCUICProgram.global_env_map) (dbpars : list nat) (npars : nat) (t : term) (l : list term) 
-(dbs : list nat) :=
+(Σ : PCUICProgram.global_env_map) 
+(dbpars : list nat) (* the db indexes of the parameters *)
+(npars : nat) (* the number of parameters already introduced *)
+(t : term) (* the term we analyse *)
+(l : list term) (* the conclusion *)
+(dbs : list nat) (* the db indexes corresponding to the non dependent hypothesis: we want to consider that
+they are not introduced by an arrow because in the pattern matching, we will perform a boolean disjunction on all the hypotheses*)
+ :=
 match t with 
 | tProd na Ty u => 
+if Nat.eqb npars 0 then 
 if contains Σ 0 u then 
-if Nat.leb npars 0 then find_cstr_info_aux Σ (List.map S dbpars) 0 u l dbs
-else find_cstr_info_aux Σ (0 :: List.map S dbpars) (npars - 1) u l dbs
+find_cstr_info_aux Σ (List.map S dbpars) 0 u (List.map (fun x => lift 1 0 x) l) (List.map S dbs)
 else find_cstr_info_aux Σ dbpars npars u ((unlift_dbs dbs Ty) :: l) (0::List.map S dbs)
+else find_cstr_info_aux Σ (0 :: List.map S dbpars) (npars - 1) u l (List.map S dbs)
 (* here, t is a non dependent product so Ty should be considered as a premise *)
 | _ => {| 
       db_parameters := dbpars; 
@@ -985,9 +992,11 @@ Compute find_cstr_info e 1 smaller_cons_reif [].
 
 Compute find_cstr_info e 3 ty_Add_head_reif [].
  *)
-MetaCoq Quote Recursively Definition Add_linear_reif := Add_linear.
 
-MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller.
+(* MetaCoq Quote Recursively Definition Add_linear_reif := Add_linear.
+
+MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller. *)
+
 (* 
 Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_head_free 3.
 Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_cons_free 3.
@@ -1148,6 +1157,19 @@ Inductive add_interm : nat -> nat -> nat -> Prop :=
 Definition ty_add_interm0_reif := 
 <% forall n m, Nat.eqb n m = true -> add_interm 0 n m %>.
 
+(* Variable AddCompDecAdd_linear : forall (A : Type), CompDec A -> A -> list A -> list A -> Prop.
+Variable compdec_hyp : forall (A : Type), CompDec A -> CompDec (list A).
+
+Definition test_Add := <% forall (A : Type) (HCompDecA : CompDec A) (a : A) (H: A),
+                              eqb_of_compdec HCompDecA a H = true ->
+                              forall l H0 : list A,
+                              eqb_of_compdec (compdec_hyp A HCompDecA) l H0 = true ->
+                              AddCompDecAdd_linear A HCompDecA a l (H :: H0) %>.
+
+Variable (e : PCUICProgram.global_env_map).
+
+Compute find_cstr_info e 3 test_Add []. *)
+
 (* Compute find_cstr_info e 0 ty_add_interm0_reif [].
 
 Compute find_cstr_info e 3 ty_Add_cons_reif []. *)
@@ -1285,7 +1307,6 @@ let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "continue, the mapping is") (l1 ++ l2 ++ [tApp (tVar "we should match")  [tRel n]]).
 
-
 Fixpoint cstr_handler
 (Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
 (e : global_env) (* the global envronment to look for information about inductives *)
@@ -1296,21 +1317,21 @@ Fixpoint cstr_handler
 (m : mapping) (* the initial mapping of variables *)
 (ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
 (fuel : nat) (* some fuel *)
-: term :=
+: term := 
 match fuel with
 | 0 => default_reif
-| S fuel' =>
-match vars, patterns_conclusion, ty_vars with
+| S fuel' => 
+ match vars, patterns_conclusion, ty_vars with
 | v :: vs, pc :: pcs, ty :: tys => match unify_mapping Σ (tRel v) pc m with 
-      | continue n pc' => build_pattern Σ e n ty pc vs tys premises pcs m ldec fuel'
+      | continue n pc' => build_pattern Σ e n ty pc vs tys premises pcs m ldec fuel'  
 (* pc' should be equal to pc *)
       | failure => default_reif
       | some m' => cstr_handler Σ e vs tys premises pcs m' ldec fuel'
       end
 | [], [], [] => build_andb (return_premises Σ premises m ldec) (* boolean conjunction of all the premises *)
 | _, _, _ =>  build_andb (return_premises Σ premises m ldec)
-end
-end
+end 
+end 
 with
 build_pattern 
 (Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
@@ -1325,7 +1346,7 @@ build_pattern
 (m : mapping) (* the initial mapping of variables *)
 (ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
 (fuel : nat) (* some fuel *)
-:=
+:= 
 let I' := head_term I in
 let lpars0 := tail_term I in 
 let npars := Datatypes.length lpars0 in
@@ -1351,15 +1372,15 @@ let new_mapping := lift_mapping len m in
                     let l := build_list_of_vars len in
                     let new_vars := l++(List.map (fun x => x + len) vars) in
                     let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
-                    build_pattern Σ e n' ty_n' pc' new_vars new_tys premises patterns_conclusion new_mapping ldec fuel'
+                    build_pattern Σ e n' ty_n' pc' new_vars new_tys premises patterns_conclusion new_mapping ldec fuel' 
     (* <% false %> *)
    | failure => <% false %> 
-   | some m' => (* tApp (cstr_applied) [t] *)
+   | some m' =>
 let l := build_list_of_vars len in
 let new_vars :=  List.map (fun x => x + len) vars in
 let new_tys := List.map (fun x => lift len 0 x) ty_vars in
-cstr_handler Σ e new_vars new_tys premises patterns_conclusion m' ldec fuel' 
-  end |} :: build_branch Σ e vars ty_vars premises patterns_conclusion m ltys cs fuel'
+cstr_handler Σ e new_vars new_tys premises patterns_conclusion m' ldec fuel'
+  end |} :: build_branch Σ e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
 | [], [] => []
 | _, _ => (* should not happen *) [{| bcontext := 
 [{| binder_name := nNamed "error"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
@@ -1370,6 +1391,7 @@ tCase ci pt (tRel var)
 
 Section test_cstr_handler.
 
+MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller.
 
 (* We build a pattern matching for the cons case of smaller *)
 
@@ -1467,14 +1489,14 @@ Definition call_cstr_handler
 (t : term) 
 (npars : nat) 
 (ldec : list (term*term*term)) :=
-let im := initial_mapping Σ e I t npars in
-let initial_mapping := im.2.2 in 
+let im := initial_mapping Σ e I t npars in 
+let initial_mapping := im.2.2 in
 let ty_vars := rev im.1 in
 let vars := im.2.1 in
 let c := find_cstr_info Σ npars t [] in
 let patterns_conclusion := (split_conclusion c).2 in
 let premises := c.(premises) in
- cstr_handler Σ e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000(* TODO fuel *).
+ cstr_handler Σ e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
 
 (* Compute cstr_handler e member_reif_rec.1 
 [1; 0] [<% nat %> ; <% list nat %>] [tVar "test"] [tRel 1;
@@ -1598,11 +1620,11 @@ MetaCoq Quote Recursively Definition even_reif_rec := even.
 
 Definition test_even := (build_fixpoint_aux2 e even_reif_rec.1 even_reif_rec.2 [] 0).1.
 
-MetaCoq Unquote Definition even_decidable := test_even.
+(* (* MetaCoq Unquote Definition even_decidable := test_even. *)
 
 Definition test := (build_fixpoint_aux2 e smaller_reif_rec.1 smaller_reif_rec.2 [] 1).1.
 
-MetaCoq Unquote Definition smaller_decidable := test.
+(* MetaCoq Unquote Definition smaller_decidable := test. *)
 
 Lemma test_unq : forall (A : Type) (l l' : list A), 
  smaller l l' <-> smaller_decidable A l l' = true.
@@ -1613,11 +1635,11 @@ split.
 destruct l' ; auto; try constructor; try inversion H.
 apply IHl in H. assumption. Qed. 
 
-MetaCoq Quote Recursively Definition add_linear_reif := add_interm.
+MetaCoq Quote Recursively Definition add_linear_reif := add_interm. *)
 
 MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear.
 
-Definition test2 := (build_fixpoint_aux2 e add_linear_reif.1 add_linear_reif.2 [] 0).1. 
+(*Definition test2 := (build_fixpoint_aux2 e add_linear_reif.1 add_linear_reif.2 [] 0).1. 
 
 Definition test3 := (build_fixpoint_aux2 e Add_linear_rec.1 Add_linear_rec.2 [] 3).1.
 
@@ -1663,7 +1685,7 @@ constructor. apply IHn. auto.
 + intros H. induction H. 
 simpl. destruct (n =? n) eqn:E. auto. 
 apply beq_nat_false in E. elim E; reflexivity.
-auto. Qed.
+auto. Qed. *)
 
 (** Functions to compute the recursive argument **) 
 
@@ -1905,12 +1927,12 @@ match recarg with
             n' <- tmEval all n ;;
             let fixp := build_fixpoint_aux2 Σ new_genv indu l n in
             let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in
+            let fixp_trm := fixp.1 in  trm_print <- tmEval all fixp_trm ;;
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
             trmdef <- tmDefinition fresh fixpoint_unq_term ;;
             fix_rec <- tmQuoteRec trmdef ;;
-            tmReturn (t, fresh, n', npars', fixp_trm, res0.1)
+            tmReturn (t, fresh, n', npars', fixp_trm, res0.1) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 
     build_fixpoint_recarg instead"
 end.
@@ -1925,15 +1947,13 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
-
+MetaCoq Run (linearize_and_fixpoint_auto (@Add) []). 
 MetaCoq Run (linearize_and_fixpoint_auto (@smallernat) []).
-MetaCoq Run (linearize_and_fixpoint_auto (add) []).  
-MetaCoq Run (linearize_and_fixpoint_auto (@smaller Z) []). 
-Fail MetaCoq Run (linearize_and_fixpoint_auto (@Add Z) []). (* FIXME *) 
+MetaCoq Run (linearize_and_fixpoint_auto (add) []). 
  
 
 MetaCoq Run (build_fixpoint_auto even []).
-
+MetaCoq Run (build_fixpoint_auto (@Add_linear) []).
 MetaCoq Run (build_fixpoint_recarg even [] 0).
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []). 
