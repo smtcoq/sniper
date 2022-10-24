@@ -120,30 +120,6 @@ split.
 - revert_all. induction H. constructor. destruct H0 eqn:E; intro H1; inversion H1.
 constructor. apply IHlist. assumption. Qed.
 
-Variable A : Type.
-Variable HA : CompDec A. (* commenting this line makes the command fail because of 
-universe instances *)
-
-MetaCoq Run (decide (@Add) []).
-Next Obligation. intros A0 H a l1 l2.
-split.
-- intro H1. induction H1. destruct l; simpl. rewrite eqb_of_compdec_reflexive. auto.
-rewrite eqb_of_compdec_reflexive. rewrite eqb_of_compdec_reflexive. auto.
-simpl. rewrite eqb_of_compdec_reflexive. rewrite IHAdd. rewrite orb_comm.
-auto.
-- revert l2. induction l1. intro l2. intro H1.
-destruct l2. simpl in H1. inversion H1.
-simpl in H1. elim_and_and_or; elim_eq. unfold is_true in H0.
-unfold is_true in H1. rewrite <- compdec_eq_eqb in H1. rewrite <- compdec_eq_eqb in H0.
-subst. constructor. 
-intros. simpl in H0. destruct l2 ; simpl in *.
-inversion H0. elim_and_and_or; unfold is_true in * ; elim_eq. subst. constructor.
-subst. constructor. apply IHl1. assumption.
-Qed.
-
-(* Trakt does not handle polymorphism yet but we can deal with polymorphism with
-CompDec hypothesis *)
-
 End Examples.
 
 
