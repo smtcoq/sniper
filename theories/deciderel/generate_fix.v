@@ -114,6 +114,9 @@ match t with
 | _ => t
 end.
 
+Definition get_args_inductive_fresh_types (e : global_env) (i : term) :=
+let res := get_args_inductive e i in 
+List.map all_type_to_fresh res.
 
 Definition params_inductive (e : global_env) (i : term) :=
 let info := info_inductive e i in
@@ -626,7 +629,7 @@ Definition initial_mapping (Σ : PCUICProgram.global_env_map)
 let c := find_cstr_info Σ npars t [] in
 let c' := split_conclusion c in
 let vars_and_map := build_initial_mapping_and_vars c' in
-let ty_vars := lift_list_ty (get_args_inductive g I) in
+let ty_vars := lift_list_ty (get_args_inductive_fresh_types g I) in
 (ty_vars, vars_and_map).
 
 
@@ -1571,7 +1574,7 @@ Definition build_list_of_cstr_handlers
 (I : term) (* the relation in Prop we want to transform into a fixpoint *) 
 (ldec : list (term*term*term)) :=
 let na := find_name_gref I in 
-let lty := rev (get_args_inductive e I) in
+let lty := rev (get_args_inductive_fresh_types e I) in
 let typars := params_inductive e I in
 let tys_to_bind := typars ++ lty in
 let info := info_nonmutual_inductive e I in
@@ -1956,6 +1959,8 @@ MetaCoq Run (build_fixpoint_recarg even [] 0).
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []). 
 
+Section test2.
+
 Variable A : Type.
 Variable HA : CompDec A.
 Variable a : A.
@@ -1982,8 +1987,9 @@ Inductive member2 : nat -> list nat -> Prop :=
 
 MetaCoq Run (build_fixpoint_auto member []). 
 
-MetaCoq Run (linearize_and_fixpoint_auto member2 []).
+End test2.
 
+Section test3.
 
 Variable eqblistnat : list nat -> list nat -> bool.
 
@@ -2012,6 +2018,8 @@ Inductive lset : list nat -> Prop :=
            lset xs ->
            lset (n::xs).
 MetaCoq Run (build_fixpoint_recarg lset [] 0).
+
+End test3.
 
 
 

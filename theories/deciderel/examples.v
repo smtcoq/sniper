@@ -101,12 +101,21 @@ forall (n n' : Z) (l : list Z), smaller_than_all n l -> mem n' l -> Z.le n n'.
 Proof.
 intros n n' l H1 H2. induction l; snipe. Qed.
 
+(* An example with instantiated polymorphic types :
+the inductive says that second list is smaller than the second one 
+We do not handle polymorphism (with an hypothesis of decidable equality whenever it is needed)
+for now because Trakt does not either
+*)
 
-  
+Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
+| smNil : forall l, smaller_list [] l
+| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
 
+MetaCoq Run (decide (@smaller_list nat) []).
+Next Obligation.
+split.
+- revert_all ; ltac2:(completeness_auto_npars 'smaller_decidable 0).
+- revert_all. induction H. constructor. destruct H0 eqn:E; intro H1; inversion H1.
+constructor. apply IHlist. assumption. Qed.
 
-
-
-
-
-
+MetaCoq Run (decide (@smaller_list) []).
