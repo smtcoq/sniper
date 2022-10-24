@@ -141,7 +141,7 @@ inversion H0. elim_and_and_or; unfold is_true in * ; elim_eq. subst. constructor
 subst. constructor. apply IHl1. assumption.
 Qed.
 
-(* Trakt does not handle polymorphism yet but we can deal with polymorphism with
+(* Trakt does not handle polymorphism yet but Deciderel deals with polymorphism with
 CompDec hypothesis *)
 
 End Examples.
