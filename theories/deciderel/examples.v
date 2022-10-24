@@ -8,7 +8,10 @@ Import ListNotations.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
+Import Decide. (* We import the module containing the main command *) 
 
+
+Section Examples.
 (* A first example :
 - mem n l is true whenever n belongs to l 
 - the plugin linearize the type of MemMatch because n is mentionned twice (and 
@@ -18,7 +21,6 @@ on the list
 - it also generates the correctness lemma and uses a tactic based on
 heuristics to inhabitate it
 *) 
-
 Inductive mem : Z -> list Z -> Prop :=
     MemMatch : forall (xs : list Z) (n : Z), mem n (n :: xs)
   | MemRecur : forall (xs : list Z) (n n' : Z), mem n xs -> mem n (n' :: xs).
@@ -101,12 +103,47 @@ forall (n n' : Z) (l : list Z), smaller_than_all n l -> mem n' l -> Z.le n n'.
 Proof.
 intros n n' l H1 H2. induction l; snipe. Qed.
 
+(* An example with instantiated polymorphic types :
+the inductive says that second list is smaller than the second one 
+We do not handle polymorphism (with an hypothesis of decidable equality whenever it is needed)
+for now because Trakt does not either
+*)
 
-  
+Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
+| smNil : forall l, smaller_list [] l
+| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
 
+MetaCoq Run (decide (@smaller_list nat) []).
+Next Obligation.
+split.
+- revert_all ; ltac2:(completeness_auto_npars 'smaller_decidable 0).
+- revert_all. induction H. constructor. destruct H0 eqn:E; intro H1; inversion H1.
+constructor. apply IHlist. assumption. Qed.
 
+Variable A : Type.
+Variable HA : CompDec A. (* commenting this line makes the command fail because of 
+universe instances *)
 
+MetaCoq Run (decide (@Add) []).
+Next Obligation. intros A0 H a l1 l2.
+split.
+- intro H1. induction H1. destruct l; simpl. rewrite eqb_of_compdec_reflexive. auto.
+rewrite eqb_of_compdec_reflexive. rewrite eqb_of_compdec_reflexive. auto.
+simpl. rewrite eqb_of_compdec_reflexive. rewrite IHAdd. rewrite orb_comm.
+auto.
+- revert l2. induction l1. intro l2. intro H1.
+destruct l2. simpl in H1. inversion H1.
+simpl in H1. elim_and_and_or; elim_eq. unfold is_true in H0.
+unfold is_true in H1. rewrite <- compdec_eq_eqb in H1. rewrite <- compdec_eq_eqb in H0.
+subst. constructor. 
+intros. simpl in H0. destruct l2 ; simpl in *.
+inversion H0. elim_and_and_or; unfold is_true in * ; elim_eq. subst. constructor.
+subst. constructor. apply IHl1. assumption.
+Qed.
 
+(* Trakt does not handle polymorphism yet but we can deal with polymorphism with
+CompDec hypothesis *)
 
+End Examples.
 
 
