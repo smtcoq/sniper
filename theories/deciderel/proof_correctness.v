@@ -89,7 +89,7 @@ match I with
 | tApp u v => 
 let args := get_list_of_args (get_type_nonmutual_inductive e u) in (* in the app case, we do not need the compdec hypothesis
 on type variables *)
-let args' := args.1 in
+let args' := args.2 in
 let nb_args := Datatypes.length args' in
 let lrel :=  List.skipn (Datatypes.length v) (build_list_of_vars nb_args) in
 correctness_statement_aux lrel lrel u I_dec args' v
@@ -595,18 +595,18 @@ Definition apply_correctness_lemma {A B : Type}
 oprf <- tmInferInstance None (solve_ltac "correctness_lemma" (t1, t2, n1, n2) 
 (dec_lemma)) ;;
              match oprf with
-             | my_Some prf => name <- tmFreshName "decidable_proof" ;; tmDefinition name prf ;; tmMsg "Automation succeed : you can use 
-the following proof term for your equivalence proof :" ;; tmPrint name
+             | my_Some prf => name <- tmFreshName "decidable_proof" ;; tmDefinition name prf ;; 
+              tmMsg "Automation succeed : you can use the following proof term for your equivalence proof :" ;; tmPrint name
              | my_None => tmPrint "no proof found, you should prove the equivalence manually"
              end. 
 
-MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
+(* MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
 (forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
-Add_linear A HA a x y <-> Add_linear_decidable A HA a x y = true) 3 3). 
+Add_linear A HA a x y <-> Add_linear_decidable A HA a x y = true) 3 3).  *)
 
-Inductive is_integer : nat -> Prop :=
-| isi0 : is_integer 0
-| isiS : forall n, is_integer n -> is_integer (S n).
+Obligation Tactic := auto.
+
+Module Decide.
 
 Definition decide {A: Type} 
 (t : A) 
@@ -628,25 +628,59 @@ _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars 
 ;; name_fresh <-tmFreshName "decidable_lemma" ;; 
 tmLemma name_fresh st_unq ;; tmWait.
 
+
+Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
+| smNil : forall l, smaller_list [] l
+| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
+
+MetaCoq Run (decide (@smaller_list nat) []).
+Next Obligation.
+Abort.
+
+
 Inductive mem : nat -> list nat -> Prop :=
     MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
   | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
 
 MetaCoq Run (decide (mem) []).
 Next Obligation.
- exact (decidable_proof0 H H0). Qed. 
+exact decidable_proof. Qed. 
 
 MetaCoq Run (decide (member2) []). 
 Next Obligation.
-exact (decidable_proof1 H H0).
-Qed. Print typed_term.
-
-(* 
-Variable (A : Type).
-Variable (HA : CompDec A).
-
-MetaCoq Run (decide (@Add A) []). 
-Next Obligation.
-exact (decidable_proof1 H H0).
+exact decidable_proof0.
 Qed.
- *)
+
+End Decide.
+
+Section Poly.
+
+Import Decide.
+Variable A: Type.
+Variable HA : CompDec A.
+
+MetaCoq Run (decide (@Add) []). 
+Next Obligation.
+intros A0 H a l1 l2.
+split.
+- intro H1. induction H1. destruct l; simpl. rewrite eqb_of_compdec_reflexive. auto.
+rewrite eqb_of_compdec_reflexive. rewrite eqb_of_compdec_reflexive. auto.
+simpl. rewrite eqb_of_compdec_reflexive. rewrite IHAdd. rewrite orb_comm.
+auto.
+- revert l2. induction l1. intro l2. intro H1.
+destruct l2. simpl in H1. inversion H1.
+simpl in H1. ltac1:(elim_and_and_or; elim_eq). unfold is_true in H0.
+unfold is_true in H1. rewrite <- compdec_eq_eqb in H1. rewrite <- compdec_eq_eqb in H0.
+subst. constructor. 
+intros. simpl in H0. destruct l2 ; simpl in *.
+inversion H0. ltac1:(elim_and_and_or; unfold is_true in * ; elim_eq). subst. constructor.
+subst. constructor. apply IHl1. assumption.
+Qed.
+
+End Poly.
+
+
+
+
+
+
