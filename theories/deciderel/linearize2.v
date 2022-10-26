@@ -1,4 +1,7 @@
 Require Import List.
+Require Import MetaCoq.Template.All.
+Require Import MetaCoq.Template.Checker.
+Import ListNotations MCMonadNotation.
 
 (** Specification of this file: 
 giving an inductive relation I of (implicit) parameters A1, ... Aj,
@@ -60,6 +63,141 @@ Inductive Add'_linear (A : Type) (HA: has_boolean_eq A) (a : A) : list A -> list
   | Add_cons'_linear : forall (x  x' : A) (l l' : list A), eq_dec HA x x' ->
                Add'_linear a l l' -> Add'_linear a (x :: l) (x :: l').
 
-
-
  *)
+
+Section map_predicate_shift.
+  Context {T : Type}.
+  Context (fn : (nat -> T) -> term -> term).
+  Context (shift : nat -> (nat -> T) -> nat -> T).
+  Context (finst : Instance.t -> Instance.t).
+  Context (f : nat -> T).
+
+  Definition map_predicate_shift (p : predicate term) :=
+    {| pparams := map (fn f) p.(pparams);
+        puinst := finst p.(puinst);
+        pcontext := p.(pcontext);
+        preturn := fn (shift #|p.(pcontext)| f) p.(preturn) |}.
+
+(*   Lemma map_shift_pparams (p : predicate term) :
+    map (fn f) (pparams p) = pparams (map_predicate_shift p).
+  Proof using Type. reflexivity. Qed.
+
+  Lemma map_shift_preturn (p : predicate term) :
+    fn (shift #|p.(pcontext)| f) (preturn p) = preturn (map_predicate_shift p).
+  Proof using Type. reflexivity. Qed.
+
+  Lemma map_shift_pcontext (p : predicate term) :
+    (pcontext p) =
+    pcontext (map_predicate_shift p).
+  Proof using Type. reflexivity. Qed.
+
+  Lemma map_shift_puinst (p : predicate term) :
+    finst (puinst p) = puinst (map_predicate_shift p).
+  Proof using Type. reflexivity. Qed. *)
+  
+End map_predicate_shift. 
+
+Section map_branch_shift.
+  Context {T : Type}.
+  Context (fn : (nat -> T) -> term -> term).
+  Context (shift : nat -> (nat -> T) -> nat -> T).
+  Context (f : nat -> T).
+
+  Definition map_branch_shift (b : branch term) :=
+  {| bcontext := b.(bcontext);
+      bbody := fn (shift #|b.(bcontext)| f) b.(bbody) |}.
+
+(*   Lemma map_shift_bbody (b : branch term) :
+    fn (shift #|b.(bcontext)| f) (bbody b) = bbody (map_branch_shift b).
+  Proof using Type. reflexivity. Qed.
+  
+  Lemma map_shift_bcontext (b : branch term) :
+    (bcontext b) = bcontext (map_branch_shift b).
+  Proof using Type. reflexivity. Qed. *)
+End map_branch_shift.
+
+(** Shift a renaming [f] by [k]. *)
+Definition shiftn k f :=
+  fun n => if Nat.ltb n k then n else k + (f (n - k)).
+
+Notation map_branches_shift ren f :=
+  (map (map_branch_shift ren shiftn f)).
+  
+Fixpoint rename f t : term :=
+  match t with
+  | tRel i => tRel (f i)
+  | tEvar ev args => tEvar ev (List.map (rename f) args)
+  | tLambda na T M => tLambda na (rename f T) (rename (shiftn 1 f) M)
+  | tApp u v => tApp (rename f u) (map (rename f) v)
+  | tProd na A B => tProd na (rename f A) (rename (shiftn 1 f) B)
+  | tLetIn na b t b' => tLetIn na (rename f b) (rename f t) (rename (shiftn 1 f) b')
+  | tCase ind p c brs =>
+    let p' := map_predicate_shift rename shiftn id f p in
+    let brs' := map_branches_shift rename f brs in
+    tCase ind p' (rename f c) brs'
+  | tProj p c => tProj p (rename f c)
+  | tFix mfix idx =>
+    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
+    tFix mfix' idx
+  | tCoFix mfix idx =>
+    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
+    tCoFix mfix' idx
+  | x => x
+  end.
+
+Section compute_occurences_predicate. 
+
+  Context (count_occ : nat -> term -> nat).
+
+  Definition compute_occurences_predicate (n : nat) (p : predicate term) :=
+    count_occ n p.(preturn).
+
+End compute_occurences_predicate.
+
+Section compute_occurences_branch. 
+
+  Context (count_occ : nat -> term -> nat).
+
+  Definition compute_occurences_branch (n : nat) (b : branch term) :=
+    count_occ (n + #|b.(bcontext)|)  b.(bbody).
+
+End compute_occurences_branch.
+
+Section compute_occurences_def.
+
+  Context (count_occ : nat -> term -> nat). 
+  
+  Definition compute_occurences_def (n : nat) (d : def term) :=
+    count_occ n (dtype d) + count_occ n (dbody d).
+
+End compute_occurences_def. 
+
+(** Compute the number of occurrences of the variable n in a term 
+TODO : if n occurs as a parameter position, then ignore this occurence **) 
+
+Fixpoint compute_occurences_var (n: nat) (t : term) :=
+match t with
+| tRel i => if Nat.eqb i n then 1 else 0
+| tVar id => 0
+| tEvar ev l => List.fold_left (fun n' x => n' + compute_occurences_var n x) l 0
+| tSort s => 0
+| tCast t1 ck t2 => compute_occurences_var n t1 + compute_occurences_var n t2
+| tProd na Ty u => compute_occurences_var n Ty + compute_occurences_var (S n) u
+| tLambda na Ty u => compute_occurences_var n Ty + compute_occurences_var (S n) u
+| tLetIn na b t b' => compute_occurences_var n b + compute_occurences_var n t 
+  + compute_occurences_var (S n) b'
+| tCase ind p c brs => compute_occurences_predicate compute_occurences_var n p + 
+  List.fold_left (fun n' x => n' + compute_occurences_branch compute_occurences_var n x) brs 0 + compute_occurences_var n c
+| tApp u l => compute_occurences_var n u + List.fold_left (fun n' x => n' + compute_occurences_var n x) l 0
+| tProj p c => compute_occurences_var n c
+| tFix mfix idx =>  List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_var (n + List.length mfix) x) mfix 0
+| tCoFix mfix idx => List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_var (n + List.length mfix) x) mfix 0
+| tInt _ => 0
+| tFloat _ => 0
+| tConst _ _ => 0
+| tInd _ _ => 0
+| tConstruct _ _ _ => 0
+end.
+
+
+
