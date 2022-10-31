@@ -143,36 +143,128 @@ Fixpoint rename f t : term :=
     let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
     tCoFix mfix' idx
   | x => x
+  end. 
+
+
+(* This function is a version of map where the return type of f is a pair 
+and the second argument of the pair is a function f', which 
+is used in each recursive call *)
+
+
+Fixpoint map_pair {A B C : Type} (f : (A -> B) -> C -> (C * (A -> B))) (f' : A -> B) (l : list C) :=
+match l with
+| [] => ([], f')
+| x :: xs => let res := f f' x in 
+             let x' := res.1 in
+             let f'' := res.2 in
+             let res' := map_pair f f'' xs in
+             let f_final := res'.2 in
+             let xs' := res'.1 in
+             (x' :: xs', f_final)
+end. 
+
+Section predicate_shift_linearize.
+
+  Context {T : Type}.
+  Context (fn : (nat -> T) -> term -> (term*(nat -> T))).
+  Context (shift : nat -> (nat -> T) -> nat -> T).
+  Context (finst : Instance.t -> Instance.t).
+  Context (f : nat -> T).
+
+  Definition map_predicate_shift_linearize (p : predicate term) :=
+  let res := map_pair fn f p.(pparams) in
+  let params' := res.1 in
+  let f' := res.2 in
+    {| pparams := p.(pparams); (* we do not want to linearize the parameters *)
+        puinst := finst p.(puinst);
+        pcontext := p.(pcontext);
+        preturn := (fn (shift #|p.(pcontext)| f) p.(preturn)).1 |}. 
+(* if we linearize the return type of a case analysis, 
+we should use the same renamings in the term so we do not want to use the second projection
+of (fn (shift #|p.(pcontext)| f) p.(preturn)).1
+This second projection is only useful to update the list of fresh variables introduced to replace 
+second or more occurences of the variables  *)
+
+End predicate_shift_linearize. 
+
+Section map_branch_shift.
+  Context {T : Type}.
+  Context (fn : (nat -> T) -> term -> term).
+  Context (shift : nat -> (nat -> T) -> nat -> T).
+  Context (f : nat -> T).
+
+  Definition map_branch_shift (b : branch term) :=
+  {| bcontext := b.(bcontext);
+      bbody := fn (shift #|b.(bcontext)| f) b.(bbody) |}.
+
+(*   Lemma map_shift_bbody (b : branch term) :
+    fn (shift #|b.(bcontext)| f) (bbody b) = bbody (map_branch_shift b).
+  Proof using Type. reflexivity. Qed.
+  
+  Lemma map_shift_bcontext (b : branch term) :
+    (bcontext b) = bcontext (map_branch_shift b).
+  Proof using Type. reflexivity. Qed. *)
+End map_branch_shift.
+
+(** Shift a renaming [f] by [k]. *)
+Definition shiftn k f :=
+  fun n => if Nat.ltb n k then n else k + (f (n - k)).
+
+Notation map_branches_shift ren f :=
+  (map (map_branch_shift ren shiftn f)).
+  
+Fixpoint rename f t : term :=
+  match t with
+  | tRel i => tRel (f i)
+  | tEvar ev args => tEvar ev (List.map (rename f) args)
+  | tLambda na T M => tLambda na (rename f T) (rename (shiftn 1 f) M)
+  | tApp u v => tApp (rename f u) (map (rename f) v)
+  | tProd na A B => tProd na (rename f A) (rename (shiftn 1 f) B)
+  | tLetIn na b t b' => tLetIn na (rename f b) (rename f t) (rename (shiftn 1 f) b')
+  | tCase ind p c brs =>
+    let p' := map_predicate_shift rename shiftn id f p in
+    let brs' := map_branches_shift rename f brs in
+    tCase ind p' (rename f c) brs'
+  | tProj p c => tProj p (rename f c)
+  | tFix mfix idx =>
+    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
+    tFix mfix' idx
+  | tCoFix mfix idx =>
+    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
+    tCoFix mfix' idx
+  | x => x
   end.
 
 Section compute_occurences_predicate. 
 
-  Context (count_occ : nat -> term -> nat).
+  Context (count_occ : global_declarations -> nat -> term -> nat).
 
-  Definition compute_occurences_predicate (n : nat) (p : predicate term) :=
-    count_occ n p.(preturn).
+  Definition compute_occurences_predicate (e : global_declarations) (n : nat) (p : predicate term) :=
+    count_occ e n p.(preturn).
 
 End compute_occurences_predicate.
 
 Section compute_occurences_branch. 
 
-  Context (count_occ : nat -> term -> nat).
+  Context (count_occ : global_declarations -> nat -> term -> nat).
 
-  Definition compute_occurences_branch (n : nat) (b : branch term) :=
-    count_occ (n + #|b.(bcontext)|)  b.(bbody).
+  Definition compute_occurences_branch (e : global_declarations) (n : nat) (b : branch term) :=
+    count_occ e (n + #|b.(bcontext)|)  b.(bbody).
 
 End compute_occurences_branch.
 
 Section compute_occurences_def.
 
-  Context (count_occ : nat -> term -> nat). 
+  Context (count_occ : global_declarations -> nat -> term -> nat). 
   
-  Definition compute_occurences_def (n : nat) (d : def term) :=
-    count_occ n (dtype d) + count_occ n (dbody d).
+  Definition compute_occurences_def (e : global_declarations) (n : nat) (d : def term) :=
+    count_occ e n (dtype d) + count_occ e n (dbody d).
 
 End compute_occurences_def. 
 
-Print global_declarations. (* global_declarations = 
+Print global_declarations.
+
+Print global_env. (* global_declarations = 
 list (kername × global_decl)
      : Type *)
 (** Compute the number of occurrences of the variable n in a term 
@@ -201,6 +293,5 @@ match t with
 | tInd _ _ => 0
 | tConstruct _ _ _ => 0
 end.
-
 
 
