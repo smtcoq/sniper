@@ -172,6 +172,9 @@ Section compute_occurences_def.
 
 End compute_occurences_def. 
 
+Print global_declarations. (* global_declarations = 
+list (kername × global_decl)
+     : Type *)
 (** Compute the number of occurrences of the variable n in a term 
 TODO : if n occurs as a parameter position, then ignore this occurence **) 
 
