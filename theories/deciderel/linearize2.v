@@ -1,6 +1,7 @@
 Require Import List.
 Require Import MetaCoq.Template.All.
 Require Import MetaCoq.Template.Checker.
+From MetaCoq.PCUIC Require Import TemplateToPCUIC.
 Import ListNotations MCMonadNotation.
 
 (** Specification of this file: 
@@ -181,7 +182,7 @@ Section predicate_shift_linearize.
         preturn := (fn (shift #|p.(pcontext)| f) p.(preturn)).1 |}. 
 (* if we linearize the return type of a case analysis, 
 we should use the same renamings in the term so we do not want to use the second projection
-of (fn (shift #|p.(pcontext)| f) p.(preturn)).1
+of (fn (shift #|p.(pcontext)| f) p.(preturn))
 This second projection is only useful to update the list of fresh variables introduced to replace 
 second or more occurences of the variables  *)
 
@@ -193,7 +194,7 @@ Section map_branch_shift.
   Context (shift : nat -> (nat -> T) -> nat -> T).
   Context (f : nat -> T).
 
-  Definition map_branch_shift (b : branch term) :=
+  Definition map_branch_shift_linearize (b : branch term) :=
   {| bcontext := b.(bcontext);
       bbody := fn (shift #|b.(bcontext)| f) b.(bbody) |}.
 
@@ -206,92 +207,117 @@ Section map_branch_shift.
   Proof using Type. reflexivity. Qed. *)
 End map_branch_shift.
 
-(** Shift a renaming [f] by [k]. *)
-Definition shiftn k f :=
-  fun n => if Nat.ltb n k then n else k + (f (n - k)).
-
-Notation map_branches_shift ren f :=
-  (map (map_branch_shift ren shiftn f)).
-  
-Fixpoint rename f t : term :=
-  match t with
-  | tRel i => tRel (f i)
-  | tEvar ev args => tEvar ev (List.map (rename f) args)
-  | tLambda na T M => tLambda na (rename f T) (rename (shiftn 1 f) M)
-  | tApp u v => tApp (rename f u) (map (rename f) v)
-  | tProd na A B => tProd na (rename f A) (rename (shiftn 1 f) B)
-  | tLetIn na b t b' => tLetIn na (rename f b) (rename f t) (rename (shiftn 1 f) b')
-  | tCase ind p c brs =>
-    let p' := map_predicate_shift rename shiftn id f p in
-    let brs' := map_branches_shift rename f brs in
-    tCase ind p' (rename f c) brs'
-  | tProj p c => tProj p (rename f c)
-  | tFix mfix idx =>
-    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
-    tFix mfix' idx
-  | tCoFix mfix idx =>
-    let mfix' := List.map (map_def (rename f) (rename (shiftn (List.length mfix) f))) mfix in
-    tCoFix mfix' idx
-  | x => x
-  end.
 
 Section compute_occurences_predicate. 
-
-  Context (count_occ : global_declarations -> nat -> term -> nat).
+ 
+  
+  Context (count_occ : global_declarations -> nat -> term -> nat -> nat).
+  Context (fuel : nat).
 
   Definition compute_occurences_predicate (e : global_declarations) (n : nat) (p : predicate term) :=
-    count_occ e n p.(preturn).
+    count_occ e n p.(preturn) fuel.
 
 End compute_occurences_predicate.
 
 Section compute_occurences_branch. 
 
-  Context (count_occ : global_declarations -> nat -> term -> nat).
+  
+  Context (count_occ : global_declarations -> nat -> term -> nat -> nat).
+  Context (fuel : nat).
 
   Definition compute_occurences_branch (e : global_declarations) (n : nat) (b : branch term) :=
-    count_occ e (n + #|b.(bcontext)|)  b.(bbody).
+    count_occ e (n + #|b.(bcontext)|)  b.(bbody) fuel.
 
 End compute_occurences_branch.
 
 Section compute_occurences_def.
 
-  Context (count_occ : global_declarations -> nat -> term -> nat). 
+  Context (count_occ : global_declarations -> nat -> term -> nat -> nat). 
+  Context (fuel : nat).
   
   Definition compute_occurences_def (e : global_declarations) (n : nat) (d : def term) :=
-    count_occ e n (dtype d) + count_occ e n (dbody d).
+    count_occ e n (dtype d) fuel + count_occ e n (dbody d) fuel.
 
 End compute_occurences_def. 
 
-Print global_declarations.
+(** Finds the number of parameters of an inductive **) 
+Fixpoint lookup_npars (l : global_declarations) (kn : kername) :=
+match l with
+| [] => 0 (* a default value if the inductive is not in the global environment *)
+| x :: xs => if eq_kername x.1 kn then match x.2 with
+                  | ConstantDecl _ => 0
+                  | InductiveDecl ind => ind.(ind_npars)
+                end
+             else lookup_npars xs kn
+end. 
 
-Print global_env. (* global_declarations = 
-list (kername × global_decl)
-     : Type *)
+Section compute_occurences.
+
 (** Compute the number of occurrences of the variable n in a term 
-TODO : if n occurs as a parameter position, then ignore this occurence **) 
+if n occurs as a parameter position, then ignore this occurence **) 
 
-Fixpoint compute_occurences_var (n: nat) (t : term) :=
-match t with
-| tRel i => if Nat.eqb i n then 1 else 0
-| tVar id => 0
-| tEvar ev l => List.fold_left (fun n' x => n' + compute_occurences_var n x) l 0
-| tSort s => 0
-| tCast t1 ck t2 => compute_occurences_var n t1 + compute_occurences_var n t2
-| tProd na Ty u => compute_occurences_var n Ty + compute_occurences_var (S n) u
-| tLambda na Ty u => compute_occurences_var n Ty + compute_occurences_var (S n) u
-| tLetIn na b t b' => compute_occurences_var n b + compute_occurences_var n t 
-  + compute_occurences_var (S n) b'
-| tCase ind p c brs => compute_occurences_predicate compute_occurences_var n p + 
-  List.fold_left (fun n' x => n' + compute_occurences_branch compute_occurences_var n x) brs 0 + compute_occurences_var n c
-| tApp u l => compute_occurences_var n u + List.fold_left (fun n' x => n' + compute_occurences_var n x) l 0
-| tProj p c => compute_occurences_var n c
-| tFix mfix idx =>  List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_var (n + List.length mfix) x) mfix 0
-| tCoFix mfix idx => List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_var (n + List.length mfix) x) mfix 0
-| tInt _ => 0
-| tFloat _ => 0
-| tConst _ _ => 0
-| tInd _ _ => 0
-| tConstruct _ _ _ => 0
-end.
+  Context (Σ : PCUICProgram.global_env_map).
+
+  Fixpoint compute_occurences_fuel (env: global_declarations) (n: nat) (t : term) (fuel : nat) :=
+  match fuel with
+  | 0 => 0
+  | S fuel' =>
+    match t with
+    | tRel i => if Nat.eqb i n then 1 else 0
+    | tVar id => 0
+    | tEvar ev l => List.fold_left (fun n' x => n' + compute_occurences_fuel env n x fuel') l 0
+    | tSort s => 0
+    | tCast t1 ck t2 => compute_occurences_fuel env n t1 fuel' + compute_occurences_fuel env n t2 fuel'
+    | tProd na Ty u => compute_occurences_fuel env n Ty fuel' + compute_occurences_fuel env (S n) u fuel'
+    | tLambda na Ty u => compute_occurences_fuel env n Ty fuel' + compute_occurences_fuel env (S n) u fuel'
+    | tLetIn na b t b' => compute_occurences_fuel env n b fuel' + compute_occurences_fuel env n t fuel' 
+      + compute_occurences_fuel env (S n) b' fuel'
+    | tCase ind p c brs => compute_occurences_predicate compute_occurences_fuel fuel' env n p  + 
+      List.fold_left (fun n' x => n' + compute_occurences_branch compute_occurences_fuel fuel' env n x) brs 0 + compute_occurences_fuel env n c fuel'
+    | tApp (tInd ind _) l => let npars := lookup_npars env ind.(inductive_mind) in 
+                         let l' := List.skipn npars l in
+                         List.fold_left (fun n' x => n' + compute_occurences_fuel env n x fuel') l' 0
+    | tApp u l => compute_occurences_fuel env n u fuel' + List.fold_left (fun n' x => n' + compute_occurences_fuel env n x fuel') l 0
+    | tProj p c => compute_occurences_fuel env n c fuel'
+    | tFix mfix idx =>  List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_fuel fuel' env (n + List.length mfix) x) mfix 0
+    | tCoFix mfix idx => List.fold_left (fun n' x => n' + compute_occurences_def compute_occurences_fuel fuel' env (n + List.length mfix) x) mfix 0
+    | tInt _ => 0
+    | tFloat _ => 0
+    | tConst _ _ => 0
+    | tInd _ _ => 0
+    | tConstruct _ _ _ => 0
+    end
+  end.
+
+  Definition compute_occurences (env: global_declarations) (n: nat) (t : term) :=
+  let fuel := PCUICSize.size (trans Σ t) in compute_occurences_fuel env n t fuel.
+
+End compute_occurences.
+
+Parameter (Σ : PCUICProgram.global_env_map).
+
+MetaCoq Quote Recursively Definition foo := (forall (n : nat), n + 0 = n).
+
+Print foo.
 
 
+Compute (compute_occurences Σ ((foo.1).(declarations)) 0 ((tApp
+     (tInd
+        {|
+          inductive_mind := (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs], "eq"%bs);
+          inductive_ind := 0
+        |} [])
+     [tInd
+        {|
+          inductive_mind :=
+            (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+          inductive_ind := 0
+        |} [];
+     tApp (tConst (MPfile ["Nat"%bs; "Init"%bs; "Coq"%bs], "add"%bs) [])
+       [tRel 0;
+       tConstruct
+         {|
+           inductive_mind :=
+             (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "nat"%bs);
+           inductive_ind := 0
+         |} 0 []]; tRel 0]))).
