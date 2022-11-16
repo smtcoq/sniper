@@ -303,18 +303,24 @@ Definition is_type (t : term) := match t with
                                  |_ => false
                                   end.
 
+
+(* Get the nb of construcors of a non-mutual inductive declaration *)
+Definition get_nb_constructors_dcl decl := 
+match ind_bodies decl with 
+  | nil => 0
+  | x :: _ => Datatypes.length (ind_ctors x)
+end.
+
 (* Get the nb of construcors of a reified inductive type if we have the reified global environment *)
 Definition get_nb_constructors i Σ := 
 match i with 
 | tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
-                | Some (InductiveDecl decl) => match ind_bodies decl with 
-                          | nil => 0
-                          | x :: _ => Datatypes.length (ind_ctors x)
-                          end
+                | Some (InductiveDecl decl) => get_nb_constructors_dcl decl
                 | _ => 0
 end
 | _ => 0
 end.
+
 
 Fixpoint get_type_constructors (l : list constructor_body) :=
 match l with

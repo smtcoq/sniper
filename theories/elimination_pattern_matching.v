@@ -20,13 +20,19 @@ Require Import expand.
 Require Import List.
 Import ListNotations.
 
+
 Ltac create_evars_for_each_constructor i := 
-let y := metacoq_get_value (tmQuoteRec i) in 
-let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let i_reif := metacoq_get_value (tmQuote i) in
+match i_reif with
+| tInd (?indu ?kn _) ?inst =>
+let y := metacoq_get_value (tmQuoteInductive kn) in 
+let n:= eval cbv in (get_nb_constructors_dcl y) in
 let rec tac_rec u := match constr:(u) with 
       | 0 => idtac
       | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
-end in tac_rec n.
+    end in tac_rec n
+| _ => idtac 
+end.
 
 Goal True.
 create_evars_for_each_constructor bool.
