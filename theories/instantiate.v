@@ -2,10 +2,10 @@ From elpi Require Import elpi.
 Require Import List.
 
 Elpi Tactic elimination_polymorphism.
-From Sniper Extra Dependency "elpi/utilities.elpi" as utils.
-From Sniper Extra Dependency "elpi/instantiate.elpi" as inst.
-From Sniper Extra Dependency "elpi/find_instances.elpi" as find_inst.
-From Sniper Extra Dependency "elpi/construct_cuts.elpi" as cc.
+From Sniper.elpi Extra Dependency "utilities.elpi" as utils.
+From Sniper.elpi Extra Dependency "instantiate.elpi" as inst.
+From Sniper.elpi Extra Dependency "find_instances.elpi" as find_inst.
+From Sniper.elpi Extra Dependency "construct_cuts.elpi" as cc.
 
 Elpi Accumulate File utils.
 Elpi Accumulate File inst.
