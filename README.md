@@ -18,7 +18,7 @@ or being proved once and for all in Coq (*certified* transformations).
 ## Installation and use
 
 This part describes the steps required to try the `snipe` tactic. It can
-be used with Coq-8.13.
+be used with Coq-8.16.
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
