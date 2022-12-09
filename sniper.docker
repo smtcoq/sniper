@@ -1,12 +1,13 @@
 ############################################################
-# Dockerfile to build the docker image for the submission
-# entitled "Compositional pre-processing for automated
-# reasoning in dependent type theory".
+# Dockerfile to build the docker image for the article entitled
+# "Compositional pre-processing for automated reasoning in dependent
+# type theory" published at the conference "Certified Programs and
+# Proofs (CPP) 2023".
 #
 # Based on the debian image
-# Build with `docker build -t paper24 -f paper24.docker .`
-# Run with `docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash`
-#   or `docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide`
+# Build with `docker build -t sniper -f sniper.docker .`
+# Run with `docker run -ti --rm -e DISPLAY=host.docker.internal:0 sniper bash`
+#   or `docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" sniper coqide`
 # For the latter, you may need to set a `DISPLAY` environment variable,
 #   e.g. `export DISPLAY=:0`.
 # Warning:
@@ -26,12 +27,12 @@ RUN sudo apt-get -y update && \
 
 WORKDIR /home/coq
 
-COPY --chown=coq:coq . /home/coq/paper24
+COPY --chown=coq:coq . /home/coq/sniper
 
 RUN opam update && \
     opam repo add coq-released https://coq.inria.fr/opam/released && \
     opam depext -y coq coqide coq-metacoq-pcuic coq-elpi coq-hammer coq-itauto coq-mathcomp-algebra coq-mathcomp-zify && \
-    cd paper24 && \
+    cd sniper && \
     opam install -y .
 
 ###################### COMPILE veriT #######################

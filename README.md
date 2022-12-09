@@ -16,10 +16,33 @@ or being proved once and for all in Coq (*certified* transformations). A
 crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
-This version is an experimental version using the Trakt plugin.
+This version is the source code accompanying the article entitled
+"Compositional pre-processing for automated reasoning in dependent type
+theory" published at the conference "Certified Programs and Proofs (CPP)
+2023".
 
 
 ## Installation and use
+### Using docker
+This is the simplest way of building the code. Simply run:
+```bash
+docker build -t paper24 -f paper24.docker .
+```
+
+You can then access the image through a shell using
+```bash
+docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash
+```
+or through coqide using
+```bash
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide
+```
+For the latter, you may need to set the `DISPLAY`, e.g. by doing `export
+DISPLAY=:0` under Linux, or following [these
+explanations](https://cntnr.io/running-guis-with-docker-on-mac-os-x-a14df6a76efc)
+under MacOS.
+
+### Natively
 
 This part describes the steps required to try the `snipe` tactic. It can
 be used with Coq-8.13.
@@ -53,9 +76,9 @@ Then simply install `Sniper`:
 opam install coq-sniper
 ```
 
-### Installation of the automatic prover and use
+#### Installation of the automatic backends and use
 
-You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
+Sniper uses the veriT SMT solver as a backend, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
 ```
 cd veriT9f48a98
@@ -69,9 +92,29 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-## Examples
+Some examples use CoqHammer as a backend: solvers for the CoqHammer
+  plugin may be installed by following [these
+  instructions](https://coqhammer.github.io/#installation-of-first-order-provers)
+  (but it is not mandatory).
 
-Commented examples are available at ``examples.v``.
+## Examples
+The file `examples/paper_examples.v` is the entry point for the
+examples. It presents all the examples of this paper, in the same order;
+it is designed to be executed throughout the reading of the paper.
+
+It can be evaluated by running:
+```bash
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" sniper coqide /home/coq/sniper/examples/paper_examples.v
+```
+if you built the code with docker (see above if the display fails), or
+```bash
+coqide examples/paper_examples.v
+```
+if you built the code natively.
+
+In the latter case, if you get the error "veriT: not found", or "code
+127", it is probably because veriT is not installed in your PATH (see
+above).
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
