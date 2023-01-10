@@ -73,7 +73,7 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 
 Then simply install `Sniper`:
 ```
-opam install coq-sniper
+opam install .
 ```
 
 #### Installation of the automatic backends and use
