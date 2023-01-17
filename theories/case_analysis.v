@@ -79,7 +79,6 @@ From the reified point of view, an inductive type contains:
 * a mutual_inductive_body (metavariable mind)
 * mind contains a list of one_inductive_body's (metavariable oind)
 * each one_inductive_body contains relevant information about, e.g., its constructors and their types
-(* \TODO pointer vers le fonctions de aux_fun_list comme pose_mind etc *)
 
 We must define projections proj_{i,j} for i = 0, ... , k-1 and j = 0, ..., n_i-1
 proj_{i,j} = fun (X_0 : A_0) ...  (X_{p-1} : A_{p-1)} (def_{i,j} : Aunlift_{i,j}) (x : (I X_0 ... X_{p-1})), 
@@ -120,13 +119,9 @@ where _p is a macro for p evars
  *)
 
 
-
-(* \TODO : rename impossible term, which is an empty inductive type and is mainly used as a marker *)
-
-
-(* get_indu_app_to_params t p = tApp t [tRel p ; .... ; tRel 1] *)
+(* get_term_applied t p = tApp t [tRel (p + n -1) ; .... ; tRel p] *)
 (* tail-recursive *)
-Definition get_indu_app_to_params (t : term) (p n: nat) := 
+Definition get_term_applied (t : term) (p n: nat) := 
   tApp t (Rel_list p n).
 
 
@@ -135,7 +130,8 @@ Definition get_indu_app_to_params (t : term) (p n: nat) :=
 (***************)
 
 Ltac find_inhabitant_context t := 
-first[ constructor ; assumption | apply Inh | epose (inhab := ?[t_evar] : t)]. 
+first[ constructor ; assumption | 
+apply Inh | epose (inhab := ?[t_evar] : t)]. 
 
 Ltac find_inh t :=
 match goal with
@@ -145,55 +141,29 @@ end.
 
 
 (* removes k to each de Brujin index: useful when variables are removed *)
-(* Remark: does not work with dependencies. Should perhaps use subst instead *)
-Fixpoint unlift (k : nat) (t : term)  {struct t} : term :=
-  match t with
-  | tRel i => tRel (i-k)
-  | tEvar ev args => tEvar ev (map (unlift k) args)
-  | tCast c kind t0 => tCast (unlift k c) kind (unlift k t0)
-  | tProd na A B => tProd na (unlift k A) (unlift k B)
-  | tLambda na T M => tLambda na (unlift k T) (unlift k M)
-  | tLetIn na b t0 b' => tLetIn na (unlift k b) (unlift k t0) (unlift k b')
-  | tApp u v => tApp (unlift k u) (map (unlift k) v)
-  | tCase ind p c brs =>
-      let brs' := map (on_snd (unlift k)) brs in
-      tCase ind (unlift k p) (unlift k c) brs'
-  | tProj p c => tProj p (unlift k c)
-  | tFix mfix idx =>
-      let k' := #|mfix| + k in
-      let mfix' := map (map_def (unlift k) (unlift k')) mfix in tFix mfix' idx
-  | tCoFix mfix idx =>
-      let k' := #|mfix| + k in
-      let mfix' := map (map_def (unlift k) (unlift k')) mfix in
-      tCoFix mfix' idx
-  | _ => t
-  end.
+Fixpoint unlift (k : nat) (t : term) : term :=
+ match k with
+| 0 => t
+| S k' => unlift k' (subst10 <%default%> t)
+end.
 
 
-(* branch_default_var n_i i j q = Prod x1 hole. ... Prod x_{n_i} hole (tRel kp) 
-    where dq is defined with:
+(* branch_proj_or_default n_i i j q = tRel kp
+    where kp is defined with:
     kp = n_q - 1 - j if q = j
     kp = n_q + 1 if q <> j 
     * If j <> q then, tRel kp denotes def, the default variable
     Indeed, tRel dq is tRel 1 lifted nq times
     * If j = k, then tRel dq denotes the variable that is bound by the hole of rank i
   Thus, branch_default_var n_q i j q  denotes the branch of rank q of the 
-  pattern-matching specifying proj_{i,j}, where n_q is the number of arguments of 
+  pattern-matching specifying proj_{i,j}, where nq is the number of arguments of 
   the constructor C_q
 *)
-Definition branch_default_var (nq : nat)  (i : nat) (j : nat) (q : nat) := 
-      let dq := if Nat.eqb i q then nq - (S j)  
-      else S nq in
-      let fix aux i acc :=
-      match i with 
-      | 0 => acc 
-      | S i => aux i (mkLam hole acc)
-      end
-      in aux nq (tRel dq).  
+Definition result_branch_proj_or_default (nq : nat)  (i : nat) (j : nat) (q : nat) := 
+      if Nat.eqb i q then tRel (nq - (S j))  
+      else tRel (S nq).
 
    
-
-(* \TODO long term: recover the "relevant" parameter and not hard-code it *)
 (* Constructs the pattern matching in the proj
 for instance, given the right arguments to construct the predecessor function we get the reified
 < match x with
@@ -201,37 +171,46 @@ for instance, given the right arguments to construct the predecessor function we
 | S y => y > *)
 
 
-
-(* mkCase_list_param [n_0 ; ... ; n_{k-1} ] i j 
-     is the list expected by the 'tCase' constructor to define the pattern-matching 
+(* mkbranch_proj [n_0 ; ... ; n_{k-1} ] i j 
+     is the list (branch term) expected by the 'tCase' constructor to define the pattern-matching 
      specifying the proj_{i,j} 
      Namely, it is the list:
-     [ (n_0 , branch_default_var n_0 i j 0) ; ... ; (n_{k-1} , branch_default_var n_{k-1} i j (k-1) ) ]
+     [ {| bcontext := "context with nO fresh names"; bbody := result_branch_proj_or_default n_0 i j 0 |} ; ... ; 
+      {| bcontext := "context with nk fresh names"; bbody := result_branch_proj_or_default n_{k-1} i j (k-1)|} ]
 *)
-Definition mkCase_list_param (ln : list nat)  (i : nat) (j : nat) :=
+Definition mkCase_list_param (ln : list nat)  (i : nat) (j : nat) : list (branch term):=
   let fix aux ln q acc :=
   match ln with
   | [] => acc
-  | nq :: ln => aux ln (S q)  ((nq , branch_default_var nq i j q) :: acc )
+  | nq :: ln => aux ln (S q)  ({| bcontext := list_aname nq ; bbody := result_branch_proj_or_default nq i j q |} :: acc) 
   end
   in tr_rev (aux ln 0 []). 
 
+(* We use Coq type inference to avoid bothering with 
+typing the match and the parameters *)
+Definition get_predicate_term (p : nat) (I : term) (inst: Instance.t) (return_type : term) :=
+{| puinst := inst; pparams := list_of_holes p; pcontext := [mknAnon] ; preturn := return_type |}.
 
 
 (* proj_ij p lP_rev I indu i j llAu ln Au_{i,j} 
     defines the reification of proj_ij, where the parameters follow the
     metavariables conventions specified in the head of this file
-    (lP is lP reverted)
+    (lP_rev is lP reverted)
 *)
 Definition proj_ij (p : nat) (lP_rev : list term) (I : term) (indu : inductive)  (i : nat) (j : nat)
 (ln : list nat) (Auij : term):= 
+let info := get_info_inductive I in 
+let instances := match info with
+      | None => []
+      | Some p => p.2 
+    end in
 mkLam_rec lP_rev 
- (mkLam Auij (mkLam (get_indu_app_to_params I p 1)
-(tCase (indu, p, Relevant)  (mkLam (get_indu_app_to_params I p 2) (lift0 3 Auij)) (tRel 0)  (mkCase_list_param ln i j)))).
+ (mkLam Auij (mkLam (get_term_applied I p 1)
+(tCase {| ci_ind := indu; ci_npar := p ; ci_relevance := Relevant|}  
+       (get_predicate_term p I instances (lift 3 0 Auij)) (tRel 0) (mkCase_list_param ln i j)))).
 
 
 (* This function computes the projections of an inductive type the projections in the local environment
-  \TODO some tr_rev's could perhaps be avoided if collect_projs is merged with the Ltac function declare_projs below
 *)
 Definition collect_projs (p : nat) (lP_rev : list term) (I : term) (indu: inductive)
 (llAunlift : list (list term)) (ln : list nat) (k : nat)
@@ -251,22 +230,24 @@ end in
 aux2 (tr_rev llAunlift) (tr_rev ln) k []. 
 
 
-(* \TODO improve the naming of the functions *)
 Ltac declare_projs_ctor_i na p lP_rev I indu llAu ln i lAi ni :=
   let _ := match goal with _ =>  idtac end in let lAi' := constr:(tr_rev lAi) in 
   let rec aux1 i j lAi' acc :=
   lazymatch j with
   | 0 => constr:(acc)
   | S ?j0 => lazymatch eval hnf in lAi' with
-   | ?Auij :: ?tlAi' =>  let pij := constr:(proj_ij p lP_rev I indu i j0 ln Auij) in let name :=  fresh "proj_" na  in let _ := match goal with _ => pose_unquote_term_hnf pij name
-    end in let pij_tVar := metacoq_get_value (tmQuote name)  in let acc0 := constr:(pij_tVar :: acc) in let z := aux1 i j0 tlAi' acc0 in constr:(z)
+   | ?Auij :: ?tlAi' =>  let pij := constr:(proj_ij p lP_rev I indu i j0 ln Auij) in let name :=  fresh "proj_" na  in 
+                          let _ := match goal with _ => pose_unquote_term_hnf pij name
+    end in 
+    let pij_tVar := metacoq_get_value (tmQuote name) in 
+    let acc0 := constr:(pij_tVar :: acc) in 
+    let z := aux1 i j0 tlAi' acc0 in constr:(z)
    end 
    | _ => idtac "erroc declare_projs_ctor_i"
   end
   in   let res_dpi := aux1 i ni lAi' (@nil term) in constr:(res_dpi)
 .
 
-(* \TODO améliorer le nommage *)
 (* declare_projs_for_one_ctor .... k lAk k 
    (1) declare the projections of Ck, the ctor of rank k of I with the base name na (hopefully, the name of the inductive)
    (2) outputs the list of reified projections as tVar's [ tVar "na_k_0" ; .... ; tVar "na_k_nk" ] (i.e. projections are in order)
@@ -282,9 +263,6 @@ Ltac declare_projs_ctor_i na p lP_rev I indu llAu ln i lAi ni :=
       ;  [ tVar "na_nc_0" ; .... ; tVar "na_nc_{k_nc}" ] ]
       (i.e. projections are in order)
   where nc is the number of constructors of the inductive
-  *)
-  (* \TODO  currently, the projections are in order in the output, but it would be better that they are in the reverse order to produce the generation statement
-  (indeed, we need to perform one reverse)
   *)
 
 Ltac declare_projs na p lP_rev I indu llAu ln nc :=
@@ -302,7 +280,9 @@ in lazymatch eval hnf in y with
     | (?k, ?lAu') => lazymatch eval hnf in k with
       | S ?k => match eval hnf in lAu' with
         | ?lAk :: ?tlAu'=> 
-        let dpk  := declare_projs_ctor_i na p lP_rev I indu llAu ln k  lAk nk in let acc0 := constr:(dpk :: acc ) in let res2 := aux tlAu' tln0 k acc0 in  constr:(res2)
+        let dpk  := declare_projs_ctor_i na p lP_rev I indu llAu ln k  lAk nk in
+        let acc0 := constr:(dpk :: acc ) in 
+        let res2 := aux tlAu' tln0 k acc0 in  constr:(res2)
   end 
   end   
   end
@@ -312,50 +292,6 @@ end
 in 
 let res_dp := aux llAu_rev ln_rev nc (@nil (list term))  in constr:(res_dp)
 . 
-
-
-
-
-
-
-(*** \TODO one unique function which declares the projectors of I in the local context
- and outputs the list of lists of their tVar's
-*)
-Ltac declare_projs0 p lP_rev  I indu llAunlift  ln nc 
-:= 
-match goal with _ => let rec aux1 k  i  lAk' acc := 
- let x := constr:((i,lAk'))   in (* idtac "blut 0" ; *)
-  lazymatch eval hnf in x with
-   | (?i,?lAk') => lazymatch eval hnf in i with
-     | 0 => constr:(acc) 
-     | S ?i => lazymatch eval hnf in lAk' with
-       | ?Akiu :: ?lAk' => let res1 := aux1 k i lAk' constr:(((proj_ij p lP_rev I indu k i ln (Akiu)):: acc))in constr:(res1)
-       end end
-   | _ => idtac "error declare_projs 1"
-  end 
-in
-let rec aux2 llAu' ln' k  acc :=
-let y := constr:(((k,llAu'),ln')) 
-in  lazymatch eval hnf in y with
-| (?y0 , ?ln0') => 
-  lazymatch eval cbv in ln0' with
-  | (@nil nat) => constr:(acc) 
-  | ?i :: ?ln1' => 
-    lazymatch eval hnf in y0 with 
-    | (?k, ?lAu') => lazymatch eval hnf in k with
-      | S ?k => (* idtac "blut 5" ; *) lazymatch eval hnf in lAu' with
-        | ?lAk :: ?lAu'=> let res2 := aux2 llAu' ln' k constr:((aux1 k i (tr_rev lAk) (@nil term)) :: acc) in constr:(res2)
-  end 
-  end   
-  end
-  end 
-  |_ => idtac "error declare_projs 1"
-end
-in let res := aux2 constr:(tr_rev llAunlift) constr:(tr_rev ln) nc (@nil term)  in constr:(res)
-end
-.
-
-
 
 
 
@@ -384,14 +320,12 @@ Definition proj_return_types (llA: list (list term)) :=
 (* warning: handles parameters but not dependent arguments *)
 
 
-(* \TODO : bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,n_0-1}] ; ... ; [A_{k-1,0} ; .... ; A_{k-1,n_k-1}] ]
+(* bind_def_val_in_gen [[A_{0,0} ; ... ; A_{0,n_0-1}] ; ... ; [A_{k-1,0} ; .... ; A_{k-1,n_k-1}] ]
                                   [ n_0 ; ... ; n_{k-1} ]
     = [ A_{k,n_k}^N ; ... ; A_{0,1}^{+1} ; A_{0,0}^0 ]
       where N = n_0 + ... + n_{k-1}
       Thus, bind_def_val_in_gen performs a flattening, a revert and a incremental lift of all the elements of the initial list of lists
     *)
-(* \TODO the accumulators n0, n0+n1, n0+n1+n2..., or should perhaps be computed in a separate place
- *)
 Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
   let fix aux1  acc i (lA : list term) : list term  := 
   match lA with
@@ -405,20 +339,8 @@ Definition bind_def_val_in_gen (llAunlift : list (list term)) (ln : list nat) :=
   | _ => [] (* this cases does not happen: ln and llAunflit have the same length *)
   end 
   in  aux2 [] 0 0  llAunlift ln.
-
-
-(* holes_p p = [hole ; ... ; hole] (p occurrences)
-   linear *)
-   Definition holes_p (p : nat) :=
-    let fix aux p acc := 
-    match p with
-    | 0 => acc 
-    | S p => aux p (hole :: acc)
-  end in aux p [].
   
-  (* holes_p p = [hole ; ... ; hole ; tRel db ; tRel 0] with p holes 
-      \TODO useful to pass the parameters to the projections,
-      cf. get_elim_applied and get_eq_x_ctor_projs *)
+  (* holes_p p = [hole ; ... ; hole ; tRel db ; tRel 0] with p holes *)
   Definition holes_p' (p : nat) (db : nat) :=
     let fix aux p acc := 
     match p with
@@ -444,12 +366,9 @@ let fix aux lprojs i  acc :=
    | (pki :: lprojs, S i) => aux lprojs i ((tApp pki (holes_p' p i))::acc)
    | _ => [] (* this case does not happen *)
   end in 
-  mkEq hole (tRel 0) (tApp ctor (rev_append (holes_p p) (tr_rev (aux projs (S db) [])))).
+  mkEq hole (tRel 0) (tApp ctor (rev_append (list_of_holes p) (tr_rev (aux projs (S db) [])))).
 
 
-(* \todo check that the db are computed somewhere *)
-(* \todo, here, one rather needs a revert mkOr_n *)
-(* \todo see if this needs to be reverted later*)
 (* get_generation_disjunction p ctors list_proj ldb 
    outputs the reification of forall x : I, 
    x = C0 (projs0 x) \/ .... \/ x = Ck (projsk x)
@@ -460,7 +379,6 @@ let fix aux lprojs i  acc :=
    Note that mkProd tApp I (Rel_list N p) _
    is forall x : I A1 ... Ap, _
    *)
-(* \TODO remove ldb argument *)
 
 
  Definition get_generation_disjunction  (p : nat) (I: term) (N : nat) (lc : list term) (list_proj : list (list term)) (ln : list nat) :=
@@ -514,15 +432,17 @@ Ltac gen_statement t :=
     lazymatch eval hnf in pparams with 
     | (?p,?lP) =>
     lazymatch eval hnf in pparams with
-    | (?p, ?lP) => let oind := eval compute in (hd nat_oind mind.(ind_bodies)) in
+    | (?p, ?lP) => let oind := eval compute in (hd default_body mind.(ind_bodies)) in
      let gct := eval compute in  (get_ctors_and_types_i indu p 1 0 u  oind) 
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
         | (?lB,?lc) => let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
-        let lP_rev := eval compute in (tr_rev lP) in let llAu := eval compute in (proj_return_types llAtrunc) in let t_reif := constr:(tInd indu u) in  let N := constr:(fold_left Nat.add ln 0) in
+        let lP_rev := eval compute in (tr_rev lP) in let llAu := eval compute in (proj_return_types llAtrunc) in 
+        let t_reif := constr:(tInd indu u) in  let N := constr:(fold_left Nat.add ln 0) in
         let res3 := 
-         declare_projs t p lP_rev t_reif indu llAu ln nc in let llprojs := fresh "llprojs" in 
+         declare_projs t p lP_rev t_reif indu llAu ln nc in 
+        let llprojs := fresh "llprojs" in 
          pose (llprojs  := res3) ; 
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
         let ggd := constr:(mkProd_rec_n "A" lP_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
@@ -539,14 +459,8 @@ Ltac gen_statement t :=
 Ltac pose_gen_statement t :=
 let x := gen_statement t in idtac. (* pose x as gent *)
 
-
-(* \TMP *)
 Ltac get_projs_st_return t := gen_statement t. 
 
-
-
-
-(* \TMP *)
 Ltac get_projs_st t := pose_gen_statement t.
 
 Ltac get_projs_st_return_quote t := pose_gen_statement t.
@@ -572,8 +486,8 @@ Inductive Ind_test2 (A B C : Type) :=
 | bar1 : C -> Ind_test2 A B C
 | bar2 : nat -> nat -> A -> Ind_test2 A B C.
 
-Goal False.
-get_projs_st list. generalize proj_list. clear.
+Goal False. 
+get_projs_st @list. generalize proj_list. clear.
 get_projs_st nat. clear.
 get_projs_st option. clear.
 get_projs_st @nelist. clear.
@@ -619,7 +533,7 @@ and calls instantiate_inhab *)
 Ltac instantiate_tuple_terms_inhab H t1 t2 := match t1 with
 | (?x, ?t1') => try (let H' := instantiate_ident H x in
 instantiate_tuple_terms_inhab H' t2 t2) ; try (instantiate_tuple_terms_inhab H t1' t2)
-| impossible_term =>  let T := type of H in
+| default =>  let T := type of H in
            match T with
             | forall (y : ?A), _ => first [constr_eq A Type ; clear H | instantiate_inhab H]
             | _ => idtac
@@ -668,7 +582,7 @@ end.
 
 Fixpoint get_ind_of_prod_no_dup (t : term) (acc : list term) (acc' : list term) :=
 match t with
-| tProd _ A u => let I := (no_app A).1 in if is_ind_not_in_list I acc
+| tProd _ A u => let I := (dest_app A).1 in if is_ind_not_in_list I acc
 then get_ind_of_prod_no_dup u (I:: acc) (I :: acc') else get_ind_of_prod_no_dup u acc acc'
 | _ => acc'
 end.
@@ -693,34 +607,76 @@ match goal with
           elims_on_list l t
 end.
 
-(* Checks if a given term is a variable *)
-Ltac is_var v :=
-let v_reif := metacoq_get_value (tmQuote v) in 
-match v_reif with 
-| tVar _ => idtac
-| _ => fail
+From Ltac2 Require Import Ltac2.
+
+(* Checks if a given term is a variable of type which is not Prop *)
+Ltac2 is_var (v : constr) :=
+let k := Constr.Unsafe.kind v in
+match k with
+| Constr.Unsafe.Var id => true
+| _ => false
 end.
+
 
 (* Returns the tuple of variables in a local context *)
-Ltac vars := 
-match goal with
-| v : _ |- _ => let _ := match goal with _ => is_var v ; revert v end in let acc := vars in 
-let _ := match goal with _ => intro v end in constr:((v, acc))
-| _ => constr:(unit)
+Ltac2 vars () := 
+let hyps := Control.hyps () in
+List.map (fun x => match x with
+            | (x1, x2, x3) => x1 end) 
+(List.filter (fun x => match x with
+            | (x1, x2, x3) => let x' := Control.hyp x1 in is_var (x') end) hyps).
+
+Ltac2 rec is_not_in_tuple (p : constr) (z : constr) := 
+match! p with
+| (?x, ?y) =>  if is_not_in_tuple x z then is_not_in_tuple y z else false
+| _ => if Constr.equal p z then false else true
 end.
 
-Ltac get_projs_in_variables p := 
-let t := vars in 
-let rec tac_rec v tuple :=
-match v with
-| (?v1, ?t') => let T := type of v1 in first [ let U := type of T in constr_eq U Prop ; tac_rec t' tuple |
-                let I := get_head T in 
-                let params := get_tail T in 
-                try (is_not_in_tuple tuple T  ;
-                get_projs_st_default_quote I params) ; try (tac_rec t' (tuple, T)) ]
-| _ => idtac
+Ltac2 get_head (c : constr) :=
+let k := Constr.Unsafe.kind c in 
+match k with
+| Constr.Unsafe.App c1 carr => c1 
+| _ => c
+end.
+
+Ltac2 rec list_constr_printer (l : constr list) :=
+match l with
+| [] => (Message.print (Message.of_string "empty"))
+| x :: xs => Message.print (Message.of_constr x) ; list_constr_printer xs
+end.
+
+Ltac2 message_of_bool (b: bool) :=
+match b with
+| true => (Message.print (Message.of_string "true"))
+| false => (Message.print (Message.of_string "false"))
+end.
+
+Ltac2 is_sort (c: constr) :=
+  match Constr.Unsafe.kind c with
+  | Constr.Unsafe.Sort _ => true
+  | _ => false
+  end.
+
+Ltac2 get_projs_in_variables (p : constr) := 
+let var := vars () in 
+let rec aux (p : constr) (l: ident list) := 
+match l with
+| [] => ()
+| x :: xs =>  let x' := Control.hyp x in
+    let ty := Constr.type x' in
+    let tyty := Constr.type ty in 
+    if is_sort ty then aux p xs else
+    if Constr.equal tyty 'Prop then aux p xs else
+    if
+    is_not_in_tuple p ty then
+    let ind := get_head ty in
+    if is_not_in_tuple p ind then 
+    (ltac1:(ind ty |- try (let params := get_tail ty in (* removing this idtac may cause infinite loops *)
+    get_projs_st_default_quote ind params)) (Ltac1.of_constr ind) (Ltac1.of_constr ty)) ; 
+    aux constr:(($p, $ty)) xs 
+    else aux p xs else aux p xs
 end
-in let prod_types0 := eval compute in p in tac_rec t prod_types0.
+in aux p var.
 
 Section tests.
 
@@ -734,7 +690,16 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_projs_in_variables bool.
+Proof. intros. get_projs_in_variables 'bool.
 Abort.
+
+Variable A : Type.
+Variable HA : CompDec A.
+
+Goal (forall (A : Type) (HA : CompDec A) (l : list A), False -> False).
+Proof. intros. get_projs_in_variables 'bool. Abort.
+
+Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
+  Proof. get_projs_in_variables 'unit. Abort. 
 
 End tests.

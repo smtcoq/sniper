@@ -1,6 +1,6 @@
 From MetaCoq Require Import All. 
 Require Import String.
-Open Scope string_scope.
+Open Scope bs.
 From elpi Require Import elpi.
 
 Require Import List.
@@ -37,7 +37,7 @@ Tactic Notation "clearbody_list_tVar" constr(l) := elpi clearbody_list_tVar (l).
 Lemma test2 : forall (n : nat) (b := n + 1) (r := b), nat.
 Proof.
 intros n b r.
-clearbody_list_tVar [tVar "b"; tVar "r"].
+clearbody_list_tVar [tVar "b"; tVar "r"]. (* Does not work if we write %bs instead of using bs scope !!! *)
 exact b.
 Qed.
 

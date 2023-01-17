@@ -9,9 +9,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
-Require Import SMTCoq.SMTCoq.
 From MetaCoq Require Import All. 
+Require Import List.
+Import ListNotations.
 Require Import String.
 Require Import ZArith.
 
@@ -37,22 +37,8 @@ MetaCoq Quote Definition Z_reif := Z.
 
 MetaCoq Quote Definition nat_reif := nat.
 
-Inductive impossible_term :=.
-MetaCoq Quote Definition impossible_term_reif := impossible_term.
-
-Definition nat_oind := {|
-ind_name := "nat"%string;
-ind_type := tSort (Universe.of_levels (inr Level.lSet));
-ind_kelim := IntoAny;
-ind_ctors := [("O"%string, tRel 0, 0);
-             ("S"%string,
-             tProd
-               {|
-               binder_name := nAnon;
-               binder_relevance := Relevant |}
-               (tRel 0) (tRel 1), 1)];
-ind_projs := [];
-ind_relevance := Relevant |}.
+Inductive default :=.
+MetaCoq Quote Definition default_reif := default.
 
 
 (** Tail-recursive (actually linear) version of List.length **)
@@ -135,7 +121,7 @@ Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance :
 Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
 
 
-Definition mkNamedtry := mkNamed (("B"%string) : ident).
+Definition mkNamedtry := mkNamed (("B"%bs) : ident).
 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
@@ -143,8 +129,8 @@ Definition mkProd T u :=
 tProd mkNAnon T u.
 
 Definition mkLam Ty t := match Ty with 
-| tSort _ => tLambda (mkNamed "A") Ty t
-| _ => tLambda (mkNamed "x") Ty t
+| tSort _ => tLambda (mkNamed "A"%bs) Ty t
+| _ => tLambda (mkNamed "x"%bs) Ty t
 end.
 
 
@@ -158,7 +144,7 @@ tProd (mkNamed na) T u.
 Fixpoint mkProd_rec (l : list term)  (t: term) := 
 match l with 
 | [] => t 
-| x :: xs => mkProd_rec xs (tProd (mkNamed "x")  x t)
+| x :: xs => mkProd_rec xs (tProd (mkNamed "x"%bs)  x t)
 end.
 
 
@@ -224,88 +210,63 @@ Definition mkOr_n (l : list term) :=
     in aux l0 t0
   end.
 
-
-(* \TODO useless, remove *)
-Definition mkApp (u : term) (l : list term) :=
-tApp u l.
-
-(* \TODO useless, remove *)
-Definition mkApp_singl t u :=
-mkApp t [u].
+Definition mknAnon := {| binder_name := nAnon ; binder_relevance := Relevant |}.
 
 
+Definition default_error_kn := (MPfile [], "error"%bs).
+
+Definition kername_term (t : term) :=
+match t with
+| tConst kn _ => kn
+| tInd indu insts => indu.(inductive_mind)
+| _ => default_error_kn
+end.
+
+Definition lookup (e : global_env) (i : term) :=
+let decls := e.(declarations) in
+let kn := kername_term i in
+let fix aux decls kn := 
+match decls with
+| (kn', gdecl) :: decls' => if eq_kername kn kn' then Some gdecl else aux decls' kn
+| [] => None
+end in aux decls kn.
 
 
-(* get_params_from_mind mind = (p , P) 
-  where p is the number of parameters of mind and lP the list of the parameters types *in order*
-  (note that mind.(ind_params)) stores the types in *reverse* order
-*)
-(* \TODO it would be perhaps better to recover the types of the parameters in the reverse order  *)
+Definition info_inductive (e : global_env) (i : term) :=
+let res := lookup e i in 
+match res with
+| Some (ConstantDecl _) => None
+| Some (InductiveDecl mind) => Some mind
+| None => None
+end.
+
 Definition get_params_from_mind mind :=
   let p := mind.(ind_npars) in 
   let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
 in (p, l0).
-(* \TODO maybe use this tactic in fo_prop_of_cons_tac *)
+
+Definition default_body :=
+{|
+               ind_name := "default"%bs;
+               ind_indices := [];
+               ind_sort := Universe.of_levels (inl PropLevel.lProp);
+               ind_type :=
+                 tSort (Universe.of_levels (inl PropLevel.lProp));
+               ind_kelim := IntoAny;
+               ind_ctors := [];
+               ind_projs := [];
+               ind_relevance := Relevant
+             |}.
 
 
-Fixpoint get_constructors_inductive (I : term) (e : global_env) :=
-match I with 
-| tInd ind _ => match ind.(inductive_mind) with
-          | (file, ident) => match e with 
-                      | [] => None 
-                      | (na,d) :: e' => 
-                                (match d with
-                                  | InductiveDecl mind => if (String.eqb
-ident na.2) then let loind := ind_bodies mind in let list_ctors_opt := match loind with 
-| nil => None
-| x :: xs => Some (x.(ind_ctors))
-end in list_ctors_opt else get_constructors_inductive I e'
-                                  | _ => get_constructors_inductive I e'
-                               end)    
-    end
-end
-| _ => None
+(** if I is a nonmutual inductive, returns the pair between the number of its parameters 
+and the list of its constructor bodies **)
+Definition info_nonmutual_inductive (e : global_env) (i : term) :=
+let res := info_inductive e i in
+match res with
+| Some mind =>  (mind.(ind_npars), (hd default_body mind.(ind_bodies)).(ind_ctors))
+| None => (0, [])
 end.
-
-
-
-(* Get the pair of the number of parameters of an inductive and the list of their types *)
-Fixpoint get_info_params_inductive (I : term) (e : global_env) :=
-match I with 
-| tInd ind _ => match ind.(inductive_mind) with
-          | (file, ident) => match e with 
-                      | [] => None 
-                      | (na,d) :: e' => 
-                                (match d with
-                                  | InductiveDecl mind => if (String.eqb
-ident na.2) then let prod := (ind_npars mind, tr_map (fun x => x.(decl_type)) (ind_params mind)) in Some prod else get_info_params_inductive I e'
-                                  | _ => get_info_params_inductive I e'
-                               end)    
-    end
-end
-| _ => None
-end.
-
-
-
-(** computes the list of one_inductive_body's in a term I which is a reified inductive **)
-(* \TODO should problably also test the equality between paths, not only on the names *)
-Fixpoint get_decl_inductive (I : term) (e : global_env) :=
-match I with 
-| tInd ind _ => match ind.(inductive_mind) with
-          | (file, ident) => match e with 
-                      | [] => None 
-                      | (na,d) :: e' => 
-                                (match d with
-                                  | InductiveDecl mind => if (String.eqb
-ident na.2) then let loind := ind_bodies mind in Some loind else get_decl_inductive I e'
-                                  | _ => get_decl_inductive I e'
-                               end)    
-    end
-end
-| _ => None
-end.
-
 
 
 Definition no_prod (t: term) := match t with 
@@ -313,36 +274,13 @@ Definition no_prod (t: term) := match t with
   | _ => true
 end.
 
-(* no_prod* do not seem to be used --> \TODO remove   *)
-Fixpoint no_prod_after_params (t : term) (p : nat) := match t with
-   | tProd _ _ u => match p with 
-                   | 0 => false 
-                   | S n' => no_prod_after_params u n'
-                  end
-  | _ => true
-end.
- 
-(* does not seem to be used anywhere ---> \TODO remove *)
-Definition find_index_constructor_of_arity_zero (o : option (list ((ident × term) × nat))) := match o with
-  | None => None
-  | Some l => let fix aux l' acc := 
-      match l' with 
-        | nil => None
-        | x :: xs => if Nat.eqb (x.2) 0 then (Some acc) else aux xs (acc + 1)
-      end in aux l 0
-  end.
-
-(* \TODO 
-1) give a better name
-2) see if it is really useful
-*)
-Definition no_app t := match t with
+Definition dest_app t := match t with
 | tApp u l => (u, l)
 | _ => (t, [])
 end.
 
 Definition get_info_inductive (I : term) := 
-let p := no_app I in match p.1 with
+let p := dest_app I in match p.1 with
 | tInd ind inst => Some (ind, inst)
 | _ => None
 end.
@@ -354,52 +292,10 @@ end.
 
 Definition get_nth_constructor (I : term) (n : nat) : term := 
 let g := get_info_inductive I in match g with 
-  | None => impossible_term_reif
+  | None => default_reif
   | Some (ind, inst) => tConstruct ind n inst
-end. 
-
-(* \TODO : not useful --> remove *)
-Definition mkApp_list (u : term) (l : list term) :=
-tApp u l.
-
-
-(* Implements beta reduction *)
-(* \TODO : not used --> remove *)
-Fixpoint typing_prod_list (T : term) (args : list term) := 
-match T with
-| tProd _ A U => match args with 
-        | nil => T
-        | x :: xs => typing_prod_list (subst10 x U) xs
-        end
-| _ => T
 end.
 
-(* As the constructor contains a free variable to represent the inductive type, this fonction substitutes the given 
-inductive type and the parameters in the list of the type of the constructors *)
-(* \seems inefficient, and better handled by debruijn0 --> remove \TODO *)
-Fixpoint subst_type_constructor_list (l : list ((string × term) × nat)) (p : term × (list term)) :=
-let T := p.1 in 
-let args := p.2 in
-match l with 
-| nil => nil
-| ((_, Ty), _):: l' => (typing_prod_list (subst10 T Ty) args) :: (subst_type_constructor_list l' p)
-end.
-(* \TMP
- | cons y' _ => let z := y'.(ind_ctors) in let u := 
-subst_type_constructor_list z v in u
-*)
-
-
-Fixpoint get_decl (e : global_env) := match e with 
-| [] => []
-| x :: e' => match (snd x) with
-      | ConstantDecl u => match u.(cst_body) with
-            | Some v => v :: get_decl e'
-            | None => get_decl e'
-            end
-      | InductiveDecl u => get_decl e'
-      end
-end.
 
 (* Check is a MetaCoq term is a sort which is not Prop *)
 Definition is_type (t : term) := match t with
@@ -407,19 +303,54 @@ Definition is_type (t : term) := match t with
                                  |_ => false
                                   end.
 
+
+(* Get the nb of construcors of a non-mutual inductive declaration *)
+Definition get_nb_constructors_dcl decl := 
+match ind_bodies decl with 
+  | nil => 0
+  | x :: _ => Datatypes.length (ind_ctors x)
+end.
+
 (* Get the nb of construcors of a reified inductive type if we have the reified global environment *)
 Definition get_nb_constructors i Σ := 
 match i with 
 | tInd indu _ => match lookup_env Σ indu.(inductive_mind) with
-                | Some (InductiveDecl decl) => match ind_bodies decl with 
-                          | nil => 0
-                          | x :: _ => Datatypes.length (ind_ctors x)
-                          end
+                | Some (InductiveDecl decl) => get_nb_constructors_dcl decl
                 | _ => 0
 end
 | _ => 0
 end.
 
+
+Fixpoint get_type_constructors (l : list constructor_body) :=
+match l with
+| [] => nil
+| x :: xs => cstr_type x :: get_type_constructors xs
+end.
+
+(* Useful to pass from the coq-8.13 representation of constructors 
+to the coq-8.14 one
+the list constructor_body becomes a list of triples with the 
+name of the constructors, their type and the number of their args *) 
+Fixpoint get_na_nb_args_type_list_constructor_body
+(l : list constructor_body) :=
+match l with
+| [] => []
+| x :: xs => ((cstr_name x, cstr_type x), Datatypes.length (cstr_args x)) :: get_na_nb_args_type_list_constructor_body xs
+end.
+
+(* List of holes to benefit from Coq's type inference while unquoting *)
+Fixpoint list_of_holes (n : nat) :=
+match n with
+| 0 => []
+| S n' => hole :: list_of_holes n'
+end.
+
+Fixpoint list_aname (n : nat) :=
+match n with
+| 0 => []
+| S n' => mknAnon :: list_aname n'
+end.
 
 (** Generic tactics **) 
 
@@ -436,7 +367,7 @@ Ltac get_head x := lazymatch x with ?x _ => get_head x | _ => x end.
 Ltac get_tail x := 
 let rec get_tail_aux x p := 
 lazymatch x with ?y ?z => get_tail_aux y (z, p) | _ => p end
-in get_tail_aux x impossible_term.
+in get_tail_aux x default.
 
 (* [inverse_tactic tactic] succceds when [tactic] fails, and the other way round *)
 Ltac inverse_tactic tactic := try (tactic; fail 1).
@@ -453,7 +384,7 @@ end.
 Ltac generalize_dependent_tuple p := 
 lazymatch constr:(p) with
 | (?x, ?y) => generalize_dependent_tuple constr:(x) ; generalize_dependent_tuple constr:(y)
-| impossible_term => idtac
+| default => idtac
 | ?x => try (generalize dependent x)
 end.
 
@@ -474,7 +405,7 @@ match goal with
 | H : _ |- _ => let _ := match goal with _ => let T := type of H in let U := type of T in
 constr_eq U Prop ; revert H end in let acc := hyps in 
 let _ := match goal with _ => intro H end in constr:((H, acc))
-| _ => constr:(impossible_term)
+| _ => constr:(default)
 end.
 
 Ltac clear_dup :=
@@ -503,8 +434,6 @@ match constr:(l) with
 | cons ?x ?xs => unquote_term x ; unquote_list xs
 end.
 
-Ltac rec_quote_term t idn := (run_template_program (tmQuoteRec t) ltac:(fun x => (pose  x as idn))).
-
 (* Allows to use MetaCoq without continuations *)
 Ltac metacoq_get_value p :=
   let id := fresh in
@@ -513,6 +442,16 @@ Ltac metacoq_get_value p :=
   let x := eval cbv delta [id] in id in
   let _ := match goal with _ => clear id end in
   x.
+
+(* TODO for compatibility reasons this creates a fake global environement but 
+we should replace everything with tmQuoteInductive *) 
+Ltac rec_quote_term t idn := 
+let x := metacoq_get_value (tmQuote t) in 
+match x with
+| tInd (?indu ?kn _) ?inst => let y := metacoq_get_value (tmQuoteInductive kn) in 
+                              let y' := constr:((y, x)) in pose y' as idn
+| _ => idtac 
+end.
 
 (* Examples for metacoq_get_value *)
 Goal True.
@@ -590,97 +529,3 @@ Definition Rel_list (n l : nat) :=
    | S n => aux n  (S k) ((tRel k)::acc)
    end
    in aux n l [].
-
-
-
-
-(* Reifies a term and calls is_type *)
-Ltac is_type_quote t := let t' := eval hnf in t in let T :=
-metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
-
-
-Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
-metacoq_get_value (tmQuote t') in constr:(is_type T).
-
-Fixpoint list_of_subterms (t: term) : list term := match t with
-| tLambda _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
-| tProd _ Ty u => t :: (list_of_subterms Ty) ++ (list_of_subterms u)
-| tLetIn _ u v w => t :: (list_of_subterms u) ++ (list_of_subterms v) ++ (list_of_subterms w)
-| tCast t1 _ t2 => t :: (list_of_subterms t1) ++ (list_of_subterms t2)
-| tApp u l => t :: (list_of_subterms u) ++ (List.flat_map list_of_subterms l)
-| tCase _ t1 t2 l => t:: (list_of_subterms t1) ++ (list_of_subterms t2) ++ 
-(List.flat_map (fun x => list_of_subterms (snd x)) l)
-| tFix l _  => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
-| tCoFix l _ => t :: (List.flat_map (fun x => list_of_subterms (x.(dbody))) l)
-| _ => [t]
-end. 
-
-Definition filter_closed (l: list term) := List.filter (closedn 0) l.
-
-
-Ltac get_list_of_closed_subterms t := let t_reif := metacoq_get_value (tmQuote t) in 
-let l := eval cbv in (filter_closed (list_of_subterms t_reif)) in l. 
-
-Ltac return_unquote_tuple_terms l := let rec aux l acc :=
-match constr:(l) with
-| nil => constr:(acc)
-| cons ?x ?xs => 
-  let y := metacoq_get_value (tmUnquote x) in 
-  let u := constr:(y.(my_projT2)) in 
-  let w := eval hnf in u in
-  let T := type of w in 
-  let b0 := ltac:(is_type_quote_bool T) in 
-  let b := eval hnf in b0 in
-    match b with 
-    | true => (aux xs (pair w acc)) 
-    | false => aux xs acc
-    end
-end
-in aux l impossible_term.
-
-Ltac return_tuple_subterms_of_type_type := match goal with
-|- ?x => let l0 := (get_list_of_closed_subterms x) in let l := eval cbv in l0 in return_unquote_tuple_terms l
-end.
-
-Goal forall (A: Type) (x:nat) (y: bool) (z : list A), y = y -> z=z -> x = x.
-let t := return_tuple_subterms_of_type_type in pose t.
-Abort.
-
-Goal forall (A : Type) (l : list A), Datatypes.length l = 0 -> l = nil.
-let t := return_tuple_subterms_of_type_type in pose t.
-Abort.
-
-(* To reason on size of terms *)
-
-Definition list_size :=
-fun {A : Type} (size : A -> nat) =>
-fix list_size (l : list A) : nat :=
-  match l with
-  | [] => 0
-  | a :: v => S (size a + list_size v)
-  end.
-
-Definition def_size := 
-fun (size : term -> nat) (x : def term) =>
-size (dtype x) + size (dbody x).
-
-Definition mfixpoint_size := 
-fun (size : term -> nat) (l : mfixpoint term) =>
-list_size (def_size size) l.
-
-
-Fixpoint size (t : term) :=
-match t with
-| tEvar _ args => S (list_size size args)
-| tProd _ A B => S (size A + size B)
-| tLambda _ T M => S (size T + size M)
-| tLetIn _ b t0 b' => S (size b + size t0 + size b')
-| tApp u l => S (size u + (List.fold_left (fun acc x => size x + acc) l 0))
-| tCase _ p c brs => S (size p + size c + list_size
-           (fun x : nat * term =>
-            size x.2) brs)
-| tProj _ c => S (size c)
-| tFix mfix _ | tCoFix mfix _ => S (mfixpoint_size size mfix)
-| _ => 1
-end.
-

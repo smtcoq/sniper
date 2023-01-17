@@ -9,12 +9,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-Require Import SMTCoq.SMTCoq.
 
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
-Require Import Coq.Arith.PeanoNat.
+Require Import List.
+Import ListNotations.
 Require Import String.
 
 
@@ -34,28 +34,10 @@ Open Scope string_scope.
 Fixpoint gen_eq (l : list term) (B : term) (t : term) (u : term) {struct l} := 
 match l with
 | [] => mkEq B t u
-| A :: l' => mkProdName "x" A (gen_eq l' B (mkApp_singl (lift 1 0 t) (tRel 0)) (mkApp_singl (lift 1 0 u) (tRel 0)))
+| A :: l' => mkProdName "x"%bs A (gen_eq l' B (tApp (lift 1 0 t) [tRel 0]) (tApp (lift 1 0 u) [tRel 0]))
 end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
-
-Ltac expand_hyp H :=
-lazymatch type of H with 
-| @eq ?A ?t ?u => let A := metacoq_get_value (tmQuote A) in
-let t := metacoq_get_value (tmQuote t) in
-let u := metacoq_get_value (tmQuote u) in
-let p := eval cbv in (list_of_args_and_codomain A) in 
-let l := eval cbv in (rev p.1) in 
-let B := eval cbv in p.2 in 
-let eq := eval cbv in (gen_eq l B t u)
-in let z := metacoq_get_value (tmUnquote eq) in
-let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
-(assert (H': u) by (intros ; rewrite H; reflexivity))
-| _ => fail "not an equality"
-end.
-
-
-
 
 Ltac expand_hyp_cont H := fun k =>
 lazymatch type of H with 
@@ -79,6 +61,8 @@ match constr:(p) with
 expand_hyp_cont x ltac:(fun H' => expand_tuple constr:(y) ltac:(fun p => k (H', p))) ; clear x
 | unit => k unit
 end.
+
+Ltac expand_hyp H := expand_hyp_cont H ltac:(fun _ => idtac).
 
 Ltac expand_fun f :=
 let H:= get_def_cont f in expand_hyp H ; clear H.

@@ -10,8 +10,6 @@
 (**************************************************************************)
 
 
-Require Import SMTCoq.SMTCoq.
-
 Require Import String.
 Require Import utilities.
 
@@ -59,7 +57,7 @@ let H := fresh x "_def" in (
 end.
 
 Ltac get_definitions_theories p0 := fun k =>
-get_definitions_aux p0 impossible_term k.
+get_definitions_aux p0 default k.
 
 Ltac get_definitions_theories_no_generalize p0 := fun k =>
 get_definitions_aux_no_generalize p0 k.
