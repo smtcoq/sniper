@@ -26,16 +26,16 @@ theory" published at the conference "Certified Programs and Proofs (CPP)
 ### Using docker
 This is the simplest way of building the code. Simply run:
 ```bash
-docker build -t paper24 -f paper24.docker .
+docker build -t sniper -f sniper.docker .
 ```
 
 You can then access the image through a shell using
 ```bash
-docker run -ti --rm -e DISPLAY=host.docker.internal:0 paper24 bash
+docker run -ti --rm -e DISPLAY=host.docker.internal:0 sniper bash
 ```
 or through coqide using
 ```bash
-docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" paper24 coqide
+docker run --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/home/coq/.Xauthority:rw" sniper coqide
 ```
 For the latter, you may need to set the `DISPLAY`, e.g. by doing `export
 DISPLAY=:0` under Linux, or following [these
