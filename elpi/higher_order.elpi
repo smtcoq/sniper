@@ -17,3 +17,7 @@ pred get_anonymous_funs_trm i: term, o: list term.
         get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm (fix N Nb Ty F) [fix N Nb Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm _ [].
+
+pred get_anonymous_funs_list i: list term, o: list term.
+    get_anonymous_funs_list [X|XS] R :- get_anonymous_funs_trm X R1, get_anonymous_funs_list XS R2, append_nodup R1 R2 R.
+    get_anonymous_funs_list [] [].

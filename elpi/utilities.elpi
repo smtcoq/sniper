@@ -3,6 +3,11 @@ pred type_global i: term, o: term.
   type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
   type_global (global (indc C)) Ty :- coq.env.indc C _ _ _ Ty.
 
+pred ctx_to_trms i: goal-ctx, o: list term.
+    ctx_to_trms [(decl _ _ Ty)|XS] [Ty|R] :- ctx_to_trms XS R.
+    ctx_to_trms [(def _ _ _ Bo)|XS] [Bo|R] :- ctx_to_trms XS R.
+    ctx_to_trms [] [].
+
 pred codomain i:term, o:term.
   codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
   codomain T T.
