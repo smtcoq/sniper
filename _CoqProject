@@ -3,6 +3,7 @@
 theories/utilities.v
 theories/indrel.v
 theories/definitions.v
+theories/higher_order.v
 theories/elimination_polymorphism.v
 theories/instantiate.v
 theories/elimination_pattern_matching.v
