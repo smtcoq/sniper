@@ -13,7 +13,7 @@ pred get_anonymous_funs_trm i: term, o: list term.
     std.map L get_anonymous_funs_trm R3, 
     std.flatten R3 R',
     append_nodup R12 R' R.
-    get_anonymous_funs_trm ((fix N Nb Ty F) as Fix) R :- std.mem! R Fix, !, pi x\ decl x N Ty => 
+    get_anonymous_funs_trm ((fix N _Nb Ty F) as Fix) R :- std.mem! R Fix, !, pi x\ decl x N Ty => 
         get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm (fix N Nb Ty F) [fix N Nb Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm _ [].
@@ -21,3 +21,16 @@ pred get_anonymous_funs_trm i: term, o: list term.
 pred get_anonymous_funs_list i: list term, o: list term.
     get_anonymous_funs_list [X|XS] R :- get_anonymous_funs_trm X R1, get_anonymous_funs_list XS R2, append_nodup R1 R2 R.
     get_anonymous_funs_list [] [].
+
+pred is_prod i: term.
+    is_prod (prod _ _ _).
+    is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.
+
+pred prenex_ho1 i: term.
+    prenex_ho1 (prod _ Ty F) :- not (is_prod Ty), pi x\ decl x _ Ty => prenex_ho1 (F x).
+    prenex_ho1 (prod _ ((prod _ Ty' _) as Ty) F) :- not (is_prod Ty'), pi x\ decl x _ Ty => prenex_ho1 (F x).
+    prenex_ho1 T :- name T. 
+    prenex_ho1 (sort (typ _)). 
+    prenex_ho1 (global (const C)) :- coq.env.const C (some Bo) _, prenex_ho1 Bo.
+    prenex_ho1 (global (indt _)).
+
