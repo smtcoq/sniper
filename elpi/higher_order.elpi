@@ -34,3 +34,7 @@ pred prenex_ho1 i: term.
     prenex_ho1 (global (const C)) :- coq.env.const C (some Bo) _, prenex_ho1 Bo.
     prenex_ho1 (global (indt _)).
 
+pred contains_prenex_ho i: term.
+    contains_prenex_ho (prod _ (prod _ Ty' _) _).
+    contains_prenex_ho (prod Na Ty F) :- pi x\ decl x Na Ty => contains_prenex_ho (F x).
+

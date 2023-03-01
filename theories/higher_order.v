@@ -32,16 +32,20 @@ elpi anonymous_funs. Abort.
 Elpi Tactic prenex_higher_order.
 Elpi Accumulate File "elpi/higher_order.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
 
-  solve (goal Ctx _ TyG _ [trm T] as G) GL :- coq.say T, is_ho1 T.
+  solve (goal Ctx _ TyG _ _ as G) GL :-  ctx_to_trms Ctx Trms, 
+    std.filter [TyG|Trms] contains_prenex_ho L, coq.say L.
 
 }}.
 Elpi Typecheck.
+Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+map g (map f l) = map (fun x => g (f x)) l.
+intros.
+elpi prenex_higher_order.
 
-Goal False.
-elpi prenex_higher_order (forall (A : Type), nat -> nat).
-
-
+ctx_to_trms Ctx Trms,
+ coq.say T, prenex_ho1 T,
 
 
