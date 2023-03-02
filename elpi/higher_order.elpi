@@ -33,8 +33,73 @@ pred prenex_ho1 i: term.
     prenex_ho1 (sort (typ _)). 
     prenex_ho1 (global (const C)) :- coq.env.const C (some Bo) _, prenex_ho1 Bo.
     prenex_ho1 (global (indt _)).
+    prenex_ho1 (app [global _ | _]).
+
+pred prenex_ho1_ty i: term. 
+    prenex_ho1_ty T :- coq.typecheck T Ty ok, prenex_ho1 Ty. 
 
 pred contains_prenex_ho i: term.
-    contains_prenex_ho (prod _ (prod _ Ty' _) _).
+    contains_prenex_ho (prod _ (prod _ _ _) _).
     contains_prenex_ho (prod Na Ty F) :- pi x\ decl x Na Ty => contains_prenex_ho (F x).
 
+pred contains_prenex_ho_ty i: term.
+    contains_prenex_ho_ty T :- coq.typecheck T Ty ok, contains_prenex_ho Ty.
+
+pred replace i:list (pair A B), i:A, i: B, o: list (pair A B). 
+    replace [pr X _|LS] X Z [pr X Z |LS].
+    replace [U |LS] X Z [U|R] :- replace LS X Z R.
+
+pred contains_only_context_variables i: list term, i: term. 
+    contains_only_context_variables Na T :- names Na', std.length Na N, std.drop N Na' Na'',
+        std.forall Na'' (x\ not (occurs x T)).
+    %contains_only_context_variables _ _ :- coq.error "the term contains free variables that are not context or section variables".
+
+% TODO : speed up predicate, ignore non pertinent subterms 
+pred subterms_and_args i: term, i: list term, o: (list (pair term (list term))). %closed subterms of a term and their arguments if they are applied
+subterms_and_args (sort U) _ [pr (sort U) []] :- !.
+subterms_and_args (fun N Ty F) Na [pr (fun N Ty F) [] | R] :- contains_only_context_variables Na (fun N Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. %backtracks when the function depends on a variable bound by a previous rule
+subterms_and_args (fun N Ty F) Na R :- !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+subterms_and_args (prod N Ty F) Na [pr (prod N Ty F) [] | R] :- contains_only_context_variables Na (prod N Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+subterms_and_args (prod N Ty F) Na R :- !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+% TODO : define curry
+subterms_and_args (app [T|L]) Na [pr (app [T|L]) [], pr T L |R] :- contains_only_context_variables Na T, !, 
+    std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
+subterms_and_args (global G) Na [pr (global G) []].
+subterms_and_args (let N Ty V F) Na [pr (let N Ty V F) []| R] :- contains_only_context_variables Na (let N Ty V F), !,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
+subterms_and_args (let N Ty V F) Na R :- !,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
+subterms_and_args (match T U L) Na [pr (match T U L) [] | R] :- contains_only_context_variables Na (match T U L), !,
+    subterms_and_args T Na R1, subterms_and_args U Na R2, std.append R1 R2 R12,
+    std.map L (x\ subterms_and_args x Na) R3, 
+    std.flatten R3 R',
+    std.append R12 R' R.
+subterms_and_args (match T U L) Na R :- !,
+    subterms_and_args T Na R1, subterms_and_args U Na R2, std.append R1 R2 R12,
+    std.map L (x\ subterms_and_args x Na) R3,  
+    std.flatten R3 R',
+    std.append R12 R' R.
+subterms_and_args (fix N Rno Ty F) Na [pr (fix N Rno Ty F) []|R] :- contains_only_context_variables Na (fix N Rno Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R.
+subterms_and_args (fix N _ Ty F) Na R :- !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R.
+subterms_and_args T Na [pr T []] :- contains_only_context_variables Na T.
+subterms_and_args _ _ [].
+
+pred subterms_list_and_args i: (list term), i: list term, o: (list (pair term (list term))). 
+    subterms_list_and_args [X|XS] Na R :- subterms_and_args X Na L1, subterms_list_and_args XS Na L2, append_nodup L1 L2 R.
+    subterms_list_and_args [] _ [].

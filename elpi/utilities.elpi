@@ -8,6 +8,11 @@ pred ctx_to_trms i: goal-ctx, o: list term.
     ctx_to_trms [(def _ _ _ Bo)|XS] [Bo|R] :- ctx_to_trms XS R.
     ctx_to_trms [] [].
 
+pred ctx_to_hyps i: goal-ctx, o: list term.
+    ctx_to_hyps [(decl _ _ Ty)|XS] [Ty|R] :- coq.typecheck Ty {{ Prop }} ok, ctx_to_hyps XS R.
+    ctx_to_hyps [_|XS] R :- ctx_to_hyps XS R.
+    ctx_to_hyps [] [].    
+
 pred codomain i:term, o:term.
   codomain (prod Na Ty F) R :- !, pi x\ decl x Na Ty => codomain (F x) R. 
   codomain T T.

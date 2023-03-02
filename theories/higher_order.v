@@ -35,8 +35,10 @@ Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
 
-  solve (goal Ctx _ TyG _ _ as G) GL :-  ctx_to_trms Ctx Trms, 
-    std.filter [TyG|Trms] contains_prenex_ho L, coq.say L.
+  solve (goal Ctx _ TyG _ _ as G) GL :-  ctx_to_hyps Ctx Trms, names Na, coq.say Na,
+    subterms_list_and_args [TyG|Trms] Na Subs,
+    std.filter Subs (x\ fst x Y, contains_prenex_ho_ty Y) L,
+    std.filter L (x\ fst x Y, prenex_ho1_ty Y) L', coq.say L'.
 
 }}.
 Elpi Typecheck.

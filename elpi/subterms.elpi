@@ -38,7 +38,11 @@ subterms (fix Na _ Ty F) R :- !,
 subterms _ [].
 
 pred subterms2 i: term, o: (list term).
-    subterms2 T L :- subterms T L1, names L2, std.filter L2 (x\ occurs x T) L2', std.append L1 L2' L.
+    subterms2 T L :- subterms T L1, names L2, std.filter L2 (x\ occurs x T) L2', append_nodup L1 L2' L.
+
+pred subterms2_list i: (list term), o: (list term). 
+    subterms2_list [X|XS] R :- subterms2 X L1, subterms2_list XS L2, append_nodup L1 L2 R.
+    subterms2_list [] [].
 
 pred add_if_type i: term, i: (list term), o: (list term).
 add_if_type T L [T|L] :- not (std.mem! L T), coq.typecheck T {{ Prop }} (error _), coq.typecheck T {{Type}} ok.
