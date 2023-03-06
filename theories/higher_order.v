@@ -35,10 +35,9 @@ Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
 
-  solve (goal Ctx _ TyG _ _ as G) GL :-  ctx_to_hyps Ctx Trms, names Na, coq.say Na,
+  solve (goal Ctx _ TyG _ _ as G) GL :-  ctx_to_hyps Ctx Trms, names Na,
     subterms_list_and_args [TyG|Trms] Na Subs,
-    std.filter Subs (x\ fst x Y, contains_prenex_ho_ty Y) L,
-    std.filter L (x\ fst x Y, prenex_ho1_ty Y) L', coq.say L'.
+    std.filter Subs (x\ fst x Y, contains_prenex_ho_ty Y, prenex_ho1_ty Y) L, coq.say L.
 
 }}.
 Elpi Typecheck.
@@ -46,8 +45,5 @@ Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C),
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
 elpi prenex_higher_order.
-
-ctx_to_trms Ctx Trms,
- coq.say T, prenex_ho1 T,
 
 
