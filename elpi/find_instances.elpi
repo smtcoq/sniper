@@ -1,7 +1,3 @@
-kind instance type.
-type var_context      int -> instance. 
-type concrete_type    term -> instance.
-
 pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list instance))).
     find_instantiated_params Ctx (fun N Ty F) L :- !, find_instantiated_params Ctx Ty R1,
         pi x\ decl x N Ty => find_instantiated_params Ctx (F x) R2, append_nodup R1 R2 L.
@@ -27,12 +23,3 @@ pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pai
     find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, 
         find_instantiated_params_in_list Ctx XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list _Ctx [] [].
-
-
-pred subst_in_instances_aux i: goal-ctx, i: list instance, o: list term.
-    subst_in_instances_aux Ctx [(concrete_type T)|XS] [T| XS'] :- subst_in_instances_aux Ctx XS XS'.
-    subst_in_instances_aux Ctx [(var_context N)| XS] [X|XS'] :- subst_in_instances_aux Ctx XS XS', nth N Ctx (decl X _ _).
-    subst_in_instances_aux _Ctx [] []. 
-
-pred subst_in_instances i: goal-ctx, i:(list (pair term (list instance))), o: list (pair term (list term)).
-    subst_in_instances Ctx L1 L2 :-  std.unzip L1 LT LI, std.map LI (subst_in_instances_aux Ctx) L2', std.zip LT L2' L2.
