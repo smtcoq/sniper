@@ -224,12 +224,9 @@ Definition mkOr_n (l : list term) :=
     in aux l0 t0
   end.
 
-
-(* \TODO useless, remove *)
 Definition mkApp (u : term) (l : list term) :=
 tApp u l.
 
-(* \TODO useless, remove *)
 Definition mkApp_singl t u :=
 mkApp t [u].
 

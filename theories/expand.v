@@ -10,14 +10,11 @@
 (**************************************************************************)
 
 Require Import SMTCoq.SMTCoq.
-
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import Coq.Arith.PeanoNat.
 Require Import String.
-
-
 
 Definition is_type_of_fun (T : term) :=
 match T with
@@ -39,24 +36,6 @@ end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
 
-Ltac expand_hyp H :=
-lazymatch type of H with 
-| @eq ?A ?t ?u => let A := metacoq_get_value (tmQuote A) in
-let t := metacoq_get_value (tmQuote t) in
-let u := metacoq_get_value (tmQuote u) in
-let p := eval cbv in (list_of_args_and_codomain A) in 
-let l := eval cbv in (rev p.1) in 
-let B := eval cbv in p.2 in 
-let eq := eval cbv in (gen_eq l B t u)
-in let z := metacoq_get_value (tmUnquote eq) in
-let u := eval hnf in (z.(my_projT2)) in let H' := fresh in 
-(assert (H': u) by (intros ; rewrite H; reflexivity))
-| _ => fail "not an equality"
-end.
-
-
-
-
 Ltac expand_hyp_cont H := fun k =>
 lazymatch type of H with 
 | @eq ?A ?t ?u => let A := metacoq_get_value (tmQuote A) in
@@ -72,6 +51,8 @@ let u := eval hnf in (z.(my_projT2)) in let H' := fresh in
 k H')
 | _ => k H
 end.
+
+Ltac expand_hyp H := expand_hyp_cont H ltac:(fun x => idtac).
 
 Ltac expand_tuple p := fun k => 
 match constr:(p) with
@@ -94,7 +75,6 @@ assert (forall x : string, length x = match x with
 end). intros x. destruct x ; simpl ; reflexivity.
 Abort. 
 
-
 Goal False.
 get_def length.
 expand_hyp length_def.
@@ -104,7 +84,6 @@ Abort.
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
 get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac)).
 Abort.
-
 
 End tests.
 
