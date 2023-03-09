@@ -8,11 +8,11 @@ From elpi Require Import elpi.
 Ltac mypose t := let Na := fresh "f" in pose t as Na; fold Na. (*TODO fold in all hyps except
 the self refering one *)
 
+(* TODO : use orchestrator instead of coding a small snipe here *)
 Ltac mypose_and_reify_def t := let Na := fresh "f" in pose t as Na; fold Na ;
 let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t in 
-unfold hd in H ; expand_hyp_cont H ltac:(fun H' => 
-eliminate_fix_ho H' ltac:(fun H'' =>
-try (eliminate_dependent_pattern_matching H''))).
+unfold hd in H. (* expand_hyp_cont H ltac:(fun H' => 
+eliminate_fix_ho H' ltac:(fun x => let T := type of x in idtac T)). *)
 
 Elpi Tactic anonymous_funs.
 
@@ -48,7 +48,7 @@ Elpi Accumulate lp:{{
   pred mypose_list i: list (pair term (list instance)), i: goal, o: list sealed-goal.
   mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- std.rev Ctx Ctx',
     std.map L (instance_to_term Ctx') L', 
-    coq.ltac.call "mypose_and_reify_def" [trm (app [X | L'])] G [G'],
+    coq.ltac.call "mypose_and_reify_def" [trm (app [X | L'])] G [G'], coq.say "hey",
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
@@ -72,6 +72,10 @@ Goal ((forall (x : nat) (a : nat) (l : list nat),
 | y :: xs => y
 end)). elpi anonymous_funs. Abort. (* Bug  fix : each branch of a match is a function *)
 
+
+(* TODO : code in Ltac2 : get the new generated hypothesis, applies expand 
+eliminate_fix and eliminate_pattern_matching on it, because doing it in elpi 
+lead to a strange error about universe polymorphism *)
 Tactic Notation "anonymous_funs" :=
   elpi anonymous_funs.
 
