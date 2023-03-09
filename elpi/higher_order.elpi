@@ -3,16 +3,20 @@ pred get_anonymous_funs_trm i: term, o: list term.
         get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm (fun N Ty F) [fun N Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm (prod N Ty F) R :- pi x\ decl x N Ty => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm (app [{{@eq}}, (fun N Ty F), U]) R :- get_anonymous_funs_trm U R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
+        std.append R1 R2 R. %T or U is not anonymous if it is defined by an equality
+    get_anonymous_funs_trm (app [{{@eq}}, T, (fun N Ty F)]) R :- get_anonymous_funs_trm T R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
+        std.append R1 R2 R. 
     get_anonymous_funs_trm (app L) R :- !, std.map L get_anonymous_funs_trm R', std.flatten R' R.
     get_anonymous_funs_trm (let N Ty V F) R :- !,
     get_anonymous_funs_trm Ty R1, get_anonymous_funs_trm V R2, pi x\ def x N Ty V => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R3,
     append_nodup R1 R2 R12,
     append_nodup R12 R3 R.
-    get_anonymous_funs_trm (match T U L) R :- !,
-    get_anonymous_funs_trm T R1, get_anonymous_funs_trm U R2, append_nodup R1 R2 R12,
-    std.map L get_anonymous_funs_trm R3, 
-    std.flatten R3 R',
-    append_nodup R12 R' R.
+    get_anonymous_funs_trm (match _T _U _L) [] :- !. % TODO improve : but the pb is that each branch of a match is a function 
+    %get_anonymous_funs_trm T R1, get_anonymous_funs_trm U R2, append_nodup R1 R2 R12,
+    %std.map L get_anonymous_funs_trm R3, 
+    %std.flatten R3 R',
+    %append_nodup R12 R' R.
     get_anonymous_funs_trm ((fix N _Nb Ty F) as Fix) R :- std.mem! R Fix, !, pi x\ decl x N Ty => 
         get_anonymous_funs_trm (F x) R.
     get_anonymous_funs_trm (fix N Nb Ty F) [fix N Nb Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
@@ -73,9 +77,9 @@ subterms_and_args (prod N Ty F) Na R :- !,
 subterms_and_args (app [T|L]) Na [pr (app [T|L]) [], pr T L |R] :- contains_only_context_variables Na T,
     std.forall L (contains_only_context_variables Na), !, 
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
-subterms_and_args (app [T|L]) Na R :- !,
+subterms_and_args (app [_T|L]) Na R :- !,
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
-subterms_and_args (global G) Na [pr (global G) []] :- !.
+subterms_and_args (global G) _Na [pr (global G) []] :- !.
 subterms_and_args (let N Ty V F) Na [pr (let N Ty V F) []| R] :- contains_only_context_variables Na (let N Ty V F), !,
     subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
     std.append R1 R2 R12,
@@ -106,3 +110,23 @@ subterms_and_args _ _ [].
 pred subterms_list_and_args i: (list term), i: list term, o: (list (pair term (list term))). 
     subterms_list_and_args [X|XS] Na R :- !, subterms_and_args X Na L1, subterms_list_and_args XS Na L2, std.append L1 L2 R.
     subterms_list_and_args [] _ [].
+
+shorten coq.ltac.{ open, set-goal-arguments }.
+
+pred select_args_type_funs i: list term, o: list term.
+    select_args_type_funs [X | XS] [X |RS] :- (coq.typecheck X {{ Type }} ok ; coq.typecheck X {{ lp:_A -> lp:_B}} ok), select_args_type_funs XS RS. 
+    select_args_type_funs _ []. 
+
+pred trm_and_args_type_funs i: list (pair term (list term)), o: list (pair term (list term)).
+    trm_and_args_type_funs [pr X Y | XS] [pr X L| RS] :- select_args_type_funs Y L, trm_and_args_type_funs XS RS.
+    trm_and_args_type_funs [] [].
+
+pred term_to_instance i: goal-ctx, i: int, i: term, o: instance.
+    term_to_instance [decl X _ _|_] I X (var_context I).
+    term_to_instance [def X _ _ _|_] I X (var_context I).
+    term_to_instance [_|XS] I T R :- I' is I + 1, term_to_instance XS I' T R.
+    term_to_instance [] _I T (concrete_type T). 
+
+pred term_to_instance_pr i: goal-ctx, i: (list (pair term (list term))), o: (list (pair term (list instance))).
+    term_to_instance_pr Ctx [pr X Y |L] [pr X Y' | R] :- term_to_instance_pr Ctx L R, std.map Y (term_to_instance Ctx 0) Y'.
+    term_to_instance_pr _ [] [].

@@ -78,7 +78,7 @@ Goal ((forall (x : nat) (a : nat) (l : list nat),
 @hd nat x (@cons nat a l) = match (@cons nat a l) with
 | nil => x
 | y :: xs => y
-end)).
+end)). anonymous_funs. prenex_higher_order.
 def_and_pattern_matching_mono prod_types get_definitions_theories_no_generalize.
 assumption.
 Qed.

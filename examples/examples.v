@@ -153,6 +153,12 @@ Proof. intros A HA. snipe. Qed.
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
 
+(* An example with higher order and anonymous functions *) 
+Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+map g (map f l) = map (fun x => g (f x)) l.
+Proof.
+induction l ; scope.
+
 
 (** Examples on trees *)
 

@@ -1,8 +1,18 @@
 Require Import utilities.
+Require Import expand.
+Require Import elimination_fixpoints.
+Require Import elimination_pattern_matching.
+
 From elpi Require Import elpi.
 
 Ltac mypose t := let Na := fresh "f" in pose t as Na; fold Na. (*TODO fold in all hyps except
 the self refering one *)
+
+Ltac mypose_and_reify_def t := let Na := fresh "f" in pose t as Na; fold Na ;
+let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t in 
+unfold hd in H ; expand_hyp_cont H ltac:(fun H' => 
+eliminate_fix_ho H' ltac:(fun H'' =>
+try (eliminate_dependent_pattern_matching H''))).
 
 Elpi Tactic anonymous_funs.
 
@@ -15,7 +25,7 @@ Elpi Accumulate lp:{{
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
-  solve (goal Ctx _ TyG _ _ as G) GL :- ctx_to_tys Ctx Trms, 
+  solve (goal Ctx _ TyG _ _ as G) GL :- ctx_to_tys Ctx Trms,
     get_anonymous_funs_list [TyG|Trms] Lfun, mypose_list Lfun G GL.
 
 }}.
@@ -35,31 +45,10 @@ Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
 
-  shorten coq.ltac.{ open, set-goal-arguments }.
-
-
-  pred select_args_type_funs i: list term, o: list term.
-    select_args_type_funs [X | XS] [X |RS] :- (coq.typecheck X {{ Type }} ok ; coq.typecheck X {{ lp:_A -> lp:_B}} ok), select_args_type_funs XS RS. 
-    select_args_type_funs _ []. 
-
-  pred trm_and_args_type_funs i: list (pair term (list term)), o: list (pair term (list term)).
-    trm_and_args_type_funs [pr X Y | XS] [pr X L| RS] :- select_args_type_funs Y L, trm_and_args_type_funs XS RS.
-    trm_and_args_type_funs [] [].
-
-  pred term_to_instance i: goal-ctx, i: int, i: term, o: instance.
-    term_to_instance [decl X _ _|_] I X (var_context I).
-    term_to_instance [def X _ _ _|_] I X (var_context I).
-    term_to_instance [_|XS] I T R :- I' is I + 1, term_to_instance XS I' T R.
-    term_to_instance [] I T (concrete_type T). 
-
-  pred term_to_instance_pr i: goal-ctx, i: (list (pair term (list term))), o: (list (pair term (list instance))).
-    term_to_instance_pr Ctx [pr X Y |L] [pr X Y' | R] :- term_to_instance_pr Ctx L R, std.map Y (term_to_instance Ctx 0) Y'.
-    term_to_instance_pr _ [] [].
-
   pred mypose_list i: list (pair term (list instance)), i: goal, o: list sealed-goal.
   mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- std.rev Ctx Ctx',
     std.map L (instance_to_term Ctx') L', 
-    coq.ltac.call "mypose" [trm (app [X | L'])] G [G'],
+    coq.ltac.call "mypose_and_reify_def" [trm (app [X | L'])] G [G'],
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
@@ -74,13 +63,19 @@ Elpi Typecheck.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-pose (h := fun (x: A) => g (f x)).
- fold h. elpi prenex_higher_order. (* TODO Pb : elpi change silently the name of the variables when we change the goal 
-use coq.ltac.set-goal-arguments Args G G1 G1wArgs and see 
-https://lpcic.github.io/coq-elpi/tutorial_coq_elpi_tactic.html#setting-arguments-for-a-tactic*)
+elpi anonymous_funs.
+elpi prenex_higher_order. Abort.
 
+Goal ((forall (x : nat) (a : nat) (l : list nat), 
+@hd nat x (@cons nat a l) = match (@cons nat a l) with
+| nil => x
+| y :: xs => y
+end)). elpi anonymous_funs. Abort. (* Bug  fix : each branch of a match is a function *)
 
-(* TODO filtrer les arguments de type produit dans la liste des arguments 
-du terme d'ordre sup *) 
+Tactic Notation "anonymous_funs" :=
+  elpi anonymous_funs.
+
+Tactic Notation "prenex_higher_order" :=
+  elpi prenex_higher_order.
 
 
