@@ -23,7 +23,7 @@ Elpi Accumulate lp:{{
     
   solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
+    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst, coq.say "total inst are" Inst,
     instances_param_indu_strategy_list HPoly Inst G GL.
  
 
