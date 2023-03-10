@@ -23,7 +23,7 @@ Elpi Accumulate lp:{{
     
   solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst, 
+    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
     instances_param_indu_strategy_list HPoly Inst G GL.
  
 
@@ -38,6 +38,12 @@ end.
 
 Tactic Notation "elimination_polymorphism" uconstr_list_sep(l, ",") :=
   elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context.
+
+Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+map g (map f l) = map (fun x => g (f x)) l.
+Proof.
+intros A B C l f g. elimination_polymorphism. Abort. (* bug fix : the function name->gref 
+does not work when there are local functionnal variables *)
 
 Goal forall (l : list nat) (p: bool * nat), l = l.
 Proof. intros. elpi elimination_polymorphism (app_length) (pair_equal_spec) (app_cons_not_nil). 
