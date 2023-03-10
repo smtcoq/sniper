@@ -158,6 +158,8 @@ Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
 induction l ; scope.
+- Fail verit. admit.
+- Fail verit. Abort. 
 
 
 (** Examples on trees *)

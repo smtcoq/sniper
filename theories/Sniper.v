@@ -100,13 +100,13 @@ Definition prod_of_symb := (impossible_term,
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le).
 
 Ltac def_and_pattern_matching p1 k := 
-anonymous_funs ; prenex_higher_order ;
+anonymous_funs ; prenex_higher_order_with_equations ;
 let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_dependent_pattern_matching H')).
 
 Ltac def_fix_and_pattern_matching p1 k := 
-anonymous_funs ; prenex_higher_order ;
+anonymous_funs ; prenex_higher_order_with_equations ;
 let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun H'' =>
