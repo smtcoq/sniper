@@ -136,7 +136,6 @@ Proof.
   reflexivity.
 Qed.
 
-
 (* It can be fully automatized *)
 Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
@@ -153,13 +152,26 @@ Proof. intros A HA. snipe. Qed.
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
 
+Definition p2' := (prod_of_symb, map).
+
 (* An example with higher order and anonymous functions *) 
-Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+(* Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l ; scope.
+intros. induction l. scope2_aux p2' prod_types. clear H2. clear H3. clear H4. verit.
+admit. admit. admit. admit. admit. admit.
+scope2_aux p2' prod_types. clear H2. clear H3. clear H4. verit.
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
+elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+get_projs_in_variables p2'.
+
 - Fail verit. admit.
-- Fail verit. Abort. 
+- Fail verit. Abort. *)
 
 
 (** Examples on trees *)

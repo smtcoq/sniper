@@ -56,13 +56,13 @@ Ltac get_definitions_aux p p' := fun k =>
 get_definitions_aux0 p p' k ltac:(generalize_dependent_tuple).
 
 Ltac get_definitions_aux_no_generalize p p' := fun k =>
-get_definitions_aux0 p p' k ltac:(fun x => idtac).
+get_definitions_aux0 p p' k ltac:(fun _ => idtac).
 
 Ltac get_definitions_theories p0 := fun k =>
 get_definitions_aux p0 impossible_term k.
 
 Ltac get_definitions_theories_no_generalize p0 := fun k =>
-get_definitions_aux_no_generalize p0 k.
+get_definitions_aux_no_generalize p0 impossible_term k.
 
 (* The basics tactics, not recursive, used for tests *)
 Ltac get_def x := 
