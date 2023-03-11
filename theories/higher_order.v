@@ -5,11 +5,25 @@ Require Import elimination_pattern_matching.
 
 From elpi Require Import elpi.
 
-Ltac mypose t := let Na := fresh "f" in pose t as Na; fold Na. (*TODO fold in all hyps except
-the self refering one *)
+Ltac fold_tuple Na p := 
+lazymatch constr:(p) with
+| (?x, ?y) => fold_tuple Na constr:(x) ; fold_tuple Na constr:(y)
+| ?H => try fold Na in H
+end.
 
-(* TODO : use orchestrator instead of coding a small snipe here *)
-Ltac mypose_and_reify_def t := let Na := fresh "f" in pose t as Na; fold Na ;
+(* TODO : use orchestrator instead of coding a small snipe in Ltac2 *)
+
+Ltac mypose t := 
+tryif (is_local_def t) then idtac else
+let Na := fresh "f" in pose t as Na; 
+fold Na ;
+let tupl := hyps in fold_tuple Na tupl ;
+let H := fresh "H" in assert (H : Na = t) by reflexivity.
+
+Ltac mypose_and_reify_def t := 
+tryif (is_local_def t) then idtac else
+let Na := fresh "f" in pose t as Na; fold Na ;
+let tupl := hyps in fold_tuple Na tupl ;
 let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t in 
 unfold hd in H. (* expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_ho H' ltac:(fun x => let T := type of x in idtac T)). *)
@@ -36,7 +50,7 @@ Require Import List.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-pose (h := (fun x => x + 1) 42 = 43). 
+assert (H : (fun x => x + 1) 42 = 43) by reflexivity.
 elpi anonymous_funs. Abort.
 
 Elpi Tactic prenex_higher_order.
@@ -122,8 +136,8 @@ let rec aux h :=
   | x :: xs => match x with
             | (id, opt, cstr) => let hltac2 := Control.hyp id in
               let hltac1 := Ltac1.of_constr hltac2 in ltac1:(H |- let T := type of H in let U := type of T 
-              in tryif (constr_eq U Prop) then expand_hyp_cont H ltac:(fun H' => 
-              eliminate_fix_ho H' ltac:(fun H'' => eliminate_dependent_pattern_matching H''); clear H)
+              in tryif (constr_eq U Prop) then try (expand_hyp_cont H ltac:(fun H' => 
+              eliminate_fix_ho H' ltac:(fun H'' => eliminate_dependent_pattern_matching H'')); clear H)
 else idtac) hltac1 ; aux xs
             end
 end 
@@ -132,8 +146,7 @@ in aux h0.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-ltac1:(anonymous_funs).
-prenex_higher_order_with_equations (). Abort.
+ltac1:(anonymous_funs). induction l; Control.enter prenex_higher_order_with_equations. Abort.
 
 Tactic Notation "prenex_higher_order_with_equations" :=
-ltac2:(prenex_higher_order_with_equations ()).
+ltac2:(Control.enter prenex_higher_order_with_equations).

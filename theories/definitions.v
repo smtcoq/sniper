@@ -39,14 +39,17 @@ assert (H: x = x') by reflexivity ; k H ; clear H.
 
 Ltac get_definitions_aux0 p p' := fun k k' =>
  match goal with 
-| |- context C[?x] => tryif (contains_ho_argument x) then 
-get_definitions_aux0 p p' k k' else
-(let x' := eval unfold x in x in is_not_in_tuple p x ;
+| |- context C[?x] => is_not_in_tuple p x ;
+tryif (first [contains_ho_argument x | has_local_def x]) then 
+(* we do not want to unfold : higher order functions and local definitions *)
+get_definitions_aux0 (p, x) p' k k' else
+(let x' := eval unfold x in x in 
 assert_and_prove_eq_cont x x' k ;
 get_definitions_aux0 (p, x) (p', x) k k')
-| _ : context C[?x] |- _ => tryif (contains_ho_argument x) then
-get_definitions_aux0 p p' k k' else
-(let x' := eval unfold x in x in is_not_in_tuple p x ; 
+| _ : context C[?x] |- _ => is_not_in_tuple p x ; 
+tryif (first [contains_ho_argument x | has_local_def x]) then
+get_definitions_aux0 (p, x) p' k k' else
+(let x' := eval unfold x in x in  
 assert_and_prove_eq_cont x x' k ;
  get_definitions_aux0 (p, x) (p', x) k k')
 | _ => k' p'
@@ -74,5 +77,6 @@ let H := fresh  x "_def" in
 let _ := match goal with _ => 
 let x' := eval unfold x in x in assert (H : x = x') by reflexivity end in H.
 
-Goal forall (l : list nat) (x : nat), hd_error l = Some x -> (l <> nil).
-Proof. (* get_definitions_theories unit ltac:(fun H => idtac H). *) Abort.
+Goal forall (l : list nat) (x : nat), hd_error l = Some x -> (l <> nil)
+-> map S nil = nil.
+Proof. get_definitions_theories unit ltac:(fun H => idtac). Abort.

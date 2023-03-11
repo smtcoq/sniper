@@ -681,3 +681,61 @@ match t with
 | _ => 1
 end.
 
+From Ltac2 Require Import Ltac2.
+
+Ltac2 has_local_def (c: constr) :=
+let h := Control.hyps () in 
+let rec tac_rec c h :=
+  match h with
+  | x :: xs =>  match x with
+    | (id, opt, cstr) => let c' := Control.hyp id in 
+    if Constr.equal c c' then 
+      match opt with
+      | Some y => ltac1:(idtac)
+      | None => tac_rec c xs 
+      end
+    else tac_rec c xs
+  end
+  | [] => ltac1:(fail)
+end
+in tac_rec c h.
+
+Ltac2 is_local_def (c: constr) :=
+let h := Control.hyps () in 
+let rec tac_rec c h :=
+  match h with
+  | x :: xs =>  match x with
+    | (id, opt, cstr) => 
+      match opt with
+      | Some c' => if Constr.equal c c' then ltac1:(idtac) else tac_rec c xs
+      | None => tac_rec c xs 
+      end
+  end
+  | [] => ltac1:(fail)
+end
+in tac_rec c h.
+
+Goal False.
+pose (h := true). assert (H : forall (A : Type), A = A) by reflexivity. has_local_def &h.
+Fail has_local_def &H. is_local_def 'true. pose (foo := (forall A : nat, A = A)). 
+is_local_def '(forall A : nat, A = A). Fail is_local_def 'false.
+Abort.
+
+Tactic Notation "has_local_def" constr(c) :=
+let tac := 
+ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
+  match cltac2 with
+  | None => ()
+  | Some c => has_local_def c
+end) in tac c.
+
+Tactic Notation "is_local_def" constr(c) :=
+let tac := 
+ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
+  match cltac2 with
+  | None => ()
+  | Some c => is_local_def c
+end) in tac c.
+
+
+

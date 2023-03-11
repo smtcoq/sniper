@@ -152,15 +152,14 @@ Proof. intros A HA. snipe. Qed.
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
 
-Definition p2' := (prod_of_symb, map).
-
 (* An example with higher order and anonymous functions *) 
-(* Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-intros. induction l. scope2_aux p2' prod_types. clear H2. clear H3. clear H4. verit.
-admit. admit. admit. admit. admit. admit.
-scope2_aux p2' prod_types. clear H2. clear H3. clear H4. verit.
+intros. induction l; scope2_aux prod_of_symb prod_types. verit. 
+admit. admit. admit. admit. admit. admit. rewrite H9. rewrite H8.
+rewrite H10. verit.
+scope2_aux prod_of_symb prod_types. verit.
 intros ; 
 repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
