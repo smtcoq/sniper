@@ -41,7 +41,7 @@ pred globals_using_var i: term, o: (list (pair term (list int))).
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
     instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, generate_instances_list I L' L R, 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', coq.say "L' is" L', not (L' = []), !, generate_instances_list I L' L R, 
         instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
         (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', L' = [], !,  instantiate_term_list I SubTy R,
