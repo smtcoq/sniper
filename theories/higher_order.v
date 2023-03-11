@@ -125,9 +125,9 @@ in hyps_printer xs
 end 
 end.
 
-Ltac2 prenex_higher_order_with_equations (u : unit) :=
+Ltac2 anonymous_funs_with_equations (u : unit) :=
 let h := Control.hyps () in 
-let () := ltac1:(prenex_higher_order) in
+let () := ltac1:(anonymous_funs) in
 let h' := Control.hyps () in 
 let h0 := new_hypothesis h h' in 
 let rec aux h :=
@@ -143,10 +143,31 @@ else idtac) hltac1 ; aux xs
 end 
 in aux h0.
 
+Ltac2 prenex_higher_order_with_equations (u : unit) :=
+let h := Control.hyps () in 
+let () := ltac1:(prenex_higher_order) in
+let h' := Control.hyps () in 
+let h0 := new_hypothesis h h' in 
+let rec aux h :=
+  match h with
+  | [] => ()
+  | x :: xs => match x with
+            | (id, opt, cstr) => let hltac2 := Control.hyp id in
+              let hltac1 := Ltac1.of_constr hltac2 in ltac1:(H |- let T := type of H in let U := type of T 
+              in tryif (constr_eq U Prop) then try (expand_hyp_cont H ltac:(fun H' => 
+              eliminate_fix_ho H' ltac:(fun H'' => try (eliminate_dependent_pattern_matching H''))); clear H)
+else idtac) hltac1 ; aux xs
+            end
+end 
+in aux h0.
+
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-ltac1:(anonymous_funs). induction l; Control.enter prenex_higher_order_with_equations. Abort.
+induction l; Control.enter anonymous_funs_with_equations ; Control.enter prenex_higher_order_with_equations. Abort.
+
+Tactic Notation "prenex_higher_order_with_equations" :=
+ltac2:(Control.enter anonymous_funs_with_equations).
 
 Tactic Notation "prenex_higher_order_with_equations" :=
 ltac2:(Control.enter prenex_higher_order_with_equations).

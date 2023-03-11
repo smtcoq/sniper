@@ -152,26 +152,17 @@ Proof. intros A HA. snipe. Qed.
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
 
-(* An example with higher order and anonymous functions *) 
-Lemma map_compound : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+(* An example with higher order and anonymous functions 
+Note that as map should be instantiated by f and g, 
+it does not work by using an induction principle which generalizes 
+on f and g, so f and g have to be introduced before l 
+It also work only with snipe2 because the arrow type instances will 
+make SMTCoq complain *) 
+Lemma map_compound : forall (A B C : Type) (HA : CompDec A)
+(HB : CompDec B) (HC : CompDec C) (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-intros. induction l; scope2_aux prod_of_symb prod_types. verit. 
-admit. admit. admit. admit. admit. admit. rewrite H9. rewrite H8.
-rewrite H10. verit.
-scope2_aux prod_of_symb prod_types. verit.
-intros ; 
-repeat match goal with
-| H : _ |- _  => eliminate_dependent_pattern_matching H
-| _ => fail
-end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
-elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2'.
-
-- Fail verit. admit.
-- Fail verit. Abort. *)
-
+induction l; snipe2. Qed.
 
 (** Examples on trees *)
 
