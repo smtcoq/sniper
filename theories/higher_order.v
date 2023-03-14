@@ -13,14 +13,16 @@ end.
 
 (* TODO : use orchestrator instead of coding a small snipe in Ltac2 *)
 
-Ltac mypose t := 
+(* TODO better names *)
+
+Ltac mypose_and_reify_def t := 
 tryif (is_local_def t) then idtac else
 let Na := fresh "f" in pose t as Na; 
 fold Na ;
 let tupl := hyps in fold_tuple Na tupl ;
 let H := fresh "H" in assert (H : Na = t) by reflexivity.
 
-Ltac mypose_and_reify_def t := 
+Ltac mypose_and_reify_def_unfold t := 
 tryif (is_local_def t) then idtac else
 let Na := fresh "f" in pose t as Na; fold Na ;
 let tupl := hyps in fold_tuple Na tupl ;
@@ -33,14 +35,23 @@ Elpi Tactic anonymous_funs.
 Elpi Accumulate File "elpi/higher_order.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate lp:{{
+  
+  pred anonyms_funs_hyps i: int, i: goal, o: list sealed-goal.
+    anonyms_funs_hyps 0 _ _.
+    anonyms_funs_hyps N (goal Ctx _ _ _ _ as G) GL :- ctx_to_tys Ctx Trms,
+      get_anonymous_funs_list Trms [F|L], coq.ltac.call "mypose_and_reify_def" [trm F] G [G'],
+      N1 is N - 1, coq.ltac.open (anonyms_funs_hyps N1) G' GL.
 
-  pred mypose_list i: list term, i: goal, o: list sealed-goal.
-  mypose_list [X|XS] G GL :- coq.ltac.call "mypose" [trm X] G [G'],
-    coq.ltac.open (mypose_list XS) G' GL.
-  mypose_list [] _ _.
+  pred anonyms_funs_goal i: int, i: goal, o: list sealed-goal.
+    anonyms_funs_goal 0 (goal Ctx _ _ _ _ as G) GL :- ctx_to_tys Ctx Trms,
+      get_anonymous_funs_list Trms LfunsCtx, std.length LfunsCtx N, anonyms_funs_hyps N G GL. 
+    anonyms_funs_goal N (goal _ _ TyG _ _ as G) GL :- get_anonymous_funs_list [TyG] [F|_],
+      coq.ltac.call "mypose_and_reify_def" [trm F] G [G'],
+      N1 is N - 1, coq.ltac.open (anonyms_funs_goal N1) G' GL.
 
-  solve (goal Ctx _ TyG _ _ as G) GL :- ctx_to_tys Ctx Trms,
-    get_anonymous_funs_list [TyG|Trms] Lfun, mypose_list Lfun G GL.
+  solve (goal _ _ TyG _ _ as G) GL :-
+    get_anonymous_funs_list [TyG] LfunsGoal, std.length LfunsGoal N, 
+    anonyms_funs_goal N G GL.
 
 }}.
 Elpi Typecheck.
@@ -53,6 +64,11 @@ intros.
 assert (H : (fun x => x + 1) 42 = 43) by reflexivity.
 elpi anonymous_funs. Abort.
 
+Goal (forall (A: Type) (n : nat) (l : list A) (x : A), 
+(fun (n : nat) (l : list A) (default : A) => nth n l default) n l x = x ->
+(n >= (fun (l : list A) => length l) l)).
+Proof. intros. elpi anonymous_funs. Abort.
+
 Elpi Tactic prenex_higher_order.
 Elpi Accumulate File "elpi/higher_order.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
@@ -62,7 +78,7 @@ Elpi Accumulate lp:{{
   pred mypose_list i: list (pair term (list instance)), i: goal, o: list sealed-goal.
   mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- std.rev Ctx Ctx',
     std.map L (instance_to_term Ctx') L', 
-    coq.ltac.call "mypose_and_reify_def" [trm (app [X | L'])] G [G'], 
+    coq.ltac.call "mypose_and_reify_def_unfold" [trm (app [X | L'])] G [G'], 
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
