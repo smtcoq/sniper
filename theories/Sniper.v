@@ -18,6 +18,7 @@ From elpi Require Import elpi.
 Require Export utilities.
 Require Export definitions.
 Require Export higher_order.
+Require Export anonymous_functions.
 Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 

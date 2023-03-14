@@ -681,6 +681,13 @@ match t with
 | _ => 1
 end.
 
+Ltac fold_tuple Na p := 
+lazymatch constr:(p) with
+| (?x, ?y) => fold_tuple Na constr:(x) ; fold_tuple Na constr:(y)
+| ?H => try fold Na in H
+end.
+
+
 From Ltac2 Require Import Ltac2.
 
 Ltac2 has_local_def (c: constr) :=
@@ -736,6 +743,34 @@ ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
   | None => ()
   | Some c => is_local_def c
 end) in tac c.
+
+
+(* new_hypothesis h h++h' returns h' *)
+(* Note: code duplication with deciderel *)
+Ltac2 rec new_hypothesis
+(h1: (ident * constr option * constr) list) 
+(h2 : (ident * constr option * constr) list) := 
+match h1 with
+| [] => h2
+| x :: xs => match h2 with
+        | [] => []
+        | y :: ys => new_hypothesis xs ys
+      end
+end.
+
+
+Ltac2 rec hyps_printer (h : (ident * constr option * constr) list) 
+:=
+match h with
+| [] => ()
+| x :: xs => match x with
+            | (id, opt, cstr) => 
+let () := Message.print (Message.concat (Message.of_ident id)
+                                        (Message.concat (Message.of_string " : ")
+                                                        (Message.of_constr cstr))) 
+in hyps_printer xs
+end 
+end.
 
 
 
