@@ -1,15 +1,28 @@
 kind instance type.
 type var_context      int -> instance. 
 type concrete_type    term -> instance.
+type applied_type list instance -> instance. 
+
+pred coqnat_to_int i: term, o: int.
+    coqnat_to_int (app [{{ S }}, L]) N :-  coqnat_to_int L N1, N is N1 + 1.
+    coqnat_to_int X 0 :- coq.unify-eq X {{O}} ok.
+
+pred int_to_coqnat i: int, o: term.
+    int_to_coqnat 0 X :- !, coq.unify-eq X {{0}} ok.
+    int_to_coqnat N (app [{{ S }}, X]) :- int_to_coqnat N1 X, N is N1 + 1.
+
 
 pred instance_to_term i: goal-ctx, i: instance, o: term.
     instance_to_term Ctx (var_context N) X :- nth N Ctx (decl X _ _).
     instance_to_term Ctx (var_context N) X :- nth N Ctx (def X _ _ _).
+    instance_to_term Ctx (applied_type L) (app X) :- std.map L (instance_to_term Ctx) X.
     instance_to_term _ (concrete_type T) T.
 
 pred subst_in_instances_aux i: goal-ctx, i: list instance, o: list term.
     subst_in_instances_aux Ctx [(concrete_type T)|XS] [T| XS'] :- subst_in_instances_aux Ctx XS XS'.
     subst_in_instances_aux Ctx [(var_context N)| XS] [X|XS'] :- subst_in_instances_aux Ctx XS XS', nth N Ctx (decl X _ _).
+    subst_in_instances_aux Ctx [(applied_type L)| XS] [app L'|XS'] :- std.map L (instance_to_term Ctx) L',
+        subst_in_instances_aux Ctx XS XS'. 
     subst_in_instances_aux _Ctx [] []. 
 
 pred subst_in_instances i: goal-ctx, i:(list (pair term (list instance))), o: list (pair term (list term)).
@@ -76,11 +89,27 @@ pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair te
 
 pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.
     find_pos_in_context_aux [(decl T' _ _)| _XS] T N (var_context N) :- coq.unify-eq T' T ok. 
-    find_pos_in_context_aux [(decl _T' _ _)| XS] T N R :- M is N + 1, find_pos_in_context_aux XS T M R.
+    find_pos_in_context_aux [(decl _T' _ _)| XS] T N R :- !, M is N + 1, find_pos_in_context_aux XS T M R.
+    find_pos_in_context_aux [(def T' _ _ _) | _XS] T N (var_context N) :- coq.unify-eq T' T ok. 
+    find_pos_in_context_aux [(def _T' _ _ _)| XS] T N R :- !, M is N + 1, find_pos_in_context_aux XS T M R.
     find_pos_in_context_aux [] T _ (concrete_type T).
 
 pred find_pos_in_context i: goal-ctx, i: term, o: instance.
+    find_pos_in_context Ctx (app [U|L]) (applied_type [Inst|L1]) :- !,
+        std.map L (x\ find_pos_in_context_aux Ctx x 0) L1, find_pos_in_context_aux Ctx U 0 Inst.
     find_pos_in_context Ctx T Inst :- find_pos_in_context_aux Ctx T 0 Inst.
+
+pred trm_with_ugly_hack i: term, i: goal-ctx, o: term.
+    trm_with_ugly_hack X Ctx (app [{{ugly_hack}}, M]) :- name X, find_pos_in_context Ctx X (var_context N), !, int_to_coqnat N M.
+    trm_with_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => trm_with_ugly_hack (F x) Ctx (F x').
+    trm_with_ugly_hack (app L) Ctx (app M) :- std.map L (x\ trm_with_ugly_hack x Ctx) M.
+    trm_with_ugly_hack X _ X.
+
+pred remove_ugly_hack i: term, i: goal-ctx, o: term.
+    remove_ugly_hack (app [{{ugly_hack}}, N]) X Ctx :- !, coqnat_to_int N M, (nth Ctx (decl X _ _); nth Ctx (def X _ _ _)).
+    remove_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => remove_ugly_hack (F x) Ctx (F x').
+    remove_ugly_hack (app L) Ctx (app M) :- std.map L (x\ remove_ugly_hack x Ctx) M.
+    remove_ugly_hack X _ X.
 
 pred append_nodup i: list A, i: list A, o: list A.
     append_nodup [X|XS] Y R :- append_nodup XS Y R, std.mem! R X.

@@ -1,7 +1,16 @@
 From elpi Require Import elpi.
 Require Import List.
+Import ListNotations.
+
+(* This ugly hack is required because elpi rename the variables 
+of the context when we get a new goal. 
+The term ugly_hack will remember the position of the variable in the context *)
+
+
+Definition ugly_hack (n: nat) := False.
 
 Elpi Tactic elimination_polymorphism.
+
 Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/instantiate.elpi".
 Elpi Accumulate File "elpi/find_instances.elpi".
