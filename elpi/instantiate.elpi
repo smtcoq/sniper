@@ -1,3 +1,4 @@
+
  pred instantiate i: term, i: term, o: term.
     instantiate (prod _N Ty F) T (F T) :- coq.typecheck T TyT ok, coq.unify-leq TyT Ty ok. 
     instantiate T _ T. 

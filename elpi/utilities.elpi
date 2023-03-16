@@ -82,6 +82,9 @@ pred is_polymorphic i: pair term term.
 pred polymorphic_hypotheses i: (list (pair term term)), o: (list (pair term term)).
     polymorphic_hypotheses L R :- std.filter L is_polymorphic R.
 
+pred ugly_hack_on_pairs i: goal-ctx, i: (pair term term), o: (pair term term).
+    ugly_hack_on_pairs Ctx (pr T1 T2) (pr T1 T2') :- trm_with_ugly_hack T2 Ctx T2'. 
+
 pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair term term).
     collect_hypotheses_from_context [(decl X _ Ty)| XS] [Ty|R] [pr X Ty|R'] :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [def _ _ _ _ | XS] R R' :- !, collect_hypotheses_from_context XS R R'.
@@ -101,13 +104,13 @@ pred find_pos_in_context i: goal-ctx, i: term, o: instance.
 
 pred trm_with_ugly_hack i: term, i: goal-ctx, o: term.
     trm_with_ugly_hack X Ctx (app [{{ugly_hack}}, M]) :- name X, find_pos_in_context Ctx X (var_context N), !, int_to_coqnat N M.
-    trm_with_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => trm_with_ugly_hack (F x) Ctx (F x').
+    trm_with_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => trm_with_ugly_hack (F x) Ctx (F' x).
     trm_with_ugly_hack (app L) Ctx (app M) :- std.map L (x\ trm_with_ugly_hack x Ctx) M.
     trm_with_ugly_hack X _ X.
 
 pred remove_ugly_hack i: term, i: goal-ctx, o: term.
-    remove_ugly_hack (app [{{ugly_hack}}, N]) X Ctx :- !, coqnat_to_int N M, (nth Ctx (decl X _ _); nth Ctx (def X _ _ _)).
-    remove_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => remove_ugly_hack (F x) Ctx (F x').
+    remove_ugly_hack (app [{{ugly_hack}}, N]) Ctx X :- !, coqnat_to_int N M, (nth M Ctx (decl X _ _); nth M Ctx (def X _ _ _)).
+    remove_ugly_hack (prod Na Ty F) Ctx (prod Na Ty F') :- pi x\ decl x Na Ty => remove_ugly_hack (F x) Ctx (F' x).
     remove_ugly_hack (app L) Ctx (app M) :- std.map L (x\ remove_ugly_hack x Ctx) M.
     remove_ugly_hack X _ X.
 

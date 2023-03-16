@@ -122,6 +122,7 @@ pred trm_and_args_type_funs i: list (pair term (list term)), o: list (pair term 
     trm_and_args_type_funs [] [].
 
 pred term_to_instance i: goal-ctx, i: int, i: term, o: instance.
+    term_to_instance Ctx _I (app L) (applied_type R) :- !, std.map L (x\ term_to_instance Ctx 0 x) R.
     term_to_instance [decl X _ _|_] I X (var_context I).
     term_to_instance [def X _ _ _|_] I X (var_context I).
     term_to_instance [_|XS] I T R :- I' is I + 1, term_to_instance XS I' T R.

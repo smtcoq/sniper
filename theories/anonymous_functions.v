@@ -2,6 +2,7 @@ Require Import utilities.
 Require Import expand.
 Require Import elimination_fixpoints.
 Require Import elimination_pattern_matching.
+Require Import instantiate.
 
 From elpi Require Import elpi.
 

@@ -21,6 +21,6 @@ pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list in
     find_instantiated_params _ _ [].
 
 pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pair term (list instance))).
-    find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, coq.say R1,
+    find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, 
         find_instantiated_params_in_list Ctx XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list _Ctx [] [].
