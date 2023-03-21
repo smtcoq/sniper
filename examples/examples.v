@@ -177,11 +177,25 @@ Variable A : Type.
 Variable HA : CompDec A.
 Variable B : Type.
 Variable HB : CompDec B.
+Variable C : Type.
+Variable HC : CompDec C.
 
+
+Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
+Proof. (* Time intros f g l ; induction l; snipe2. *) Abort.
 
 Lemma zip_map : forall (f : A -> B) (g : A -> B) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. intros f g l ; induction l; snipe2. Qed.
+Proof. Time intros f g l ; induction l; snipe2. Qed.
+
+Definition app := fun (f : A-> B) (x: A) => f x.
+
+(* TODO *)
+Lemma bar0 (f : A -> B) (x : A) : 
+app f x = f x -> app f x = f x. intros;
+  let Hs := get_hyps in
+  add_compdecs Hs. scope2_aux prod_of_symb prod_types. snipe2. verit.
 
 End higher_order.
 
