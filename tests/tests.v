@@ -204,7 +204,7 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
   Qed. 
 
 
-  Theorem in_eq  A HA  : forall (a:A) (l:list A), Inb A HA a (a :: l) = true.
+  Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   Time snipe2.
   Undo. Time snipe. 
