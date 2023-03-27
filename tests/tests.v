@@ -197,70 +197,14 @@ Undo. Time snipe.
 Undo. Time snipe.
   Qed.
 
-End tests.
-
-From elpi Require Import elpi.
-
-Elpi Tactic elimination_polymorphism2.
-
-Elpi Accumulate File "elpi/utilities.elpi".
-Elpi Accumulate File "elpi/instantiate.elpi".
-Elpi Accumulate File "elpi/find_instances.elpi".
-Elpi Accumulate File "elpi/construct_cuts.elpi".
-
-Elpi Accumulate lp:{{
-
- pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
-      pos_ctx_to_var_in_term Ctx' Inst Inst', coq.say "Inst'" Inst',
-      snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, coq.say LInst, 
-      std.map LInst (add_pos_ctx Ctx') LInst', coq.say LInst', 
-      % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst' G GL1, !,
-      refine_by_instantiation GL1 P [G1|_GL], !, 
-      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
-    instances_param_indu_strategy_list [] _ _G _.
-    
-  solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
-    collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
-    instances_param_indu_strategy_list HPoly Inst G GL.
- 
-
-}}.
-Elpi Typecheck.
-
-Ltac clear_prenex_poly_hyps_in_context := repeat match goal with 
-| H : forall (A : ?T), _ |- _ => first [ constr_eq T Set | constr_eq T Type] ; 
-let T := type of H in let U := type of T in tryif (constr_eq U Prop) then try (clear H)
-else fail
-end.
-
-Tactic Notation "elimination_polymorphism2" uconstr_list_sep(l, ",") :=
-  elpi elimination_polymorphism2 ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context.
-
-
-Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
-let p2' := eval unfold prod_types in prod_types in
-intros ; 
-repeat match goal with
-| H : _ |- _  => eliminate_dependent_pattern_matching H
-| _ => fail
-end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching prod_of_symb ltac:(get_definitions_theories_no_generalize); 
-
-intros ; idtac 1;
-elpi elimination_polymorphism2 ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
-get_projs_in_variables p2' ; verit.
-
-  Theorem hd_error_nil A : hd_error (@nil A) = None.
+Theorem hd_error_nil : hd_error (@nil A) = None.
   Proof.
-  Time snipe2.
+  Time snipe2. 
   Undo. Time snipe.
-  Qed.
+  Qed. 
 
-  Theorem in_eq : forall (a:A) (l:list A), Inb a (a :: l) = true.
+
+  Theorem in_eq  A HA  : forall (a:A) (l:list A), Inb A HA a (a :: l) = true.
   Proof.
   Time snipe2.
   Undo. Time snipe. 

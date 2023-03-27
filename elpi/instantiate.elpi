@@ -33,7 +33,7 @@ pred indu_using_var i: term, o:  (list (pair term (list int))).
     indu_using_var _ [].
 
 pred cstr_using_var i: term, o:  (list (pair term (list int))).
-    cstr_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indc C)) x (F x) R, coq.say "R" R, not (R = []), 
+    cstr_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indc C)) x (F x) R, not (R = []), 
         coq.typecheck (global (indc C)) TyG ok, codomain_not_prop TyG ok.
     cstr_using_var _ []. 
 
@@ -42,9 +42,10 @@ pred globals_using_var i: term, o: (list (pair term (list int))).
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
     instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, generate_instances_list I L' L R, 
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, 
+        generate_instances_list I L' L R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
-    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
+    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :-
         (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', L' = [], !,  instantiate_term_list I SubTy R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux H _L _SubTy [H]. % no instances if the hypothesis is not polymorphic
@@ -55,17 +56,26 @@ pred instances_param_indu_strategy_aux_list i: list term, i: list (pair term (li
     instances_param_indu_strategy_aux_list [] _ _ [].
 
 pred generate_instances_list i: term, i: (list (pair term (list int))), i: list (pair term (list term)), o: list term.
-    generate_instances_list T [X|XS] ([_Y|_YS] as L) R :- !, generate_instances T X L R1, generate_instances_list T XS L R2, 
-    append_nodup R1 R2 R. 
+    generate_instances_list T [X|XS] ([_Y|_YS] as L) R :- !, generate_instances T X L R1, generate_instances_list T XS L R2,
+        append_nodup R1 R2 R. 
     generate_instances_list _ [] _ [].
-
 
 pred cstr_corresponding_indu i: term, o: term. %compute the inductive of a constructor or return the inductive if the input is already one
     cstr_corresponding_indu (global (indt _I) as U) U.
     cstr_corresponding_indu (global (indc C)) Indu :- coq.typecheck (global (indc C)) Ty ok, codomain Ty (app [Indu| _ ]).
 
+
+pred filter_key i: term, i: list (pair term B), o: list B. %takes all the corresponding values for a given key (or the corresponding inductive) in a list of pairs
+    filter_key X [pr X Y | XS] [Y|R] :- !, filter_key X XS R.
+    filter_key X [pr X' Y | XS] [Y|R] :- cstr_corresponding_indu X' X, !, filter_key X XS R.
+    filter_key X [_Y | XS] R :- filter_key X XS R.
+    filter_key _X [] [].
+
+% given a hypothesis to instantiate, a pair between a term Trm1 (inductive, constructor or variable) using the type variables and 
+% their position in the nary application of Trm and a list of inductive paired with their instances,
+% outputs the list of instances 
 pred generate_instances i: term, i: (pair term (list int)), i: list (pair term (list term)), o: list term.
-    generate_instances T P L R :- fst P Trm1, cstr_corresponding_indu Trm1 Trm, snd P Pos,
+    generate_instances T P L R :- fst P Trm1, cstr_corresponding_indu Trm1 Trm, snd P Pos, 
         filter_key Trm L L', generate_instances_aux1 T Trm Pos L' R.
 
 pred generate_instances_aux1 i: term, i: term, i: (list int), i: list (list term), o: list term.
