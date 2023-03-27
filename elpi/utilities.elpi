@@ -2,15 +2,42 @@ kind instance type.
 type var_context      int -> instance. 
 type concrete_type    term -> instance.
 type applied_type list instance -> instance. 
+type pos_ctx int -> term.
 
-pred coqnat_to_int i: term, o: int.
-    coqnat_to_int (app [{{ S }}, L]) N :-  coqnat_to_int L N1, N is N1 + 1.
-    coqnat_to_int X 0 :- coq.unify-eq X {{O}} ok.
+pred do2 i:list prop.
+do2 [].
+do2 [P|PS] :- P, !, do2 PS.
 
-pred int_to_coqnat i: int, o: term.
-    int_to_coqnat 0 X :- !, coq.unify-eq X {{0}} ok.
-    int_to_coqnat N (app [{{ S }}, X]) :- int_to_coqnat N1 X, N is N1 + 1.
+pred pos_ctx_to_var i: goal-ctx, i: term, o: term.
+    pos_ctx_to_var Ctx (pos_ctx N) X :- nth N Ctx (decl X _ _).
+    pos_ctx_to_var Ctx (pos_ctx N) X :- nth N Ctx (def X _ _ _).
+    pos_ctx_to_var Ctx (app L) (app X) :- std.map L (pos_ctx_to_var Ctx) X.
+    pos_ctx_to_var _ T T.
 
+pred var_to_pos_ctx i: goal-ctx, i: term, o: term.
+    var_to_pos_ctx Ctx X (pos_ctx N) :- nth N Ctx (decl X _ _).
+    var_to_pos_ctx Ctx X (pos_ctx N) :- nth N Ctx (def X _ _ _).
+    var_to_pos_ctx Ctx (app L) (app X) :- std.map L (var_to_pos_ctx Ctx) X.
+    var_to_pos_ctx _ T T.
+
+% version with the integer representing the position in the context already given and with two outputs
+pred var_pos_ctx i: prop, i: int, o: term, o: term.
+    var_pos_ctx (decl X _ _) I X (pos_ctx I).
+    var_pos_ctx (def X _ _ _) I X (pos_ctx I).
+
+pred add_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
+    add_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, (copy T1 T2 :- !) => (I' is I + 1, add_pos_ctx_aux XS I' A B).
+    add_pos_ctx_aux [] _ A B :- copy A B.
+
+pred add_pos_ctx i: goal-ctx, i: term, o: term. 
+    add_pos_ctx L T1 T2 :- add_pos_ctx_aux L 0 T1 T2.
+
+pred elim_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
+    elim_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, (copy T2 T1 :- !) => (I' is I + 1, elim_pos_ctx_aux XS I' A B).
+    elim_pos_ctx_aux [] _ A B :- copy A B.
+
+pred elim_pos_ctx i: goal-ctx, i: term, o: term. 
+    elim_pos_ctx Ctx A B :- elim_pos_ctx_aux Ctx 0 A B.
 
 pred instance_to_term i: goal-ctx, i: instance, o: term.
     instance_to_term Ctx (var_context N) X :- nth N Ctx (decl X _ _).
@@ -18,15 +45,15 @@ pred instance_to_term i: goal-ctx, i: instance, o: term.
     instance_to_term Ctx (applied_type L) (app X) :- std.map L (instance_to_term Ctx) X.
     instance_to_term _ (concrete_type T) T.
 
-pred subst_in_instances_aux i: goal-ctx, i: list instance, o: list term.
-    subst_in_instances_aux Ctx [(concrete_type T)|XS] [T| XS'] :- subst_in_instances_aux Ctx XS XS'.
-    subst_in_instances_aux Ctx [(var_context N)| XS] [X|XS'] :- subst_in_instances_aux Ctx XS XS', nth N Ctx (decl X _ _).
-    subst_in_instances_aux Ctx [(applied_type L)| XS] [app L'|XS'] :- std.map L (instance_to_term Ctx) L',
-        subst_in_instances_aux Ctx XS XS'. 
-    subst_in_instances_aux _Ctx [] []. 
+pred pos_ctx_to_var_in_term_aux i: goal-ctx, i: list term, o: list term.
+    pos_ctx_to_var_in_term_aux Ctx [(pos_ctx N)| XS] [X|XS'] :- !, pos_ctx_to_var_in_term_aux Ctx XS XS', nth N Ctx (decl X _ _).
+    pos_ctx_to_var_in_term_aux Ctx [(app L)| XS] [app L'|XS'] :- !, std.map L (pos_ctx_to_var Ctx) L',
+        pos_ctx_to_var_in_term_aux Ctx XS XS'. 
+    pos_ctx_to_var_in_term_aux Ctx [T|XS] [T| XS'] :- pos_ctx_to_var_in_term_aux Ctx XS XS'.
+    pos_ctx_to_var_in_term_aux _Ctx [] []. 
 
-pred subst_in_instances i: goal-ctx, i:(list (pair term (list instance))), o: list (pair term (list term)).
-    subst_in_instances Ctx L1 L2 :-  std.unzip L1 LT LI, std.map LI (subst_in_instances_aux Ctx) L2', std.zip LT L2' L2.
+pred pos_ctx_to_var_in_term i: goal-ctx, i:(list (pair term (list term))), o: list (pair term (list term)).
+    pos_ctx_to_var_in_term Ctx L1 L2 :-  std.unzip L1 LT LI, std.map LI (pos_ctx_to_var_in_term_aux Ctx) L2', std.zip LT L2' L2.
 
 pred type_global i: term, o: term.
   type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
@@ -87,16 +114,16 @@ pred collect_hypotheses_from_context i: goal-ctx, o: list term, o: list (pair te
     collect_hypotheses_from_context [def _ _ _ _ | XS] R R' :- !, collect_hypotheses_from_context XS R R'.
     collect_hypotheses_from_context [] [] [].
 
-pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: instance.
-    find_pos_in_context_aux [(decl T' _ _)| _XS] T N (var_context N) :- coq.unify-eq T' T ok. 
+pred find_pos_in_context_aux i: goal-ctx, i: term, i: int, o: term.
+    find_pos_in_context_aux [(decl T' _ _)| _XS] T N (pos_ctx N) :- coq.unify-eq T' T ok. 
     find_pos_in_context_aux [(decl _T' _ _)| XS] T N R :- !, M is N + 1, find_pos_in_context_aux XS T M R.
-    find_pos_in_context_aux [(def T' _ _ _) | _XS] T N (var_context N) :- coq.unify-eq T' T ok. 
+    find_pos_in_context_aux [(def T' _ _ _) | _XS] T N (pos_ctx N) :- coq.unify-eq T' T ok. 
     find_pos_in_context_aux [(def _T' _ _ _)| XS] T N R :- !, M is N + 1, find_pos_in_context_aux XS T M R.
-    find_pos_in_context_aux [] T _ (concrete_type T).
+    find_pos_in_context_aux [] T _  T.
 
-pred find_pos_in_context i: goal-ctx, i: term, o: instance.
-    find_pos_in_context Ctx (app [U|L]) (applied_type [Inst|L1]) :- !,
-        std.map L (x\ find_pos_in_context_aux Ctx x 0) L1, find_pos_in_context_aux Ctx U 0 Inst.
+pred find_pos_in_context i: goal-ctx, i: term, o: term.
+    find_pos_in_context Ctx (app L) (app L') :- !,
+        std.map L (x\ find_pos_in_context_aux Ctx x 0) L'.
     find_pos_in_context Ctx T Inst :- find_pos_in_context_aux Ctx T 0 Inst.
 
 pred append_nodup i: list A, i: list A, o: list A.
@@ -110,12 +137,7 @@ pred find_occurences_aux i: list A, i: A, i: int, o: list int.
     find_occurences_aux [] _X _N [].
 
 pred find_occurences i: list A, i: A, o: list int.
-    find_occurences L X R :- find_occurences_aux L X 0 R. 
-
-pred filter_key i: A, i: list (pair A B), o: list B. %takes all the corresponding values for a given key in a list of pairs
-    filter_key X [pr X Y | XS] [Y|R] :- !, filter_key X XS R.
-    filter_key X [_Y | XS] R :- filter_key X XS R.
-    filter_key _X [] []. 
+    find_occurences L X R :- find_occurences_aux L X 0 R.  
 
 pred nth i:int, i:list A, o:A. % a version of nth with no fatal error to handle backtracking
     nth 0 [X|_ ] R :- !, X = R.

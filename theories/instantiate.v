@@ -11,14 +11,14 @@ Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
- pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list instance)), i: goal, o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _ _ as G) GS :- std.rev Ctx Ctx',
-      subst_in_instances Ctx' Inst Inst',
+ pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
+    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
+      pos_ctx_to_var_in_term Ctx' Inst Inst', 
       snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      std.map LInst (add_pos_ctx Ctx') LInst',
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst ProofTerm,
-      refine ProofTerm G GL1, !,
+      construct_cuts LInst' G GL1, !,
       refine_by_instantiation GL1 P [G1|_GL], !, 
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
     instances_param_indu_strategy_list [] _ _G _.

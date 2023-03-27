@@ -184,13 +184,14 @@ Undo. Time snipe.
 Undo. Time snipe.
   Qed.
 
-  Theorem hd_error_nil : hd_error (@nil A) = None.
+Theorem hd_error_nil : hd_error (@nil A) = None.
   Proof.
-  Time snipe2.
+  Time snipe2. 
   Undo. Time snipe.
-  Qed.
+  Qed. 
 
-  Theorem in_eq : forall (a:A) (l:list A), Inb a (a :: l) = true.
+
+  Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   Time snipe2.
   Undo. Time snipe. 
