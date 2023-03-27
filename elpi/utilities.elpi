@@ -21,21 +21,23 @@ pred var_to_pos_ctx i: goal-ctx, i: term, o: term.
     var_to_pos_ctx _ T T.
 
 % version with the integer representing the position in the context already given and with two outputs
-pred var_to_pos_ctx2 i: prop, i: int, o: term, o: term.
-    var_to_pos_ctx2 (decl X _ _) I X (pos_ctx I).
-    var_to_pos_ctx2 (def X _ _ _) I X (pos_ctx I).
-
-pred pos_ctx_to_var2 i: prop, i: int, o: term, o: term.
+pred var_pos_ctx i: prop, i: int, o: term, o: term.
+    var_pos_ctx (decl X _ _) I X (pos_ctx I).
+    var_pos_ctx (def X _ _ _) I X (pos_ctx I).
 
 pred add_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
-    add_pos_ctx_aux [X | XS] I A B :- var_to_pos_ctx2 X I T1 T2, copy T1 T2  => (I' is I + 1, add_pos_ctx_aux XS I' A B).
+    add_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, copy T1 T2  => (I' is I + 1, add_pos_ctx_aux XS I' A B).
     add_pos_ctx_aux [] _ A B :- copy A B.
 
 pred add_pos_ctx i: goal-ctx, i: term, o: term. 
     add_pos_ctx L T1 T2 :- add_pos_ctx_aux L 0 T1 T2.
 
+pred elim_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
+    elim_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, copy T2 T1  => (I' is I + 1, elim_pos_ctx_aux XS I' A B).
+    elim_pos_ctx_aux [] _ A B :- copy A B.
+
 pred elim_pos_ctx i: goal-ctx, i: term, o: term. 
-    elim_pos_ctx Ctx A B :- (pi x\ pos_ctx_to_var Ctx x R => copy x R) => copy A B.
+    elim_pos_ctx Ctx A B :- elim_pos_ctx_aux Ctx 0 A B.
 
 pred instance_to_term i: goal-ctx, i: instance, o: term.
     instance_to_term Ctx (var_context N) X :- nth N Ctx (decl X _ _).

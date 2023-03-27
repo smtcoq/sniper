@@ -11,21 +11,14 @@ Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
-pred construct_cuts' i: (list term), i: goal, o: list sealed-goal.
-    construct_cuts' [X | XS] (goal Ctx _ _ _ _ as G) GS'' :- !, std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
-        std.assert-ok! (coq.elaborate-ty-skeleton X' _ X1) "cut formula illtyped", !,
-        refine (app [(fun `new_hyp` X1 _F), _TyG]) G [G', G''| GL], !, 
-        coq.ltac.open (construct_cuts' XS) G'' GS', std.append [G'| GL] GS' GS''.
-    construct_cuts' [] _G _GL.
-
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
     instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
       pos_ctx_to_var_in_term Ctx' Inst Inst', 
       snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, coq.say "before add pos",
-      std.map LInst (add_pos_ctx Ctx') LInst', coq.say "LINST'" LInst',
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      std.map LInst (add_pos_ctx Ctx') LInst',
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts' LInst' G GL1, !,
+      construct_cuts LInst' G GL1, !,
       refine_by_instantiation GL1 P [G1|_GL], !, 
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
     instances_param_indu_strategy_list [] _ _G _.

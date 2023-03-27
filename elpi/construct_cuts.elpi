@@ -1,13 +1,13 @@
 pred construct_cuts i: (list term), i: goal, o: list sealed-goal.
-    construct_cuts [X | XS] G GL :- !, 
-        std.assert-ok! (coq.elaborate-ty-skeleton X _ X1) "cut formula illtyped",
-        refine (app [(fun `new_hyp` X1 _F), _R]) G [G', G''], !, 
-        coq.ltac.open (construct_cuts XS) G'' GS', std.append [G'] GS' GL.
-    construct_cuts [] _G _GL. 
+    construct_cuts [X | XS] (goal Ctx _ _ _ _ as G) GS'' :- !, std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
+        std.assert-ok! (coq.elaborate-ty-skeleton X' _ X1) "cut formula illtyped", !, 
+        refine (app [(fun `new_hyp` X1 _), _]) G [G', G''], !, 
+        coq.ltac.open (construct_cuts XS) G' [G'''|GS'], std.append [G''', G''] GS' GS''.
+    construct_cuts [] _G _GL.
 
 pred args_to_terms i: (list argument), o: (list term).
-args_to_terms [trm X | XS] [X | R] :- args_to_terms XS R.
-args_to_terms [] [].
+    args_to_terms [trm X | XS] [X | R] :- args_to_terms XS R.
+    args_to_terms [] [].
 
 pred find_in_context i: term, i: goal-ctx, o: term.
     find_in_context Trm [decl Var _ Ty| _XS] Var :- coq.unify-leq Trm Ty ok, !.

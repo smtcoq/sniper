@@ -165,6 +165,8 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
+(* A nice example but a bit slow: we should investigate to improve the performance *)
+
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof. Time intros f g l ; induction l; snipe2. Qed.
@@ -180,10 +182,6 @@ Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A),
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
 induction l; snipe2. Qed.
-
-Lemma zip_map : forall (f : A -> B) (g : A -> B) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; snipe2. Qed.
 
 End higher_order.
 
