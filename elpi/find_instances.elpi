@@ -1,4 +1,4 @@
-pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list instance))).
+pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list term))).
     find_instantiated_params Ctx (fun N Ty F) L :- !, find_instantiated_params Ctx Ty R1,
         pi x\ decl x N Ty => find_instantiated_params Ctx (F x) R2, append_nodup R1 R2 L.
     find_instantiated_params Ctx (prod N Ty F) L :- not (coq.unify-leq Ty {{Type}} ok), !, find_instantiated_params Ctx Ty R1,
@@ -20,7 +20,7 @@ pred find_instantiated_params i: goal-ctx, i: term, o: (list (pair term (list in
     find_instantiated_params Ctx (app L) R :- !, std.map L (find_instantiated_params Ctx) R1, std.flatten R1 R.
     find_instantiated_params _ _ [].
 
-pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pair term (list instance))).
+pred find_instantiated_params_in_list i: goal-ctx, i: (list term), o: (list (pair term (list term))).
     find_instantiated_params_in_list Ctx [X | XS] L :- !, find_instantiated_params Ctx X R1, 
         find_instantiated_params_in_list Ctx XS R2, append_nodup R1 R2 L.
     find_instantiated_params_in_list _Ctx [] [].
