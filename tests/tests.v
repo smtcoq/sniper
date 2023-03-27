@@ -144,19 +144,6 @@ fix search {A : Type} {H : CompDec A} (x : A) (l : list A) {struct l} : bool :=
   | x0 :: l0 => orb (eqb_of_compdec H x x0) (search x l0)
   end.
 
-Section ho.
-
-Variable A' B' : Type.
-Variable HA' : CompDec A'.
-Variable HB' : CompDec B'.
-
-Definition app := fun (f : A'-> B') (x: A') => f x.
-
-Lemma bar0 (f : A' -> B') (x : A') : 
-app f x = f x -> app f x = f x. snipe2. Qed.
-
-End ho.
-
 Local Open Scope list_scope.
 Import ListNotations. 
 
