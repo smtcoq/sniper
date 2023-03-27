@@ -33,7 +33,8 @@ pred indu_using_var i: term, o:  (list (pair term (list int))).
     indu_using_var _ [].
 
 pred cstr_using_var i: term, o:  (list (pair term (list int))).
-    cstr_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indc C)) x (F x) R, not (R = []), coq.typecheck (global (indc C)) TyG ok, codomain_not_prop TyG ok.
+    cstr_using_var (prod _ Ty F) R :-  pi x\ decl x _Na Ty => argument_of (global (indc C)) x (F x) R, coq.say "R" R, not (R = []), 
+        coq.typecheck (global (indc C)) TyG ok, codomain_not_prop TyG ok.
     cstr_using_var _ []. 
 
 pred globals_using_var i: term, o: (list (pair term (list int))).
