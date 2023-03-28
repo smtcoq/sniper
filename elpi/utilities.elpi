@@ -1,12 +1,5 @@
-kind instance type.
-type var_context      int -> instance. 
-type concrete_type    term -> instance.
-type applied_type list instance -> instance. 
+% the type term is extended by one constructor, the position in the local context
 type pos_ctx int -> term.
-
-pred do2 i:list prop.
-do2 [].
-do2 [P|PS] :- P, !, do2 PS.
 
 pred pos_ctx_to_var i: goal-ctx, i: term, o: term.
     pos_ctx_to_var Ctx (pos_ctx N) X :- nth N Ctx (decl X _ _).
@@ -32,18 +25,16 @@ pred add_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
 pred add_pos_ctx i: goal-ctx, i: term, o: term. 
     add_pos_ctx L T1 T2 :- add_pos_ctx_aux L 0 T1 T2.
 
+pred add_pos_ctx_pr i: goal-ctx, i: (list (pair term (list term))), o: (list (pair term (list term))).
+    add_pos_ctx_pr Ctx [pr T L | XS] [pr T L'|XS'] :- std.map L (add_pos_ctx Ctx) L', add_pos_ctx_pr Ctx XS XS'.
+    add_pos_ctx_pr _ [] [].
+
 pred elim_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
     elim_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, (copy T2 T1 :- !) => (I' is I + 1, elim_pos_ctx_aux XS I' A B).
     elim_pos_ctx_aux [] _ A B :- copy A B.
 
 pred elim_pos_ctx i: goal-ctx, i: term, o: term. 
     elim_pos_ctx Ctx A B :- elim_pos_ctx_aux Ctx 0 A B.
-
-pred instance_to_term i: goal-ctx, i: instance, o: term.
-    instance_to_term Ctx (var_context N) X :- nth N Ctx (decl X _ _).
-    instance_to_term Ctx (var_context N) X :- nth N Ctx (def X _ _ _).
-    instance_to_term Ctx (applied_type L) (app X) :- std.map L (instance_to_term Ctx) X.
-    instance_to_term _ (concrete_type T) T.
 
 pred pos_ctx_to_var_in_term_aux i: goal-ctx, i: list term, o: list term.
     pos_ctx_to_var_in_term_aux Ctx [(pos_ctx N)| XS] [X|XS'] :- !, pos_ctx_to_var_in_term_aux Ctx XS XS', nth N Ctx (decl X _ _).

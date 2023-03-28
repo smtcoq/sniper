@@ -53,6 +53,9 @@ Goal (forall (A: Type) (n : nat) (l : list A) (x : A),
 (n >= (fun (l : list A) => length l) l)).
 Proof. intros. elpi anonymous_funs. Abort.
 
+Lemma bar2 A B C (l : list A) (f : A -> B) (g: B -> C) : map (fun x => g (f x)) l = (fun l' => map g (map f l')) l.
+Proof. elpi anonymous_funs. Abort. 
+
 Tactic Notation "anonymous_funs" :=
   elpi anonymous_funs.
 
@@ -79,7 +82,3 @@ in aux h0.
 
 Tactic Notation "anonymous_funs" :=
 ltac2:(Control.enter anonymous_funs_with_equations).
-
-
-
-

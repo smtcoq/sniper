@@ -22,9 +22,10 @@ Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate lp:{{
 
-  pred mypose_list i: list (pair term (list instance)), i: goal, o: list sealed-goal.
-  mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- std.rev Ctx Ctx',
-    std.map L (instance_to_term Ctx') L', 
+  pred mypose_list i: list (pair term (list term)), i: goal, o: list sealed-goal.
+  mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- 
+    std.rev Ctx Ctx',
+    std.map L (elim_pos_ctx Ctx') L',
     coq.ltac.call "mypose_and_reify_def_unfold" [trm (app [X | L'])] G [G'], 
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
@@ -32,14 +33,15 @@ Elpi Accumulate lp:{{
 
   solve (goal Ctx _ TyG _ _ as G) GL :- ctx_to_hyps Ctx Trms, names Na,
     subterms_list_and_args [TyG|Trms] Na Subs,
-    std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L, trm_and_args_type_funs L L', std.rev Ctx Ctx', 
-term_to_instance_pr Ctx' L' L'', mypose_list L'' G GL.
+    std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L, trm_and_args_type_funs L L', 
+    std.rev Ctx Ctx', 
+    add_pos_ctx_pr Ctx' L' L'', mypose_list L'' G GL.
 
 }}.
+Elpi Typecheck.
 
 Require Import List.
 
-Elpi Typecheck.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 List.map g (List.map f l) = map (fun x => g (f x)) l.
 intros.

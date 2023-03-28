@@ -120,14 +120,3 @@ pred select_args_type_funs i: list term, o: list term.
 pred trm_and_args_type_funs i: list (pair term (list term)), o: list (pair term (list term)).
     trm_and_args_type_funs [pr X Y | XS] [pr X L| RS] :- select_args_type_funs Y L, trm_and_args_type_funs XS RS.
     trm_and_args_type_funs [] [].
-
-pred term_to_instance i: goal-ctx, i: int, i: term, o: instance.
-    term_to_instance Ctx _I (app L) (applied_type R) :- !, std.map L (x\ term_to_instance Ctx 0 x) R.
-    term_to_instance [decl X _ _|_] I X (var_context I).
-    term_to_instance [def X _ _ _|_] I X (var_context I).
-    term_to_instance [_|XS] I T R :- I' is I + 1, term_to_instance XS I' T R.
-    term_to_instance [] _I T (concrete_type T). 
-
-pred term_to_instance_pr i: goal-ctx, i: (list (pair term (list term))), o: (list (pair term (list instance))).
-    term_to_instance_pr Ctx [pr X Y |L] [pr X Y' | R] :- term_to_instance_pr Ctx L R, std.map Y (term_to_instance Ctx 0) Y'.
-    term_to_instance_pr _ [] [].
