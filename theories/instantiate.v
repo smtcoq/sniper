@@ -18,9 +18,8 @@ Elpi Accumulate lp:{{
       instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
       std.map LInst (add_pos_ctx Ctx') LInst',
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst' G GL1, !,
-      refine_by_instantiation GL1 P [G1|_GL], !, 
-      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
+      construct_cuts LInst' P G [G'], !,
+      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS.
     instances_param_indu_strategy_list [] _ _G _.
     
   solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
