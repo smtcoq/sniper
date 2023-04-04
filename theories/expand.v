@@ -9,15 +9,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import List.
 Import ListNotations.
 Require Import String.
-
-
 
 Definition is_type_of_fun (T : term) :=
 match T with
@@ -78,7 +75,6 @@ assert (forall x : string, length x = match x with
 end). intros x. destruct x ; simpl ; reflexivity.
 Abort. 
 
-
 Goal False.
 get_def length.
 expand_hyp length_def.
@@ -88,7 +84,6 @@ Abort.
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
 get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac)).
 Abort.
-
 
 End tests.
 

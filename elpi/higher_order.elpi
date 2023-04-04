@@ -1,0 +1,122 @@
+pred get_anonymous_funs_trm i: term, o: list term.
+    get_anonymous_funs_trm (fun N Ty F) R :- std.mem! R (fun N Ty F), !, pi x\ decl x N Ty => 
+        get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm (fun N Ty F) [fun N Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm (prod N Ty F) R :- pi x\ decl x N Ty => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm (app [{{@eq}}, (fun N Ty F), U]) R :- get_anonymous_funs_trm U R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
+        std.append R1 R2 R. %T or U is not anonymous if it is defined by an equality
+    get_anonymous_funs_trm (app [{{@eq}}, T, (fun N Ty F)]) R :- get_anonymous_funs_trm T R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
+        std.append R1 R2 R. 
+    get_anonymous_funs_trm (app L) R :- !, std.map L get_anonymous_funs_trm R', std.flatten R' R.
+    get_anonymous_funs_trm (let N Ty V F) R :- !,
+    get_anonymous_funs_trm Ty R1, get_anonymous_funs_trm V R2, pi x\ def x N Ty V => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R3,
+    append_nodup R1 R2 R12,
+    append_nodup R12 R3 R.
+    get_anonymous_funs_trm (match _T _U _L) [] :- !. % TODO improve : but the pb is that each branch of a match is a function 
+    %get_anonymous_funs_trm T R1, get_anonymous_funs_trm U R2, append_nodup R1 R2 R12,
+    %std.map L get_anonymous_funs_trm R3, 
+    %std.flatten R3 R',
+    %append_nodup R12 R' R.
+    get_anonymous_funs_trm ((fix N _Nb Ty F) as Fix) R :- std.mem! R Fix, !, pi x\ decl x N Ty => 
+        get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm (fix N Nb Ty F) [fix N Nb Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
+    get_anonymous_funs_trm _ [].
+
+pred get_anonymous_funs_list i: list term, o: list term.
+    get_anonymous_funs_list [X|XS] R :- get_anonymous_funs_trm X R1, get_anonymous_funs_list XS R2, append_nodup R1 R2 R.
+    get_anonymous_funs_list [] [].
+
+pred is_prod i: term.
+    is_prod (prod _ _ _).
+    is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.
+
+pred prenex_ho1 i: term.
+    prenex_ho1 (prod _ Ty F) :- not (is_prod Ty), pi x\ decl x _ Ty => prenex_ho1 (F x).
+    prenex_ho1 (prod _ ((prod _ Ty' _) as Ty) F) :- not (is_prod Ty'), pi x\ decl x _ Ty => prenex_ho1 (F x).
+    prenex_ho1 T :- name T. 
+    prenex_ho1 (sort (typ _)). 
+    prenex_ho1 (global (const C)) :- (coq.env.const C (some Bo) _, prenex_ho1 Bo; coq.env.const C _ Ty, coq.unify-leq Ty {{Type}} ok).
+    prenex_ho1 (global (indt _)).
+    prenex_ho1 (app [global _ | _]).
+
+pred prenex_ho1_ty i: term. 
+    prenex_ho1_ty T :- coq.typecheck T Ty ok, prenex_ho1 Ty. 
+
+pred contains_prenex_ho i: term.
+    contains_prenex_ho (prod _ (prod _ _ _) _).
+    contains_prenex_ho (prod Na Ty F) :- pi x\ decl x Na Ty => contains_prenex_ho (F x).
+
+pred contains_prenex_ho_ty i: term.
+    contains_prenex_ho_ty T :- coq.typecheck T Ty ok, contains_prenex_ho Ty.
+
+pred replace i:list (pair A B), i:A, i: B, o: list (pair A B). 
+    replace [pr X _|LS] X Z [pr X Z |LS].
+    replace [U |LS] X Z [U|R] :- replace LS X Z R.
+
+pred contains_only_context_variables i: list term, i: term. 
+    contains_only_context_variables Na T :- names Na', std.length Na N, std.drop N Na' Na'',
+        std.forall Na'' (x\ not (occurs x T)).
+    %contains_only_context_variables _ _ :- coq.error "the term contains free variables that are not context or section variables".
+
+% TODO : speed up predicate, ignore non pertinent subterms 
+pred subterms_and_args i: term, i: list term, o: (list (pair term (list term))). %closed subterms of a term and their arguments if they are applied
+subterms_and_args (sort U) _ [pr (sort U) []] :- !.
+subterms_and_args (fun N Ty F) Na [pr (fun N Ty F) [] | R] :- contains_only_context_variables Na (fun N Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. %backtracks when the function depends on a variable bound by a previous rule
+subterms_and_args (fun N Ty F) Na R :- !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+subterms_and_args (prod N Ty F) Na [pr (prod N Ty F) [] | R] :- contains_only_context_variables Na (prod N Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+subterms_and_args (prod N Ty F) Na R :- !, 
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R. 
+% TODO : define curry
+subterms_and_args (app [T|L]) Na [pr (app [T|L]) [], pr T L |R] :- contains_only_context_variables Na T,
+    std.forall L (contains_only_context_variables Na), !, 
+    std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
+subterms_and_args (app [_T|L]) Na R :- !,
+    std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
+subterms_and_args (global G) _Na [pr (global G) []] :- !.
+subterms_and_args (let N Ty V F) Na [pr (let N Ty V F) []| R] :- contains_only_context_variables Na (let N Ty V F), !,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
+subterms_and_args (let N Ty V F) Na R :- !,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
+subterms_and_args (match T U L) Na [pr (match T U L) [] | R] :- contains_only_context_variables Na (match T U L), !,
+    subterms_and_args T Na R1, subterms_and_args U Na R2, std.append R1 R2 R12,
+    std.map L (x\ subterms_and_args x Na) R3, 
+    std.flatten R3 R',
+    std.append R12 R' R.
+subterms_and_args (match T U L) Na R :- !,
+    subterms_and_args T Na R1, subterms_and_args U Na R2, std.append R1 R2 R12,
+    std.map L (x\ subterms_and_args x Na) R3,  
+    std.flatten R3 R',
+    std.append R12 R' R.
+subterms_and_args (fix N Rno Ty F) Na [pr (fix N Rno Ty F) []|R] :- contains_only_context_variables Na (fix N Rno Ty F), !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R.
+subterms_and_args (fix N _ Ty F) Na R :- !,
+    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    std.append R1 R2 R.
+subterms_and_args T Na [pr T []] :- contains_only_context_variables Na T.
+subterms_and_args _ _ [].
+
+pred subterms_list_and_args i: (list term), i: list term, o: (list (pair term (list term))). 
+    subterms_list_and_args [X|XS] Na R :- !, subterms_and_args X Na L1, subterms_list_and_args XS Na L2, std.append L1 L2 R.
+    subterms_list_and_args [] _ [].
+
+shorten coq.ltac.{ open, set-goal-arguments }.
+
+pred select_args_type_funs i: list term, o: list term.
+    select_args_type_funs [X | XS] [X |RS] :- (coq.typecheck X {{ Type }} ok ; coq.typecheck X {{ lp:_A -> lp:_B}} ok), select_args_type_funs XS RS. 
+    select_args_type_funs _ []. 
+
+pred trm_and_args_type_funs i: list (pair term (list term)), o: list (pair term (list term)).
+    trm_and_args_type_funs [pr X Y | XS] [pr X L| RS] :- select_args_type_funs Y L, trm_and_args_type_funs XS RS.
+    trm_and_args_type_funs [] [].
