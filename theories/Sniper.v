@@ -17,6 +17,8 @@ From elpi Require Import elpi.
 
 Require Export utilities.
 Require Export definitions.
+Require Export higher_order.
+Require Export anonymous_functions.
 Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
@@ -100,11 +102,15 @@ Definition prod_of_symb := (default,
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
 CompDec).
 
-Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+Ltac def_and_pattern_matching p1 k := 
+anonymous_funs ; prenex_higher_order_with_equations ;
+let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_dependent_pattern_matching H')).
 
-Ltac def_fix_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+Ltac def_fix_and_pattern_matching p1 k := 
+anonymous_funs ; prenex_higher_order_with_equations ;
+let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_cont H' ltac:(fun H'' =>
 try (eliminate_dependent_pattern_matching H'')))).
