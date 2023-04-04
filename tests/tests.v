@@ -78,7 +78,7 @@ Goal ((forall (x : nat) (a : nat) (l : list nat),
 @hd nat x (@cons nat a l) = match (@cons nat a l) with
 | nil => x
 | y :: xs => y
-end)).
+end)). anonymous_funs. prenex_higher_order.
 def_and_pattern_matching_mono prod_types get_definitions_theories_no_generalize.
 assumption.
 Qed.
@@ -184,13 +184,14 @@ Undo. Time snipe.
 Undo. Time snipe.
   Qed.
 
-  Theorem hd_error_nil : hd_error (@nil A) = None.
+Theorem hd_error_nil : hd_error (@nil A) = None.
   Proof.
-  Time snipe2.
+  Time snipe2. 
   Undo. Time snipe.
-  Qed.
+  Qed. 
 
-  Theorem in_eq : forall (a:A) (l:list A), Inb a (a :: l) = true.
+
+  Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   Time snipe2.
   Undo. Time snipe. 

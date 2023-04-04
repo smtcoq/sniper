@@ -9,15 +9,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
 Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import List.
 Import ListNotations.
 Require Import String.
-
-
 
 Definition is_type_of_fun (T : term) :=
 match T with
@@ -34,7 +31,7 @@ Open Scope string_scope.
 Fixpoint gen_eq (l : list term) (B : term) (t : term) (u : term) {struct l} := 
 match l with
 | [] => mkEq B t u
-| A :: l' => mkProdName "x"%bs A (gen_eq l' B (tApp (lift 1 0 t) [tRel 0]) (tApp (lift 1 0 u) [tRel 0]))
+| A :: l' => mkProdName "x0"%bs A (gen_eq l' B (tApp (lift 1 0 t) [tRel 0]) (tApp (lift 1 0 u) [tRel 0]))
 end.
 
 (* if H : t = u then expand_hyp H produces the hypothesis forall x1 ... xn, t x1 ... xn = u x1 ... xn *)
@@ -78,7 +75,6 @@ assert (forall x : string, length x = match x with
 end). intros x. destruct x ; simpl ; reflexivity.
 Abort. 
 
-
 Goal False.
 get_def length.
 expand_hyp length_def.
@@ -88,7 +84,6 @@ Abort.
 Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
 get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac)).
 Abort.
-
 
 End tests.
 

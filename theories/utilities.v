@@ -21,9 +21,7 @@ MetaCoq Quote Definition unit_reif := unit.
 
 MetaCoq Quote Definition or_reif := Logic.or.
 
-
 MetaCoq Quote Definition and_reif := Logic.and.
-
 
 MetaCoq Quote Definition True_reif := True.
 
@@ -39,7 +37,6 @@ MetaCoq Quote Definition nat_reif := nat.
 
 Inductive default :=.
 MetaCoq Quote Definition default_reif := default.
-
 
 (** Tail-recursive (actually linear) version of List.length **)
 Definition leng {A : Type} (l : list A ) :=
@@ -69,9 +66,6 @@ Definition tr_flatten {A : Type} (l : list (list A)) :=
   | l0 :: l => aux l (rev_append l0 acc)
   end in tr_rev (aux l []).
 
-
-
-
 (** tr_revmap f [a1 ; ... ; an ] = [f an ; .... ; f a1 ]
  tail-recursive (actually linear)
 **)
@@ -95,8 +89,6 @@ Goal False.
 let x := constr:(rev_acc_add [2 ; 3 ; 8]) in pose x as kik ; compute in kik.
 Abort.
 
-
-
 (** Tail-recursive (actually linear) version of List.map 
     Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
 **)
@@ -118,8 +110,8 @@ Definition tr_map {A B : Type} (f: A -> B) (l : list A) :=
 Open Scope string_scope.
 
 Definition mkNamed s := ({| binder_name := nNamed (s%string); binder_relevance := Relevant |} : aname).
-Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
 
+Definition mkNAnon := {| binder_name := nAnon; binder_relevance := Relevant |}.
 
 Definition mkNamedtry := mkNamed (("B"%bs) : ident).
 
@@ -133,11 +125,8 @@ Definition mkLam Ty t := match Ty with
 | _ => tLambda (mkNamed "x"%bs) Ty t
 end.
 
-
-
 Definition mkProdName na T u := (* \TODO use mkProdName in files *)
 tProd (mkNamed na) T u.
-
 
 (* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
 (* warning: t should have been previously lifted if necessary*)
@@ -211,7 +200,6 @@ Definition mkOr_n (l : list term) :=
   end.
 
 Definition mknAnon := {| binder_name := nAnon ; binder_relevance := Relevant |}.
-
 
 Definition default_error_kn := (MPfile [], "error"%bs).
 
@@ -320,7 +308,6 @@ match i with
 end
 | _ => 0
 end.
-
 
 Fixpoint get_type_constructors (l : list constructor_body) :=
 match l with
@@ -483,7 +470,6 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
   end
   in dlaux B n [].
 
-
 (* given an 'inductive' and i, the rank of an inductive body, 
   outputs the 'inductive' associated to the same inductive type, whose rank is i 
 *)
@@ -513,11 +499,7 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
   let oind_list := tr_rev (aux1 no [] )
   in  subst0 oind_list B .
 
-
-
 (***********************)
-
-
 
 (** Rel_list n l = [ tRel (n + l -1)) ; tRel (n + l -2 ) ; ... ; tRel l]
    (list of length n)
@@ -529,3 +511,98 @@ Definition Rel_list (n l : nat) :=
    | S n => aux n  (S k) ((tRel k)::acc)
    end
    in aux n l [].
+
+(* Reifies a term and calls is_type *)
+Ltac is_type_quote t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
+
+Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
+metacoq_get_value (tmQuote t') in constr:(is_type T).
+
+Ltac fold_tuple Na p := 
+lazymatch constr:(p) with
+| (?x, ?y) => fold_tuple Na constr:(x) ; fold_tuple Na constr:(y)
+| ?H => try fold Na in H
+end.
+
+From Ltac2 Require Import Ltac2.
+
+Ltac2 has_local_def (c: constr) :=
+let h := Control.hyps () in 
+let rec tac_rec c h :=
+  match h with
+  | x :: xs =>  match x with
+    | (id, opt, cstr) => let c' := Control.hyp id in 
+    if Constr.equal c c' then 
+      match opt with
+      | Some y => ltac1:(idtac)
+      | None => tac_rec c xs 
+      end
+    else tac_rec c xs
+  end
+  | [] => ltac1:(fail)
+end
+in tac_rec c h.
+
+Ltac2 is_local_def (c: constr) :=
+let h := Control.hyps () in 
+let rec tac_rec c h :=
+  match h with
+  | x :: xs =>  match x with
+    | (id, opt, cstr) => 
+      match opt with
+      | Some c' => if Constr.equal c c' then ltac1:(idtac) else tac_rec c xs
+      | None => tac_rec c xs 
+      end
+  end
+  | [] => ltac1:(fail)
+end
+in tac_rec c h.
+
+Goal False.
+pose (h := true). assert (H : forall (A : Type), A = A) by reflexivity. has_local_def &h.
+Fail has_local_def &H. is_local_def 'true. pose (foo := (forall A : nat, A = A)). 
+is_local_def '(forall A : nat, A = A). Fail is_local_def 'false.
+Abort.
+
+Tactic Notation "has_local_def" constr(c) :=
+let tac := 
+ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
+  match cltac2 with
+  | None => ()
+  | Some c => has_local_def c
+end) in tac c.
+
+Tactic Notation "is_local_def" constr(c) :=
+let tac := 
+ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
+  match cltac2 with
+  | None => ()
+  | Some c => is_local_def c
+end) in tac c.
+
+(* new_hypothesis h h++h' returns h' *)
+(* Note: code duplication with deciderel *)
+Ltac2 rec new_hypothesis
+(h1: (ident * constr option * constr) list) 
+(h2 : (ident * constr option * constr) list) := 
+match h1 with
+| [] => h2
+| x :: xs => match h2 with
+        | [] => []
+        | y :: ys => new_hypothesis xs ys
+      end
+end.
+
+Ltac2 rec hyps_printer (h : (ident * constr option * constr) list) 
+:=
+match h with
+| [] => ()
+| x :: xs => match x with
+            | (id, opt, cstr) => 
+let () := Message.print (Message.concat (Message.of_ident id)
+                                        (Message.concat (Message.of_string " : ")
+                                                        (Message.of_constr cstr))) 
+in hyps_printer xs
+end 
+end.
