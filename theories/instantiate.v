@@ -1,7 +1,9 @@
 From elpi Require Import elpi.
 Require Import List.
+Import ListNotations.
 
 Elpi Tactic elimination_polymorphism.
+
 Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate File "elpi/instantiate.elpi".
 Elpi Accumulate File "elpi/find_instances.elpi".
@@ -9,21 +11,20 @@ Elpi Accumulate File "elpi/construct_cuts.elpi".
 
 Elpi Accumulate lp:{{
 
- pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list instance)), i: goal, o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _ _ as G) GS :- std.rev Ctx Ctx',
-      subst_in_instances Ctx' Inst Inst',
+ pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
+    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
+      pos_ctx_to_var_in_term Ctx' Inst Inst', 
       snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      std.map LInst (add_pos_ctx Ctx') LInst',
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst ProofTerm,
-      refine ProofTerm G GL1, !,
-      refine_by_instantiation GL1 P [G1|_GL], !, 
-      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G1 GS.
+      construct_cuts LInst' P G [G'], !,
+      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS.
     instances_param_indu_strategy_list [] _ _G _.
     
   solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst, 
+    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
     instances_param_indu_strategy_list HPoly Inst G GL.
  
 
@@ -38,6 +39,12 @@ end.
 
 Tactic Notation "elimination_polymorphism" uconstr_list_sep(l, ",") :=
   elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context.
+
+Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+map g (map f l) = map (fun x => g (f x)) l.
+Proof.
+intros A B C l f g. elimination_polymorphism. Abort. (* bug fix : the function name->gref 
+does not work when there are local functionnal variables *)
 
 Goal forall (l : list nat) (p: bool * nat), l = l.
 Proof. intros. elpi elimination_polymorphism (app_length) (pair_equal_spec) (app_cons_not_nil). 
