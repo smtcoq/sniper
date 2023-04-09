@@ -17,13 +17,11 @@ install: [
 ]
 depends: [
   "coq" {>= "8.15" & < "8.16~"}
-  "coq-metacoq-pcuic" {= "coq-metacoq.1.0+8.15"}
+  "coq-metacoq-pcuic"
   "coq-elpi"
   "coq-trakt"
-  "coq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-trakt.1.2+8.13" "git+https://github.com/ecranceMERCE/trakt.git#1.2+8.13" ]
   [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#coq-8.15" ]
 ]
 tags: [
