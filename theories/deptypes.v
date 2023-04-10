@@ -1,5 +1,7 @@
 From MetaCoq Require Import All.
 Require Import utilities.
+Require Import List.
+Import ListNotations.
 
 (** Description of the transformation elim_nondep_functional_arity
 
@@ -286,6 +288,32 @@ Definition find_nbr_arity (p : program) : option nat :=
                    nb_args_codomain_type_or_set (skipn_prods x Ty_ind)
   end.
 
+(** Step 2: look at the codomain of constructors and get from npars to npars + nbarity 
+arguments of return type *)
+
+Fixpoint codomain (t: term) :=
+  match t with
+    | tProd Na Ty u => codomain u
+    | _ => t
+  end.
+
+Definition drop_nargs (n : nat) (t : term) :=
+  match t with
+    | tApp _ l => List.skipn n l 
+    | _ => []
+  end.
+
+Definition index_args_in_codomain_of_constructors (p: program) :=
+  let (npars, ty_cstr) := info_nonmutual_inductive p.1 p.2 in 
+  let fix aux ty_cstr :=
+  match ty_cstr with
+    | x :: xs => drop_nargs npars (codomain x.(cstr_type)) :: aux xs 
+    | [] => []
+  end
+  in aux ty_cstr.
+
+(** Step  3: creating the tag for all arguments we obtained (if it does not exist) *)
+
 (** Isomorphisms tests **)
 
 Inductive door : Type := Left | Right.
@@ -296,6 +324,7 @@ Inductive DOORS : Type -> Type :=
 
 MetaCoq Quote Recursively Definition DOORS_reif := DOORS. Print DOORS_reif.
 
+Compute index_args_in_codomain_of_constructors DOORS_reif. 
 
 
 
