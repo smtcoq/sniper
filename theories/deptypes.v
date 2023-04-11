@@ -39,21 +39,12 @@ Inductive typ_tag_unit := trm_tag_unit.
 
 Inductive typ_tag_bool := trm_tag_bool.
 
-Inductive typ_tag_list (A: Type) := trm_tag_list : typ_tag_list A.
-
-Inductive typ_tag_id (A : Type) := trm_tag_id : typ_tag_id A.
-
-Inductive typ_tag_prod (A B : Type) := trm_tag_prod : typ_tag_prod A B.
 
 Definition base_mapping_tags_terms 
-  : list (term*term*nat):= 
-  [(<%nat%>, <%typ_tag_nat%>; 
-  (<%bool%>, <%typ_tag_bool%>, 0);
-  (<%unit%>, <%typ_tag_unit%>, 0);
-  (<%@list%>, <%trm_tag_list%>, 1);
-  (<%@prod%>, <%typ_tag_prod%>, 2)].
-
-MetaCoq Quote Recursively Definition prod_reif_rec := @prod.
+  : list (term*term):= 
+  [(<%nat%>, <%typ_tag_nat%>); 
+  (<%bool%>, <%typ_tag_bool%>);
+  (<%unit%>, <%typ_tag_unit%>)].
 
 (** Step 1: find the number of indexes of type Type or Set in the inductive *)
 
@@ -113,7 +104,7 @@ Definition index_args_in_codomain_of_constructors mind :=
 
 (** Step  3: creating the tag for all arguments we obtained (if it does not exist) *)
 
-Fixpoint buildn_params_type (npars: nat) :=
+(* Fixpoint buildn_params_type (npars: nat) :=
   match npars with
     | 0 => []
     | S n' =>
@@ -121,33 +112,32 @@ Fixpoint buildn_params_type (npars: nat) :=
       {| decl_name := mkNamed (String.append ("A")%bs s); 
       decl_body := None; decl_type := tSort (fresh_universe) |} :: buildn_params_type n'
   end.
-
+ *)
 (* Build the type forall (A1 : Type) ... (Anpars : Type), I A1 ... An 
 The I is an inductive represented by its de Brujin index *)
-Fixpoint mkProd_type (npars : nat) (deBrujinindex_inductive : nat) :=
+(* Fixpoint mkProd_type (npars : nat) (deBrujinindex_inductive : nat) :=
   if Nat.eqb deBrujinindex_inductive 0 then tRel 0 else
   match npars with
     | 0 => <%Set%>
     | S n => let s := string_of_nat (deBrujinindex_inductive-npars) in
       tProd (mkNamed (String.append ("A")%bs s)) (<%Type%>) (mkProd_type n deBrujinindex_inductive)
-  end. 
+  end.  *)
 
-Definition create_tag_oind npars id : one_inductive_entry :=
+Definition create_tag_oind id : one_inductive_entry :=
   {| 
     mind_entry_typename := (String.append ("typ_tag_") id);
     mind_entry_arity := <%Set%> ;
     mind_entry_consnames := [(String.append ("trm_tag_") id)];
-    mind_entry_lc := [tApp (tRel (npars)) (Rel_list npars 0)];
+    mind_entry_lc := [tRel 0];
    |}.
 
-(* Creates an inductive tag (as a mutual_inductive_entry) 
-with npars parameters of type Type *)
-Definition create_tag_mind (npars : nat) (id : ident) : mutual_inductive_entry :=
+(* Creates an inductive tag (as a mutual_inductive_entry) *)
+Definition create_tag_mind (id : ident) : mutual_inductive_entry :=
   {| 
     mind_entry_record := None;
     mind_entry_finite := Finite; (* not corecursive *)
-    mind_entry_params := buildn_params_type npars;
-    mind_entry_inds := [create_tag_oind npars id];
+    mind_entry_params := [];
+    mind_entry_inds := [create_tag_oind id];
     mind_entry_universes := Monomorphic_entry ContextSet.empty; 
     mind_entry_template := false; 
     mind_entry_variance := None;
@@ -163,11 +153,11 @@ MetaCoq Run (create_tag_test 0 "unit2" %bs).
 MetaCoq Run (create_tag_test 1 "list2"%bs).
 MetaCoq Run (create_tag_test 2 "prod2"%bs). *)
 
-Fixpoint find_kername (kn : kername) (l : list (term*term*nat)) : option (term * term*nat) :=
+Fixpoint find_kername (kn : kername) (l : list (term*term)) : option (term * term) :=
   match l with
     | [] => None
-    | (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y, z) :: xs => 
-      if eq_kername kn kn' then Some (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y, z) 
+    | (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) :: xs => 
+      if eq_kername kn kn' then Some (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) 
       else find_kername kn xs 
     | _ :: xs => find_kername kn xs 
   end. 
@@ -178,10 +168,10 @@ Fixpoint count_prenex_foralls (t : term) :=
     | _ => 0
   end.
 
-Definition create_tag_and_return (npars : nat) (id : ident) :
+Definition create_tag_and_return (id : ident) :
 TemplateMonad term :=
 fsh <- tmFreshName id ;; 
-let mind := create_tag_mind npars id in
+let mind := create_tag_mind id in
 tmMkInductive true mind ;;
 curmodpath <- tmCurrentModPath tt ;;
 let name_indu := (curmodpath, fsh) in
@@ -190,8 +180,8 @@ tmReturn (tInd {| inductive_mind := name_indu ; inductive_ind := 0 |} []).
 (* Creates all the tags for the types which are not in l_base.
 It returns the list of lists of tags needed *)
 
-Fixpoint create_tags (inputs : list term) (l_base : list (term*term*nat)) : 
-TemplateMonad (list (term*term*nat)) :=
+Fixpoint create_tags (inputs : list term) (l_base : list (term*term)) : 
+TemplateMonad (list (term*term)) :=
   match inputs with 
     | [] => tmReturn []
     | x :: xs => 
@@ -201,16 +191,20 @@ TemplateMonad (list (term*term*nat)) :=
           match find_kername kn l_base with
             | None =>
               mind <- tmQuoteInductive kn  ;;
-              y <- create_tag_and_return mind.(ind_npars) kn.2 ;;
+              y <- create_tag_and_return kn.2 ;;
               l <- create_tags xs l_base ;; 
-              tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y, mind.(ind_npars)) :: l)
+              match y' with
+                | [] => tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y) :: l)
+                | _ :: _ =>
+                  tmReturn ((tApp (tInd {| inductive_mind := kn ; inductive_ind := ind |} u) y', y) :: l)
+              end
             | Some y => 
               l <- create_tags xs l_base ;; tmReturn (y :: l)
           end
         | _ => 
           let npars := count_prenex_foralls x in
-          y <- create_tag_and_return npars "Typ"%bs ;;
-          l <- create_tags xs l_base ;; tmReturn ((x, y, npars) :: l)      
+          y <- create_tag_and_return "Typ"%bs ;;
+          l <- create_tags xs l_base ;; tmReturn ((x, y) :: l)      
         end
   end.
 
@@ -264,16 +258,9 @@ Definition create_mind_transformed mind ltags : mutual_inductive_entry :=
 Fixpoint ty_to_tag s (t : term) (l : list (term*term)) :=
   match l with
     | (x, y) :: xs => 
-      let (t1, t2) := dest_app t in 
-  (* when the term is a type applied to its arguments 
-    we use a parametricized type so we need to destruct the application *)
-      if eqb_term (trans s t1) (trans s x) then
-      match t2 with
-        | [] => y
-        | _ :: _ => tApp y t2
-      end
+      if eqb_term (trans s t) (trans s x) then y
       else ty_to_tag s t xs
-    | [] => default_reif
+    | [] => tVar "error: the tag has not been found"%bs
   end.
 
 Definition ty_to_tag_list_of_list s (l1 : list (list term)) (l2 : list (term*term)) :=
@@ -321,7 +308,7 @@ Print DOORS'.
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
 
-MetaCoq Run (elim_type_in_indexes <% test %>).
+(* Fail MetaCoq Run (elim_type_in_indexes <% test %>). *)
 
 Print test'.
 
