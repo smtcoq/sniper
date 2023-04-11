@@ -174,7 +174,7 @@ fsh <- tmFreshName id ;;
 let mind := create_tag_mind id in
 tmMkInductive true mind ;;
 curmodpath <- tmCurrentModPath tt ;;
-let name_indu := (curmodpath, fsh) in
+let name_indu := (curmodpath, String.append "typ_tag_"%bs fsh) in
 tmReturn (tInd {| inductive_mind := name_indu ; inductive_ind := 0 |} []).
 
 (* Creates all the tags for the types which are not in l_base.
@@ -191,8 +191,8 @@ TemplateMonad (list (term*term)) :=
           match find_kername kn l_base with
             | None =>
               mind <- tmQuoteInductive kn  ;;
-              y <- create_tag_and_return kn.2 ;;
-              l <- create_tags xs l_base ;; 
+              y <- create_tag_and_return kn.2 ;; tmPrint y ;;
+              l <- create_tags xs l_base ;;
               match y' with
                 | [] => tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y) :: l)
                 | _ :: _ =>
@@ -264,9 +264,7 @@ Fixpoint ty_to_tag s (t : term) (l : list (term*term)) :=
   end.
 
 Definition ty_to_tag_list_of_list s (l1 : list (list term)) (l2 : list (term*term)) :=
-  List.map (List.map (fun x => ty_to_tag s x l2)) l1. 
-
-Print TemplateMonad.
+  List.map (fun l => List.rev (List.map (fun x => ty_to_tag s x l2) l)) l1. 
 
 Definition elim_type_in_indexes (tm : term) :=
 (* IMPROVE : trick to use eqb_term, we need a global_env, so we use a dumb global 
@@ -287,7 +285,6 @@ env *)
                 let lflat := flat_map id l in
                 tags_avail <- create_tags lflat base_mapping_tags_terms ;;
                 let args_new_constructors := ty_to_tag_list_of_list s l tags_avail in
-                test <- tmEval all (create_mind_transformed indu_entry args_new_constructors) ;; tmPrint test ;;
                 tmMkInductive true (create_mind_transformed indu_entry args_new_constructors)
         end
     | _ => tmPrint tm ;; tmFail " is not an inductive"%bs
@@ -307,16 +304,18 @@ Print DOORS'.
 
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
-
-(* Fail MetaCoq Run (elim_type_in_indexes <% test %>). *)
-
+ MetaCoq Run (elim_type_in_indexes <% test %>).
 Print test'.
 
+Inductive test_parameter (A B : Type) : Type -> Type :=
+| c1 : bool -> door -> test_parameter A B unit.
+MetaCoq Run (elim_type_in_indexes <% test_parameter %>). 
+Print test_parameter'.
 
-Inductive DOORS' : Type :=
-| IsOpen' (t : typ_tag_bool) (d : door) : DOORS'
-| Toggle' (t : typ_tag_unit) (d : door) : DOORS'.
 
+(* Generation of the transformation function *)
+
+(* Tests but struggling *)
 Definition coerce (d : DOORS') :=
   match d as y return
   match y with
