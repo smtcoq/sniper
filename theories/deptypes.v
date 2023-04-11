@@ -104,25 +104,6 @@ Definition index_args_in_codomain_of_constructors mind :=
 
 (** Step  3: creating the tag for all arguments we obtained (if it does not exist) *)
 
-(* Fixpoint buildn_params_type (npars: nat) :=
-  match npars with
-    | 0 => []
-    | S n' =>
-      let s := string_of_nat npars in
-      {| decl_name := mkNamed (String.append ("A")%bs s); 
-      decl_body := None; decl_type := tSort (fresh_universe) |} :: buildn_params_type n'
-  end.
- *)
-(* Build the type forall (A1 : Type) ... (Anpars : Type), I A1 ... An 
-The I is an inductive represented by its de Brujin index *)
-(* Fixpoint mkProd_type (npars : nat) (deBrujinindex_inductive : nat) :=
-  if Nat.eqb deBrujinindex_inductive 0 then tRel 0 else
-  match npars with
-    | 0 => <%Set%>
-    | S n => let s := string_of_nat (deBrujinindex_inductive-npars) in
-      tProd (mkNamed (String.append ("A")%bs s)) (<%Type%>) (mkProd_type n deBrujinindex_inductive)
-  end.  *)
-
 Definition create_tag_oind id : one_inductive_entry :=
   {| 
     mind_entry_typename := (String.append ("typ_tag_") id);
@@ -325,13 +306,13 @@ Definition coerce (d : DOORS') :=
   with
    | IsOpen' _ d => IsOpen d
    | Toggle' _ d => Toggle d 
-  end. Print coerce.
+  end.
 
 Definition coerce2 (A : Type) (d : DOORS A) : DOORS bool + DOORS unit :=
 match d with
    | IsOpen d => inl (IsOpen d)
    | Toggle d => inr (Toggle d) 
-  end. Print coerce2.
+  end.
 
 (* Definition coerce3 (t : DOORS bool + DOORS unit) :=
   match t with
