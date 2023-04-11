@@ -29,8 +29,7 @@ I' (P1 : T1) ... (Pk : Tk) : Type :=
 All the closed types which are not dependent functions
 are replaced by arguments of an inductive 
 isomorphic to unit. 
-All the closes type which are dependent functions are replaced
-by a arguments of an inductive taking these terms as parameters.
+
 For each closed type, one is created, and we provide already 
 created typ_tag for frequent types such as nat, bool or unit *)
 
@@ -47,13 +46,12 @@ Inductive typ_tag_id (A : Type) := trm_tag_id : typ_tag_id A.
 Inductive typ_tag_prod (A B : Type) := trm_tag_prod : typ_tag_prod A B.
 
 Definition base_mapping_tags_terms 
-  : list (term*term):= 
-  [(<%nat%>, <%typ_tag_nat%>); 
-  (<%bool%>, <%typ_tag_bool%>);
-  (<%unit%>, <%typ_tag_unit%>);
-  (<%@list%>, <%trm_tag_list%>);
-  (<%@id%>, <%typ_tag_id%>);
-  (<%@prod%>, <%typ_tag_prod%>)].
+  : list (term*term*nat):= 
+  [(<%nat%>, <%typ_tag_nat%>; 
+  (<%bool%>, <%typ_tag_bool%>, 0);
+  (<%unit%>, <%typ_tag_unit%>, 0);
+  (<%@list%>, <%trm_tag_list%>, 1);
+  (<%@prod%>, <%typ_tag_prod%>, 2)].
 
 MetaCoq Quote Recursively Definition prod_reif_rec := @prod.
 
@@ -132,7 +130,7 @@ Fixpoint mkProd_type (npars : nat) (deBrujinindex_inductive : nat) :=
     | 0 => <%Set%>
     | S n => let s := string_of_nat (deBrujinindex_inductive-npars) in
       tProd (mkNamed (String.append ("A")%bs s)) (<%Type%>) (mkProd_type n deBrujinindex_inductive)
-  end. Print LevelSet.
+  end. 
 
 Definition create_tag_oind npars id : one_inductive_entry :=
   {| 
@@ -165,11 +163,11 @@ MetaCoq Run (create_tag_test 0 "unit2" %bs).
 MetaCoq Run (create_tag_test 1 "list2"%bs).
 MetaCoq Run (create_tag_test 2 "prod2"%bs). *)
 
-Fixpoint find_kername (kn : kername) (l : list (term*term)) : option (term * term) :=
+Fixpoint find_kername (kn : kername) (l : list (term*term*nat)) : option (term * term*nat) :=
   match l with
     | [] => None
-    | (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) :: xs => 
-      if eq_kername kn kn' then Some (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) 
+    | (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y, z) :: xs => 
+      if eq_kername kn kn' then Some (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y, z) 
       else find_kername kn xs 
     | _ :: xs => find_kername kn xs 
   end. 
@@ -180,7 +178,8 @@ Fixpoint count_prenex_foralls (t : term) :=
     | _ => 0
   end.
 
-Definition create_tag_and_return (npars : nat) (id : ident) :=
+Definition create_tag_and_return (npars : nat) (id : ident) :
+TemplateMonad term :=
 fsh <- tmFreshName id ;; 
 let mind := create_tag_mind npars id in
 tmMkInductive true mind ;;
@@ -191,58 +190,67 @@ tmReturn (tInd {| inductive_mind := name_indu ; inductive_ind := 0 |} []).
 (* Creates all the tags for the types which are not in l_base.
 It returns the list of lists of tags needed *)
 
-Fixpoint create_tags (inputs : list term) (l_base : list (term*term)) : 
-TemplateMonad (list (term*term)) :=
+Fixpoint create_tags (inputs : list term) (l_base : list (term*term*nat)) : 
+TemplateMonad (list (term*term*nat)) :=
   match inputs with 
     | [] => tmReturn []
     | x :: xs => 
-      match x with
+      let (x', y') := dest_app x in
+      match x' with
         | tInd {| inductive_mind := kn ; inductive_ind := ind |} u => 
           match find_kername kn l_base with
             | None =>
               mind <- tmQuoteInductive kn  ;;
               y <- create_tag_and_return mind.(ind_npars) kn.2 ;;
               l <- create_tags xs l_base ;; 
-              tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y) :: l)
+              tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y, mind.(ind_npars)) :: l)
             | Some y => 
               l <- create_tags xs l_base ;; tmReturn (y :: l)
           end
         | _ => 
           let npars := count_prenex_foralls x in
           y <- create_tag_and_return npars "Typ"%bs ;;
-          l <- create_tags xs l_base ;; tmReturn ((x, y) :: l)      
+          l <- create_tags xs l_base ;; tmReturn ((x, y, npars) :: l)      
         end
   end.
 
 (** Step 4 : add arguments to constructor's types *)
 
-Fixpoint add_nondep_args (t : term) (l : list term) : term :=
-  match l with
-   | [] => t
-   | x :: xs => tProd (mkNamed "tag"%bs) x (add_nondep_args t xs)
+Fixpoint keep_firstn_args (t : term) (npars : nat) :=
+  match t with
+    | tProd Na Ty u => tProd Na Ty (keep_firstn_args u npars) 
+    | tApp u l => tApp u (List.firstn npars l)
+    | _ => t
   end.
 
-Fixpoint add_nondep_args_list (l1 : list term) (l2 : list (list term)) :=
+Fixpoint add_nondep_args (t : term) (npars : nat) (l : list term) : term :=
+  match l with
+   | [] => keep_firstn_args t npars
+   | x :: xs => tProd (mkNamed "tag"%bs) x (lift 1 0 (add_nondep_args t npars xs))
+  end.
+
+Fixpoint add_nondep_args_list (l1 : list term) npars (l2 : list (list term)) :=
   match l1, l2 with
     | [], [] => []
-    | x :: xs, y :: ys => add_nondep_args x y :: add_nondep_args_list xs ys
+    | x :: xs, y :: ys => add_nondep_args x npars y :: add_nondep_args_list xs npars ys
     | _, _ => []
   end.
 
-Definition create_oind_transformed oind ltags : one_inductive_entry :=
+Definition create_oind_transformed oind npars ltags : one_inductive_entry :=
   {| 
     mind_entry_typename := (String.append oind.(mind_entry_typename) "'");
     mind_entry_arity := <% Type %> ;
     mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
-    mind_entry_lc := add_nondep_args_list oind.(mind_entry_lc) ltags ;
+    mind_entry_lc := add_nondep_args_list oind.(mind_entry_lc) npars ltags ;
    |}.
 
 Definition create_mind_transformed mind ltags : mutual_inductive_entry :=
+  let npars := List.length mind.(mind_entry_params) in
   {| 
     mind_entry_record := mind.(mind_entry_record);
     mind_entry_finite := mind.(mind_entry_finite);
     mind_entry_params := mind.(mind_entry_params);
-    mind_entry_inds := List.map (fun x => create_oind_transformed x ltags) 
+    mind_entry_inds := List.map (fun x => create_oind_transformed x npars ltags) 
       mind.(mind_entry_inds);
     mind_entry_universes := mind.(mind_entry_universes); 
     mind_entry_template := mind.(mind_entry_template); 
@@ -250,42 +258,56 @@ Definition create_mind_transformed mind ltags : mutual_inductive_entry :=
     mind_entry_private := mind.(mind_entry_private);
   |}. 
 
-(** Step 5 : final transformation *) Print eqb_term.
+(** Step 5 : final transformation *)
+ 
 
 Fixpoint ty_to_tag s (t : term) (l : list (term*term)) :=
   match l with
-    | (x, y) :: xs => if eqb_term (trans s t) (trans s x) then y else ty_to_tag s t xs
+    | (x, y) :: xs => 
+      let (t1, t2) := dest_app t in 
+  (* when the term is a type applied to its arguments 
+    we use a parametricized type so we need to destruct the application *)
+      if eqb_term (trans s t1) (trans s x) then
+      match t2 with
+        | [] => y
+        | _ :: _ => tApp y t2
+      end
+      else ty_to_tag s t xs
     | [] => default_reif
   end.
 
 Definition ty_to_tag_list_of_list s (l1 : list (list term)) (l2 : list (term*term)) :=
-  List.map (List.map (fun x => ty_to_tag s x l2)) l1. Print program.
+  List.map (List.map (fun x => ty_to_tag s x l2)) l1. 
 
-(* Polymorphic Definition elim_type_in_indexes (t : term) :=
+Print TemplateMonad.
 
-tmQuoteInductive (inductive_mind ind0) => on a direct le mind donc adapter
-  A_quoted <- tmQuoteRec A ;;
-  let s := (trans_global_env A_quoted.1) in 
-  match find_nbr_arity A_quoted with
-    | None => 
-      tmFail "wrong argument given to the transformation"%bs 
-    | Some 0 => 
-      tmPrint "the transformation does nothing here: the type is not dependent or not handled"%bs
-    | Some (S n) => 
-      match info_inductive A_quoted.1 A_quoted.2 with
-        | None => tmFail "not an inductive"%bs
-        | Some indu =>
-          let indu_entry := mind_body_to_entry indu in
-          let l := index_args_in_codomain_of_constructors A_quoted in
-          let lflat := flat_map id l in
-          tags_avail <- create_tags lflat base_mapping_tags_terms ;;
-          let args_new_constructors := ty_to_tag_list_of_list s l tags_avail in
-          tmMkInductive true (create_mind_transformed indu_entry args_new_constructors)
+Definition elim_type_in_indexes (tm : term) :=
+(* IMPROVE : trick to use eqb_term, we need a global_env, so we use a dumb global 
+env *)
+  unit_rec <- tmQuoteRec unit ;;
+  let s := (trans_global_env unit_rec.1) in
+  match tm with
+    | tInd ind0 _ =>
+       decl <- tmQuoteInductive (inductive_mind ind0) ;;
+      match find_nbr_arity decl with
+        | None => 
+            tmFail "wrong argument given to the transformation"%bs 
+        | Some 0 => 
+            tmPrint "the transformation does nothing here: the type is not dependent or not handled"%bs
+        | Some (S n) => 
+                let indu_entry := mind_body_to_entry decl in
+                let l := index_args_in_codomain_of_constructors decl in
+                let lflat := flat_map id l in
+                tags_avail <- create_tags lflat base_mapping_tags_terms ;;
+                let args_new_constructors := ty_to_tag_list_of_list s l tags_avail in
+                test <- tmEval all (create_mind_transformed indu_entry args_new_constructors) ;; tmPrint test ;;
+                tmMkInductive true (create_mind_transformed indu_entry args_new_constructors)
         end
-  end. *)
+    | _ => tmPrint tm ;; tmFail " is not an inductive"%bs
+end.
 
 
-(** Isomorphisms tests **)
+(** Tests **)
 
 Inductive door : Type := Left | Right.
 
@@ -293,14 +315,15 @@ Inductive DOORS : Type -> Type :=
 | IsOpen : door -> DOORS bool
 | Toggle : door -> DOORS unit.
 
-MetaCoq Run (elim_type_in_indexes DOORS).
+MetaCoq Run (elim_type_in_indexes <% DOORS %>). 
+Print DOORS'.
 
-MetaCoq Quote Recursively Definition DOORS_reif := DOORS. Print DOORS_reif.
+Inductive test : Type -> Type -> Type :=
+| test1 : bool -> test (list nat) (bool).
 
-Compute index_args_in_codomain_of_constructors DOORS_reif. 
+MetaCoq Run (elim_type_in_indexes <% test %>).
 
-
-
+Print test'.
 
 
 Inductive DOORS' : Type :=
