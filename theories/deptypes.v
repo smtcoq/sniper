@@ -1,7 +1,10 @@
-From MetaCoq Require Import All.
+Require Import MetaCoq.Template.All.
+Import MCMonadNotation.
 Require Import utilities.
 Require Import List.
+Require Import String.
 Import ListNotations.
+Unset MetaCoq Strict Unquote Universe Mode.
 
 (** Description of the transformation elim_nondep_functional_arity
 
@@ -313,6 +316,68 @@ Definition index_args_in_codomain_of_constructors (p: program) :=
   in aux ty_cstr.
 
 (** Step  3: creating the tag for all arguments we obtained (if it does not exist) *)
+
+Fixpoint buildn_params_type (npars: nat) :=
+  match npars with
+    | 0 => []
+    | S n' =>
+      let s := string_of_nat npars in
+      {| decl_name := mkNamed (String.append ("A")%bs s); 
+      decl_body := None; decl_type := tSort (fresh_universe) |} :: buildn_params_type n'
+  end.
+
+(* Build the type forall (A1 : Type) ... (Anpars : Type), I A1 ... An 
+The I is an inductive represented by its de Brujin index *)
+Fixpoint mkProd_type (npars : nat) (deBrujinindex_inductive : nat) :=
+  if Nat.eqb deBrujinindex_inductive 0 then tRel 0 else
+  match npars with
+    | 0 => <%Set%>
+    | S n => let s := string_of_nat (deBrujinindex_inductive-npars) in
+      tProd (mkNamed (String.append ("A")%bs s)) (<%Type%>) (mkProd_type n deBrujinindex_inductive)
+  end. Print LevelSet.
+
+Definition create_tag_oind npars id : one_inductive_entry :=
+  {| 
+    mind_entry_typename := (String.append ("typ_tag_") id);
+    mind_entry_arity := <%Set%> ;
+    mind_entry_consnames := [(String.append ("trm_tag_") id)];
+    mind_entry_lc := [tApp (tRel (npars)) (Rel_list npars 0)];
+   |}.
+
+Fixpoint make_universes_list (npars: nat) :=
+  match npars with
+    | 0 => []
+    | S n' => let s := string_of_nat n' in (Level.Level (String.append ("Deptypes.")%bs s)) :: 
+              make_universes_list n'
+  end. Print Universe.make. 
+
+(* Creates an inductive tag (as a mutual_inductive_entry) 
+with npars parameters of type Type *)
+Definition create_tag_mind (npars : nat) (id : ident) : mutual_inductive_entry :=
+  {| 
+    mind_entry_record := None;
+    mind_entry_finite := Finite; (* not corecursive *)
+    mind_entry_params := buildn_params_type npars;
+    mind_entry_inds := [create_tag_oind npars id];
+    mind_entry_universes := Monomorphic_entry ContextSet.empty; 
+    mind_entry_template := false; 
+    mind_entry_variance := None;
+    mind_entry_private := None;
+  |}. 
+
+(* Tests : 
+
+Definition create_tag_test (npars : nat) (id : ident) :=
+tmMkInductive true (create_tag_mind npars id).
+
+MetaCoq Run (create_tag_test 0 "unit2" %bs).
+MetaCoq Run (create_tag_test 1 "list2"%bs).
+MetaCoq Run (create_tag_test 2 "prod2"%bs). *)
+
+(* Creates all the tags for the types which are not in l_base.
+It returns the list of lists of tags needed, for each constructor *)
+
+Fixpoint create_tags (l_base : list term) : TemplateMonad (term*term) :
 
 (** Isomorphisms tests **)
 
