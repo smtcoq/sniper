@@ -1,4 +1,6 @@
 Require Import MetaCoq.Template.All.
+From MetaCoq.PCUIC Require Import PCUICReflect.
+From MetaCoq.PCUIC Require Import TemplateToPCUIC.
 Import MCMonadNotation.
 Require Import utilities.
 Require Import List.
@@ -15,13 +17,14 @@ I (P1 : T1) ... (Pk : Tk) : Type -> ... -> Type := (with l types)
 ...
 | Cn xn1 ... xnm : I P1 ... Pk TyCn1 ... TyCnl.
 
-where all the TyCijs are closed types
+where all the TyCijs are closed types with prenex quantification over
+type variables
 
 is transformed into an inductive 
 I' (P1 : T1) ... (Pk : Tk) : Type :=
-| C1' x11 ... x1m trm_tag_TyC11 ... trm_tagTyC1l : I' P1 ... Pk
+| C1' trm_tag_TyC11 ... trm_tagTyC1l x11 ... x1m : I' P1 ... Pk
 ...
-| Cn' xn1 ... xnm trm_tag_TyCn1 ... trm_tagTyCnl : I' P1 ... Pk.
+| Cn' trm_tag_TyCn1 ... trm_tagTyCnl xn1 ... xnm : I' P1 ... Pk.
 
 All the closed types which are not dependent functions
 are replaced by arguments of an inductive 
@@ -54,207 +57,6 @@ Definition base_mapping_tags_terms
 
 MetaCoq Quote Recursively Definition prod_reif_rec := @prod.
 
-(* TODO : expliquer dans la thèse ceci : *)
-(* program = global_env × term
-     : Type *)
-
-(* Record global_env : Type := mk_global_env
-  { universes : ContextSet.t;
-    declarations : global_declarations;
-    retroknowledge : Environment.Retroknowledge.t }. *)
-
-(* global_declarations = list (kername × global_decl)
-     : Type *)
-
-(* Inductive global_decl : Type :=
-    ConstantDecl : constant_body -> global_decl
-  | InductiveDecl : mutual_inductive_body -> global_decl.*)
-
-(* Record mutual_inductive_body : Type
-  := Build_mutual_inductive_body
-  { ind_finite : recursivity_kind;
-    ind_npars : nat;
-    ind_params : context;
-    ind_bodies : list one_inductive_body;
-    ind_universes : universes_decl;
-    ind_variance : option (list Variance.t) }. *)
-
-(* ({|
-   universes :=
-     (LevelSetProp.of_list
-        [Level.Level "Coq.Init.Datatypes.23"%bs;
-        Level.Level "Coq.Init.Datatypes.22"%bs; Level.lzero],
-     ConstraintSet.empty);
-   declarations :=
-     [(MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "prod"%bs,
-      InductiveDecl
-        {|
-          ind_finite := Finite;
-          ind_npars := 2;
-          ind_params :=
-            [{|
-               decl_name :=
-                 {|
-                   binder_name := nNamed "B"%bs;
-                   binder_relevance := Relevant
-                 |};
-               decl_body := None;
-               decl_type :=
-                 tSort
-                   (Universe.of_levels
-                      (inr
-                         (Level.Level "Coq.Init.Datatypes.23"%bs)))
-             |};
-            {|
-              decl_name :=
-                {|
-                  binder_name := nNamed "A"%bs;
-                  binder_relevance := Relevant
-                |};
-              decl_body := None;
-              decl_type :=
-                tSort
-                  (Universe.of_levels
-                     (inr
-                        (Level.Level "Coq.Init.Datatypes.22"%bs)))
-            |}];
-          ind_bodies :=
-            [{|
-               ind_name := "prod"%bs;
-               ind_indices := [];
-               ind_sort :=
-                 Universe.from_kernel_repr
-                   (Level.Level "Coq.Init.Datatypes.22"%bs,
-                   false)
-                   [(Level.Level "Coq.Init.Datatypes.23"%bs,
-                    false)];
-               ind_type :=
-                 tProd
-                   {|
-                     binder_name := nNamed "A"%bs;
-                     binder_relevance := Relevant
-                   |}
-                   (tSort
-                      (Universe.of_levels
-                         (inr
-                            (Level.Level
-                               "Coq.Init.Datatypes.22"%bs))))
-                   (tProd
-                      {|
-                        binder_name := nNamed "B"%bs;
-                        binder_relevance := Relevant
-                      |}
-                      (tSort
-                         (Universe.of_levels
-                            (inr
-                               (Level.Level
-                                  "Coq.Init.Datatypes.23"%bs))))
-                      (tSort
-                         (Universe.from_kernel_repr
-                            (Level.Level
-                               "Coq.Init.Datatypes.22"%bs,
-                            false)
-                            [(Level.Level
-                                "Coq.Init.Datatypes.23"%bs,
-                             false)])));
-               ind_kelim := IntoAny;
-               ind_ctors :=
-                 [{|
-                    cstr_name := "pair"%bs;
-                    cstr_args :=
-                      [{|
-                         decl_name :=
-                           {|
-                             binder_name := nAnon;
-                             binder_relevance := Relevant
-                           |};
-                         decl_body := None;
-                         decl_type := tRel 1
-                       |};
-                      {|
-                        decl_name :=
-                          {|
-                            binder_name := nAnon;
-                            binder_relevance := Relevant
-                          |};
-                        decl_body := None;
-                        decl_type := tRel 1
-                      |}];
-                    cstr_indices := [];
-                    cstr_type :=
-                      tProd
-                        {|
-                          binder_name := nNamed "A"%bs;
-                          binder_relevance := Relevant
-                        |}
-                        (tSort
-                           (Universe.of_levels
-                              (inr
-                                 (Level.Level
-                                    "Coq.Init.Datatypes.22"%bs))))
-                        (tProd
-                           {|
-                             binder_name := nNamed "B"%bs;
-                             binder_relevance := Relevant
-                           |}
-                           (tSort
-                              (Universe.of_levels
-                                 (inr
-                                    (Level.Level
-                                       "Coq.Init.Datatypes.23"%bs))))
-                           (tProd
-                              {|
-                                binder_name := nAnon;
-                                binder_relevance := Relevant
-                              |} (tRel 1)
-                              (tProd
-                                 {|
-                                   binder_name := nAnon;
-                                   binder_relevance := Relevant
-                                 |} (tRel 1)
-                                 (tApp (tRel 4) [tRel 3; tRel 2]))));
-                    cstr_arity := 2
-                  |}];
-               ind_projs := [];
-               ind_relevance := Relevant
-             |}];
-          ind_universes := Monomorphic_ctx;
-          ind_variance := None
-        |})]%list;
-   retroknowledge :=
-     {|
-       Environment.Retroknowledge.retro_int63 :=
-         Some
-           (MPfile
-              ["PrimInt63"%bs; "Int63"%bs; "Cyclic"%bs;
-              "Numbers"%bs; "Coq"%bs]%list, "int"%bs);
-       Environment.Retroknowledge.retro_float64 :=
-         Some
-           (MPfile ["PrimFloat"%bs; "Floats"%bs; "Coq"%bs]%list,
-           "float"%bs)
-     |}
- |},
-tInd
-  {|
-    inductive_mind :=
-      (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs]%list,
-      "prod"%bs);
-    inductive_ind := 0
-  |} []%list) *)
-
-(* 
-
-Record mutual_inductive_entry : Type
-  := Build_mutual_inductive_entry
-  { mind_entry_record : option (option ident);
-    mind_entry_finite : recursivity_kind;
-    mind_entry_params : context;
-    mind_entry_inds : list one_inductive_entry;
-    mind_entry_universes : universes_entry;
-    mind_entry_template : bool;
-    mind_entry_variance : option (list (option Variance.t));
-    mind_entry_private : option bool }. *)
-
 (** Step 1: find the number of indexes of type Type or Set in the inductive *)
 
 Fixpoint skipn_prods (n : nat) (t : term) :=
@@ -272,24 +74,20 @@ Fixpoint nb_args_codomain_type_or_set (t: term) : option nat :=
     | tProd _ Ty u => 
       match Ty with
         | tSort s => if Universe.is_prop s then None else
-      match (nb_args_codomain_type_or_set u) with
-        | Some x => Some (S x)
-        | None => None
-      end
+          match (nb_args_codomain_type_or_set u) with
+           | Some x => Some (S x)
+           | None => None
+          end
         | _ => None
         end
     | _ => Some 0
 end.
 
-Definition find_nbr_arity (p : program) : option nat :=
-  let opt := info_inductive p.1 p.2 in
-  match opt with 
-    | None => None
-    | Some mind => let (x, y) := (mind.(ind_npars), (List.hd default_body mind.(ind_bodies)))
+Definition find_nbr_arity mind : option nat :=
+  let (x, y) := (mind.(ind_npars), (List.hd default_body mind.(ind_bodies)))
                     in 
                    let Ty_ind := y.(ind_type) in
-                   nb_args_codomain_type_or_set (skipn_prods x Ty_ind)
-  end.
+                   nb_args_codomain_type_or_set (skipn_prods x Ty_ind).
 
 (** Step 2: look at the codomain of constructors and get from npars to npars + nbarity 
 arguments of return type *)
@@ -306,8 +104,8 @@ Definition drop_nargs (n : nat) (t : term) :=
     | _ => []
   end.
 
-Definition index_args_in_codomain_of_constructors (p: program) :=
-  let (npars, ty_cstr) := info_nonmutual_inductive p.1 p.2 in 
+Definition index_args_in_codomain_of_constructors mind :=
+  let (npars, ty_cstr) :=  (mind.(ind_npars), (hd default_body mind.(ind_bodies)).(ind_ctors)) in
   let fix aux ty_cstr :=
   match ty_cstr with
     | x :: xs => drop_nargs npars (codomain x.(cstr_type)) :: aux xs 
@@ -344,13 +142,6 @@ Definition create_tag_oind npars id : one_inductive_entry :=
     mind_entry_lc := [tApp (tRel (npars)) (Rel_list npars 0)];
    |}.
 
-Fixpoint make_universes_list (npars: nat) :=
-  match npars with
-    | 0 => []
-    | S n' => let s := string_of_nat n' in (Level.Level (String.append ("Deptypes.")%bs s)) :: 
-              make_universes_list n'
-  end. Print Universe.make. 
-
 (* Creates an inductive tag (as a mutual_inductive_entry) 
 with npars parameters of type Type *)
 Definition create_tag_mind (npars : nat) (id : ident) : mutual_inductive_entry :=
@@ -374,10 +165,125 @@ MetaCoq Run (create_tag_test 0 "unit2" %bs).
 MetaCoq Run (create_tag_test 1 "list2"%bs).
 MetaCoq Run (create_tag_test 2 "prod2"%bs). *)
 
-(* Creates all the tags for the types which are not in l_base.
-It returns the list of lists of tags needed, for each constructor *)
+Fixpoint find_kername (kn : kername) (l : list (term*term)) : option (term * term) :=
+  match l with
+    | [] => None
+    | (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) :: xs => 
+      if eq_kername kn kn' then Some (tInd {| inductive_mind := kn' ; inductive_ind := ind |} u, y) 
+      else find_kername kn xs 
+    | _ :: xs => find_kername kn xs 
+  end. 
 
-Fixpoint create_tags (l_base : list term) : TemplateMonad (term*term) :
+Fixpoint count_prenex_foralls (t : term) :=
+  match t with
+    | tProd Na Ty u => S (count_prenex_foralls u)
+    | _ => 0
+  end.
+
+Definition create_tag_and_return (npars : nat) (id : ident) :=
+fsh <- tmFreshName id ;; 
+let mind := create_tag_mind npars id in
+tmMkInductive true mind ;;
+curmodpath <- tmCurrentModPath tt ;;
+let name_indu := (curmodpath, fsh) in
+tmReturn (tInd {| inductive_mind := name_indu ; inductive_ind := 0 |} []).
+
+(* Creates all the tags for the types which are not in l_base.
+It returns the list of lists of tags needed *)
+
+Fixpoint create_tags (inputs : list term) (l_base : list (term*term)) : 
+TemplateMonad (list (term*term)) :=
+  match inputs with 
+    | [] => tmReturn []
+    | x :: xs => 
+      match x with
+        | tInd {| inductive_mind := kn ; inductive_ind := ind |} u => 
+          match find_kername kn l_base with
+            | None =>
+              mind <- tmQuoteInductive kn  ;;
+              y <- create_tag_and_return mind.(ind_npars) kn.2 ;;
+              l <- create_tags xs l_base ;; 
+              tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y) :: l)
+            | Some y => 
+              l <- create_tags xs l_base ;; tmReturn (y :: l)
+          end
+        | _ => 
+          let npars := count_prenex_foralls x in
+          y <- create_tag_and_return npars "Typ"%bs ;;
+          l <- create_tags xs l_base ;; tmReturn ((x, y) :: l)      
+        end
+  end.
+
+(** Step 4 : add arguments to constructor's types *)
+
+Fixpoint add_nondep_args (t : term) (l : list term) : term :=
+  match l with
+   | [] => t
+   | x :: xs => tProd (mkNamed "tag"%bs) x (add_nondep_args t xs)
+  end.
+
+Fixpoint add_nondep_args_list (l1 : list term) (l2 : list (list term)) :=
+  match l1, l2 with
+    | [], [] => []
+    | x :: xs, y :: ys => add_nondep_args x y :: add_nondep_args_list xs ys
+    | _, _ => []
+  end.
+
+Definition create_oind_transformed oind ltags : one_inductive_entry :=
+  {| 
+    mind_entry_typename := (String.append oind.(mind_entry_typename) "'");
+    mind_entry_arity := <% Type %> ;
+    mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
+    mind_entry_lc := add_nondep_args_list oind.(mind_entry_lc) ltags ;
+   |}.
+
+Definition create_mind_transformed mind ltags : mutual_inductive_entry :=
+  {| 
+    mind_entry_record := mind.(mind_entry_record);
+    mind_entry_finite := mind.(mind_entry_finite);
+    mind_entry_params := mind.(mind_entry_params);
+    mind_entry_inds := List.map (fun x => create_oind_transformed x ltags) 
+      mind.(mind_entry_inds);
+    mind_entry_universes := mind.(mind_entry_universes); 
+    mind_entry_template := mind.(mind_entry_template); 
+    mind_entry_variance := mind.(mind_entry_variance);
+    mind_entry_private := mind.(mind_entry_private);
+  |}. 
+
+(** Step 5 : final transformation *) Print eqb_term.
+
+Fixpoint ty_to_tag s (t : term) (l : list (term*term)) :=
+  match l with
+    | (x, y) :: xs => if eqb_term (trans s t) (trans s x) then y else ty_to_tag s t xs
+    | [] => default_reif
+  end.
+
+Definition ty_to_tag_list_of_list s (l1 : list (list term)) (l2 : list (term*term)) :=
+  List.map (List.map (fun x => ty_to_tag s x l2)) l1. Print program.
+
+(* Polymorphic Definition elim_type_in_indexes (t : term) :=
+
+tmQuoteInductive (inductive_mind ind0) => on a direct le mind donc adapter
+  A_quoted <- tmQuoteRec A ;;
+  let s := (trans_global_env A_quoted.1) in 
+  match find_nbr_arity A_quoted with
+    | None => 
+      tmFail "wrong argument given to the transformation"%bs 
+    | Some 0 => 
+      tmPrint "the transformation does nothing here: the type is not dependent or not handled"%bs
+    | Some (S n) => 
+      match info_inductive A_quoted.1 A_quoted.2 with
+        | None => tmFail "not an inductive"%bs
+        | Some indu =>
+          let indu_entry := mind_body_to_entry indu in
+          let l := index_args_in_codomain_of_constructors A_quoted in
+          let lflat := flat_map id l in
+          tags_avail <- create_tags lflat base_mapping_tags_terms ;;
+          let args_new_constructors := ty_to_tag_list_of_list s l tags_avail in
+          tmMkInductive true (create_mind_transformed indu_entry args_new_constructors)
+        end
+  end. *)
+
 
 (** Isomorphisms tests **)
 
@@ -386,6 +292,8 @@ Inductive door : Type := Left | Right.
 Inductive DOORS : Type -> Type :=
 | IsOpen : door -> DOORS bool
 | Toggle : door -> DOORS unit.
+
+MetaCoq Run (elim_type_in_indexes DOORS).
 
 MetaCoq Quote Recursively Definition DOORS_reif := DOORS. Print DOORS_reif.
 
