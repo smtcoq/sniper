@@ -172,7 +172,7 @@ TemplateMonad (list (term*term)) :=
           match find_kername kn l_base with
             | None =>
               mind <- tmQuoteInductive kn  ;;
-              y <- create_tag_and_return kn.2 ;; tmPrint y ;;
+              y <- create_tag_and_return kn.2 ;;
               l <- create_tags xs l_base ;;
               match y' with
                 | [] => tmReturn ((tInd {| inductive_mind := kn ; inductive_ind := ind |} u, y) :: l)
@@ -293,8 +293,20 @@ Inductive test_parameter (A B : Type) : Type -> Type :=
 MetaCoq Run (elim_type_in_indexes <% test_parameter %>). 
 Print test_parameter'.
 
+Check (nat + (bool + unit))%type.
+Check ((nat + bool) + unit)%type.
 
 (* Generation of the transformation function *)
+
+Definition transfo {A : Type} (d : DOORS A) : DOORS' :=
+    match d with
+   | IsOpen d => IsOpen' trm_tag_bool d
+   | Toggle d => Toggle' trm_tag_unit d
+    end.
+
+MetaCoq Quote Recursively Definition transfo_reif_rec := transfo.
+
+Print transfo_reif_rec.
 
 (* Tests but struggling *)
 Definition coerce (d : DOORS') :=
@@ -304,8 +316,8 @@ Definition coerce (d : DOORS') :=
     | Toggle' _ _ => DOORS unit
   end
   with
-   | IsOpen' _ d => IsOpen d
-   | Toggle' _ d => Toggle d 
+   | IsOpen' _ d => IsOpen _ d
+   | Toggle' _ d => Toggle _ d 
   end.
 
 Definition coerce2 (A : Type) (d : DOORS A) : DOORS bool + DOORS unit :=
@@ -324,12 +336,12 @@ end.
  *)
 Axiom  UIP : forall U (x y:U) (p1 p2:x = y), p1 = p2.
 
-Lemma test A : forall (d : DOORS A), {A = unit} + {A = bool}.
+Lemma test2 A : forall (d : DOORS A), {A = unit} + {A = bool}.
 Proof. intro d.
 destruct d. auto.
 auto. Qed.
 
-Definition test2 := 
+Definition test3 := 
 fun (A : Type) (d : DOORS A) =>
 match
   d as d0 in (DOORS T)
@@ -400,23 +412,21 @@ Definition g' (x : DOORS') :=
 
 Lemma fgid : forall (A: Type) (x : DOORS A), 
 g (f x) = coerce (f x).
-Proof. intros. destruct (f x). simpl. destruct t; reflexivity.
-simpl. destruct t. reflexivity. Qed.
-
-Axiom iso : forall A, exists (f : DOORS A -> (DOORS bool + DOORS unit))
-(g : (DOORS bool + DOORS unit) -> DOORS A), 
-(forall x, f (g x) = x) /\ (forall x, g (f x) = x).
+Proof. intros. destruct (f x). simpl. destruct tag; reflexivity.
+simpl. destruct tag. reflexivity. Qed.
 
 Lemma g'f'id : forall (A : Type) (x : DOORS'),
-f' (g' x) = x. Proof. intros. destruct x; destruct t; simpl in *; reflexivity. Qed.
+f' (g' x) = x. Proof. intros. destruct x; destruct tag; simpl in *; reflexivity. Qed.
 
 From Coq Require Import Program.Equality.
 
 Lemma unit_not_bool : @eq Type unit bool -> False. Admitted.
 
+Require Import Coq.Logic.Eqdep.
+
 Lemma f'g'id : forall (A: Type) (x : (DOORS bool + DOORS unit)), 
 g' (f' x) = x. Proof. intros;
-simpl. destruct x. dependent destruction d. simpl. reflexivity.
+simpl. destruct x. simpl. dependent destruction d. simpl. reflexivity.
 pose proof (h := unit_not_bool).
 assert False. apply h. apply x0. elim H.
 simpl. dependent destruction d. 

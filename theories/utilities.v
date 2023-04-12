@@ -506,10 +506,10 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
    (list of length n)
 **) (** linear **)
 Definition Rel_list (n l : nat) :=
-  let  fix aux n  k acc  :=
+  let  fix aux n k acc  :=
   match n with
    | 0 => acc 
-   | S n => aux n  (S k) ((tRel k)::acc)
+   | S n => aux n (S k) ((tRel k)::acc)
    end
    in aux n l [].
 
