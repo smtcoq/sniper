@@ -111,14 +111,6 @@ Definition gen_names_tys (nb_arity : nat) :=
     | S n => mkNamed "Ty"%bs :: aux n
   end in List.rev (aux nb_arity).
 
-Fixpoint build_branchs (lcnames : list (list aname)) (lc' : list term) (lpars : list term) :=
-  match lcnames, lc' with
-    | l :: ls, t :: ts  => {| bcontext := l ; bbody := tApp t 
-      ((List.map (lift (Datatypes.length l) 0) lpars)++(Rel_list (Datatypes.length l) 0)) |} :: 
-      build_branchs ls ts lpars
-    | _, _ => []
-  end.
-
 Fixpoint get_n_constructors (n : nat) (i : inductive) := 
   match n with
    | 0 => []
@@ -129,17 +121,25 @@ Fixpoint get_n_constructors (n : nat) (i : inductive) :=
 Fixpoint mkLambda_ty (t : term) (n : nat) (n0 : nat)  :=
   match n with
     | 0 => t
-    | S n' => let s := string_of_nat (n'-n) in
+    | S n' => let s := string_of_nat (n0-n) in
       tLambda (mkNamed (String.append "A" s)) (tSort fresh_universe) (mkLambda_ty t n' n0)
   end.
 
 Fixpoint mkProd_ty (t : term) (n : nat) (n0 : nat)  :=
   match n with
     | 0 => t
-    | S n' => let s := string_of_nat (n'-n) in
+    | S n' => let s := string_of_nat (n0-n') in
       tProd (mkNamed (String.append "A" s)) (tSort fresh_universe) (mkProd_ty t n' n0)
   end.
    
+
+Fixpoint build_branchs (lcnames : list (list aname)) (lc' : list term) (lpars : list term) :=
+  match lcnames, lc' with
+    | l :: ls, t :: ts  => {| bcontext := l ; bbody := tApp t 
+      ((List.map (lift (Datatypes.length l) 0) lpars)++(Rel_list (Datatypes.length l) 0)) |} :: 
+      build_branchs ls ts lpars
+    | _, _ => []
+  end.
 
 Definition build_match_traduction (kn kn' : kername) (lpars : list term) 
   (nb_arity : nat)
@@ -147,9 +147,9 @@ Definition build_match_traduction (kn kn' : kername) (lpars : list term)
   (lc' : list term) (* list of constructors of the transformed type *) :=
     tCase {| ci_ind := first_inductive kn ; ci_npar := Datatypes.length lpars;
       ci_relevance := Relevant |} 
-          {| puinst := [] ; pparams := lpars ; pcontext := gen_names_tys nb_arity;
+          {| puinst := [] ; pparams := (List.map (lift nb_arity 0) lpars) ; pcontext := gen_names_tys nb_arity;
       preturn := tApp (tInd (first_inductive kn') []) lpars |}
-          (tRel 0) (build_branchs lcnames lc' lpars).
+          (tRel 0) (build_branchs lcnames lc' (List.map (lift (2*(S nb_arity)) 0) lpars)).
 
 
 Fixpoint names_of_prods (t : term) :=
@@ -172,7 +172,7 @@ Definition build_traduction_term (kn kn' : kername) (lpars : list term)
   let nb_lambdas := nb_arity + n in
   let lindexes := Rel_list nb_arity 0 in
   mkLambda_ty (tLambda (mkNamed "x"%bs)
-    (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) (lindexes++(List.map (lift nb_arity 0) lpars))) 
+    (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) ((List.map (lift nb_arity 0) lpars)++lindexes)) 
         (build_match_traduction kn kn' lpars nb_arity lcnames lc')) nb_lambdas nb_lambdas.
 
 Definition build_traduction_type (kn kn' : kername) (lpars : list term) 
@@ -180,8 +180,8 @@ Definition build_traduction_type (kn kn' : kername) (lpars : list term)
   let lindexes := Rel_list nb_arity 0 in
   let npars := Datatypes.length lpars in
   let nbprods := npars + nb_arity in
-  mkProd_ty (tProd mknAnon (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) (lindexes++(List.map (lift nb_arity 0) lpars)))
-    (tApp (tInd {| inductive_mind := kn' ; inductive_ind := 0 |} []) lpars)) nb_arity nb_arity.
+  mkProd_ty (tProd mknAnon (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) ((List.map (lift nb_arity 0) lpars)++lindexes))
+    (tApp (tInd {| inductive_mind := kn' ; inductive_ind := 0 |} []) (List.map (lift (S nb_arity) 0) lpars))) nbprods nbprods.
   
 
 (** Step 4 : final transformation *)
@@ -207,7 +207,7 @@ Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
           | Some (S n) =>
                   fresh <- tmFreshName (String.append kn.2 "'"%bs) ;;
                   let indu_entry := mind_body_to_entry decl in 
-                  let npars := List.length indu_entry.(mind_entry_params) in
+                  let npars := decl.(ind_npars) in
                   let lcnames := names_for_args_constructor_first_oind indu_entry in
                   let nb_constructors := Datatypes.length lcnames in
                   let lpars := Rel_list npars 0 in
@@ -216,14 +216,14 @@ Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
                   let lc' := get_n_constructors nb_constructors ({| inductive_mind :=                 
                   (curmodpath, fresh) ; inductive_ind := 0 |}) in
                   res <- tmEval all (build_traduction_term kn (curmodpath, fresh) lpars (S n) lcnames lc') ;;
-                  res2 <- tmEval all (build_traduction_type kn (curmodpath, fresh) lpars (S n)) ;;
+                  res2 <- tmEval all (build_traduction_type kn (curmodpath, fresh) lpars (S n)) ;; tmPrint res ;;
                   tmReturn (res, res2)
         end
 end.
 
 Definition pose_definitions (p : term*term) :=
   res2 <- tmEval all p.2 ;;
-  ty_unq <- tmUnquoteTyped Type res2 ;; 
+  ty_unq <- tmUnquoteTyped Type res2 ;; tmPrint "OKKKKKKKKK"%bs ;;
   res <- tmEval all p.1 ;; 
   trm_unq <- tmUnquoteTyped ty_unq res ;;
  fresh2 <- tmFreshName "transfo"%bs ;;
