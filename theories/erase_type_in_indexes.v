@@ -104,16 +104,18 @@ Definition get_name_constructors_first_oind mind :=
 Definition first_inductive (kn : kername) :=
 {| inductive_mind := kn ; inductive_ind := 0 |}.
 
-Fixpoint gen_names_tys (nb_arity : nat) :=
+Definition gen_names_tys (nb_arity : nat) :=
+  let fix aux nb_arity :=
   match nb_arity with
     | 0 => [mkNamed "t"%bs]
-    | S n => mkNamed "Ty"%bs :: gen_names_tys n
-  end.
+    | S n => mkNamed "Ty"%bs :: aux n
+  end in List.rev (aux nb_arity).
 
 Fixpoint build_branchs (lcnames : list (list aname)) (lc' : list term) (lpars : list term) :=
   match lcnames, lc' with
-    | l :: ls, t :: ts  => {| bcontext := l ; bbody := tApp t (List.map (lift (Datatypes.length l) 0) lpars) |} :: 
-      build_branchs ls ts lpars 
+    | l :: ls, t :: ts  => {| bcontext := l ; bbody := tApp t 
+      ((List.map (lift (Datatypes.length l) 0) lpars)++(Rel_list (Datatypes.length l) 0)) |} :: 
+      build_branchs ls ts lpars
     | _, _ => []
   end.
 
@@ -160,38 +162,50 @@ Definition build_traduction (kn kn' : kername) (lpars : list term)
   (lcnames : list (list aname)) (* list of names for arguments of constructors of the initial type *)
   (lc' : list term) := 
   let n := Datatypes.length lpars in
-  mkLambda_ty (tLambda (mkNamed "x"%bs) 
-    (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) lpars) 
-        (build_match_traduction kn kn' lpars nb_arity lcnames lc')) n n.
+  let nb_lambdas := nb_arity + n in
+  let lindexes := Rel_list nb_arity 0 in
+  mkLambda_ty (tLambda (mkNamed "x"%bs)
+    (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) (lindexes++(List.map (lift nb_arity 0) lpars))) 
+        (build_match_traduction kn kn' lpars nb_arity lcnames lc')) nb_lambdas nb_lambdas.
 
-(** Step 4 : final transformation *) Print tmMkInductive. 
-
-Definition get_curmodpath := curmodpath <- tmCurrentModPath tt ;; tmReturn curmodpath.
-
-Definition erase_type_in_indexes (tm : term) curmodpath :=
+(** Step 4 : final transformation *) Print tmMkInductive.
+ 
+Definition quote_inductive_and_kername (tm : term) :=
   match tm with
     | tInd ({| inductive_mind := kn ; inductive_ind := 0 |}) u =>
         decl <- tmQuoteInductive (inductive_mind  ({| inductive_mind := kn ; inductive_ind := 0 |})) ;;
-        fresh <- tmFreshName (String.append kn.2 "'"%bs) ;;
-      match find_nbr_arity decl with
-        | None => 
-            tmFail "wrong argument given to the transformation"%bs 
-        | Some 0 => 
-            tmPrint "the transformation does nothing here: the type is not dependent or not handled"%bs
-        | Some (S n) =>
-                let indu_entry := mind_body_to_entry decl in 
-                let npars := List.length indu_entry.(mind_entry_params) in
-                let lcnames := names_for_args_constructor_first_oind indu_entry in
-                let nb_constructors := Datatypes.length lcnames in
-                let lpars := Rel_list npars 0 in
-                tmMkInductive true (create_mind_transformed indu_entry fresh);;
-                let lc' := get_n_constructors nb_constructors ({| inductive_mind :=                 
-                (curmodpath, fresh) ; inductive_ind := 0 |}) in
-               tmReturn (build_traduction kn (curmodpath, (String.append kn.2 "'"%bs)) lpars
-              (S n) lcnames lc')
-        end
+        tmReturn (decl, kn)
     | _ => tmPrint tm ;; tmFail " is not an inductive"%bs
+  end.
+
+Notation tmWait := (tmPrint ""%bs).
+
+Definition erase_type_in_indexes (p : mutual_inductive_body * kername) : TemplateMonad unit:=
+  match p with
+    | (decl, kn) => 
+        match find_nbr_arity decl with
+          | None => 
+              tmPrint "wrong argument given to the transformation"%bs 
+          | Some 0 => 
+              tmPrint "the transformation does nothing here: the type is not dependent or not handled"%bs
+          | Some (S n) =>
+                  fresh <- tmFreshName (String.append kn.2 "'"%bs) ;;
+                  let indu_entry := mind_body_to_entry decl in 
+                  let npars := List.length indu_entry.(mind_entry_params) in
+                  let lcnames := names_for_args_constructor_first_oind indu_entry in
+                  let nb_constructors := Datatypes.length lcnames in
+                  let lpars := Rel_list npars 0 in
+                  curmodpath <- tmCurrentModPath tt ;;
+                  tmMkInductive true (create_mind_transformed indu_entry fresh);;
+                  let lc' := get_n_constructors nb_constructors ({| inductive_mind :=                 
+                  (curmodpath, fresh) ; inductive_ind := 0 |}) in
+                  res <- tmEval all (build_traduction kn (curmodpath, fresh) lpars (S n) lcnames lc') ;;
+                  trm_unq <- tmUnquote res;;
+                  let trm_unq0 := my_projT2 trm_unq in
+                  tmDefinition "foo"%bs trm_unq0 ;; tmWait
+        end
 end.
+
 
 
 (** Tests **)
@@ -202,13 +216,128 @@ Inductive DOORS : Type -> Type :=
 | IsOpen : door -> DOORS bool
 | Toggle : door -> DOORS unit.
 
-MetaCoq Run (erase_type_in_indexes <% DOORS %>). 
-Print DOORS'.
+MetaCoq Run (quote_inductive_and_kername <% DOORS %> >>= erase_type_in_indexes >>= tmPrint).
+
+Print door. 
+
+
+Definition transfo1 {A : Type} (d : DOORS A) : DOORS' :=
+    match d with
+      | IsOpen d => IsOpen' d
+      | Toggle d => Toggle' d
+    end.
+
+MetaCoq Quote Recursively Definition transfo1_reif_rec := transfo1.
+
+Print transfo1_reif_rec.
+
+(tLambda
+                 {|
+                   binder_name := nNamed "A"%bs;
+                   binder_relevance := Relevant
+                 |}
+                 (tSort
+                    (Universe.of_levels
+                       (inr
+                          (Level.Level
+                             "Sniper.theories.erase_type_in_indexes.21505"%bs))))
+                 (tLambda
+                    {|
+                      binder_name := nNamed "d"%bs;
+                      binder_relevance := Relevant
+                    |}
+                    (tApp
+                       (tInd
+                          {|
+                            inductive_mind :=
+                              (MPfile
+                                 ["erase_type_in_indexes"%bs;
+                                 "theories"%bs; "Sniper"%bs],
+                              "DOORS"%bs);
+                            inductive_ind := 0
+                          |} []) [tRel 0])
+                    (tCase
+                       {|
+                         ci_ind :=
+                           {|
+                             inductive_mind :=
+                               (MPfile
+                                  ["erase_type_in_indexes"%bs;
+                                  "theories"%bs; "Sniper"%bs],
+                               "DOORS"%bs);
+                             inductive_ind := 0
+                           |};
+                         ci_npar := 0;
+                         ci_relevance := Relevant
+                       |}
+                       {|
+                         puinst := [];
+                         pparams := [];
+                         pcontext :=
+                           [{|
+                              binder_name := nNamed "d"%bs;
+                              binder_relevance := Relevant
+                            |};
+                           {|
+                             binder_name := nNamed "T"%bs;
+                             binder_relevance := Relevant
+                           |}];
+                         preturn :=
+                           tInd
+                             {|
+                               inductive_mind :=
+                                 (MPfile
+                                    ["erase_type_in_indexes"%bs;
+                                    "theories"%bs; "Sniper"%bs],
+                                 "DOORS'"%bs);
+                               inductive_ind := 0
+                             |} []
+                       |} (tRel 0)
+                       [{|
+                          bcontext :=
+                            [{|
+                               binder_name := nNamed "d"%bs;
+                               binder_relevance := Relevant
+                             |}];
+                          bbody :=
+                            tApp
+                              (tConstruct
+                                 {|
+                                   inductive_mind :=
+                                     (MPfile
+                                        ["erase_type_in_indexes"%bs;
+                                        "theories"%bs; "Sniper"%bs],
+                                     "DOORS'"%bs);
+                                   inductive_ind := 0
+                                 |} 0 []) [tRel 0]
+                        |};
+                       {|
+                         bcontext :=
+                           [{|
+                              binder_name := nNamed "d"%bs;
+                              binder_relevance := Relevant
+                            |}];
+                         bbody :=
+                           tApp
+                             (tConstruct
+                                {|
+                                  inductive_mind :=
+                                    (MPfile
+                                       ["erase_type_in_indexes"%bs;
+                                       "theories"%bs; "Sniper"%bs],
+                                    "DOORS'"%bs);
+                                  inductive_ind := 0
+                                |} 1 []) [tRel 0]
+                       |}])))
 
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
  MetaCoq Run (erase_type_in_indexes <% test %>).
 Print test'.
+
+
+
+
 
 Inductive test_parameter (A B : Type) : Type -> Type :=
 | c1 : bool -> door -> test_parameter A B unit.
