@@ -131,12 +131,13 @@ Fixpoint mkProd_ty (t : term) (n : nat) (n0 : nat)  :=
     | S n' => let s := string_of_nat (n0-n') in
       tProd (mkNamed (String.append "A" s)) (tSort fresh_universe) (mkProd_ty t n' n0)
   end.
-   
 
+Definition create_hole (t : term) := hole.
+   
 Fixpoint build_branchs (lcnames : list (list aname)) (lc' : list term) (lpars : list term) :=
   match lcnames, lc' with
     | l :: ls, t :: ts  => {| bcontext := l ; bbody := tApp t 
-      ((List.map (lift (Datatypes.length l) 0) lpars)++(Rel_list (Datatypes.length l) 0)) |} :: 
+      ((List.map (lift 1 (Datatypes.length l)) lpars)++(Rel_list (Datatypes.length l) 0)) |} :: 
       build_branchs ls ts lpars
     | _, _ => []
   end.
@@ -147,9 +148,9 @@ Definition build_match_traduction (kn kn' : kername) (lpars : list term)
   (lc' : list term) (* list of constructors of the transformed type *) :=
     tCase {| ci_ind := first_inductive kn ; ci_npar := Datatypes.length lpars;
       ci_relevance := Relevant |} 
-          {| puinst := [] ; pparams := (List.map (lift nb_arity 0) lpars) ; pcontext := gen_names_tys nb_arity;
-      preturn := tApp (tInd (first_inductive kn') []) lpars |}
-          (tRel 0) (build_branchs lcnames lc' (List.map (lift (2*(S nb_arity)) 0) lpars)).
+          {| puinst := [] ; pparams := (List.map (lift (S (nb_arity)) 0) lpars) ; pcontext := gen_names_tys nb_arity;
+      preturn := tApp (tInd (first_inductive kn') []) (List.map (lift (S (2*nb_arity)) 0) lpars) |}
+          (tRel 0) (build_branchs lcnames lc' (List.map (lift (S nb_arity) 0) lpars)).
 
 
 Fixpoint names_of_prods (t : term) :=
@@ -181,7 +182,7 @@ Definition build_traduction_type (kn kn' : kername) (lpars : list term)
   let npars := Datatypes.length lpars in
   let nbprods := npars + nb_arity in
   mkProd_ty (tProd mknAnon (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) ((List.map (lift nb_arity 0) lpars)++lindexes))
-    (tApp (tInd {| inductive_mind := kn' ; inductive_ind := 0 |} []) (List.map (lift (S nb_arity) 0) lpars))) nbprods nbprods.
+    (tApp (tInd {| inductive_mind := kn' ; inductive_ind := 0 |} []) (List.map (lift nb_arity 0) lpars))) nbprods nbprods.
   
 
 (** Step 4 : final transformation *)
@@ -253,4 +254,6 @@ Print transfo0.
 Inductive test_parameter (A B : Type) : Type -> Type :=
 | c1 : bool -> door -> test_parameter A B unit.
 MetaCoq Run (erase_type_in_indexes <% test_parameter %>). 
+
+Print transfo1. 
 Print test_parameter'.
