@@ -14,7 +14,6 @@ theories/interpretation_algebraic_types.v
 theories/clearbodies.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
-theories/deptypes.v
 theories/erase_type_in_indexes.v
 theories/tree.v
 theories/Sniper.v
