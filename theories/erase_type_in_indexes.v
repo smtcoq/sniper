@@ -1,6 +1,4 @@
 Require Import MetaCoq.Template.All.
-From MetaCoq.PCUIC Require Import PCUICReflect.
-From MetaCoq.PCUIC Require Import TemplateToPCUIC.
 Import MCMonadNotation.
 Require Import utilities.
 Require Import List.
@@ -214,21 +212,21 @@ Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
                   let lpars := Rel_list npars 0 in
                   curmodpath <- tmCurrentModPath tt ;;
                   tmMkInductive true (create_mind_transformed indu_entry fresh);;
-                  let lc' := get_n_constructors nb_constructors ({| inductive_mind :=                 
-                  (curmodpath, fresh) ; inductive_ind := 0 |}) in
+                  let lc' := List.rev (get_n_constructors nb_constructors ({| inductive_mind :=                 
+                  (curmodpath, fresh) ; inductive_ind := 0 |})) in
                   res <- tmEval all (build_traduction_term kn (curmodpath, fresh) lpars (S n) lcnames lc') ;;
-                  res2 <- tmEval all (build_traduction_type kn (curmodpath, fresh) lpars (S n)) ;; tmPrint res ;;
+                  res2 <- tmEval all (build_traduction_type kn (curmodpath, fresh) lpars (S n)) ;;
                   tmReturn (res, res2)
         end
 end.
 
 Definition pose_definitions (p : term*term) :=
   res2 <- tmEval all p.2 ;;
-  ty_unq <- tmUnquoteTyped Type res2 ;; tmPrint "OKKKKKKKKK"%bs ;;
+  ty_unq <- tmUnquoteTyped Type res2 ;;
   res <- tmEval all p.1 ;; 
   trm_unq <- tmUnquoteTyped ty_unq res ;;
  fresh2 <- tmFreshName "transfo"%bs ;;
-  def <- tmDefinition fresh2 trm_unq ;; tmWait. 
+  def <- tmDefinition fresh2 trm_unq ;; tmWait.
 
 Definition erase_type_in_indexes (t : term) : TemplateMonad unit :=
   res <- quote_inductive_and_kername t ;;
@@ -257,3 +255,13 @@ MetaCoq Run (erase_type_in_indexes <% test_parameter %>).
 
 Print transfo1. 
 Print test_parameter'.
+
+Definition user_id := nat.
+
+Inductive bank_operation : Type -> Type :=
+| Withdraw : user_id -> nat -> nat -> bank_operation unit
+| GetBalance : user_id -> bank_operation nat.
+
+MetaCoq Run (erase_type_in_indexes <% bank_operation %>).
+Print bank_operation'.
+Print transfo2.
