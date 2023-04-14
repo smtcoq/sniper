@@ -307,7 +307,7 @@ Definition transfo {A : Type} (d : DOORS A) : DOORS' :=
 MetaCoq Quote Recursively Definition transfo_reif_rec := transfo.
 
 Print transfo_reif_rec.
-
+(* 
 (* Tests but struggling *)
 Definition coerce (d : DOORS') :=
   match d as y return
@@ -324,7 +324,7 @@ Definition coerce2 (A : Type) (d : DOORS A) : DOORS bool + DOORS unit :=
 match d with
    | IsOpen d => inl (IsOpen d)
    | Toggle d => inr (Toggle d) 
-  end.
+  end. *)
 
 (* Definition coerce3 (t : DOORS bool + DOORS unit) :=
   match t with
@@ -334,7 +334,7 @@ match d with
   | inr (Toggle d) => Toggle d
 end.
  *)
-Axiom  UIP : forall U (x y:U) (p1 p2:x = y), p1 = p2.
+(* Axiom  UIP : forall U (x y:U) (p1 p2:x = y), p1 = p2.
 
 Lemma test2 A : forall (d : DOORS A), {A = unit} + {A = bool}.
 Proof. intro d.
@@ -437,5 +437,5 @@ assert False. apply h. symmetry. apply x0. elim H.
 Print All Dependencies f'g'id.
 
 
-
+ *)
 
