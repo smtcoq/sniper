@@ -56,9 +56,9 @@ Proof.
   pose proof (H2 := H1). specialize (H1 0). specialize (H2 1).
   destruct (f _) in H1; destruct (f _) in H2.
   rewrite H1 in H2. inversion H2. Qed.
-  
+(*   
 Lemma nat_is_not_natto_nat :
 
 Lemma bool_is_not_boolto_bool :
 
-Ltac2 different_cardinals_leads_to_different_types :=
+Ltac2 different_cardinals_leads_to_different_types := *)
