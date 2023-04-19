@@ -56,7 +56,8 @@ Record env := mk_env
     env_types : list (aname*term*nat); (* idem for its args of type Type *)
     env_inductives : list (aname*term*nat); (* idem for the inductives arguments *)
     env_elements : list (aname*term*nat); (* idem for the args of the args of type Type *)
-    domain : term
+    domain : term;
+    constructors : list term
  }. 
 
 Definition lift10_term_and_db (p : aname*term*nat) :=
@@ -146,6 +147,7 @@ Definition get_env_default (e : env) (mind : mutual_inductive_entry) : env :=
                    env_inductives := p3.1.1.1.2;
                    env_elements := p3.1.1.1.1.2;
                    domain := p3.1.1.1.1.1;
+                   constructors := mind_entry_lc x
                 |}
 end.
 
@@ -158,6 +160,7 @@ Definition get_env mind :=
                    env_inductives := [] ;
                    env_elements := [] ;
                    domain := default_reif ;
+                   constructors := []
                 |} mind.
 
 Definition foo := ({|
@@ -643,20 +646,14 @@ Definition transpose_list_of_list (l : list (list term)) :=
   [<%True%>; or_reif; bool_reif] ;
 [<% Type%> ; <%Prop %> ; <% DOORS %>] ]. *)
 
-Definition tys_term_for_each_constructor 
-  (mind : mutual_inductive_entry) 
-  (e : env) (* the environment is given as argument to avoid to recompute it *) :=
-  let opt := get_first_oind_from_mind mind in
-  match opt with
-    | None => []
-    | Some oind => 
-      let lc := mind_entry_lc oind in
+Definition tys_term_for_each_constructor  
+  (e : env)  :=
+      let lc := constructors e in
       let nb_args := Datatypes.length (env_parameters e) + Datatypes.length (env_arguments e) in
       let nb_tys := Datatypes.length (env_types e) in
-      transpose_list_of_list (collect_tys_list lc nb_args nb_tys)
-    end.
+      transpose_list_of_list (collect_tys_list lc nb_args nb_tys).
 
-(* Compute tys_term_for_each_constructor foo bar. *)
+(* Compute tys_term_for_each_constructor bar. *)
 
 (* Deal with the inductive *)
 
@@ -709,21 +706,20 @@ Fixpoint sum_types_with_args_used
   end.
 
 Definition get_sum_types
-(mind : mutual_inductive_entry)  
 (e : env) :=
-  let npars := Datatypes.length (mind_entry_params mind) in
-  let l := tys_term_for_each_constructor mind e in
+  let npars := Datatypes.length (env_parameters e) in
+  let l := tys_term_for_each_constructor e in
   let args_usd := args_used npars e in
   sum_types_with_args_used l args_usd.
 
-Compute get_sum_types foo (get_env foo).
+Compute get_sum_types (get_env foo).
 
 (* we add the correct inl and inr terms according to which type 
 the constructor use in the sum type *)
 
-Definition inl_reif := <%@inl%>.
+Definition inl_reif := <%@inl%>. 
 
-Definition inr_reif := <%@inr%>. Print inl.
+Definition inr_reif := <%@inr%>.
 
 Fixpoint add_inls (t : term) (n : nat) :=
   match n with
@@ -740,7 +736,32 @@ Definition add_inls_inrs
     | S _ => add_inls (tApp inr_reif [hole; t]) (nb_constructors-nb_constructor)
   end.
 
-Definition tata := (add_inls_inrs <%unit%> 3 2). Compute tata.
+Fixpoint add_inls_inrs_n_aux (l : list term) (n nb_constructors : nat) :=
+   match n, l with
+    | 0, [x] => [add_inls_inrs x nb_constructors 0]
+    | 0, [] => []
+    | S n', x :: xs => add_inls_inrs x nb_constructors n :: add_inls_inrs_n_aux xs n' nb_constructors
+    | _, _ => []
+    end.
+
+Definition add_inls_inrs_n (ltypes : list term) (nb_constructors : nat) :=
+  add_inls_inrs_n_aux ltypes nb_constructors nb_constructors.
+
+Compute (List.rev (add_inls_inrs_n (List.rev [<%bool%> ; <%unit%>]) 1)).
+
+Definition new_arguments_for_each_constructor 
+(e : env) :=
+  let ltys := tys_term_for_each_constructor e in
+  let fix aux ltys' :=
+  match ltys' with
+    | [] => []
+    | x :: xs => let n := Datatypes.length x - 1 in
+        List.rev (add_inls_inrs_n (List.rev x) n) :: aux xs end
+    in aux ltys.
+
+Compute new_arguments_for_each_constructor bar.
+
+(* Definition tata := (add_inls_inrs <%unit%> 3 2). Compute tata. *)
 
 Fixpoint lookup_kername (kn : kername) (l : list (kername*kername)) :=
   match l with
@@ -748,28 +769,44 @@ Fixpoint lookup_kername (kn : kername) (l : list (kername*kername)) :=
   | (kn1, kn2) :: xs =>  if eq_kername kn kn1 then kn2 else lookup_kername kn xs
   end.
 
-Definition unlift1 t := subst10 (tRel 0) t. Print inductive. 
+Definition unlift1 t := subst10 (tRel 0) t. 
 
 Definition replace_by_new_inductive 
-(t : term) (indus : list (kername*kername)) (npars : nat) :=
+(t : term) (indus : list (kername*kername)) (nb : nat) :=
   match t with
     | tInd  {| inductive_mind := kn ; inductive_ind := n |} inst => 
         tInd  {| inductive_mind := (lookup_kername kn indus) ;
         inductive_ind := n |} inst
     | tApp (tInd {| inductive_mind := kn ; inductive_ind := n |} inst) l => 
-        let l' := List.map unlift1 l in
+        let l' := List.skipn nb (List.map unlift1 l) in
         tApp (tInd {| inductive_mind := (lookup_kername kn indus) ; inductive_ind := n |} inst) l'
     | _ => default_reif (* should not happen *)
   end.
 
+Definition transfo_type_constructor 
+(t : term) 
+(e : env)
+(nb_unlift : nat) (* we unlift all the parameters so from De Brujin index k *)
+(k : nat) (* the De Brujin index from we should unlift the type *)
+(indus : list (kername*kername))
+:= 
+  let fix aux t :=
+  match t with
+    | tProd Na Ty => 
+    | tApp (tRel k) l => transfo_in_list e l
+    | _ => default_reif
+  end in aux t'. 
+ 
+
+
 Definition transformed_env_inductive
-(mind : mutual_inductive_entry)
 (e : env) 
 (indus : list (kername*kername)) (* the mapping between the old and the new inductive *)
 :=
-  let sums := get_sum_types mind e in
+  let sums := get_sum_types e in 
   let nb_unlift := Datatypes.length (env_types e) in
-  let npars := Datatypes.length (env_parameters e) in
+  let n := Datatypes.length (env_parameters e) + Datatypes.length (env_types e) in
+  let new_args := transpose_list_of_list (new_arguments_for_each_constructor e) in
   let fix unlift l n := match n with
     | 0 => l
     | S n => unlift (List.map subst_term_and_db l) n
@@ -778,8 +815,13 @@ Definition transformed_env_inductive
   env_parameters := unlift (env_parameters e) nb_unlift ;
   env_arguments := unlift (env_arguments e) nb_unlift ;
   env_types := [] ;
-  env_inductives := List.map (fun x => (x.1.1, replace_by_new_inductive x.1.2 indus npars, x.2)) (env_inductives e) ;
+  env_inductives := List.map (fun x => (x.1.1, replace_by_new_inductive x.1.2 indus n, x.2)) 
+(env_inductives e) ;
   env_elements := mapi (fun i p => (p.1.1, nth i sums default_reif, p.2)) (env_elements e)  ;
-  domain := domain e |}.
+  domain := domain e ; constructors := constructors e; |}.
 
+Definition transformed_env_constructors 
+
+
+Compute transformed_env_inductive foo (get_env foo) list_kn_test.
 

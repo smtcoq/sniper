@@ -220,18 +220,18 @@ Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
         end
 end.
 
-Definition pose_definitions (p : term*term) :=
+Definition pose_definitions (p : term*term) (id : ident) :=
   res2 <- tmEval all p.2 ;;
   ty_unq <- tmUnquoteTyped Type res2 ;;
   res <- tmEval all p.1 ;; 
   trm_unq <- tmUnquoteTyped ty_unq res ;;
- fresh2 <- tmFreshName "transfo"%bs ;;
-  def <- tmDefinition fresh2 trm_unq ;; tmWait.
+  def <- tmDefinition id trm_unq ;; tmWait.
 
 Definition erase_type_in_indexes (t : term) : TemplateMonad unit :=
   res <- quote_inductive_and_kername t ;;
   p <- erase_type_in_indexes_aux res ;;
-  pose_definitions p.
+  fresh <- tmFreshName "transfo"%bs ;;
+  pose_definitions p fresh. 
 
 (** Tests **)
 
@@ -260,8 +260,18 @@ Definition user_id := nat.
 
 Inductive bank_operation : Type -> Type :=
 | Withdraw : user_id -> nat -> nat -> bank_operation unit
-| GetBalance : user_id -> bank_operation nat.
+| GetBalance : user_id -> nat -> bank_operation nat.
 
 MetaCoq Run (erase_type_in_indexes <% bank_operation %>).
 Print bank_operation'.
 Print transfo2.
+
+MetaCoq Quote Definition DOORS_reif := DOORS. 
+MetaCoq Quote Definition DOORS'_reif := DOORS'.
+
+Definition list_kn_test := 
+  [ ((MPfile
+         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
+      "DOORS"%bs), (MPfile
+         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
+      "DOORS'"%bs))].
