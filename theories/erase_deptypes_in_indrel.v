@@ -151,7 +151,7 @@ Definition get_env mind :=
                    domain := default_reif ;
                 |} mind.
 
-Compute get_env ({|
+Definition foo := ({|
          mind_entry_record := None;
          mind_entry_finite := Finite;
          mind_entry_params := [];
@@ -540,6 +540,8 @@ Compute get_env ({|
          mind_entry_private := None
        |}).
 
+Definition bar := get_env foo.
+
 MetaCoq Quote Definition sum_reif := @sum. 
 
 Require Import Coq.micromega.Lia.
@@ -583,7 +585,9 @@ Set Guard Checking.
 MetaCoq Unquote Definition test := 
 (mkSum [<%nat%> ; <%bool%>; <%unit%>; <% nat -> nat %> ]).
 
-(* We look at the domain of each constructor: it is the 
+(* 
+Deal with the constructor
+We look at the domain of each constructor: it is the 
 inductive relation R applied to its parameters, 
 its arguments, the CONCRETE types TyC1 ..., given at the 
 transformed inductives as indexes, and the arguments of this types.
@@ -600,10 +604,53 @@ Fixpoint collect_tys_term t nb_args nb_tys :=
   end. 
 
 Definition collect_tys_list 
-(l : list term) nb_args nb_tys : list (list term) :=
-List.map (fun x => collect_tys_term x nb_args nb_tys) l. 
+  (l : list term) 
+   nb_args nb_tys : list (list term) :=
+  List.map (fun x => collect_tys_term x nb_args nb_tys) l. 
 
-(* return each list of arguments used by 
+(* [A11; ...; A1n] ...
+ [Ak1; ...; Akn] becomes 
+[A1; ...; Ak1] ... [A1n ; ... Akn] *)
+
+Fixpoint transpose_list_of_list_aux (l acc : list (list term)) (n : nat) : list (list term) :=
+  match n with
+    | 0 => acc
+    | S n' => 
+       transpose_list_of_list_aux l (mapi (fun i x => ([nth i (nth n' l []) default_reif]++x)) acc) n'
+  end.
+
+Definition transpose_list_of_list (l : list (list term)) :=
+  let n := Datatypes.length (hd [] l) in
+  let m := Datatypes.length l in
+  let fix aux n := 
+  match n with
+    | 0 => []
+    | S n' => [] :: aux n'
+  end
+  in transpose_list_of_list_aux l (aux n) m.
+
+(* Compute transpose_list_of_list [[nat_reif; unit_reif; <%False%>] ; 
+  [<%True%>; or_reif; bool_reif] ;
+[<% Type%> ; <%Prop %> ; <% DOORS %>] ]. *)
+
+Definition tys_term_for_each_constructor 
+  (mind : mutual_inductive_entry) 
+  (e : env) (* the environment is given as argument to avoid to recompute it *) :=
+  let opt := get_first_oind_from_mind mind in
+  match opt with
+    | None => []
+    | Some oind => 
+      let lc := mind_entry_lc oind in
+      let nb_args := Datatypes.length (env_parameters e) + Datatypes.length (env_arguments e) in
+      let nb_tys := Datatypes.length (env_types e) in
+      transpose_list_of_list (collect_tys_list lc nb_args nb_tys)
+    end.
+
+(* Compute tys_term_for_each_constructor foo bar. *)
+
+(* Deal with the inductive *)
+
+(* returns each list of arguments used by 
 an inductive *)
 Definition inductive_list_args 
 (npars : nat)
@@ -621,44 +668,34 @@ Definition inductive_list_args
 Definition flat_inductive_list_args npars e := 
   tr_flatten (inductive_list_args npars e).
 
-Fixpoint find_trel 
+Fixpoint find_rel_in_triple 
   (n : nat) (l : list (aname*term*nat)) :=
     match l with
-  | (_, tRel k, _) :: l' => if Nat.eqb n k then true else find_trel n l'
-  | _ :: l' => find_trel n l' 
+  | (_, tRel k, _) :: l' => if Nat.eqb n k then true else find_rel_in_triple n l'
+  | _ :: l' => find_rel_in_triple n l'
   | [] => false
   end.
 
 Definition args_used_aux e tys :=
-  let args := env_arguments e in
+  let args := env_elements e in
   let fix aux args tys :=
     match tys with
-      | tRel k :: tys' => find_trel k args :: aux args tys' 
+      | tRel k :: tys' => find_rel_in_triple k args :: aux args tys' 
       | _ => []
     end in aux args tys.
 
-Definition args_used npars e := 
+Definition args_used npars e : list bool:= 
   let tys := flat_inductive_list_args npars e in 
   args_used_aux e tys.
 
-(* [A11; ...; A1n]
- ... [Ak1; ...; Akn] becomes 
-[A1; ...; Ak1] ... [A1n ; ... Akn] *)
-Fixpoint transpose_list_of_list
+Fixpoint sum_types_with_args_used 
+  (l : list (list term)) (l' : list bool) := 
+  match l, l' with
+    | [], [] => []
+    | _, [] => []
+    | [], _ => []
+    | x :: xs, true :: ys => mkSum x :: sum_types_with_args_used xs ys
+    | _ :: xs, false :: ys =>  sum_types_with_args_used xs ys
+  end.
 
-
-Definition build_sum_types_with_args_used (l : list (list term))
-
-
-  
-
-
-
-
-
-
-
-
-(* We need to look at the field 
-env_elements of R to look which types require an argument 
-and then, which sum types to build *)
+Eval compute in sum_types_with_args_used [[<%unit_reif%> ; <% bool_reif %>]] [true].
