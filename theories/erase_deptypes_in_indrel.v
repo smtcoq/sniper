@@ -3,6 +3,7 @@ Require Import List.
 Import ListNotations.
 Require Import MetaCoq.Template.All.
 Require Import erase_type_in_indexes.
+Unset MetaCoq Strict Unquote Universe Mode.
 
 
 (** Description of the transformation erase_deptype_in_inrel :
@@ -62,7 +63,15 @@ Definition lift10_term_and_db (p : aname*term*nat) :=
   let x := p.1.1 in 
   let y := p.1.2 in
   let z := p.2 in
-  (x, lift 1 0 y, S z).
+  (x, lift 1 0 y, S z). 
+
+(* substitutes tRel 0 by tRel 0 
+when tRel 0 is not in the term, it is useful because all db indexes will decrease of 1 *)
+Definition subst_term_and_db (p : aname*term*nat) :=
+  let x := p.1.1 in 
+  let y := p.1.2 in
+  let z := p.2 in
+  (x, subst [tRel 0] 0 y, z-1).
 
 (* we get the parameters, from the first to the last *)
 Definition get_parameters (mind : mutual_inductive_entry) :=
@@ -616,7 +625,8 @@ Fixpoint transpose_list_of_list_aux (l acc : list (list term)) (n : nat) : list 
   match n with
     | 0 => acc
     | S n' => 
-       transpose_list_of_list_aux l (mapi (fun i x => ([nth i (nth n' l []) default_reif]++x)) acc) n'
+       transpose_list_of_list_aux l 
+       (mapi (fun i x => ([nth i (nth n' l []) default_reif]++x)) acc) n'
   end.
 
 Definition transpose_list_of_list (l : list (list term)) :=
@@ -698,4 +708,78 @@ Fixpoint sum_types_with_args_used
     | _ :: xs, false :: ys =>  sum_types_with_args_used xs ys
   end.
 
-Eval compute in sum_types_with_args_used [[<%unit_reif%> ; <% bool_reif %>]] [true].
+Definition get_sum_types
+(mind : mutual_inductive_entry)  
+(e : env) :=
+  let npars := Datatypes.length (mind_entry_params mind) in
+  let l := tys_term_for_each_constructor mind e in
+  let args_usd := args_used npars e in
+  sum_types_with_args_used l args_usd.
+
+Compute get_sum_types foo (get_env foo).
+
+(* we add the correct inl and inr terms according to which type 
+the constructor use in the sum type *)
+
+Definition inl_reif := <%@inl%>.
+
+Definition inr_reif := <%@inr%>. Print inl.
+
+Fixpoint add_inls (t : term) (n : nat) :=
+  match n with
+    | 0 => t
+    | S n' => tApp inl_reif [add_inls t n'; hole]
+  end.
+
+Definition add_inls_inrs 
+(t : term)
+(nb_constructors : nat) (* How many constructor there are *)
+(nb_constructor : nat) (* The current constructor *) :=
+  match nb_constructor with
+    | 0 => add_inls t nb_constructors
+    | S _ => add_inls (tApp inr_reif [hole; t]) (nb_constructors-nb_constructor)
+  end.
+
+Definition tata := (add_inls_inrs <%unit%> 3 2). Compute tata.
+
+Fixpoint lookup_kername (kn : kername) (l : list (kername*kername)) :=
+  match l with
+  | [] =>  default_error_kn
+  | (kn1, kn2) :: xs =>  if eq_kername kn kn1 then kn2 else lookup_kername kn xs
+  end.
+
+Definition unlift1 t := subst10 (tRel 0) t. Print inductive. 
+
+Definition replace_by_new_inductive 
+(t : term) (indus : list (kername*kername)) (npars : nat) :=
+  match t with
+    | tInd  {| inductive_mind := kn ; inductive_ind := n |} inst => 
+        tInd  {| inductive_mind := (lookup_kername kn indus) ;
+        inductive_ind := n |} inst
+    | tApp (tInd {| inductive_mind := kn ; inductive_ind := n |} inst) l => 
+        let l' := List.map unlift1 l in
+        tApp (tInd {| inductive_mind := (lookup_kername kn indus) ; inductive_ind := n |} inst) l'
+    | _ => default_reif (* should not happen *)
+  end.
+
+Definition transformed_env_inductive
+(mind : mutual_inductive_entry)
+(e : env) 
+(indus : list (kername*kername)) (* the mapping between the old and the new inductive *)
+:=
+  let sums := get_sum_types mind e in
+  let nb_unlift := Datatypes.length (env_types e) in
+  let npars := Datatypes.length (env_parameters e) in
+  let fix unlift l n := match n with
+    | 0 => l
+    | S n => unlift (List.map subst_term_and_db l) n
+  end in 
+  {| 
+  env_parameters := unlift (env_parameters e) nb_unlift ;
+  env_arguments := unlift (env_arguments e) nb_unlift ;
+  env_types := [] ;
+  env_inductives := List.map (fun x => (x.1.1, replace_by_new_inductive x.1.2 indus npars, x.2)) (env_inductives e) ;
+  env_elements := mapi (fun i p => (p.1.1, nth i sums default_reif, p.2)) (env_elements e)  ;
+  domain := domain e |}.
+
+
