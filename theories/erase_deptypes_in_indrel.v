@@ -749,14 +749,20 @@ Definition add_inls_inrs_n (ltypes : list term) (nb_constructors : nat) :=
 
 Compute (List.rev (add_inls_inrs_n (List.rev [<%bool%> ; <%unit%>]) 1)).
 
+Fixpoint listtRel0 (n : nat) :=
+  match n with
+    | 0 => []
+    | S n' => tRel 0 :: listtRel0 n'
+  end.
+
 Definition new_arguments_for_each_constructor 
 (e : env) :=
   let ltys := tys_term_for_each_constructor e in
   let fix aux ltys' :=
   match ltys' with
     | [] => []
-    | x :: xs => let n := Datatypes.length x - 1 in
-        List.rev (add_inls_inrs_n (List.rev x) n) :: aux xs end
+    | x :: xs => let n := Datatypes.length x in
+        add_inls_inrs_n (listtRel0 n) (n-1) :: aux xs end
     in aux ltys.
 
 Compute new_arguments_for_each_constructor bar.
@@ -781,23 +787,58 @@ Definition replace_by_new_inductive
         let l' := List.skipn nb (List.map unlift1 l) in
         tApp (tInd {| inductive_mind := (lookup_kername kn indus) ; inductive_ind := n |} inst) l'
     | _ => default_reif (* should not happen *)
+  end. 
+
+Fixpoint subst_two_lists (l l' : list term) :=
+  match l, l' with
+    | [], [] => []
+    | x :: xs, y :: ys => subst10 x y :: subst_two_lists xs ys
+    | _, _ => []
   end.
+
+Definition transfo_in_indu t indus :=
+  match t with
+    | tApp (tConstruct {| inductive_mind := kn ; inductive_ind := n |} m inst) l =>
+        let kn' := lookup_kername kn indus in 
+        tApp (tConstruct {| inductive_mind := kn' ; inductive_ind := n |} m inst) l
+    | _ => default_reif (* should not happen *)
+  end.
+
+Definition transfo_in_list_indus l indus :=
+List.map (fun x => transfo_in_indu x indus) l.
+
+(* old domain of constructor
+ I [params]++[arguments]++[Types]++[Is applied to params]++[elements]
+There is no db index in types so deleting them will not change the 
+db indexes of other terms.
+I [params]++[arguments]++[I's applied to params]++[inl or inr elements]
+*) 
+Definition transfo_in_list 
+(e : env) 
+(lsum : list term)
+(indus : list (kername*kername))
+(l : list term) := 
+  let pars := env_parameters e in
+  let npars := Datatypes.length pars in
+  let nargs := Datatypes.length (env_arguments e) in
+  let ntypes := Datatypes.length (env_types e) in
+  let nindus := Datatypes.length (env_inductives e) in
+  List.skipn ntypes (List.firstn (npars+nargs) l) ++ (* remove the types *)
+  transfo_in_list_indus (List.firstn nindus (List.skipn (npars+nargs+ntypes) l)) indus ++ (* change the Is by the I's and remove the types *)
+  subst_two_lists (List.skipn (npars+nargs+ntypes+nindus) l) lsum.
 
 Definition transfo_type_constructor 
 (t : term) 
+(lsum : list term) (* the arguments of type sum *)
 (e : env)
-(nb_unlift : nat) (* we unlift all the parameters so from De Brujin index k *)
-(k : nat) (* the De Brujin index from we should unlift the type *)
 (indus : list (kername*kername))
 := 
-  let fix aux t :=
+  let fix aux t e :=
   match t with
-    | tProd Na Ty => 
-    | tApp (tRel k) l => transfo_in_list e l
+    | tProd Na Ty u => tProd Na Ty (aux u e)
+    | tApp (tRel k) l => tApp (tRel k) (transfo_in_list e lsum indus l)
     | _ => default_reif
-  end in aux t'. 
- 
-
+  end in aux t e.
 
 Definition transformed_env_inductive
 (e : env) 
@@ -818,10 +859,9 @@ Definition transformed_env_inductive
   env_inductives := List.map (fun x => (x.1.1, replace_by_new_inductive x.1.2 indus n, x.2)) 
 (env_inductives e) ;
   env_elements := mapi (fun i p => (p.1.1, nth i sums default_reif, p.2)) (env_elements e)  ;
-  domain := domain e ; constructors := constructors e; |}.
+  domain := domain e ; constructors :=
+  mapi (fun i x => transfo_type_constructor x (nth i new_args []) e indus) (constructors e); |}.
 
-Definition transformed_env_constructors 
 
-
-Compute transformed_env_inductive foo (get_env foo) list_kn_test.
+Compute transformed_env_inductive (get_env foo) list_kn_test.
 
