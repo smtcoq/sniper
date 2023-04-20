@@ -922,7 +922,15 @@ Definition erase_deptypes_in_indrel
       tmMkInductive true mind_transfo
   end.
 
-MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_callee %>).
+Definition erase_dep_transform_pred (l : list term) (R : term) :=
+  res <- erase_type_in_indexes l ;;
+  let indus := res.2 in
+  erase_deptypes_in_indrel indus R ;; 
+  res0 <- tmEval all res.1 ;;
+  tmReturn res0.
+
+MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
+
 Print doors_o_callee'.
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
 Print doors_o_caller'.

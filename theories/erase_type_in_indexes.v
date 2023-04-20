@@ -234,9 +234,9 @@ Fixpoint erase_type_in_indexes (l : list term) : TemplateMonad (list term * (lis
       p0 <- quote_inductive_and_kername x ;;
       p <- erase_type_in_indexes_aux p0 ;;
       fresh <- tmFreshName "transfo"%bs ;;
-      res <- pose_definitions p.1 fresh;; 
+      res <- pose_definitions p.1 fresh;;
       res' <- erase_type_in_indexes xs ;; 
-      res0 <- tmEval all res'.1 ;;
+      res0 <- tmEval all res'.1 ;; 
       res1 <- tmEval all res'.2 ;;
       tmReturn (res::res0, p.2 :: res1)
   end. 
