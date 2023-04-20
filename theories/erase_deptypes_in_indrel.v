@@ -862,6 +862,40 @@ Definition transformed_env_inductive
   domain := domain e ; constructors :=
   mapi (fun i x => transfo_type_constructor x (nth i new_args []) e indus) (constructors e); |}.
 
+Definition mkProdsNamed (t : term) (l : list (aname*term*nat)) :=
+  
+
+Definition reconstruct_arity 
+
+
+
+Definition erase_deptypes_in_indrel_inductive
+  (id : string) 
+  (mind : mutual_inductive_entry) 
+  (indus : list (kername*kername)) :=
+  let e := get_env mind in
+  let e' := transformed_env_inductive in
+  let oind' := 
+  {| 
+    mind_entry_typename := id;
+    mind_entry_arity := reconstruct_arity e' ;
+    mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
+    mind_entry_lc := constructors e' ;
+   |} in 
+  {| 
+    mind_entry_record := mind.(mind_entry_record);
+    mind_entry_finite := mind.(mind_entry_finite);
+    mind_entry_params := mind.(mind_entry_params);
+    mind_entry_inds := [oind];
+    mind_entry_universes := mind.(mind_entry_universes); 
+    mind_entry_template := mind.(mind_entry_template); 
+    mind_entry_variance := mind.(mind_entry_variance);
+    mind_entry_private := mind.(mind_entry_private);
+  |}.
+
+  
+  
+
 
 Compute transformed_env_inductive (get_env foo) list_kn_test.
 
