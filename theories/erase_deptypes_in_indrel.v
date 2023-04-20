@@ -2,6 +2,7 @@ Require Import utilities.
 Require Import List.
 Import ListNotations.
 Require Import MetaCoq.Template.All.
+Import MCMonadNotation.
 Require Import erase_type_in_indexes.
 Unset MetaCoq Strict Unquote Universe Mode.
 
@@ -35,20 +36,25 @@ R' (P1 : T1) ... (Pk : Tk) : X1 -> ... Xp -> I1' -> ... Im' -> ?{TYC111  + ... +
 (* Examples *)
 
 Inductive doors_o_callee : (bool*bool) -> forall (a : Type), DOORS a -> a -> Prop :=
-
-(** - When a system in a state [ω] reports the state of the door [d], it shall
-      reflect the true state of [d]. *)
-
 | doors_o_callee_is_open (d : door) (ω : bool*bool) (x : bool) (equ : true = x)
   : doors_o_callee ω bool (IsOpen d) x
-
-(** - There is no particular doors_o_calleeises on the result [x] of a request for [ω] to
-      close the door [d]. *)
-
 | doors_o_callee_toggle (d : door) (ω : bool*bool) (x : unit)
   : doors_o_callee ω unit (Toggle d) x.
 
 MetaCoq Quote Recursively Definition doc_rec := doors_o_callee.
+
+Inductive doors_o_caller : (bool*bool) -> forall (a : Type), DOORS a -> Prop :=
+| req_is_open (d : door) (ω : bool*bool)
+  : doors_o_caller ω bool (IsOpen d)
+| req_toggle (d : door) (ω : bool*bool) (H : ω.1 = false -> ω.2 = false)
+  : doors_o_caller ω unit (Toggle d).
+
+Parameter id_correct : nat -> bool.
+
+Inductive bank_operation_correct : forall (a : Type), bank_operation a -> Prop :=
+| Withdraw_correct (u : user_id) (solde : nat) (amount : nat) (_ : Nat.leb solde amount) :
+  id_correct u = true -> bank_operation_correct unit (Withdraw u solde amount)
+| GetBalance_correct (u : user_id) : id_correct u -> bank_operation_correct nat (GetBalance u).
 
 Record env := mk_env 
   { env_parameters : list (aname*term*nat); (* the name of a parameter, its type and its db index *)
@@ -872,8 +878,6 @@ Definition reconstruct_arity
 (e : env) :=
 mkProdsNamed (domain e) ((env_arguments e)++(env_types e)++(env_inductives e)++(env_elements e)).
 
-
-
 Definition erase_deptypes_in_indrel_inductive
   (id : string) 
   (mind : mutual_inductive_entry) 
@@ -905,7 +909,22 @@ Definition erase_deptypes_in_indrel_inductive
 
 Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test. 
 
-Print inr.
+Definition erase_deptypes_in_indrel 
+(indus : list (kername*kername))
+(t : term)
+ :=
+  p <- quote_inductive_and_kername t ;;
+  match p with
+    | (decl, kn) => 
+      let mind := mind_body_to_entry decl in 
+      fresh <- tmFreshName (String.append kn.2 ("'")%bs) ;;
+      let mind_transfo := erase_deptypes_in_indrel_inductive fresh mind indus in
+      tmMkInductive true mind_transfo
+  end.
 
-MetaCoq Run (tmMkInductive true bar2). Print dooc'. 
-
+MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_callee %>).
+Print doors_o_callee'.
+MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
+Print doors_o_caller'.
+MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
+Print bank_operation_correct'.

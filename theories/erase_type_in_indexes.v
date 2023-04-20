@@ -179,7 +179,8 @@ Definition build_traduction_type (kn kn' : kername) (lpars : list term)
   let lindexes := Rel_list nb_arity 0 in
   let npars := Datatypes.length lpars in
   let nbprods := npars + nb_arity in
-  mkProd_ty (tProd mknAnon (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) ((List.map (lift nb_arity 0) lpars)++lindexes))
+  mkProd_ty (tProd mknAnon (tApp (tInd {| inductive_mind := kn ; inductive_ind := 0 |} []) 
+    ((List.map (lift nb_arity 0) lpars)++lindexes))
     (tApp (tInd {| inductive_mind := kn' ; inductive_ind := 0 |} []) (List.map (lift nb_arity 0) lpars))) nbprods nbprods.
   
 
@@ -187,13 +188,11 @@ Definition build_traduction_type (kn kn' : kername) (lpars : list term)
  
 Definition quote_inductive_and_kername (tm : term) :=
   match tm with
-    | tInd ({| inductive_mind := kn ; inductive_ind := 0 |}) u =>
-        decl <- tmQuoteInductive (inductive_mind  ({| inductive_mind := kn ; inductive_ind := 0 |})) ;;
-        tmReturn (decl, kn)
-    | _ => tmPrint tm ;; tmFail " is not an inductive"%bs
-  end.
-
-Notation tmWait := (tmPrint " "%bs). 
+      | tInd ({| inductive_mind := kn ; inductive_ind := 0 |}) u =>
+          decl <- tmQuoteInductive (inductive_mind  ({| inductive_mind := kn ; inductive_ind := 0 |})) ;;
+          tmReturn (decl, kn)
+      | _ => tmPrint tm ;; tmFail " is not an inductive"%bs
+    end. 
 
 Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
   match p with
@@ -216,22 +215,31 @@ Definition erase_type_in_indexes_aux (p : mutual_inductive_body * kername) :=
                   (curmodpath, fresh) ; inductive_ind := 0 |})) in
                   res <- tmEval all (build_traduction_term kn (curmodpath, fresh) lpars (S n) lcnames lc') ;;
                   res2 <- tmEval all (build_traduction_type kn (curmodpath, fresh) lpars (S n)) ;;
-                  tmReturn (res, res2)
+                  tmReturn ((res, res2), (kn, (curmodpath, fresh)))
         end
 end.
 
-Definition pose_definitions (p : term*term) (id : ident) :=
-  res2 <- tmEval all p.2 ;;
+Definition pose_definitions (p : term*term) (id : ident) : TemplateMonad term :=
+  res2 <- tmEval all p.2 ;; 
   ty_unq <- tmUnquoteTyped Type res2 ;;
   res <- tmEval all p.1 ;; 
   trm_unq <- tmUnquoteTyped ty_unq res ;;
-  def <- tmDefinition id trm_unq ;; tmWait.
+  def <- tmDefinition id trm_unq ;; 
+  def_quote <- tmQuote def ;; tmReturn def_quote.
 
-Definition erase_type_in_indexes (t : term) : TemplateMonad unit :=
-  res <- quote_inductive_and_kername t ;;
-  p <- erase_type_in_indexes_aux res ;;
-  fresh <- tmFreshName "transfo"%bs ;;
-  pose_definitions p fresh. 
+Fixpoint erase_type_in_indexes (l : list term) : TemplateMonad (list term * (list (kername*kername))) :=
+  match l with
+    | [] => tmReturn ([], [])
+    | x :: xs => 
+      p0 <- quote_inductive_and_kername x ;;
+      p <- erase_type_in_indexes_aux p0 ;;
+      fresh <- tmFreshName "transfo"%bs ;;
+      res <- pose_definitions p.1 fresh;; 
+      res' <- erase_type_in_indexes xs ;; 
+      res0 <- tmEval all res'.1 ;;
+      res1 <- tmEval all res'.2 ;;
+      tmReturn (res::res0, p.2 :: res1)
+  end. 
 
 (** Tests **)
 
@@ -241,17 +249,17 @@ Inductive DOORS : Type -> Type :=
 | IsOpen : door -> DOORS bool
 | Toggle : door -> DOORS unit.
 
-MetaCoq Run (erase_type_in_indexes <% DOORS %>).  
+MetaCoq Run (erase_type_in_indexes [<% DOORS %>]).  
 Print transfo.
 
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
- MetaCoq Run (erase_type_in_indexes <% test %>).
+ MetaCoq Run (erase_type_in_indexes [<% test %>]).
 Print transfo0.
 
 Inductive test_parameter (A B : Type) : Type -> Type :=
 | c1 : bool -> door -> test_parameter A B unit.
-MetaCoq Run (erase_type_in_indexes <% test_parameter %>). 
+MetaCoq Run (erase_type_in_indexes [<% test_parameter %>]). 
 
 Print transfo1. 
 Print test_parameter'.
@@ -260,9 +268,9 @@ Definition user_id := nat.
 
 Inductive bank_operation : Type -> Type :=
 | Withdraw : user_id -> nat -> nat -> bank_operation unit
-| GetBalance : user_id -> nat -> bank_operation nat.
+| GetBalance : user_id -> bank_operation nat.
 
-MetaCoq Run (erase_type_in_indexes <% bank_operation %>).
+MetaCoq Run (erase_type_in_indexes [<% bank_operation %>]).
 Print bank_operation'.
 Print transfo2.
 
@@ -274,4 +282,8 @@ Definition list_kn_test :=
          ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
       "DOORS"%bs), (MPfile
          ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
-      "DOORS'"%bs))].
+      "DOORS'"%bs)); ((MPfile
+         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
+      "bank_operation"%bs), (MPfile
+         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
+      "bank_operation'"%bs))].
