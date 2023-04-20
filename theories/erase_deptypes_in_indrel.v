@@ -724,7 +724,7 @@ Definition inr_reif := <%@inr%>.
 Fixpoint add_inls (t : term) (n : nat) :=
   match n with
     | 0 => t
-    | S n' => tApp inl_reif [add_inls t n'; hole]
+    | S n' => tApp inl_reif [hole ; hole ; add_inls t n']
   end.
 
 Definition add_inls_inrs 
@@ -733,7 +733,7 @@ Definition add_inls_inrs
 (nb_constructor : nat) (* The current constructor *) :=
   match nb_constructor with
     | 0 => add_inls t nb_constructors
-    | S _ => add_inls (tApp inr_reif [hole; t]) (nb_constructors-nb_constructor)
+    | S _ => add_inls (tApp inr_reif [hole; hole ; t]) (nb_constructors-nb_constructor)
   end.
 
 Fixpoint add_inls_inrs_n_aux (l : list term) (n nb_constructors : nat) :=
@@ -762,8 +762,8 @@ Definition new_arguments_for_each_constructor
   match ltys' with
     | [] => []
     | x :: xs => let n := Datatypes.length x in
-        add_inls_inrs_n (listtRel0 n) (n-1) :: aux xs end
-    in aux ltys.
+       List.rev (add_inls_inrs_n (listtRel0 n) (n-1)) :: aux xs end
+    in (aux ltys).
 
 Compute new_arguments_for_each_constructor bar.
 
@@ -823,7 +823,7 @@ Definition transfo_in_list
   let nargs := Datatypes.length (env_arguments e) in
   let ntypes := Datatypes.length (env_types e) in
   let nindus := Datatypes.length (env_inductives e) in
-  List.skipn ntypes (List.firstn (npars+nargs) l) ++ (* remove the types *)
+  (List.firstn (npars+nargs) l) ++ (* remove the types *)
   transfo_in_list_indus (List.firstn nindus (List.skipn (npars+nargs+ntypes) l)) indus ++ (* change the Is by the I's and remove the types *)
   subst_two_lists (List.skipn (npars+nargs+ntypes+nindus) l) lsum.
 
@@ -862,10 +862,15 @@ Definition transformed_env_inductive
   domain := domain e ; constructors :=
   mapi (fun i x => transfo_type_constructor x (nth i new_args []) e indus) (constructors e); |}.
 
-Definition mkProdsNamed (t : term) (l : list (aname*term*nat)) :=
-  
+Fixpoint mkProdsNamed (t : term) (l : list (aname*term*nat)) :=
+  match l with
+    | [] => t
+    | x :: xs => tProd x.1.1 x.1.2 (mkProdsNamed t xs)
+  end.
 
 Definition reconstruct_arity 
+(e : env) :=
+mkProdsNamed (domain e) ((env_arguments e)++(env_types e)++(env_inductives e)++(env_elements e)).
 
 
 
@@ -874,28 +879,33 @@ Definition erase_deptypes_in_indrel_inductive
   (mind : mutual_inductive_entry) 
   (indus : list (kername*kername)) :=
   let e := get_env mind in
-  let e' := transformed_env_inductive in
-  let oind' := 
-  {| 
-    mind_entry_typename := id;
-    mind_entry_arity := reconstruct_arity e' ;
-    mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
-    mind_entry_lc := constructors e' ;
-   |} in 
-  {| 
-    mind_entry_record := mind.(mind_entry_record);
-    mind_entry_finite := mind.(mind_entry_finite);
-    mind_entry_params := mind.(mind_entry_params);
-    mind_entry_inds := [oind];
-    mind_entry_universes := mind.(mind_entry_universes); 
-    mind_entry_template := mind.(mind_entry_template); 
-    mind_entry_variance := mind.(mind_entry_variance);
-    mind_entry_private := mind.(mind_entry_private);
-  |}.
+  let opt := get_first_oind_from_mind mind in
+  match opt with
+    | None => mind
+    | Some oind =>
+      let e' := transformed_env_inductive e indus in
+      let oind' := 
+      {| 
+        mind_entry_typename := id;
+        mind_entry_arity := reconstruct_arity e' ;
+        mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
+        mind_entry_lc := constructors e' ;
+      |} in 
+      {| 
+       mind_entry_record := mind.(mind_entry_record);
+        mind_entry_finite := mind.(mind_entry_finite);
+        mind_entry_params := mind.(mind_entry_params);
+        mind_entry_inds := [oind'];
+        mind_entry_universes := mind.(mind_entry_universes); 
+        mind_entry_template := mind.(mind_entry_template); 
+        mind_entry_variance := mind.(mind_entry_variance);
+        mind_entry_private := mind.(mind_entry_private);
+      |} 
+   end.
 
-  
-  
+Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test. 
 
+Print inr.
 
-Compute transformed_env_inductive (get_env foo) list_kn_test.
+MetaCoq Run (tmMkInductive true bar2). Print dooc'. 
 
