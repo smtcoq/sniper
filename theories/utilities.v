@@ -340,6 +340,12 @@ match n with
 | S n' => mknAnon :: list_aname n'
 end.
 
+Fixpoint codomain (t : term) :=
+match t with
+| tProd _ _ u => codomain u
+| _ => t
+end.
+
 (** Generic tactics **) 
 
 Ltac prove_hypothesis H :=

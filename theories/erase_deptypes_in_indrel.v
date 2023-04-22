@@ -56,6 +56,15 @@ Inductive bank_operation_correct : forall (a : Type), bank_operation a -> Prop :
   id_correct u = true -> bank_operation_correct unit (Withdraw u solde amount)
 | GetBalance_correct (u : user_id) : id_correct u -> bank_operation_correct nat (GetBalance u).
 
+Inductive trm : Type -> Type :=
+| N : nat -> trm nat
+| B : bool -> trm bool.
+
+Inductive trm_le : forall (A B : Type), trm A -> trm B -> Prop :=
+| lez (n : nat) : trm_le nat nat (N 0) (N n) 
+| leS (n : nat) (m : nat) : trm_le nat nat (N n) (N m) -> trm_le nat nat (N n) (N (S m))
+| leB : trm_le bool bool (B false) (B true).
+
 Record env := mk_env 
   { env_parameters : list (aname*term*nat); (* the name of a parameter, its type and its db index *)
     env_arguments : list (aname*term*nat); (* idem for the arguments of the inductive *)
@@ -169,7 +178,7 @@ Definition get_env mind :=
                    constructors := []
                 |} mind.
 
-Definition foo := ({|
+(* Definition foo := ({|
          mind_entry_record := None;
          mind_entry_finite := Finite;
          mind_entry_params := [];
@@ -558,7 +567,7 @@ Definition foo := ({|
          mind_entry_private := None
        |}).
 
-Definition bar := get_env foo.
+Definition bar := get_env foo. *)
 
 MetaCoq Quote Definition sum_reif := @sum. 
 
@@ -718,7 +727,7 @@ Definition get_sum_types
   let args_usd := args_used npars e in
   sum_types_with_args_used l args_usd.
 
-Compute get_sum_types (get_env foo).
+(* Compute get_sum_types (get_env foo). *)
 
 (* we add the correct inl and inr terms according to which type 
 the constructor use in the sum type *)
@@ -753,7 +762,7 @@ Fixpoint add_inls_inrs_n_aux (l : list term) (n nb_constructors : nat) :=
 Definition add_inls_inrs_n (ltypes : list term) (nb_constructors : nat) :=
   add_inls_inrs_n_aux ltypes nb_constructors nb_constructors.
 
-Compute (List.rev (add_inls_inrs_n (List.rev [<%bool%> ; <%unit%>]) 1)).
+(* Compute (List.rev (add_inls_inrs_n (List.rev [<%bool%> ; <%unit%>]) 1)). *)
 
 Fixpoint listtRel0 (n : nat) :=
   match n with
@@ -771,7 +780,7 @@ Definition new_arguments_for_each_constructor
        List.rev (add_inls_inrs_n (listtRel0 n) (n-1)) :: aux xs end
     in (aux ltys).
 
-Compute new_arguments_for_each_constructor bar.
+(* Compute new_arguments_for_each_constructor bar. *)
 
 (* Definition tata := (add_inls_inrs <%unit%> 3 2). Compute tata. *)
 
@@ -841,9 +850,9 @@ Definition transfo_type_constructor
 := 
   let fix aux t e :=
   match t with
-    | tProd Na Ty u => tProd Na Ty (aux u e)
+    | tProd Na Ty u => tProd Na (aux Ty e) (aux u e)
     | tApp (tRel k) l => tApp (tRel k) (transfo_in_list e lsum indus l)
-    | _ => default_reif
+    | _ => t
   end in aux t e.
 
 Definition transformed_env_inductive
@@ -907,7 +916,7 @@ Definition erase_deptypes_in_indrel_inductive
       |} 
    end.
 
-Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test. 
+(* Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test.  *)
 
 Definition erase_deptypes_in_indrel 
 (indus : list (kername*kername))
@@ -918,7 +927,9 @@ Definition erase_deptypes_in_indrel
     | (decl, kn) => 
       let mind := mind_body_to_entry decl in 
       fresh <- tmFreshName (String.append kn.2 ("'")%bs) ;;
-      let mind_transfo := erase_deptypes_in_indrel_inductive fresh mind indus in
+      let mind_transfo := erase_deptypes_in_indrel_inductive fresh mind indus in 
+      res <- tmEval all mind_transfo ;;
+      tmPrint res ;;
       tmMkInductive true mind_transfo
   end.
 
@@ -931,8 +942,32 @@ Definition erase_dep_transform_pred (l : list term) (R : term) :=
 
 MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
 
-Print doors_o_callee'.
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
 Print doors_o_caller'.
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
 Print bank_operation_correct'.
+
+MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
+Print trm_le.
+Print trm_le'.
+
+Require Import Coq.Program.Equality.
+
+Lemma equivalence_trm_le_nat : 
+  forall (A B : Type) (n : trm A) (m : trm B), 
+trm_le A B n m <-> trm_le' (transfo0 A n) (transfo0 B m).
+Proof. intros n m. split.
+  + intro H. induction H. simpl. constructor. 
+    simpl. simpl in IHtrm_le. constructor. assumption. simpl. constructor.
+  + intro H. dependent induction H. 
+    - destruct n0; destruct m0. destruct n. constructor. inversion x. inversion x0. 
+      inversion x. inversion x0. inversion x. 
+    -  destruct n0; destruct m0. subst. inversion x0. inversion x. subst. constructor.
+  apply IHtrm_le'. assumption. reflexivity. inversion x. inversion x0. inversion x0. 
+    - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
+  inversion x. subst. inversion x0. constructor. Qed. 
+
+Lemma trm_le_is_le :
+  forall (n m : nat), trm_le nat nat (N n) (N m) <-> Nat.leb n m = true.
+Proof. intros. rewrite equivalence_trm_le_nat; simpl.
+

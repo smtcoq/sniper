@@ -71,7 +71,7 @@ Fixpoint keep_firstn_args (t : term) (npars : nat) :=
 Definition create_oind_transformed oind npars id : one_inductive_entry :=
   {| 
     mind_entry_typename := id;
-    mind_entry_arity := <% Type %> ;
+    mind_entry_arity := codomain oind.(mind_entry_arity) ;
     mind_entry_consnames := List.map (fun x => String.append x "'") oind.(mind_entry_consnames);
     mind_entry_lc := List.map (fun x => keep_firstn_args x npars) oind.(mind_entry_lc) ;
    |}.
