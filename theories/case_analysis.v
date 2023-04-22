@@ -617,6 +617,13 @@ match k with
 | _ => false
 end.
 
+Ltac2 is_indu (c : constr) := 
+let k := Constr.Unsafe.kind c in
+match k with
+| Constr.Unsafe.Ind indu inst => true
+| _ => false
+end.
+
 
 (* Returns the tuple of variables in a local context *)
 Ltac2 vars () := 
@@ -667,6 +674,8 @@ match l with
     let tyty := Constr.type ty in 
     if is_sort ty then aux p xs else
     if Constr.equal tyty 'Prop then aux p xs else
+    let hd := get_head ty in
+    if is_indu hd then 
     if
     is_not_in_tuple p ty then
     let ind := get_head ty in
@@ -674,7 +683,7 @@ match l with
     (ltac1:(ind ty |- try (let params := get_tail ty in (* removing this idtac may cause infinite loops *)
     get_projs_st_default_quote ind params)) (Ltac1.of_constr ind) (Ltac1.of_constr ty)) ; 
     aux constr:(($p, $ty)) xs 
-    else aux p xs else aux p xs
+    else aux p xs else aux p xs else aux p xs
 end
 in aux p var.
 

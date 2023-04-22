@@ -103,14 +103,14 @@ Definition prod_of_symb := (default,
          @FArray.diff,
          is_true,
          @eqb_of_compdec, 
-         CompDec, 
+         @CompDec, 
          Nat_compdec,
          list_compdec,
          prod_compdec,
          Z_compdec).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
-CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
+@CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
 
 (* Whenever a constant is defined as foo : CompDec A, 
 we do not want to unfold foo *) 
