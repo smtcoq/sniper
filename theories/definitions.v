@@ -37,35 +37,37 @@ Ltac assert_and_prove_eq_cont x x' k :=
 let H := fresh x "_def" in 
 assert (H: x = x') by reflexivity ; k H ; clear H.
 
-Ltac get_definitions_aux0 p p' := fun k k' =>
+Ltac get_definitions_aux0 p p' p'' := fun k k' =>
  match goal with 
 | |- context C[?x] => is_not_in_tuple p x ;
 tryif (first [contains_ho_argument x | has_local_def x]) then 
 (* we do not want to unfold : higher order functions and local definitions *)
-get_definitions_aux0 (p, x) p' k k' else
-(let x' := eval unfold x in x in 
+get_definitions_aux0 (p, x) p' p'' k k' else
+( let T := type of x in let T' := get_head T in is_not_in_tuple p'' T' ;
+let x' := eval unfold x in x in 
 assert_and_prove_eq_cont x x' k ;
-get_definitions_aux0 (p, x) (p', x) k k')
+get_definitions_aux0 (p, x) (p', x) p'' k k')
 | _ : context C[?x] |- _ => is_not_in_tuple p x ; 
 tryif (first [contains_ho_argument x | has_local_def x]) then
-get_definitions_aux0 (p, x) p' k k' else
-(let x' := eval unfold x in x in  
+get_definitions_aux0 (p, x) p' p'' k k' else
+(let T := type of x in let T' := get_head T in is_not_in_tuple p'' T' ;
+let x' := eval unfold x in x in  
 assert_and_prove_eq_cont x x' k ;
- get_definitions_aux0 (p, x) (p', x) k k')
+ get_definitions_aux0 (p, x) (p', x) p'' k k')
 | _ => k' p'
 end.
 
-Ltac get_definitions_aux p p' := fun k =>
-get_definitions_aux0 p p' k ltac:(generalize_dependent_tuple).
+Ltac get_definitions_aux p p' p'' := fun k =>
+get_definitions_aux0 p p' p'' k ltac:(generalize_dependent_tuple).
 
-Ltac get_definitions_aux_no_generalize p p' := fun k =>
-get_definitions_aux0 p p' k ltac:(fun _ => idtac).
+Ltac get_definitions_aux_no_generalize p p' p'' := fun k =>
+get_definitions_aux0 p p' p'' k ltac:(fun _ => idtac).
 
 Ltac get_definitions_theories p0 := fun k =>
-get_definitions_aux p0 unit k.
+get_definitions_aux p0 default CompDec k.
 
 Ltac get_definitions_theories_no_generalize p0 := fun k =>
-get_definitions_aux_no_generalize p0 unit k.
+get_definitions_aux_no_generalize p0 default CompDec k.
 
 (* The basics tactics, not recursive, used for tests *)
 Ltac get_def x := 
@@ -80,3 +82,9 @@ let x' := eval unfold x in x in assert (H : x = x') by reflexivity end in H.
 Goal forall (l : list nat) (x : nat), List.hd_error l = Some x -> (l <> nil)
 -> List.map S nil = nil.
 Proof. get_definitions_theories unit ltac:(fun H => idtac). Abort.
+
+(* We do not want to unfold terms which are of type CompDec T *)
+Definition c := Nat_compdec.
+
+Goal CompDec nat -> eqb_of_compdec c 0 0 -> True. intros.
+get_definitions_theories unit ltac:(fun H => idtac H). Abort.
