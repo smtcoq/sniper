@@ -136,7 +136,7 @@ Ltac def_and_pattern_matching_mono_param p1 t k :=
 def_and_pattern_matching p1 k ; inst t.
 
 Ltac def_fix_and_pattern_matching_mono_param p1 t k :=
-def_fix_and_pattern_matching p1 ; inst t ; k.
+def_fix_and_pattern_matching p1 ; k.
 
 Ltac scope_param p1 p2 t := revert_all ; trakt bool ;
 let p2' := eval unfold p2 in p2 in
@@ -145,8 +145,8 @@ repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t 
-ltac:(get_definitions_theories)).
+try interp_alg_types_context_goal p2' ; (def_fix_and_pattern_matching p1 
+ltac:(fun x x' => inst t; get_definitions_theories x x'; intros; inst)).
 
 
 Ltac scope_no_param p1 p2 := revert_all ; trakt bool ; 
@@ -156,7 +156,8 @@ repeat match goal with
 | H : _  |- _ => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros ; inst) ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 
+ltac:(get_definitions_theories); intros ; inst) ;
 let function := ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
 with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
 

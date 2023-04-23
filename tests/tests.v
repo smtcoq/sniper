@@ -251,7 +251,7 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
 
   Theorem app_assoc_reverse : forall l m n:list A, ((l ++ m) ++ n) = (l ++ m ++ n).
   Proof.
-     Time snipe app_assoc. Undo. Time snipe2 app_assoc. Qed.
+     Time snipe2 app_assoc. Qed.
 
   Theorem app_comm_cons : forall (x y:list A) (a:A), (a :: (x ++ y)) = ((a :: x) ++ y).
   Proof.
