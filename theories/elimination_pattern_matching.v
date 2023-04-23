@@ -21,12 +21,17 @@ Require Import List.
 Import ListNotations.
 
 Ltac create_evars_for_each_constructor i := 
-let y := metacoq_get_value (tmQuoteRec i) in 
-let n:= eval cbv in (get_nb_constructors y.2 y.1) in
+let i_reif := metacoq_get_value (tmQuote i) in
+match i_reif with
+| tInd (?indu ?kn _) ?inst =>
+let y := metacoq_get_value (tmQuoteInductive kn) in 
+let n:= eval cbv in (get_nb_constructors_dcl y) in
 let rec tac_rec u := match constr:(u) with 
       | 0 => idtac
       | S ?m => let H' := fresh in let H'_evar := fresh H' in epose (H' := ?[H'_evar] : Prop) ; tac_rec m
-end in tac_rec n.
+    end in tac_rec n
+| _ => idtac 
+end.
 
 Goal True.
 create_evars_for_each_constructor bool.
@@ -93,13 +98,6 @@ match goal with
 | _ => n
 end in revert_count_rec 0.
 
-Ltac is_a_variable x :=
-let x':= metacoq_get_value (tmQuote x) in 
-match x' with 
-| tVar _ => idtac
-| _ => fail
-end.
-
 Ltac contains t u :=
 match t with
 | context [u] => idtac
@@ -122,20 +120,35 @@ Ltac elim_match_with_no_forall H :=
     let foo := fresh in 
     assert (foo : False -> U) 
 by (let Hfalse := fresh in
-intro Hfalse ; tryif (is_a_variable expr)
-then (case expr)
-else (case_eq expr) ;
+intro Hfalse ; 
+(case_eq expr) ;
 match goal with 
 | u : Prop |- ?G => instantiate (u := G); destruct Hfalse
 end) ; clear foo ; 
 repeat match goal with 
-| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
+| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')   by 
 (first [ try (rewrite H); reflexivity
 |intros ; match goal with 
 | Hinv : _ |- _ => rewrite Hinv in H ; auto
 end]); try elim_match_with_no_forall H0 ; clear u 
 end
 end ; clear H.
+
+(* Tests *)
+
+Fixpoint leb (n:nat)(m:nat) :=
+  match n,m with
+  | 0,_ => true
+  | (S _) , 0  => false
+  | S n, S m => leb n m
+  end.
+
+Lemma leb_le : forall n m, (leb n m = true) -> le n m.
+  intros n. induction n. intros m.
+  intros H. induction m.
+  constructor. constructor. apply IHm.
+  constructor. intros m. intro H. simpl in H.  
+  elim_match_with_no_forall H. Abort.
 
 
 Ltac eliminate_dependent_pattern_matching H :=

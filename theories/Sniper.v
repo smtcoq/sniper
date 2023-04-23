@@ -17,6 +17,8 @@ From elpi Require Import elpi.
 
 Require Export utilities.
 Require Export definitions.
+Require Export higher_order.
+Require Export anonymous_functions.
 Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
@@ -26,10 +28,15 @@ Require Export case_analysis_existentials.
 Require Export interpretation_algebraic_types.
 Require Export instantiate.
 Require Export indrel.
+Require Export add_hypothesis_on_parameters.
+Require Export compdec_plugin.
+Require Export generate_fix.
+Require Export proof_correctness.
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
+From Trakt Require Export Trakt.
 From Ltac2 Require Import Ltac2.
 
 (** Preprocessing for SMTCoq (first-order classical logic with interpreted theories) **)
@@ -95,16 +102,29 @@ Definition prod_of_symb := (default,
          @FArray.select,
          @FArray.diff,
          is_true,
-         @eqb_of_compdec).
+         @eqb_of_compdec, 
+         @CompDec, 
+         Nat_compdec,
+         list_compdec,
+         prod_compdec,
+         Z_compdec).
 
 Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
-CompDec).
+@CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
 
-Ltac def_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+(* Whenever a constant is defined as foo : CompDec A, 
+we do not want to unfold foo *) 
+Definition tuple_type_of_opaque_def := CompDec.
+
+Ltac def_and_pattern_matching p1 k := 
+anonymous_funs ; prenex_higher_order_with_equations ;
+let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_dependent_pattern_matching H')).
 
-Ltac def_fix_and_pattern_matching p1 k := let p1' := eval unfold p1 in p1 in
+Ltac def_fix_and_pattern_matching p1 k := 
+anonymous_funs ; prenex_higher_order_with_equations ;
+let p1' := eval unfold p1 in p1 in
 k p1' ltac:(fun H => expand_hyp_cont H ltac:(fun H' => 
 eliminate_fix_cont H' ltac:(fun H'' =>
 try (eliminate_dependent_pattern_matching H'')))).
@@ -116,27 +136,28 @@ Ltac def_and_pattern_matching_mono_param p1 t k :=
 def_and_pattern_matching p1 k ; inst t.
 
 Ltac def_fix_and_pattern_matching_mono_param p1 t k :=
-def_fix_and_pattern_matching p1 k ; inst t.
+def_fix_and_pattern_matching p1 ; k.
 
-Ltac scope_param p1 p2 t := 
+Ltac scope_param p1 p2 t := revert_all ; trakt Z bool ;
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with
 | H : _ |- _  => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching_mono_param p1 t 
-ltac:(get_definitions_theories_no_generalize)).
+try interp_alg_types_context_goal p2' ; (def_fix_and_pattern_matching p1 
+ltac:(fun x x' => inst t; get_definitions_theories x x'; intros; inst)).
 
 
-Ltac scope_no_param p1 p2 := 
+Ltac scope_no_param p1 p2 := revert_all ; trakt Z bool ; 
 let p2' := eval unfold p2 in p2 in
 intros ; 
 repeat match goal with
 | H : _  |- _ => eliminate_dependent_pattern_matching H
 | _ => fail
 end ;
-try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories); intros ; inst) ;
+try interp_alg_types_context_goal p2'; try (def_fix_and_pattern_matching p1 
+ltac:(get_definitions_theories); intros ; inst) ;
 let function := ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
 with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
 

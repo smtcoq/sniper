@@ -1,28 +1,48 @@
-pred subterms i: term, o: (list term).
-subterms (sort U) [sort U].
-subterms (fun N Ty F) [fun N Ty F | R] :- !,
+pred subterms i: term, o: (list term). %closed subterms of a term (can contain a context variable)
+subterms (sort U) [sort U] :- !.
+subterms (fun N Ty F) [fun N Ty F | R] :-
     subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
     std.append R1 R2 R. 
-subterms (prod N Ty F) [prod N Ty F | R] :- !,
+subterms (fun N Ty F) R :- !,
     subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
     std.append R1 R2 R. 
-subterms (app L) R :-!,
+subterms (prod N Ty F) [prod N Ty F | R] :-
+    subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
+    std.append R1 R2 R. 
+subterms (prod N Ty F) R :- !,
+    subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
+    std.append R1 R2 R. 
+subterms (app L) R :- !,
     std.map L subterms R',
     std.flatten R' R.
 subterms (global G) [global G].
+subterms (let N Ty V F) [let N Ty V F| R] :-
+    subterms Ty R1, subterms V R2, pi x\ def x N Ty V => subterms (F x) R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
 subterms (let N Ty V F) R :- !,
     subterms Ty R1, subterms V R2, pi x\ def x N Ty V => subterms (F x) R3,
     std.append R1 R2 R12,
     std.append R12 R3 R.
-subterms (match T U L) R :- !,
+subterms (match T U L) [match T U L | R] :- !,
     subterms T R1, subterms U R2, std.append R1 R2 R12,
     std.map L subterms R3, 
     std.flatten R3 R',
     std.append R12 R' R.
-subterms (fix Na _ Ty F) R :- 
+subterms (fix Na _ Ty F) [fix Na _ Ty F|R] :-
     subterms Ty R1, pi x\ decl x Na Ty => subterms (F x) R2,
-    std.append R1 R2 R. 
+    std.append R1 R2 R.
+subterms (fix Na _ Ty F) R :- !,
+    subterms Ty R1, pi x\ decl x Na Ty => subterms (F x) R2,
+    std.append R1 R2 R.
 subterms _ [].
+
+pred subterms2 i: term, o: (list term).
+    subterms2 T L :- subterms T L1, names L2, std.filter L2 (x\ occurs x T) L2', append_nodup L1 L2' L.
+
+pred subterms2_list i: (list term), o: (list term). 
+    subterms2_list [X|XS] R :- subterms2 X L1, subterms2_list XS L2, append_nodup L1 L2 R.
+    subterms2_list [] [].
 
 pred add_if_type i: term, i: (list term), o: (list term).
 add_if_type T L [T|L] :- not (std.mem! L T), coq.typecheck T {{ Prop }} (error _), coq.typecheck T {{Type}} ok.
