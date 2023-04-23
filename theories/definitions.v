@@ -87,4 +87,4 @@ Proof. get_definitions_theories unit ltac:(fun H => idtac). Abort.
 Definition c := Nat_compdec.
 
 Goal CompDec nat -> eqb_of_compdec c 0 0 -> True. intros.
-get_definitions_theories unit ltac:(fun H => idtac H). Abort.
+get_definitions_theories unit ltac:(fun H => idtac). Abort.
