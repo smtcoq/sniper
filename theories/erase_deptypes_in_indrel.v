@@ -178,7 +178,7 @@ Definition get_env mind :=
                    constructors := []
                 |} mind.
 
-(* Definition foo := ({|
+Definition foo := ({|
          mind_entry_record := None;
          mind_entry_finite := Finite;
          mind_entry_params := [];
@@ -567,7 +567,7 @@ Definition get_env mind :=
          mind_entry_private := None
        |}).
 
-Definition bar := get_env foo. *)
+Definition bar := get_env foo.
 
 MetaCoq Quote Definition sum_reif := @sum. 
 
@@ -668,7 +668,7 @@ Definition tys_term_for_each_constructor
       let nb_tys := Datatypes.length (env_types e) in
       transpose_list_of_list (collect_tys_list lc nb_args nb_tys).
 
-(* Compute tys_term_for_each_constructor bar. *)
+ (* Compute tys_term_for_each_constructor bar. *)
 
 (* Deal with the inductive *)
 
@@ -941,7 +941,6 @@ Definition erase_dep_transform_pred (l : list term) (R : term) :=
   tmReturn res0.
 
 MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
-
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
 Print doors_o_caller'.
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
@@ -967,7 +966,34 @@ Proof. intros n m. split.
     - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
   inversion x. subst. inversion x0. constructor. Qed. 
 
-Lemma trm_le_is_le :
-  forall (n m : nat), trm_le nat nat (N n) (N m) <-> Nat.leb n m = true.
-Proof. intros. rewrite equivalence_trm_le_nat; simpl.
+
+(** Statements ** : 
+  - if elems = [] then there is only one statement to prove : 
+  => forall Pis Xis Ais (tis : Iis Ais), 
+      R Pis Xis Tys tis <-> R' Pis Xis (transfos tis) **)
+
+Fixpoint find_term_assoc (n : nat) (l : list (nat*term)) :=
+  match l with
+  | (m, t) :: xs => if Nat.eqb n m then Some t else find_term_assoc n xs 
+  | [] => None
+end.
+
+Fixpoint R_app_to_R'_app 
+(t : term) 
+(db_args_transformed : list (nat*term)) (* the list of de Brujin indexes which represents 
+variables of a type which is a transformed inductive, and the corresponding transformation *)
+:=
+  match t with
+  | tApp (tInd 
+
+
+
+Print env.
+Definition statement_elems_empty 
+(env_transfo : list (term*kername)) (* the transformation associated to the inductive it transforms *) 
+(e : env) 
+(R : term) (* the relation R *)
+(R' : term) (* the relation R' *)
+:=
+
 
