@@ -792,6 +792,12 @@ Fixpoint lookup_kername (kn : kername) (l : list (kername*kername)) :=
 
 Definition unlift1 t := subst10 (tRel 0) t. 
 
+Fixpoint unliftn t n := 
+  match n with
+    | 0 => t 
+    | S n => unliftn (unlift1 t) n
+  end.
+
 Definition replace_by_new_inductive 
 (t : term) (indus : list (kername*kername)) (nb : nat) :=
   match t with
@@ -942,8 +948,32 @@ Definition erase_dep_transform_pred (l : list term) (R : term) :=
   l' <- tmEval all ((List.map (fun x => (x.1, x.2.1))) l) ;;
   let indus := res.2 in
   p <- erase_deptypes_in_indrel indus R ;; 
-  tmReturn (l', p.1, p.2).
+  tmReturn (l', p.1, p.2). 
 
+Fixpoint get_kernames (l : list (term*term)) :=
+  match l with
+    | (tInd {| inductive_mind := kn ; inductive_ind := 0 |} inst, 
+      tInd {| inductive_mind := kn' ; inductive_ind := 0 |} inst') :: xs => (kn, kn') :: get_kernames xs
+    | _ :: xs => get_kernames xs
+    | [] => []
+  end.
+
+Definition erase_dep 
+(lind : list term) (* the inductives we want to transform *)
+(lindtransfo : list (term*term*term)) (* the inductives already transformed, their transformed counterpart 
+and the transformation between them *)
+(R: term) (* the relation mentioning the inductives *) :=
+  let lkn1 :=  (get_kernames (List.map (fun x => x.1) lindtransfo)) in
+  let lkn2 := List.map (fun x => x.1) lkn1 in
+  let ltransfos := (List.map (fun x => x.2) lindtransfo) in 
+  let lkn_transfos := List.combine ltransfos lkn2 in 
+  res <- erase_type_in_indexes lind ;; 
+  lcomb <- tmEval all (List.combine res.1 res.2) ;; 
+  linduscreated <- tmEval all ((List.map (fun x => (x.1, x.2.1))) lcomb) ;;
+  let indus := res.2 in 
+  p <- erase_deptypes_in_indrel (indus++lkn1) R ;;
+  tmReturn (linduscreated++lkn_transfos, p.1, p.2).
+  
 
 (** Statements ** : 
   - if elems = [] then there is only one statement to prove : 
@@ -1041,12 +1071,12 @@ Definition statement_elems_empty
   let R'_app := R_app_to_R'_app R_app R' db_args_transformed (lpars+largs) ltypes in
   mkProdsNamed (tApp <% iff %> [R_app; R'_app]) ((env_parameters e)++
 (List.map (fun x => (x.1.1, unlift1 x.1.2, x.2)) (env_arguments e))++(env_types e)++
-(List.map (fun x => (x.1.1, unlift1 x.1.2, x.2)) (env_inductives e))). (* unlift 1 because the type supposed that the variable
+(mapi (fun i x => (x.1.1, unliftn x.1.2 (S i), x.2)) (env_inductives e))). (* unlift 1 because the type supposed that the variable
 have been already introduced *)
 
 Notation tmWait := (tmPrint ""%bs).
 
-Definition erase_deptypes_in_indrel_transfo (l : list term) (R : term)
+Definition erase_dep_in_indrel_prop (l : list term) (R : term)
 := tmBind
   (p <- erase_dep_transform_pred l R ;;
   statement <- tmEval all (statement_elems_empty p.1.1 p.2 R p.1.2) ;; tmPrint statement;;
@@ -1056,12 +1086,9 @@ Definition erase_deptypes_in_indrel_transfo (l : list term) (R : term)
 
 Obligation Tactic := idtac.
 
-MetaCoq Run (erase_deptypes_in_indrel_transfo [<%DOORS%>] <%doors_o_caller%>).
-Next Obligation.
-
-
-
-MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
+MetaCoq Run (erase_dep_in_indrel_prop [<%DOORS%>] <%doors_o_caller%>).
+MetaCoq Run (erase_dep_in_indrel_prop [<%trm%>] <%trm_le%>). 
+MetaCoq Run (erase_dep [] [(<%DOORS%>, <%DOORS'%>, <%transfo%>)]  <% doors_o_callee %>).
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
 MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
 
