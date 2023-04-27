@@ -1053,7 +1053,7 @@ let fix aux e env_transfo indus :=
         end
     | [] => []
     end
-in aux e env_transfo indus.
+in aux e env_transfo indus. 
 
 (* The easy statement whenever there is no arguments of indexed types *)
 Definition statement_elems_empty 
@@ -1077,20 +1077,21 @@ have been already introduced *)
 Notation tmWait := (tmPrint ""%bs).
 
 Definition erase_dep_in_indrel_prop (l : list term) (R : term)
-:= tmBind
-  (p <- erase_dep_transform_pred l R ;;
-  statement <- tmEval all (statement_elems_empty p.1.1 p.2 R p.1.2) ;; tmPrint statement;;
+:= p <- erase_dep_transform_pred l R ;; 
+  b <- tmEval all p.2 ;;
+  if is_empty (env_elements b) then
+  tmBind (
+  statement <- tmEval all (statement_elems_empty p.1.1 p.2 R p.1.2) ;; 
   tmUnquoteTyped Prop statement) (fun st_unq : Prop =>
   fresh <- tmFreshName "equivalence"%bs ;;
-  lem <- tmLemma fresh st_unq ;; tmWait).
+  lem <- tmLemma fresh st_unq;; tmWait) else tmWait.
 
 Obligation Tactic := idtac.
 
 MetaCoq Run (erase_dep_in_indrel_prop [<%DOORS%>] <%doors_o_caller%>).
 MetaCoq Run (erase_dep_in_indrel_prop [<%trm%>] <%trm_le%>). 
 MetaCoq Run (erase_dep [] [(<%DOORS%>, <%DOORS'%>, <%transfo%>)]  <% doors_o_callee %>).
-MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
-MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
+MetaCoq Run (erase_dep_in_indrel_prop [<%bank_operation%>] <% bank_operation_correct %>).
 
 Require Import Coq.Program.Equality.
 
