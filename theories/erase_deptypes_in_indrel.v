@@ -917,7 +917,7 @@ Definition erase_deptypes_in_indrel_inductive
    end.
 
 (* Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test.  *)
-
+Print TemplateMonad. Print inductive.
 Definition erase_deptypes_in_indrel 
 (indus : list (kername*kername))
 (t : term)
@@ -929,26 +929,24 @@ Definition erase_deptypes_in_indrel
       fresh <- tmFreshName (String.append kn.2 ("'")%bs) ;;
       let mind_transfo := erase_deptypes_in_indrel_inductive fresh mind indus in 
       res <- tmEval all mind_transfo ;;
-      tmPrint res ;;
-      tmMkInductive true mind_transfo
+      curmodpath <- tmCurrentModPath tt ;;
+      let R' := tInd {| inductive_mind := (curmodpath, fresh); inductive_ind := 0 |} [] in 
+    (* empty instances of universe because no universe polymorphism and no mutuals so number 0 *)
+      tmMkInductive true mind_transfo ;;
+      tmReturn R'
   end.
 
 Definition erase_dep_transform_pred (l : list term) (R : term) :=
   res <- erase_type_in_indexes l ;;
+  l <- tmEval all (List.combine res.1 res.2) ;;
   let indus := res.2 in
-  erase_deptypes_in_indrel indus R ;; 
-  res0 <- tmEval all res.1 ;;
-  tmReturn res0.
+  R' <- erase_deptypes_in_indrel indus R ;; 
+  tmReturn (l, (R, R')).
 
 MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
-Print doors_o_caller'.
 MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
-Print bank_operation_correct'.
-
 MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
-Print trm_le.
-Print trm_le'.
 
 Require Import Coq.Program.Equality.
 
@@ -966,7 +964,6 @@ Proof. intros n m. split.
     - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
   inversion x. subst. inversion x0. constructor. Qed. 
 
-
 (** Statements ** : 
   - if elems = [] then there is only one statement to prove : 
   => forall Pis Xis Ais (tis : Iis Ais), 
@@ -978,22 +975,87 @@ Fixpoint find_term_assoc (n : nat) (l : list (nat*term)) :=
   | [] => None
 end.
 
-Fixpoint R_app_to_R'_app 
+Definition R_app_to_R'_app 
 (t : term) 
+(R' : term)
 (db_args_transformed : list (nat*term)) (* the list of de Brujin indexes which represents 
-variables of a type which is a transformed inductive, and the corresponding transformation *)
+variables of a type which is a transformed inductive, and the corresponding transformation 
+(applied to parameters) *)
+(nb_argspars : nat) (*nparameters + narguments *)
+(nb_tys : nat)
 :=
   match t with
-  | tApp (tInd 
+    | tApp (tInd indu inst) l => 
+        tApp R' ((List.firstn nb_argspars l)++(List.map 
+        (fun x => match x with
+          | tRel n => match find_term_assoc n db_args_transformed with
+              | Some transfo => tApp transfo [tRel n]
+              | None => tRel n
+              end
+          | _ => x
+          end) (List.skipn (nb_argspars+nb_tys) l)))
+    | _ => t 
+  end.
 
+Fixpoint lookup_kername_term 
+  (kn : kername) (l : list (term*kername)) :=
+    match l with
+      | [] => default_reif
+      | (trm ,kn') :: xs => 
+          if eq_kername kn kn' then trm else lookup_kername_term kn xs
+    end.
 
+Definition is_db_index (t : term) (n : nat) :=
+  match t with
+    | tRel k => Nat.eqb n k 
+    | _ => false
+  end.
 
-Print env.
+(* in l, we get only the terms which are parameters *)
+Definition filter_params (pars : list (aname*term*nat)) (l : list term) :=
+List.filter (fun x => let fix aux pars x :=
+                      match pars with
+                        | [] => false
+                        | (Na, Ty, n) :: xs => orb (is_db_index x n) (aux xs x)
+                      end in aux pars x) l.
+
+(* the term constructed is 
+R Pars args tys @(indus, argsindus++tysindus) 
+we look for @(indus, argsindus) because 
+the transformation functions should be applied to their arguments *)
+
+Definition find_db_args_transformed 
+(e : env) (env_transfo : list (term*kername)) :=
+let indus := env_inductives e in
+let pars := (env_parameters e) in
+let fix aux e env_transfo indus :=
+  match indus with
+    | (Na, x, db) :: xs => 
+      match x with
+        | tApp (tInd {| inductive_mind := kn ;
+            inductive_ind := n |} inst) l => 
+              let l' := filter_params pars l in
+              let transfo_app := tApp (lookup_kername_term kn env_transfo) l'
+                in (db, transfo_app) :: aux e env_transfo xs
+        | _ => (0, tVar "error during use of "%bs) :: aux e env_transfo xs
+        end
+    | [] => []
+    end
+in aux e env_transfo indus.
+
+(* The easy statement whenever there is no arguments of indexed types *)
 Definition statement_elems_empty 
 (env_transfo : list (term*kername)) (* the transformation associated to the inductive it transforms *) 
 (e : env) 
 (R : term) (* the relation R *)
 (R' : term) (* the relation R' *)
 :=
-
+  let lpars := Datatypes.length (env_parameters e) in
+  let largs := Datatypes.length (env_arguments e) in
+  let ltypes := Datatypes.length (env_types e) in
+  let linds := Datatypes.length (env_inductives e) in
+  let R_app := tApp R (Rel_list (lpars+largs+ltypes+linds) 0) in
+  let db_args_transformed := find_db_args_transformed e env_transfo in
+  let R'_app := R_app_to_R'_app R_app R' db_args_transformed (lpars+largs) ltypes in
+  mkProdsNamed (tApp <% iff %> [R_app; R'_app]) ((env_parameters e)++(env_arguments e)++(env_parameters e)).
 
