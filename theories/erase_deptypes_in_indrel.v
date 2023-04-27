@@ -893,7 +893,7 @@ Definition erase_deptypes_in_indrel_inductive
   (indus : list (kername*kername)) :=
   let e := get_env mind in
   let opt := get_first_oind_from_mind mind in
-  match opt with
+  (match opt with
     | None => mind
     | Some oind =>
       let e' := transformed_env_inductive e indus in
@@ -914,10 +914,10 @@ Definition erase_deptypes_in_indrel_inductive
         mind_entry_variance := mind.(mind_entry_variance);
         mind_entry_private := mind.(mind_entry_private);
       |} 
-   end.
+   end, e).
 
 (* Definition bar2 := erase_deptypes_in_indrel_inductive "dooc'"%bs foo list_kn_test.  *)
-Print TemplateMonad. Print inductive.
+
 Definition erase_deptypes_in_indrel 
 (indus : list (kername*kername))
 (t : term)
@@ -928,41 +928,22 @@ Definition erase_deptypes_in_indrel
       let mind := mind_body_to_entry decl in 
       fresh <- tmFreshName (String.append kn.2 ("'")%bs) ;;
       let mind_transfo := erase_deptypes_in_indrel_inductive fresh mind indus in 
-      res <- tmEval all mind_transfo ;;
+      res <- tmEval all mind_transfo.1 ;;
       curmodpath <- tmCurrentModPath tt ;;
       let R' := tInd {| inductive_mind := (curmodpath, fresh); inductive_ind := 0 |} [] in 
     (* empty instances of universe because no universe polymorphism and no mutuals so number 0 *)
-      tmMkInductive true mind_transfo ;;
-      tmReturn R'
+      tmMkInductive true res ;;
+      tmReturn (R', mind_transfo.2)
   end.
 
 Definition erase_dep_transform_pred (l : list term) (R : term) :=
   res <- erase_type_in_indexes l ;;
   l <- tmEval all (List.combine res.1 res.2) ;;
+  l' <- tmEval all ((List.map (fun x => (x.1, x.2.1))) l) ;;
   let indus := res.2 in
-  R' <- erase_deptypes_in_indrel indus R ;; 
-  tmReturn (l, (R, R')).
+  p <- erase_deptypes_in_indrel indus R ;; 
+  tmReturn (l', p.1, p.2).
 
-MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
-MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% doors_o_caller %>).
-MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
-MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
-
-Require Import Coq.Program.Equality.
-
-Lemma equivalence_trm_le_nat : 
-  forall (A B : Type) (n : trm A) (m : trm B), 
-trm_le A B n m <-> trm_le' (transfo0 A n) (transfo0 B m).
-Proof. intros n m. split.
-  + intro H. induction H. simpl. constructor. 
-    simpl. simpl in IHtrm_le. constructor. assumption. simpl. constructor.
-  + intro H. dependent induction H. 
-    - destruct n0; destruct m0. destruct n. constructor. inversion x. inversion x0. 
-      inversion x. inversion x0. inversion x. 
-    -  destruct n0; destruct m0. subst. inversion x0. inversion x. subst. constructor.
-  apply IHtrm_le'. assumption. reflexivity. inversion x. inversion x0. inversion x0. 
-    - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
-  inversion x. subst. inversion x0. constructor. Qed. 
 
 (** Statements ** : 
   - if elems = [] then there is only one statement to prove : 
@@ -1028,13 +1009,14 @@ Definition find_db_args_transformed
 (e : env) (env_transfo : list (term*kername)) :=
 let indus := env_inductives e in
 let pars := (env_parameters e) in
+let tys := (env_types e) in
 let fix aux e env_transfo indus :=
   match indus with
     | (Na, x, db) :: xs => 
       match x with
         | tApp (tInd {| inductive_mind := kn ;
             inductive_ind := n |} inst) l => 
-              let l' := filter_params pars l in
+              let l' := filter_params (pars++tys) l in
               let transfo_app := tApp (lookup_kername_term kn env_transfo) l'
                 in (db, transfo_app) :: aux e env_transfo xs
         | _ => (0, tVar "error during use of "%bs) :: aux e env_transfo xs
@@ -1057,5 +1039,49 @@ Definition statement_elems_empty
   let R_app := tApp R (Rel_list (lpars+largs+ltypes+linds) 0) in
   let db_args_transformed := find_db_args_transformed e env_transfo in
   let R'_app := R_app_to_R'_app R_app R' db_args_transformed (lpars+largs) ltypes in
-  mkProdsNamed (tApp <% iff %> [R_app; R'_app]) ((env_parameters e)++(env_arguments e)++(env_parameters e)).
+  mkProdsNamed (tApp <% iff %> [R_app; R'_app]) ((env_parameters e)++
+(List.map (fun x => (x.1.1, unlift1 x.1.2, x.2)) (env_arguments e))++(env_types e)++
+(List.map (fun x => (x.1.1, unlift1 x.1.2, x.2)) (env_inductives e))). (* unlift 1 because the type supposed that the variable
+have been already introduced *)
+
+Notation tmWait := (tmPrint ""%bs).
+
+Definition erase_deptypes_in_indrel_transfo (l : list term) (R : term)
+:= tmBind
+  (p <- erase_dep_transform_pred l R ;;
+  statement <- tmEval all (statement_elems_empty p.1.1 p.2 R p.1.2) ;; tmPrint statement;;
+  tmUnquoteTyped Prop statement) (fun st_unq : Prop =>
+  fresh <- tmFreshName "equivalence"%bs ;;
+  lem <- tmLemma fresh st_unq ;; tmWait).
+
+Obligation Tactic := idtac.
+
+MetaCoq Run (erase_deptypes_in_indrel_transfo [<%DOORS%>] <%doors_o_caller%>).
+Next Obligation.
+
+
+
+MetaCoq Run (erase_dep_transform_pred [<%DOORS%>] <% doors_o_callee %> >>= tmPrint).
+MetaCoq Run (erase_deptypes_in_indrel list_kn_test <% bank_operation_correct %>).
+MetaCoq Run (erase_dep_transform_pred [<%trm%>] <%trm_le%>).
+
+Require Import Coq.Program.Equality.
+
+Lemma equivalence_trm_le_nat : 
+  forall (A B : Type) (n : trm A) (m : trm B), 
+trm_le A B n m <-> trm_le' (transfo0 A n) (transfo0 B m).
+Proof. intros n m. split.
+  + intro H. induction H. simpl. constructor. 
+    simpl. simpl in IHtrm_le. constructor. assumption. simpl. constructor.
+  + intro H. dependent induction H. 
+    - destruct n0; destruct m0. destruct n. constructor. inversion x. inversion x0. 
+      inversion x. inversion x0. inversion x. 
+    -  destruct n0; destruct m0. subst. inversion x0. inversion x. subst. constructor.
+  apply IHtrm_le'. assumption. reflexivity. inversion x. inversion x0. inversion x0. 
+    - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
+  inversion x. subst. inversion x0. constructor. Qed. 
+
+
+
+  
 
