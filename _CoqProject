@@ -17,6 +17,5 @@ theories/case_analysis_existentials.v
 theories/erase_type_in_indexes.v
 theories/proofs_inequalities_types.v
 theories/erase_deptypes_in_indrel.v
-theories/proofs_deptypes.v
 theories/tree.v
 theories/Sniper.v
