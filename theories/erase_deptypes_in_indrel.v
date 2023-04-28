@@ -1107,9 +1107,57 @@ Proof. intros n m. split.
     -  destruct n0; destruct m0. subst. inversion x0. inversion x. subst. constructor.
   apply IHtrm_le'. assumption. reflexivity. inversion x. inversion x0. inversion x0. 
     - destruct n0; destruct m0. inversion x0. inversion x. inversion x0. inversion x.
-  inversion x. subst. inversion x0. constructor. Qed. 
+  inversion x. subst. inversion x0. constructor. Qed.
+Print doors_o_callee.
 
+Definition titi {A B : Type} (x : A + B) :=
+  match x in _ + _ return match x with
+          | inl _ => A
+          | inr _ => B
+          end
+with
+    | inl y => y
+    | inr z => z
+end. 
 
+Lemma bool_not_unit : @eq Type bool unit -> False.
+Proof.
+  intros H.
+  pose (f :=
+  match H in _ = b return bool -> b with
+  | eq_refl => fun x => x 
+  end). 
+  pose (g := 
+  match H in _ = b return b -> bool with
+  | eq_refl => fun x => x
+  end).
+  assert (H1 : forall (x : bool), g (f x) = x).
+  intro x. destruct x; destruct H ; unfold f; unfold g; reflexivity.
+  pose proof H1 as H2. specialize (H1 false). specialize (H2 true).
+  destruct (f _) in H1. destruct (f _) in H2. rewrite H2 in H1. 
+  inversion H1. Qed.
+
+Lemma bar2 : forall (A : Type) (d : DOORS A) ω (a : A) (y : bool + unit), JMeq a (titi y) ->
+  (doors_o_callee ω A d a 
+  <-> 
+   (doors_o_callee' ω (transfo A d) y)).
+Proof.
+  intros A d ω a.
+  split.
+  - intro H1; induction H1; simpl. destruct y. constructor 1. 
+   apply JMeq_eq in H. subst. apply equ.
+  apply JMeq_eq_dep_id in H. apply EqdepFacts.eq_sigT_iff_eq_dep in H.
+inversion H. apply bool_not_unit in H1. exfalso. assumption.
+destruct y. 
+  apply JMeq_eq_dep_id in H. apply EqdepFacts.eq_sigT_iff_eq_dep in H.
+inversion H. symmetry in H1. apply bool_not_unit in H1. exfalso. assumption. constructor.
+    - intro H1. induction H1. destruct d. constructor.
+    apply JMeq_eq in H. simpl. subst. reflexivity.
+  apply JMeq_eq_dep_id in H. apply EqdepFacts.eq_sigT_iff_eq_dep in H.
+inversion H. symmetry in H1. apply bool_not_unit in H1. exfalso. assumption.
+    destruct d. constructor. apply JMeq_eq_dep_id in H. apply EqdepFacts.eq_sigT_iff_eq_dep in H.
+inversion H. apply bool_not_unit in H1. exfalso. assumption. 
+ apply JMeq_eq in H. subst. constructor. Qed. Print All Dependencies bar2. 
 
   
 
