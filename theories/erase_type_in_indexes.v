@@ -247,7 +247,7 @@ Inductive Example : Type -> Type :=
 | ToBool : bool -> Example bool
 | ToUnit : bool -> Example unit.
 
-MetaCoq Run (erase_type_in_indexes [<% Example %>]).  
+MetaCoq Run (erase_type_in_indexes [<% Example %>]).
 
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
