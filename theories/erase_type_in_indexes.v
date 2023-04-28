@@ -243,26 +243,19 @@ Fixpoint erase_type_in_indexes (l : list term) : TemplateMonad (list term * (lis
 
 (** Tests **)
 
-Inductive door : Type := Left | Right.
+Inductive Example : Type -> Type :=
+| ToBool : bool -> Example bool
+| ToUnit : bool -> Example unit.
 
-Inductive DOORS : Type -> Type :=
-| IsOpen : door -> DOORS bool
-| Toggle : door -> DOORS unit.
-
-MetaCoq Run (erase_type_in_indexes [<% DOORS %>]).  
-Print transfo.
+MetaCoq Run (erase_type_in_indexes [<% Example %>]).  
 
 Inductive test : Type -> Type -> Type :=
 | test1 : bool -> test (list nat) (bool).
  MetaCoq Run (erase_type_in_indexes [<% test %>]).
-Print transfo0.
 
 Inductive test_parameter (A B : Type) : Type -> Type :=
-| c1 : bool -> door -> test_parameter A B unit.
+| c1 : bool -> bool -> test_parameter A B unit.
 MetaCoq Run (erase_type_in_indexes [<% test_parameter %>]). 
-
-Print transfo1. 
-Print test_parameter'.
 
 Definition user_id := nat.
 
@@ -271,19 +264,4 @@ Inductive bank_operation : Type -> Type :=
 | GetBalance : user_id -> bank_operation nat.
 
 MetaCoq Run (erase_type_in_indexes [<% bank_operation %>]).
-Print bank_operation'.
-Print transfo2.
 
-MetaCoq Quote Definition DOORS_reif := DOORS. 
-MetaCoq Quote Definition DOORS'_reif := DOORS'.
-
-Definition list_kn_test := 
-  [ ((MPfile
-         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
-      "DOORS"%bs), (MPfile
-         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
-      "DOORS'"%bs)); ((MPfile
-         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
-      "bank_operation"%bs), (MPfile
-         ["erase_type_in_indexes"%bs; "theories"%bs; "Sniper"%bs],
-      "bank_operation'"%bs))].
