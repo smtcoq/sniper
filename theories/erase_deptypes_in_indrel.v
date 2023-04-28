@@ -1074,7 +1074,7 @@ Definition statement_elems_empty
 (mapi (fun i x => (x.1.1, unliftn x.1.2 (S i), x.2)) (env_inductives e))). (* unlift 1 because the type supposed that the variable
 have been already introduced *)
 
-Notation tmWait := (tmPrint ""%bs).
+Notation tmWait := (tmReturn tt%bs).
 
 Definition erase_dep_in_indrel_prop (l : list term) (R : term)
 := p <- erase_dep_transform_pred l R ;; 
@@ -1086,14 +1086,46 @@ Definition erase_dep_in_indrel_prop (l : list term) (R : term)
   fresh <- tmFreshName "equivalence"%bs ;;
   lem <- tmLemma fresh st_unq;; tmWait) else tmWait.
 
-Obligation Tactic := idtac.
+Require Import Coq.Program.Equality.
+
+Ltac solve_implr :=
+let H1 := fresh in
+intro H1 ; induction H1 ; constructor ; repeat assumption.
+
+Ltac has_arg_in_type x :=
+  let T := type of x in match T with
+    | ?u ?v => let T' := type of v in first [constr_eq T' Type | constr_eq T' Set]
+    | _ => fail
+  end. 
+
+Goal False. assert (x: trm nat). exact (N 0). has_arg_in_type x. Abort.
+
+Ltac solve_impll := 
+  let H1 := fresh in
+  intro H1 ; dependent induction H1 ; 
+  repeat match goal with
+  | x : _ |- _ => has_arg_in_type x ; try (destruct x)
+  end ; 
+  let Hyps := hyps in
+  let rec aux Hyps := lazymatch Hyps with
+    | (?x, ?y) => aux x ; aux y
+    | ?z => try (inversion z)
+    end in aux Hyps; subst; try (constructor; repeat assumption);
+   let Hyps := hyps in 
+  let rec aux Hyps := lazymatch Hyps with
+    | (?x, ?y) => aux x ; aux y
+    | ?z => try (apply z)
+    end in aux Hyps; try (constructor; repeat assumption).
+
+Obligation Tactic := first [intros; split ; [solve_implr | solve_impll] | idtac].
 
 MetaCoq Run (erase_dep_in_indrel_prop [<%DOORS%>] <%doors_o_caller%>).
-MetaCoq Run (erase_dep_in_indrel_prop [<%trm%>] <%trm_le%>). 
+  
+MetaCoq Run (erase_dep_in_indrel_prop [<%trm%>] <%trm_le%>).
+ 
 MetaCoq Run (erase_dep [] [(<%DOORS%>, <%DOORS'%>, <%transfo%>)]  <% doors_o_callee %>).
-MetaCoq Run (erase_dep_in_indrel_prop [<%bank_operation%>] <% bank_operation_correct %>).
 
-Require Import Coq.Program.Equality.
+MetaCoq Run (erase_dep_in_indrel_prop [<%bank_operation%>] <% bank_operation_correct %>).
 
 Lemma equivalence_trm_le_nat : 
   forall (A B : Type) (n : trm A) (m : trm B), 
