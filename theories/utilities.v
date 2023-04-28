@@ -340,6 +340,12 @@ match n with
 | S n' => mknAnon :: list_aname n'
 end.
 
+Fixpoint codomain (t : term) :=
+match t with
+| tProd _ _ u => codomain u
+| _ => t
+end.
+
 (** Generic tactics **) 
 
 Ltac prove_hypothesis H :=
@@ -506,10 +512,10 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
    (list of length n)
 **) (** linear **)
 Definition Rel_list (n l : nat) :=
-  let  fix aux n  k acc  :=
+  let  fix aux n k acc  :=
   match n with
    | 0 => acc 
-   | S n => aux n  (S k) ((tRel k)::acc)
+   | S n => aux n (S k) ((tRel k)::acc)
    end
    in aux n l [].
 
