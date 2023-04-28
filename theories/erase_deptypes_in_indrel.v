@@ -42,9 +42,9 @@ Inductive ExampleR1 : (bool*bool) -> forall (a : Type), Example a -> a -> Prop :
   : ExampleR1 ω unit (ToUnit d) x.
 
 Inductive ExampleR2 : (bool*bool) -> forall (a : Type), Example a -> Prop :=
-| req_is_open (d : bool) (ω : bool*bool)
+| ExampleR2C1 (d : bool) (ω : bool*bool)
   : ExampleR2 ω bool (ToBool d)
-| req_toggle (d : bool) (ω : bool*bool) (H : ω.1 = false -> ω.2 = false)
+| ExampleR2C2 (d : bool) (ω : bool*bool) (H : ω.1 = false -> ω.2 = false)
   : ExampleR2 ω unit (ToUnit d).
 
 Parameter id_correct : nat -> bool.
