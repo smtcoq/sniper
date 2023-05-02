@@ -1,6 +1,5 @@
 From MetaCoq Require Import All.
 Require Import Sniper.
-Require Import erase_deptypes_in_indrel.
 Require Import ZArith.
 Import Decide.
 
@@ -39,5 +38,6 @@ Proof.
     elimination_polymorphism.
     generalize dependent f0.
     generalize dependent mem_linear_decidable.
-    generalize dependent f.
+    generalize dependent f. revert elpi_ctx_entry_62_. 
+    revert elpi_ctx_entry_80_.
     trakt Z bool. verit. Abort.
