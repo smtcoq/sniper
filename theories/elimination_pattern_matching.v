@@ -20,7 +20,6 @@ Require Import expand.
 Require Import List.
 Import ListNotations.
 
-
 Ltac create_evars_for_each_constructor i := 
 let i_reif := metacoq_get_value (tmQuote i) in
 match i_reif with

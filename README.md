@@ -12,7 +12,11 @@ The translation is implemented through a combination of modular, small
 transformations that independently eliminate specific aspects of Coq
 logic towards first-order logic. These small transformations are safe,
 either generating proof terms on the fly (*certifying* transformations)
-or being proved once and for all in Coq (*certified* transformations).
+or being proved once and for all in Coq (*certified* transformations). A
+crucial transformation is given by the
+[Trakt](https://github.com/ecranceMERCE/trakt) plugin.
+
+This version is an experimental version using the Trakt plugin.
 
 
 ## Installation and use
@@ -32,28 +36,11 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-It requires OCaml between 4.07 and 4.10:
+It requires OCaml between 4.09 and 4.10:
 ```
-opam switch create 4.07.1
+opam switch create 4.09.1
 eval $(opam env)
 ```
-
-Then choose either of the following two sections, install the automatic
-prover, and enjoy!
-
-### Installation of release 1.0
-
-You need to add this opam repository:
-```
-opam repo add coq-released https://coq.inria.fr/opam/released
-```
-
-Then simply install `Sniper`:
-```
-opam install coq-sniper
-```
-
-### Installation of the development version
 
 You need to add two opam repositories:
 ```
@@ -61,9 +48,9 @@ opam repo add coq-released https://coq.inria.fr/opam/released
 opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 ```
 
-Then simply install `Sniper`:
+Then simply install this version of `Sniper`:
 ```
-opam install coq-sniper
+opam install -y .
 ```
 
 ### Installation of the automatic prover and use
@@ -82,14 +69,9 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-You can see examples in the
-[examples.v](https://github.com/smtcoq/sniper/blob/master/examples.v)
-file. Have fun!
+## Examples, tests and benchmarks
 
-
-## Companion paper
-[General automation in Coq through modular transformations](https://pxtp.gitlab.io/2021/papers/Blot-et-al_Automation-modular-transformation.pdf), at PxTP'21
-
+Commented examples are available at ``examples.v``.
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license

@@ -201,6 +201,7 @@ Definition mkOr_n (l : list term) :=
 
 Definition mknAnon := {| binder_name := nAnon ; binder_relevance := Relevant |}.
 
+
 Definition default_error_kn := (MPfile [], "error"%bs).
 
 Definition kername_term (t : term) :=
@@ -337,6 +338,12 @@ Fixpoint list_aname (n : nat) :=
 match n with
 | 0 => []
 | S n' => mknAnon :: list_aname n'
+end.
+
+Fixpoint codomain (t : term) :=
+match t with
+| tProd _ _ u => codomain u
+| _ => t
 end.
 
 (** Generic tactics **) 
@@ -505,10 +512,10 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
    (list of length n)
 **) (** linear **)
 Definition Rel_list (n l : nat) :=
-  let  fix aux n  k acc  :=
+  let  fix aux n k acc  :=
   match n with
    | 0 => acc 
-   | S n => aux n  (S k) ((tRel k)::acc)
+   | S n => aux n (S k) ((tRel k)::acc)
    end
    in aux n l [].
 
