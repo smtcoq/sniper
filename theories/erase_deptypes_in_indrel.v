@@ -54,13 +54,18 @@ Inductive bank_operation_correct : forall (a : Type), bank_operation a -> Prop :
   id_correct u = true -> bank_operation_correct unit (Withdraw u solde amount)
 | GetBalance_correct (u : user_id) : id_correct u -> bank_operation_correct nat (GetBalance u).
 
+(* TODO Inductive trm : Type -> Type :=
+| N : trm nat
+| NS : trm nat -> trm nat
+| B : bool -> trm bool. *)
+
 Inductive trm : Type -> Type :=
 | N : nat -> trm nat
 | B : bool -> trm bool.
 
 Inductive trm_le : forall (A B : Type), trm A -> trm B -> Prop :=
 | lez (n : nat) : trm_le nat nat (N 0) (N n) 
-| leS (n : nat) (m : nat) : trm_le nat nat (N n) (N m) -> trm_le nat nat (N n) (N (S m))
+| leS (n : nat) (m : nat) : trm_le nat nat (N n) (N m) -> trm_le nat nat (N (S n)) (N (S m))
 | leB : trm_le bool bool (B false) (B true).
 
 Record env := mk_env 
@@ -728,8 +733,33 @@ Obligation Tactic := first [intros; split ; [solve_implr | solve_impll] | idtac]
 
 MetaCoq Run (erase_ty_erase_dep [<%Example%>] <%ExampleR1%>).
   
-MetaCoq Run (erase_ty_erase_dep [<%trm%>] <%trm_le%>).
- 
+MetaCoq Run (erase_type_in_indexes [<%trm%>]).
+
+(* Definition trm_le'_dec (t t' : trm') :=
+  let toto := fix leb (n m : nat) {struct n} : bool :=
+  match n with
+  | 0 => true
+  | S n' =>
+      match m with
+      | 0 => false
+      | S m' => leb n' m'
+      end
+  end in
+  match t with
+    | N' n => 
+      match t' with
+        | N' m =>  toto n m
+        | _ => false
+      end
+    | B' true => false
+    | B' false =>
+       match t' with
+        | B' false => false
+        | B' true => true
+        | _ => false
+        end
+      end. *)
+
 MetaCoq Run (erase_dep [] [(<%Example%>, <%Example'%>, <%transfo%>)]  <% ExampleR2 %>).
 
 MetaCoq Run (erase_ty_erase_dep [<%bank_operation%>] <% bank_operation_correct %>).

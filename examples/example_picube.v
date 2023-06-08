@@ -15,7 +15,7 @@ Print mem_linear_decidable.
 
 Trakt Add Relation 2 mem mem_linear_decidable decidable_lemma.
 
-Lemma mem_id : 
+Lemma mem_S : 
   forall (l : list nat) (n : nat), mem n l -> mem (S n) (map (fun x => x+1) l).
 Proof.
  induction l; snipe. Undo. 
