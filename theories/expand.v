@@ -23,11 +23,24 @@ match t with
   | _ => (acc, t)
 end in aux [] t.
 
-(* Takes a term, if it is a function,
+(* Takes a "mfixpoint term" 
+and returns either the name of its argument or the empty list *)
+
+Print def.
+
+Unset Guard Checking. (* Not dangerous: we do not use this function in proofs ! *)
+
+(* Takes a term, if it is a function or a fixpoint
 returns the names of its arguments, otherwise returns [].
-The goal is to improve names generation in Sniper *) Print binder_annot.
-Print term.
-Fixpoint get_names_args_fun (t : term) :=
+The goal is to improve names generation in Sniper *) 
+
+Fixpoint get_names_args_fix (f : mfixpoint term) :=
+match f with
+  | [] => []
+  | {| dname := _ ; dtype := _ ; dbody := t ; rarg := _ |} :: xs => 
+    get_names_args_fun t ++ get_names_args_fix xs
+end with
+get_names_args_fun (t : term) :=
 match t with
   | tLambda {| binder_name := x; binder_relevance := _ |} _ u =>
     let na :=
@@ -36,11 +49,13 @@ match t with
       | nNamed y => y
     end
     in na :: get_names_args_fun u
-(*   | tFix f _ => get_names_args_fix f *)
+  | tFix f _ => get_names_args_fix f 
   | _ => []
 end.
 
-Open Scope string_scope. Print name.
+Set Guard Checking.
+
+Open Scope string_scope. 
 
 Definition names_aux (l : list bytestring.string) : 
 (bytestring.string * list bytestring.string) :=
