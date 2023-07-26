@@ -14,12 +14,112 @@ Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import definitions.
 Require Import expand.
-Require Import ZArith.
 Require Import List.
 Import ListNotations.
 Require Import String.
+From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Message.
+
+Ltac2 fail s := Control.backtrack_tactic_failure s.
+
+Ltac2 rec recursive_arg (f: constr) : int :=
+  match Constr.Unsafe.kind f with
+  | Constr.Unsafe.Fix recargs nbindu _ _ => Array.get recargs nbindu
+  | Constr.Unsafe.Lambda _ body => Int.add 1 (recursive_arg body)
+  | _ => 0
+  end.
+
+Ltac2 reduces_to_aux (f1 : constr) (f2: constr) :=
+let f1' := (eval red in $f1) in
+if Constr.equal f1' f2 then f1
+else fail "not equal".
+
+Ltac2 reduces_to (f1 : constr) (f2 : constr) :=
+match Constr.Unsafe.kind f1 with
+  | Constr.Unsafe.App f args => 
+      if Constr.is_const f then reduces_to_aux f1 f2
+      else 
+        match Constr.Unsafe.kind f with
+          | Constr.Unsafe.Var id => let f1' := Control.hyp id in reduces_to_aux f1' f2
+          | _ => fail "not an applied constant or an applied variable"
+        end
+  | Constr.Unsafe.Constant _ _ => reduces_to_aux f1 f2
+  | Constr.Unsafe.Var id => let f1' := Control.hyp id in reduces_to_aux f1' f2
+  | _ => fail "not a constant"
+end.
+
+(* Looks for a constant in the goal 
+or in the hypotheses which reduces to f, 
+pose a local def if it fails to find one *)
+
+Ltac2 rec find_term_reduces_to_in_goal (f : constr) (id : ident) :=
+match! goal with
+  | [ |- context [?t]] => reduces_to t f  
+  | [ _ : context [?t] |- _ ] => reduces_to t f
+  | [h : _ |-  _] => Message.print (Message.of_ident h); let f1 := Control.hyp h
+     in Message.print (Message.of_ident h); reduces_to f1 f
+  | [ |- _ ] => Std.pose (Some id) f ; find_term_reduces_to_in_goal f id
+end.
+
+Ltac2 id_or_fail (id : ident option) : ident :=
+match id with
+| None => fail "no ident given"
+| Some id' => id'
+end.
+
+Ltac2 print_subterms h := 
+  match! h with
+  | context [ ?t ]  => Message.print (Message.of_constr t)
+  | _ => fail "foo"
+  end.
+
+Ltac2 rec find_applied (u : unit) :=
+  match! goal with
+  | [ |- forall _ : _, _ ] => intros ; find_applied ()
+  | [ |- context c [ ?t ]]  => 
+      match Constr.Unsafe.kind t with
+      | Constr.Unsafe.App f args => 
+                if Constr.is_fix f then 
+                (let recarg := recursive_arg f in
+                  if Int.le recarg (Array.length args)
+                  then 
+                    let const := 
+                    find_term_reduces_to_in_goal f (id_or_fail (Ident.of_string "new_fix")) in 
+                    let inst := Pattern.instantiate c (Constr.Unsafe.make (Constr.Unsafe.App const args))
+                    in print (of_constr inst)
+                  else fail "not applied enough")
+                else fail "not a fixpoint"
+      | _ => fail "not an application"
+      end
+  end. 
+
+Goal False.
+Proof. ltac1:(get_def Datatypes.length; expand_hyp length_def).
+ltac1:(let T := type of H in assert (H1 : False -> T) ; [
+intro HFalse | ..]). find_applied ().
 
 
+
+
+destruct l0 ; cbv fix ; fold (@Datatypes.length A0)
+
+ |..]).
+
+ let h := Control.hyp @H in
+let t := Constr.type h in
+ find_applied t.
+
+
+print_subterms '(fix length (l : list A) : nat :=
+  match l with
+  | [] => 0
+  | _ :: l' => S (length l')
+  end).
+
+ ltac1:(get_def length; expand_hyp length_def).
+let h' := Control.hyp @H in 
+let t := (Constr.type h') in 
+let x:= find_applied t in Message.print (Message.of_constr x).
 
 (* remove the nth last elements of a list *)
 Fixpoint rem_last_elem {A} (n : nat) (l : list A) := match l, n with 
@@ -31,10 +131,12 @@ end.
 
 Definition find_args (t1 t2 : term) := 
 match t2 with
-| tApp v l => let n:= Datatypes.length l in match t1 with 
-        | tApp u l' => (lift n 0 (tApp u (rem_last_elem n l')), v, l)
-        | _ => (t1, t2, l)
-      end
+| tApp v l => 
+    let n:= Datatypes.length l in 
+    match t1 with 
+      | tApp u l' => (lift n 0 (tApp u (rem_last_elem n l')), v, l)
+      | _ => (t1, t2, l)
+    end
 | _ => (t1, t2, nil)
 end.
 
