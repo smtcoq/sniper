@@ -20,13 +20,19 @@ Require Import String.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Message.
 
-Ltac2 fail s := Control.backtrack_tactic_failure s.
+Ltac2 fail s := Control.backtrack_tactic_failure s. 
 
 Ltac2 rec recursive_arg (f: constr) : int :=
   match Constr.Unsafe.kind f with
   | Constr.Unsafe.Fix recargs nbindu _ _ => Array.get recargs nbindu
   | Constr.Unsafe.Lambda _ body => Int.add 1 (recursive_arg body)
   | _ => 0
+  end.
+
+Ltac2 body_fixpoint (f: constr) : constr :=
+  match Constr.Unsafe.kind f with
+  | Constr.Unsafe.Fix _ nbindu _ constrs => Array.get constrs nbindu
+  | _ => fail "not a fixpoint"
   end.
 
 Ltac2 reduces_to_aux (f1 : constr) (f2: constr) :=
@@ -83,10 +89,14 @@ Ltac2 rec find_applied (u : unit) :=
                 (let recarg := recursive_arg f in
                   if Int.le recarg (Array.length args)
                   then 
+                    let body := body_fixpoint f in
                     let const := 
                     find_term_reduces_to_in_goal f (id_or_fail (Ident.of_string "new_fix")) in 
-                    let inst := Pattern.instantiate c (Constr.Unsafe.make (Constr.Unsafe.App const args))
-                    in print (of_constr inst)
+                    print (of_constr const) ;
+                    let new_term := Constr.Unsafe.make (Constr.Unsafe.App 
+                      (Constr.Unsafe.substnl [const] 0 body) args) in 
+                    let new_hyp := Pattern.instantiate c new_term in
+                    (eval cbv beta in $new_hyp)
                   else fail "not applied enough")
                 else fail "not a fixpoint"
       | _ => fail "not an application"
@@ -96,7 +106,11 @@ Ltac2 rec find_applied (u : unit) :=
 Goal False.
 Proof. ltac1:(get_def Datatypes.length; expand_hyp length_def).
 ltac1:(let T := type of H in assert (H1 : False -> T) ; [
-intro HFalse | ..]). find_applied ().
+intro HFalse | ..]). let t := find_applied () in assert $t.
+destruct l; reflexivity. ltac1:(generalize dependent A). intros.
+ 
+destruct l; auto.
+revert l ; revert A.
 
 
 
