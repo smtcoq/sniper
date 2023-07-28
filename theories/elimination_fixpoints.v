@@ -17,8 +17,16 @@ Require Import expand.
 Require Import List.
 Import ListNotations.
 Require Import String.
-From Ltac2 Require Import Ltac2.
+(* From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Message.
+From elpi Require Import elpi.
+
+Elpi Tactic print_args.
+Elpi Accumulate lp:{{
+  solve (goal _ _ _ _ [trm Arg]) _ :- coq.say "yo".
+}}.
+Elpi Typecheck.
+
 
 Set Default Proof Mode "Classic".
 
@@ -75,7 +83,7 @@ match! goal with
   | [ |- context [?t]] => reduces_to t f  
   | [ _ : context [?t] |- _ ] => reduces_to t f
   | [h : _ |-  _] => let f1 := Control.hyp h
-     in Message.print (Message.of_ident h); reduces_to f1 f
+     in reduces_to f1 f
   | [ |- _ ] => Std.pose (Some id) f ; find_term_reduces_to_in_goal f id
 end.
 
@@ -122,17 +130,10 @@ end.
 Ltac2 refine_bis (c : constr) () :=
 refine c.
 
-(* Base value : terme de preuve de H.
-tac fait juste un refine *)
-
-Goal False -> True -> True. intros.
-ltac2:(let x := in_contexts [(@H, 'True);  (@H0, 'False)] 'I refine_bis
-in print (of_constr x)). Abort.
-
 
 Ltac instantiate_evar_with_constr G :=
 repeat match goal with 
-| u : Prop |- _ => idtac u ; idtac G ; instantiate (u := G) ; idtac u
+| u : Prop |- _ => instantiate (u := G)
 end.
 
 Ltac2 rec under_forall (bd: binder list) (h: constr) :=
@@ -154,19 +155,15 @@ match bd with
     (na', ty) :: binder_to_id_types bds
   | [] => []
 end.
- 
-(** On a focused goal [Γ ⊢ A], [in_context id c tac] evaluates [tac] in a
-    focused goal [Γ, id : c ⊢ ?X] and returns [fun (id : c) => t] where [t] is
-    the proof built by the tactic. **)
 
-(** on assert H avec toutes les variables 
-introduites
-On transforme 
-
-
-on récupère la preuve (et son type) 
-et avec ça on instancie l'evar *)
-
+Ltac2 rec find_applied (h1 : constr) (h2 : constr) :=
+match Constr.Unsafe.kind h1 with
+  | Constr.Unsafe.Prod bind h1' =>  
+    let ty := Constr.Binder.type bind in
+    let na := Constr.Binder.name bind in
+    let na' := some_or_fail na in
+    Constr.in_context (Fresh.in_goal na') ty (find_applied h1' h2)
+  | 
 
 
 Ltac2 rec find_applied (il: (ident*constr) list) (h: constr) :=
@@ -204,9 +201,33 @@ match Constr.Unsafe.kind h with
       | _ => fail "not an application"
       end
     end
-  end.
+  end. 
 
-Ltac2 rec find_applied (il: (ident*constr) list) : unit :=
+Ltac2 rec list_of_dbindexes (n : int) :=
+if Int.equal n 0 then []
+else (Constr.Unsafe.make (Constr.Unsafe.Rel n)) :: list_of_dbindexes (Int.sub n 1).
+
+Ltac2 rec print_list (l : constr list) :=
+match l with
+| [] => ()
+| x :: xs => print (of_constr x) ; print_list xs 
+end.
+
+
+Ltac2 rec replace_binders_aux (acc : constr list) (c : constr) :=
+match Constr.Unsafe.kind c with
+| Constr.Unsafe.Prod bind c' => 
+    let dbstart := Int.add (List.length acc) 1 in     
+    let ty := Constr.Binder.type bind in 
+    let ty' := Constr.Unsafe.substnl acc dbstart ty in
+    replace_binders_aux (ty'::acc) c'
+| _ => let dbstart := Int.add (List.length acc) 1 in
+    Constr.Unsafe.substnl acc dbstart c
+end.
+
+Ltac2 replace_binders (c : constr) := replace_binders_aux [] c.
+
+Ltac2 rec find_applied (il: (ident*constr) list) (t : constr) : unit :=
   match! goal with
   | [ |- forall _ : _, _ ] => 
     let x := Fresh.in_goal (get_name (Control.goal ())) in
@@ -221,26 +242,35 @@ Ltac2 rec find_applied (il: (ident*constr) list) : unit :=
                 (let recarg := recursive_arg f in
                   if Int.le recarg (Array.length args)
                   then 
-                   let body := body_fixpoint f in
+                   let body := body_fixpoint f in 
                    let const := 
-                    find_term_reduces_to_in_goal f (id_or_fail (Ident.of_string "new_fix")) in 
+                    find_term_reduces_to_in_goal f (some_or_fail (Ident.of_string "new_fix")) in 
                    let new_term := Constr.Unsafe.make (Constr.Unsafe.App 
                       (Constr.Unsafe.substnl [const] 0 body) args) in
                    let new_hyp := Pattern.instantiate c new_term in 
                    let new_hyp_beta := (eval cbv beta in $new_hyp) in 
                    let id := Fresh.in_goal @H in
                    assert (id : $new_hyp_beta) > [ltac1:(generate_proof) |
-                   let proof_term := Control.hyp @id in print (of_constr proof_term) ;
+                   let proof_term := Control.hyp @id in 
                    let proof_term_quantif := in_contexts (List.rev il) proof_term refine_bis in
                    let proof_type_quantif := Constr.type proof_term_quantif in 
+                   let len := List.length il in 
+(*                    let proof_term_abstract := 
+                    Constr.Unsafe.closenl (first (List.split il)) len proof_term_quantif in
+                   let proof_type_abstract :=  
+                    Constr.Unsafe.closenl (first (List.split il)) (Int.sub len 1) proof_type_quantif in *)
+(*                    let prf_type := replace_binders proof_type_abstract in print (of_constr prf_type) ; *)
+                    
+
+                    (* (Constr.Unsafe.substnl (List.rev (list_of_dbindexes len)) (Int.add len 1) proof_type_abstract)  *)
                    let tyltac1 := Ltac1.of_constr proof_type_quantif in
-                   ltac1:(x |- instantiate_evar_with_constr x) tyltac1]
+                   ltac1:(x |- let x := metacoq_get_value (tmQuote x) in idtac x) tyltac1
+                  (*  ltac1:(x |- instantiate_evar_with_constr x) tyltac1 *)]
                   else fail "not applied enough")
                 else fail "not a fixpoint"
       | _ => fail "not an application"
       end
-  end. (* TODO : abstraire le terme de preuve + le requantifier vu qu'on a les binders *)
-
+  end.  
 Ltac pose_goal := 
 let H := fresh in
 let H_evar := fresh in
@@ -257,16 +287,9 @@ find_applied [] ; destruct HFalse
 
 Goal True.
 Proof.
-get_def Datatypes.length; expand_hyp length_def. 
-(* ltac1:(refine ?[foo]).
-Control.shelve (). ltac1:([foo]: exact I). Qed. *)
-ltac2:(eliminate_fix_hyp 'H). instantiate (H1 := (forall (A0 : Type) (l : list A),
- #|l| =
- match l with
- | [] => 0
- | _ :: l' => S #|l'|
- end)).
-
+get_def Datatypes.length; expand_hyp length_def.
+run_template_program (tmQuote I) ltac:(fun x => idtac x).
+ltac2:(eliminate_fix_hyp 'H). 
 
 exact I. Qed.
 ltac1:(let T := type of H in assert (H1 : False -> T) ; [
@@ -297,7 +320,7 @@ print_subterms '(fix length (l : list A) : nat :=
  ltac1:(get_def length; expand_hyp length_def).
 let h' := Control.hyp @H in 
 let t := (Constr.type h') in 
-let x:= find_applied t in Message.print (Message.of_constr x).
+let x:= find_applied t in Message.print (Message.of_constr x). *)
 
 (* remove the nth last elements of a list *)
 Fixpoint rem_last_elem {A} (n : nat) (l : list A) := match l, n with 
