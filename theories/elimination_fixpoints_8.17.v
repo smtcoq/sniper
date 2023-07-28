@@ -17,7 +17,6 @@ Import ListNotations.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Message.
 
-
 Set Default Proof Mode "Classic".
 
 Ltac2 first (x: 'a*'b) := 
@@ -140,6 +139,8 @@ match goal with
 | H := ?x |- _ =>  x
 end.
 
+(* TODO: better proofs *)
+
 Ltac eliminate_fix_hyp h :=
 let H := fresh in
 let H_evar := fresh in
@@ -152,10 +153,11 @@ assert (H1 : False -> t) ;
   let x := last_type_of_hypothesis in 
   instantiate (H_evar := x);
   destruct Hfalse | clear H1 ; let H' := eval unfold H in H
-in assert H' by (repeat (let x := fresh in intro x ; try (destruct x ; auto)))]. 
+in assert H' by (repeat (let x := fresh in intro x ; try (destruct x ; auto))) ;
+clear H]. 
 
-
-Goal True. Print length.
+Section tests.
+Goal True.
 Proof.
 assert (H : forall (A : Type) (l: list A), 
 length l = (fix length (l : list A) : nat :=
@@ -166,15 +168,8 @@ length l = (fix length (l : list A) : nat :=
 eliminate_fix_hyp H. 
 exact I. Qed.
 
-Goal Nat.add = (fun n m : nat => match n with
-                            | 0 => m
-                            | S p => S (p + m)
-                            end).
-Proof.
-unfold Nat.add.
-Abort.
 
-Goal False. Print Nat.add.
+Goal False. 
 assert (H : forall n m, Nat.add n m =
 (fix add (n m : nat) :=
   match n with
@@ -182,30 +177,16 @@ assert (H : forall n m, Nat.add n m =
   | S p => S (add p m)
   end) n m) by reflexivity.
 eliminate_fix_hyp H.
-expand_hyp length_def.
-eliminate_fix_hyp H1.
+assert (H2 : forall n, Nat.add n =
+(fix add (n m : nat) :=
+  match n with
+  | 0 => m
+  | S p => S (add p m)
+  end) n) by reflexivity.
+eliminate_fix_hyp H2.
+
+
 Abort.
-
-Goal False.
-get_def @Datatypes.length.
-get_def Nat.add.
-expand_hyp add_def.
-eliminate_fix_cont H ltac:(fun H0 => let t := type of H0 in idtac).
-expand_hyp length_def.
-eliminate_fix_hyp H.
-Abort.
-
-
-
-Goal False.
-get_def @Datatypes.length.
-expand_hyp length_def.
-eliminate_fix_hyp H.
-get_def Nat.add.
-expand_hyp add_def.
-eliminate_fix_hyp H1.
-Abort.
-
 
 End tests.
 
