@@ -23,11 +23,6 @@ match t with
   | _ => (acc, t)
 end in aux [] t.
 
-(* Takes a "mfixpoint term" 
-and returns either the name of its argument or the empty list *)
-
-Print def.
-
 Unset Guard Checking. (* Not dangerous: we do not use this function in proofs ! *)
 
 (* Takes a term, if it is a function or a fixpoint

@@ -439,6 +439,14 @@ Goal False.
 get_def @Datatypes.length.
 get_def Nat.add.
 expand_hyp add_def.
+assert (H3 : True -> forall n : nat,
+   id (Nat.add n) =
+    id ((fix add (n0 m0 : nat) {struct n0} : nat :=
+       match n0 with
+       | 0 => m0
+       | S p => S (add p m0)
+       end)) n) by reflexivity.
+eliminate_fix_hyp H3.
 eliminate_fix_hyp H.
 expand_hyp length_def.
 eliminate_fix_hyp H1.

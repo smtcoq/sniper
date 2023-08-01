@@ -42,26 +42,32 @@ Ltac2 body_fixpoint (f: constr) : constr :=
   match Constr.Unsafe.kind f with
   | Constr.Unsafe.Fix _ nbindu _ constrs => Array.get constrs nbindu
   | _ => fail "not a fixpoint"
-  end.
+  end. Print length.
 
 Ltac2 reduces_to_aux (f1 : constr) (f2: constr) :=
-let f1' := (eval red in $f1) in
+let f1' := (eval hnf in $f1) in
 if Constr.equal f1' f2 then f1
 else fail "not equal".
 
-Ltac2 reduces_to (f1 : constr) (f2 : constr) :=
+Ltac2 rec reduces_to (f1 : constr) (f2 : constr) :=
 match Constr.Unsafe.kind f1 with
   | Constr.Unsafe.App f args => 
       if Constr.is_const f then reduces_to_aux f1 f2
       else 
         match Constr.Unsafe.kind f with
           | Constr.Unsafe.Var id => let f1' := Control.hyp id in reduces_to_aux f1' f2
-          | _ => fail "not an applied constant or an applied variable"
+          | _ => let args' := Array.to_list args in reduces_to_list args' f2
         end
   | Constr.Unsafe.Constant _ _ => reduces_to_aux f1 f2
   | Constr.Unsafe.Var id => let f1' := Control.hyp id in reduces_to_aux f1' f2
   | _ => fail "not a constant"
+end with
+reduces_to_list (l : constr list)(f2: constr) :=
+match l with
+| [] => fail "empty list"
+| x :: xs => Control.plus (fun () => reduces_to x f2) (fun _ => reduces_to_list xs f2)
 end.
+
 
 (* Looks for a constant in the goal 
 or in the hypotheses which reduces to f, 
@@ -100,38 +106,47 @@ match il with
 | [] => t
 end. 
 
-Ltac2 rec find_applied (il: (ident*constr) list): constr :=
+Ltac2 rec reduce_fix (il: (ident* constr) list) (c : Pattern.context) (t : constr) : constr :=
+match Constr.Unsafe.kind t with
+| Constr.Unsafe.App f args => 
+      if Constr.is_fix f then 
+      (let recarg := recursive_arg f in
+      if Int.le recarg (Array.length args)
+      then 
+      let body := body_fixpoint f in 
+      let const := 
+      find_term_reduces_to_in_goal f (some_or_fail (Ident.of_string "new_fix")) in 
+      let new_term := Constr.Unsafe.make (Constr.Unsafe.App 
+      (Constr.Unsafe.substnl [const] 0 body) args) in
+      let new_hyp := Pattern.instantiate c new_term in 
+      let new_hyp_beta := (eval cbv beta in $new_hyp) in
+      let ids := List.map first il in
+      let tys := (List.map second il) in
+      let new_hyp_abstract := (Constr.Unsafe.closenl ids 1 new_hyp_beta) in
+      let tysabstract := List.map (fun x => Constr.Unsafe.closenl ids 0 x) tys in
+      let new_binders := List.combine ids tysabstract in
+      bind (List.rev new_binders) new_hyp_abstract
+      else fail "not applied enough")
+      else if Constr.is_const f then 
+      (let f' := (eval cbv delta in $f) in
+      if (Constr.is_fix f') then fail "we do not want to unfold fixpoints" else  (* only if the head constant is not the fixpoint *)
+      let t' := Constr.Unsafe.make (Constr.Unsafe.App f' args) in
+      let t'' := (eval cbv beta in $t') in
+      if Constr.equal t t'' then fail "not a fixpoint" else 
+      reduce_fix il c t'') else fail "no head constant to reduce"
+| _ => fail "not an application"
+end.
+
+Ltac2 rec
+ red_fix (il: (ident*constr) list): constr :=
   match! goal with
   | [ |- forall _ : _, _ ] => 
     let x := Fresh.in_goal (get_name (Control.goal ())) in
     Std.intro (Some x) None ; 
     let h := Control.hyp x in 
     let t := Constr.type h in
-    find_applied ((x, t)::il)
-  | [ |- context c [ ?t ]]  => 
-      match Constr.Unsafe.kind t with
-      | Constr.Unsafe.App f args => 
-                if Constr.is_fix f then 
-                (let recarg := recursive_arg f in
-                  if Int.le recarg (Array.length args)
-                  then 
-                   let body := body_fixpoint f in 
-                   let const := 
-                    find_term_reduces_to_in_goal f (some_or_fail (Ident.of_string "new_fix")) in 
-                   let new_term := Constr.Unsafe.make (Constr.Unsafe.App 
-                      (Constr.Unsafe.substnl [const] 0 body) args) in
-                   let new_hyp := Pattern.instantiate c new_term in 
-                   let new_hyp_beta := (eval cbv beta in $new_hyp) in
-                   let ids := List.map first il in
-                   let tys := (List.map second il) in
-                   let new_hyp_abstract := (Constr.Unsafe.closenl ids 1 new_hyp_beta) in
-                   let tysabstract := List.map (fun x => Constr.Unsafe.closenl ids 0 x) tys in
-                   let new_binders := List.combine ids tysabstract in
-                   bind (List.rev new_binders) new_hyp_abstract
-                  else fail "not applied enough")
-                else fail "not a fixpoint"
-      | _ => fail "not an application"
-      end
+    red_fix ((x, t)::il)
+  | [ |- context c [ ?t ]]  => reduce_fix il c t
   end.  
 
 Ltac last_type_of_hypothesis :=
@@ -149,7 +164,7 @@ let H1 := fresh in
 let t := type of h in 
 assert (H1 : False -> t) ; 
 [ let Hfalse := fresh in intro Hfalse ;
-  ltac2:(let c := find_applied [] in pose $c) ;
+  ltac2:(let c := red_fix [] in pose $c) ;
   let x := last_type_of_hypothesis in 
   instantiate (H_evar := x);
   destruct Hfalse | clear H1 ; let H' := eval unfold H in H
@@ -165,10 +180,12 @@ length l = (fix length (l : list A) : nat :=
   | [] => 0
   | _ :: l' => S (length l')
   end) l) by reflexivity.
-eliminate_fix_hyp H. 
+eliminate_fix_hyp H. (* 
 exact I. Qed.
 
 
+Variable toto : nat -> nat.
+ *)
 Goal False. 
 assert (H : forall n m, Nat.add n m =
 (fix add (n m : nat) :=
@@ -184,6 +201,13 @@ assert (H2 : forall n, Nat.add n =
   | S p => S (add p m)
   end) n) by reflexivity.
 eliminate_fix_hyp H2.
+assert (H4 : forall n m, toto (Nat.add n m) =
+(toto ((fix add (n m : nat) :=
+  match n with
+  | 0 => m
+  | S p => S (add p m)
+  end) n m))) by reflexivity.
+eliminate_fix_hyp H4.
 
 
 Abort.

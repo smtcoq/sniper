@@ -1,0 +1,16 @@
+% returns the recursive argument of a fixpoint
+pred index_struct_argument i:term, o:int.
+    index_struct_argument (fix _ N _ _) N.
+    index_struct_argument (fun _ _ F) N1 :-
+        pi x\ index_struct_argument (F x) N, % get the body and recurse
+        N1 is N + 1.
+
+% builds the equality between two terms 
+% (applied to the same list of terms)
+pred mkEq_aux i: term, i: term, i: term, i: list term, o: term.
+    mkEq_aux T1 T2 (prod Na Ty F) L (prod Na Ty R) :- pi x\ decl x Na Ty =>
+        mkEq_aux T1 T2 (F x) [x | L]  (R x).
+    mkEq_aux T1 T2 T3 L (app [ {{ @eq }}, _, app [T1|L'], app [T2| L'] ]) :- std.rev L L'.
+
+pred mkEq i: term, i: term, o: term.
+    mkEq T1 T2 R :- coq.typecheck T1 T3 ok, mkEq_aux T1 T2 T3 [] R.
