@@ -141,3 +141,7 @@ pred argument_to_term i: list argument, o: list (pair term term).
 pred term_to_argument i: list term, o: list argument.
     term_to_argument [T| XS] [trm T|R] :- !, term_to_argument XS R.
     term_to_argument [] [].
+
+pred int_to_term i: int, o: term.
+    int_to_term 0 {{ 0 }}.
+    int_to_term N (app [{{ S }}, N']) :- int_to_term N1 N', N is N1 + 1.

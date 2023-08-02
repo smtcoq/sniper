@@ -64,12 +64,12 @@ pred subterms_fix i: term, o: (list term).
 pred const_reduces_to i: term, i: term. 
     const_reduces_to (global G) T :- coq.unify-leq (global G) T ok.
 
-pred globals_in_goal i: goal-ctx, o: (list term).
-    globals_in_goal [(decl _ _ X)| L] L1 :- globals_in_term X L',
-        globals_in_goal L L'', std.append L' L'' L1.
-    globals_in_goal [(def _ _ _ X)| L] L1 :-globals_in_term X L',
-        globals_in_goal L L'', std.append L' L'' L1.
-    globals_in_goal [] [].
+pred globals_const_in_term i: term, o: (list term).
+    globals_const_in_term X L2 :- subterms X L1, std.filter L1 (x\ x = (global (const _))) L2.
 
-pred globals_in_term i: term, o: (list term).
-    globals_in_term X L2 :- subterms X L1, std.filter L1 (x\ x = (global _)) L2.
+pred globals_const_in_goal i: goal-ctx, o: (list term).
+    globals_const_in_goal [(decl _ _ X)| L] L1 :- globals_const_in_term X L',
+        globals_const_in_goal L L'', std.append L' L'' L1.
+    globals_const_in_goal [(def _ _ _ X)| L] L1 :-globals_const_in_term X L',
+        globals_const_in_goal L L'', std.append L' L'' L1.
+    globals_const_in_goal [] [].

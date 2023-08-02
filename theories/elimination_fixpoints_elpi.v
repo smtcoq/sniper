@@ -11,14 +11,23 @@ lazymatch n with
 | S ?n' => let H := fresh in intro H; intros_destructn n'
 end.
 
-Ltac myrewrite H1 H2 := setoid_rewrite H1 in H2.
+Ltac myrewrite Ty := 
+repeat match goal with
+| H1 : ?Ty1 |- _ => constr_eq Ty Ty1 ; idtac Ty1;
+             match reverse goal with
+             | H2 : ?T |- _ => idtac T; setoid_rewrite H2 in H1 ; clear H2
+              end
+end.
+
 
 Ltac mypose x := pose x.
 
 Goal (forall (A : Type) (B : Type) (l : list A) (l' : list B), l = l).
 intros_destructn 3. Abort.
 
-Ltac myassert x n := assert x by (intros_destructn n ; reflexivity).
+Ltac myassert x n := 
+let x' := eval cbv beta in x in
+assert x' by (intros_destructn n ; reflexivity).
 
 Elpi Tactic eliminate_fix_hyp.
 Elpi Accumulate File "elpi/eliminate_fix.elpi".
@@ -26,9 +35,31 @@ Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate lp:{{
 
-  solve ((goal _ _ _ _ [trm H1, trm H2]) as G) GL :- 
+  pred gen_eqs i: list term, i: list term, o: list (pair term int).
+    gen_eqs [F|L] Glob [pr R I|RS] :- !, 
+      index_struct_argument F I,
+      std.filter Glob (x\ const_reduces_to x F) L', 
+      std.last L' Def, 
+      subst_anon_fix F Def F', 
+      mkEq F F' R, gen_eqs L Glob RS.
+    gen_eqs [] _ [].
 
-    subst_anon_fix H1 H2 H3, coq.ltac.call "mypose" [trm H3] G GL.
+    pred assert_list_rewrite i: term, i: list (pair term int), i: goal, o: list sealed-goal.
+    assert_list_rewrite H [pr Hyp I | XS] G GL :- 
+      int_to_term I I',
+      coq.ltac.call "myassert" [trm Hyp, trm I'] G [G1 | _],
+      coq.ltac.open (coq.ltac.call "myrewrite" [trm H]) G1 [G2 | _],
+      coq.ltac.open (assert_list_rewrite H XS) G2 GL.
+      assert_list_rewrite _H [] _G _GL.
+
+
+  solve ((goal Ctx _ _ _ [trm H]) as G) GL :-
+    globals_const_in_goal Ctx Glob, !, 
+    coq.typecheck H TyH ok, 
+    subterms_fix TyH L, !, 
+    gen_eqs L Glob R,
+    assert_list_rewrite TyH R G GL.
+
 }}.
 
 Elpi Typecheck. (*     %coq.typecheck H TyH ok, 
@@ -36,78 +67,11 @@ Elpi Typecheck. (*     %coq.typecheck H TyH ok,
 
 
 Print length.
-Goal False. 
-elpi eliminate_fix_hyp (fun A : Type =>
-fix length (l : list A) {struct l} : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end) (length). elpi eliminate_fix_hyp (fix add (n m : nat) {struct n} : nat :=
+Goal False -> False. intros. 
+assert (H1 : forall n m, id (Nat.add n m) =
+(fix add (n m : nat) :=
   match n with
   | 0 => m
   | S p => S (add p m)
-  end) (Nat.add).
-
-
-
-% ==> pour chaque F (fix dans la liste des fix)
-
-% globals_in_goal Ctx L, std.filter L (x\ const_reduces_to x F) L'
-
-Print length.
-
-Goal forall (A : Type) (l : list A), False.
-intros. elpi toto (fun A : Type =>
-fix length (l : list A) {struct l} : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end).
-
-
-Lemma test : forall (A : Type) (l : list A), 
-(fix length_anon (l : list A) : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length_anon l')
-  end) l  =
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end.
-Proof.
-intros; destruct l ; reflexivity. Qed.
-
-Variable toto : nat -> nat.
-
-Lemma test2 n m : (fix add (n0 m0 : nat) :=
-  match n0 with
-  | 0 => m0
-  | S p => S (add p m0)
-  end) n m = 
-  match n with
-  | 0 => m
-  | S p => S (Nat.add p m)
-  end
-.
-Proof. 
-intros; destruct n; reflexivity. Qed.
-
-Goal False.
-
-assert (H4 : forall n m, toto (Nat.add n m) =
-(toto ((fix add (n m : nat) :=
-  match n with
-  | 0 => m
-  | S p => S (add p m)
-  end) n m))). reflexivity. setoid_rewrite test2 in H4. Abort.
-
-
-
-
-Elpi Tactic elimination_fixpoints.
-
-Elpi Accumulate File "elpi/utilities.elpi".
-Elpi Accumulate File "elpi/subterms.elpi".
-
-Elpi Typecheck.
+  end) n m) by reflexivity.
+elpi eliminate_fix_hyp (H1).
