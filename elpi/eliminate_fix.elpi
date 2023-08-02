@@ -10,7 +10,66 @@ pred index_struct_argument i:term, o:int.
 pred mkEq_aux i: term, i: term, i: term, i: list term, o: term.
     mkEq_aux T1 T2 (prod Na Ty F) L (prod Na Ty R) :- pi x\ decl x Na Ty =>
         mkEq_aux T1 T2 (F x) [x | L]  (R x).
-    mkEq_aux T1 T2 T3 L (app [ {{ @eq }}, _, app [T1|L'], app [T2| L'] ]) :- std.rev L L'.
+    mkEq_aux T1 T2 T3 L (app [ {{ @eq }}, T3, app [T1|L'], app [T2| L'] ]) :- std.rev L L'.
 
 pred mkEq i: term, i: term, o: term.
-    mkEq T1 T2 R :- coq.typecheck T1 T3 ok, mkEq_aux T1 T2 T3 [] R.
+    mkEq T1 T2 R :- coq.typecheck T2 T3 ok, mkEq_aux T1 T2 T3 [] R.
+
+pred subst_anon_fix i: term, i: term, o: term.
+    subst_anon_fix (fun Na Ty F) T2 (fun Na Ty R) :- pi x\ decl x Na Ty =>
+        subst_anon_fix (F x) (app [T2, x]) (R x).
+    subst_anon_fix (fix Na I Ty F) T2 T3 :- coq.typecheck (fix Na I Ty F) TyF ok,
+        @holes! => 
+        coq.elaborate-skeleton (F T2) TyF T3 ok.
+
+pred is_fix i: term.
+    is_fix (fix _ _ _ _).
+    is_fix (fun N Ty F) :- pi x\ decl x N Ty => is_fix (F x).
+
+% all the subterms which are fixpoints of a function except its toplevel fix
+pred subterms_fix_fun i: term, o: (list term).
+    subterms_fix_fun (fun N Ty F) R :- pi x\ decl x N Ty => subterms_fix_fun (F x) R.
+    subterms_fix_fun (fix N _ Ty F) R :- pi x\ decl x N Ty => subterms_fix (F x) R.
+
+%warning: does not work with not real fixpoints (there must be a recursive call)
+pred subterms_fix i: term, o: (list term). 
+    subterms_fix (sort _U) [] :- !.
+    subterms_fix (fun N Ty F) [fun N Ty F | R] :- is_fix (fun N Ty F),
+        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix_fun (F x) R2, % ignore the toplevel fix
+        std.append R1 R2 R.  
+    subterms_fix (fun N Ty F) R :- 
+        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2, 
+        std.append R1 R2 R. 
+    subterms_fix (prod N Ty F) R :- !,
+        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2,
+        std.append R1 R2 R. 
+    subterms_fix (app L) R :- !,
+        std.map L subterms_fix R',
+        std.flatten R' R.
+    subterms_fix (global _G) [] :- !.
+    subterms_fix (let N Ty V F) R :- !,
+        subterms_fix Ty R1, subterms_fix V R2, pi x\ def x N Ty V => subterms_fix (F x) R3,
+        std.append R1 R2 R12,
+        std.append R12 R3 R.
+    subterms_fix (match T U L) R :- !, 
+        subterms_fix T R1, subterms_fix U R2, std.append R1 R2 R12,
+        std.map L subterms_fix R3,
+        std.flatten R3 R',
+        std.append R12 R' R.
+    subterms_fix (fix Na I Ty F) [fix Na I Ty F | R] :- !,
+        subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
+        std.append R1 R2 R.
+    subterms_fix _T [].
+
+pred const_reduces_to i: term, i: term. 
+    const_reduces_to (global G) T :- coq.unify-leq (global G) T ok.
+
+pred globals_in_goal i: goal-ctx, o: (list term).
+    globals_in_goal [(decl _ _ X)| L] L1 :- globals_in_term X L',
+        globals_in_goal L L'', std.append L' L'' L1.
+    globals_in_goal [(def _ _ _ X)| L] L1 :-globals_in_term X L',
+        globals_in_goal L L'', std.append L' L'' L1.
+    globals_in_goal [] [].
+
+pred globals_in_term i: term, o: (list term).
+    globals_in_term X L2 :- subterms X L1, std.filter L1 (x\ x = (global _)) L2.
