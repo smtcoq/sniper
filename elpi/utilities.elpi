@@ -144,4 +144,4 @@ pred term_to_argument i: list term, o: list argument.
 
 pred int_to_term i: int, o: term.
     int_to_term 0 {{ 0 }}.
-    int_to_term N (app [{{ S }}, N']) :- int_to_term N1 N', N is N1 + 1.
+    int_to_term N (app [{{ S }}, N']) :- calc (N - 1) N1, int_to_term N1 N'.

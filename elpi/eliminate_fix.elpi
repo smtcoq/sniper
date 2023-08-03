@@ -26,6 +26,24 @@ pred is_fix i: term.
     is_fix (fix _ _ _ _).
     is_fix (fun N Ty F) :- pi x\ decl x N Ty => is_fix (F x).
 
+pred recover_types i: (list term), o: (list (pair term term)).
+    recover_types [X | XS] [pr X Ty | R] :- coq.typecheck X Ty ok, 
+        recover_types XS R.
+    recover_types [] [].
+
+type abs term.
+
+pred bind i: bool, i: term, i: term, o: term.
+    bind tt T Ty T1 :- T1 = {{ fun (x : lp:Ty) => lp:(B x) }},
+        pi x\ (copy (abs) x :- !) => bind ff T Ty (B x).
+    bind ff T _ T1 :- copy T T1.
+
+pred abstract i: term, i: list (pair term term), o: term.
+    abstract T [pr X Ty | XS] R :- (copy X abs :- !) => copy T T1, 
+        bind tt T1 Ty T2,
+        abstract T2 XS R.
+    abstract T [] T.
+
 % all the subterms which are fixpoints of a function except its toplevel fix
 pred subterms_fix_fun i: term, o: (list term).
     subterms_fix_fun (fun N Ty F) R :- pi x\ decl x N Ty => subterms_fix_fun (F x) R.
@@ -40,9 +58,10 @@ pred subterms_fix i: term, o: (list term).
     subterms_fix (fun N Ty F) R :- 
         subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2, 
         std.append R1 R2 R. 
-    subterms_fix (prod N Ty F) R :- !,
-        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2,
-        std.append R1 R2 R. 
+    subterms_fix (prod N Ty F) R :- 
+        subterms_fix Ty R1, pi x\ decl x N Ty =>
+        subterms_fix (F x) R2,
+        std.append R1 R2 R.
     subterms_fix (app L) R :- !,
         std.map L subterms_fix R',
         std.flatten R' R.
@@ -56,20 +75,46 @@ pred subterms_fix i: term, o: (list term).
         std.map L subterms_fix R3,
         std.flatten R3 R',
         std.append R12 R' R.
-    subterms_fix (fix Na I Ty F) [fix Na I Ty F | R] :- !,
+    subterms_fix ((fix Na _I Ty F) as Fix) [Res | R] :- !,
+        names Nms, std.filter Nms (x\ occurs x Fix) Nms',
+        std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
+        abstract Fix NTy Res,
         subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
-        std.append R1 R2 R.
+        std.append R1 R2 R. % todo : abstract free variables if necessary
     subterms_fix _T [].
+
+pred subterms_glob_const i: term, o: (list term). 
+subterms_glob_const (sort U) [] :- !.
+subterms_glob_const (fun N Ty F) R :- !,
+    subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+    std.append R1 R2 R. 
+subterms_glob_const (prod N Ty F) R :- !, 
+    subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+    std.append R1 R2 R. 
+subterms_glob_const (app L) R :- !,
+    std.map L subterms_glob_const R',
+    std.flatten R' R.
+subterms_glob_const (global (const G)) [global (const G)].
+subterms_glob_const (let N Ty V F) R :- !,
+    subterms Ty R1, subterms V R2, pi x\ def x N Ty V => subterms_glob_const (F x) R3,
+    std.append R1 R2 R12,
+    std.append R12 R3 R.
+subterms_glob_const (match T U L) R :- !,
+    subterms_glob_const T R1, subterms_glob_const U R2, std.append R1 R2 R12,
+    std.map L subterms_glob_const R3, 
+    std.flatten R3 R',
+    std.append R12 R' R.
+subterms_glob_const (fix Na _ Ty F) R :- !,
+    subterms_glob_const Ty R1, pi x\ decl x Na Ty => subterms_glob_const (F x) R2,
+    std.append R1 R2 R.
+subterms_glob_const _ [].
 
 pred const_reduces_to i: term, i: term. 
     const_reduces_to (global G) T :- coq.unify-leq (global G) T ok.
 
-pred globals_const_in_term i: term, o: (list term).
-    globals_const_in_term X L2 :- subterms X L1, std.filter L1 (x\ x = (global (const _))) L2.
-
 pred globals_const_in_goal i: goal-ctx, o: (list term).
-    globals_const_in_goal [(decl _ _ X)| L] L1 :- globals_const_in_term X L',
+    globals_const_in_goal [(decl _ _ X)| L] L1 :- subterms_glob_const X L',
         globals_const_in_goal L L'', std.append L' L'' L1.
-    globals_const_in_goal [(def _ _ _ X)| L] L1 :-globals_const_in_term X L',
+    globals_const_in_goal [(def _ _ _ X)| L] L1 :- subterms_glob_const X L',
         globals_const_in_goal L L'', std.append L' L'' L1.
     globals_const_in_goal [] [].
