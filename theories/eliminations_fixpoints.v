@@ -1,3 +1,16 @@
+(**************************************************************************)
+(*                                                                        *)
+(*     Sniper                                                             *)
+(*     Copyright (C) 2021                                                 *)
+(*                                                                        *)
+(*     See file "AUTHORS" for the list of authors                         *)
+(*                                                                        *)
+(*   This file is distributed under the terms of the CeCILL-C licence     *)
+(*                                                                        *)
+(**************************************************************************)
+
+Require Import utilities.
+Require Import definitions.
 From elpi Require Import elpi.
 Require Import List.
 Import ListNotations.
@@ -94,5 +107,8 @@ Abort.
 
 End test.
 
-Tactic Notation "eliminate_fix_hyp" constr(H) ltac(k) :=
+Tactic Notation "eliminate_fix_cont" constr(H) ltac(k) :=
 elpi eliminate_fix_hyp H ; k H.
+
+Tactic Notation "eliminate_fix_hyp" constr(H) :=
+elpi eliminate_fix_hyp H.
