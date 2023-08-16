@@ -32,7 +32,7 @@ Elpi Accumulate lp:{{
 
 
   solve (goal Ctx _ TyG _ _ as G) GL :- ctx_to_hyps Ctx Trms, names Na,
-    subterms_list_and_args [TyG|Trms] Na Subs,
+    subterms_list_and_args [TyG|Trms] Na Subs, coq.say Subs,
     std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L, trm_and_args_type_funs L L', 
     std.rev Ctx Ctx', 
     add_pos_ctx_pr Ctx' L' L'', mypose_list L'' G GL.

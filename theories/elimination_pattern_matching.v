@@ -233,7 +233,7 @@ Goal (forall n m : nat, dumb_def n m = false)-> False.
  intros. get_def dumb_def. expand_hyp dumb_def_def.
 eliminate_dependent_pattern_matching H0.
 get_def length. expand_hyp length_def.
-eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H1.
+eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H0.
 Abort.
 
 
@@ -296,12 +296,12 @@ end.
 
 Goal True.
 get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
-get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
-eliminate_dependent_pattern_matching H2.
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H0.
 eliminate_dependent_pattern_matching H0.
+eliminate_dependent_pattern_matching H.
 get_def dep_match. expand_hyp dep_match_def.
-eliminate_fix_hyp H0.
-clear - H2. eliminate_dependent_pattern_matching H2.
+eliminate_fix_hyp H.
+clear - H. eliminate_dependent_pattern_matching H.
 Abort. 
 
 Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
@@ -315,9 +315,9 @@ Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
 Goal False.
 get_def @nth. expand_hyp nth_def. 
 eliminate_fix_hyp H.  
-eliminate_dependent_pattern_matching H0.
+eliminate_dependent_pattern_matching H.
 get_def @nth_default. expand_hyp nth_default_def.
-eliminate_dependent_pattern_matching H0.
+eliminate_dependent_pattern_matching H.
 Abort.
 
 End Tests.

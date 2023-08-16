@@ -84,7 +84,7 @@ pred subterms_fix i: term, o: (list term).
     subterms_fix _T [].
 
 pred subterms_glob_const i: term, o: (list term). 
-subterms_glob_const (sort U) [] :- !.
+subterms_glob_const (sort _U) [] :- !.
 subterms_glob_const (fun N Ty F) R :- !,
     subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
     std.append R1 R2 R. 
