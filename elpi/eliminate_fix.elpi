@@ -52,13 +52,10 @@ pred subterms_fix_fun i: term, o: (list term).
 %warning: does not work with not real fixpoints (there must be a recursive call)
 pred subterms_fix i: term, o: (list term). 
     subterms_fix (sort _U) [] :- !.
-    subterms_fix (fun N Ty F) [fun N Ty F | R] :- is_fix (fun N Ty F),
-        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix_fun (F x) R2, % ignore the toplevel fix
-        std.append R1 R2 R.  
-    subterms_fix (fun N Ty F) R :- 
-        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2, 
+    subterms_fix (fun N Ty F) R :- !,
+        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2,
         std.append R1 R2 R. 
-    subterms_fix (prod N Ty F) R :- 
+    subterms_fix (prod N Ty F) R :- !,
         subterms_fix Ty R1, pi x\ decl x N Ty =>
         subterms_fix (F x) R2,
         std.append R1 R2 R.
@@ -75,12 +72,20 @@ pred subterms_fix i: term, o: (list term).
         std.map L subterms_fix R3,
         std.flatten R3 R',
         std.append R12 R' R.
-    subterms_fix ((fix Na _I Ty F) as Fix) [Res | R] :- !,
+    subterms_fix ((fix Na _I Ty F) as Fix) R' :- 
         names Nms, std.filter Nms (x\ occurs x Fix) Nms',
         std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
-        abstract Fix NTy Res,
+        abstract Fix NTy Res, append_nodup [Fix] [Res] R0,
         subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
-        std.append R1 R2 R. % todo : abstract free variables if necessary
+        std.append R1 R2 R,
+        std.append R0 R R'.
+    subterms_fix ((fix Na _I Ty F) as Fix) R' :- 
+        names Nms, std.filter Nms (x\ occurs x Fix) Nms',
+        std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
+        abstract Fix NTy Res, append_nodup [] [Res] R0, !,
+        subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
+        std.append R1 R2 R,
+        std.append R0 R R'.
     subterms_fix _T [].
 
 pred subterms_glob_const i: term, o: (list term). 
@@ -109,12 +114,9 @@ subterms_glob_const (fix Na _ Ty F) R :- !,
     std.append R1 R2 R.
 subterms_glob_const _ [].
 
-pred const_reduces_to i: term, i: term. 
-    const_reduces_to (global G) T :- coq.unify-leq (global G) T ok.
-
-pred globals_const_in_goal i: goal-ctx, o: (list term).
-    globals_const_in_goal [(decl _ _ X)| L] L1 :- subterms_glob_const X L',
-        globals_const_in_goal L L'', std.append L' L'' L1.
-    globals_const_in_goal [(def _ _ _ X)| L] L1 :- subterms_glob_const X L',
-        globals_const_in_goal L L'', std.append L' L'' L1.
-    globals_const_in_goal [] [].
+pred globals_const_or_def_in_goal i: goal-ctx, o: (list term).
+    globals_const_or_def_in_goal [(decl _ _ X)| L] L1 :- subterms_glob_const X L',
+        globals_const_or_def_in_goal L L'', std.append L' L'' L1.
+    globals_const_or_def_in_goal [(def _X0 _ _Ty X)| L] L1 :- subterms_glob_const X L',
+       globals_const_or_def_in_goal L L'', std.append L' L'' L1.
+    globals_const_or_def_in_goal [] [].

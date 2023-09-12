@@ -25,7 +25,6 @@ Import ListNotations.
 
 Local Open Scope Z_scope.
 
-
 (** Examples on lists *)
 
 (* A simple example *)
@@ -153,11 +152,6 @@ Proof. intros A H; induction l; snipe. Qed.
 
 Section higher_order.
 
-Variable A B C: Type.
-Variable HA : CompDec A.
-Variable HB : CompDec B.
-Variable HC : CompDec C.
-
 Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   match l, l' with
   | [], _ => []
@@ -167,7 +161,11 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 
 (* A nice example but a bit slow ~70s: we should investigate to improve the performance *)
 
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+Lemma zip_map : 
+forall (A B C : Type) (HA : CompDec A) 
+(HB: CompDec B)
+(HC : CompDec C)
+(f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof. Time intros f g l ; induction l; snipe2. Qed.
 

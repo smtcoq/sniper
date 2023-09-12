@@ -111,13 +111,16 @@ Elpi Accumulate lp:{{
       elim_pos_ctx Ctx' H H', (coq.ltac.call "myrewrite" [trm H']) G GS.
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
-    gen_eqs Ctx [F|L] Glob [pr R' I|RS] :- !, 
-      index_struct_argument F I,
-      std.filter Glob (x\ const_reduces_to x F) L', 
+    gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
+      L' = [], !, gen_eqs Ctx L Glob RS.
+    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, 
+      index_struct_argument F I, std.rev Ctx Ctx',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
       std.last L' Def, 
-      subst_anon_fix F Def F', 
-      mkEq F F' R, 
-      std.rev Ctx Ctx',
+      elim_pos_ctx Ctx' Def Def',
+      subst_anon_fix F Def' F', 
+      mkEq F F' R,
       add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
     gen_eqs _ [] _ [].
 
@@ -125,7 +128,7 @@ Elpi Accumulate lp:{{
     assert_list_rewrite H [pr Hyp I | XS] ((goal Ctx _ _ _ _) as G) GL :-
       int_to_term I I',
       std.rev Ctx Ctx', 
-      elim_pos_ctx Ctx' Hyp Hyp',
+      elim_pos_ctx Ctx Hyp Hyp',
       coq.ltac.call "myassert" [trm Hyp', trm I'] G [G1 | _],
       coq.ltac.open (elim_pos_ctx_rewrite H) G1 [G2 | _],
       coq.ltac.open (assert_list_rewrite H XS) G2 GL.
@@ -133,11 +136,12 @@ Elpi Accumulate lp:{{
 
 
   solve ((goal Ctx _ _ _ [trm H]) as G) GL :-
-    globals_const_in_goal Ctx Glob, !,
-    coq.typecheck H TyH ok,
-    subterms_fix TyH L, !,
-    gen_eqs Ctx L Glob R, 
+    globals_const_or_def_in_goal Ctx Glob,
     std.rev Ctx Ctx',
+    std.map Glob (x\ add_pos_ctx Ctx' x) Glob',
+    coq.typecheck H TyH ok,
+    subterms_fix TyH L, !, 
+    gen_eqs Ctx L Glob' R, 
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -204,7 +208,19 @@ assert (H3 : forall A l, toto (length l) = toto ((fix length (l : list A) : nat 
   | [] => 0
   | _ :: l' => S (length l')
   end) l) -> True) by admit. eliminate_fix_hyp H3.
-Abort. 
+Abort.
+
+(* Test the local definitions *)
+
+Goal forall (A B : Type) (f : A -> B) (n : nat), n = n-> False.
+intros A B f n;
+pose (f0 := map); 
+assert (H1 : forall (l : list A), 
+f0 A B f l = (fix map0 (l : list A) :=
+  match l with
+  | [] => []
+  | a :: t => f a :: map0 t
+  end) l) by reflexivity; eliminate_fix_hyp H1. Abort.
 
 End test.
 
