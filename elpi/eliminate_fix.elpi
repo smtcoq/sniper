@@ -18,7 +18,8 @@ pred mkEq i: term, i: term, o: term.
 pred subst_anon_fix i: term, i: term, o: term.
     subst_anon_fix (fun Na Ty F) T2 (fun Na Ty R) :- pi x\ decl x Na Ty =>
         subst_anon_fix (F x) (app [T2, x]) (R x).
-    subst_anon_fix (fix Na I Ty F) T2 T3 :- coq.typecheck (fix Na I Ty F) TyF ok,
+    subst_anon_fix (fix Na I Ty F) T2 T3 :- coq.say "before typecheck subst fix", 
+        coq.typecheck (fix Na I Ty F) TyF ok, coq.say "after typecheck subst fix",
         @holes! => 
         coq.elaborate-skeleton (F T2) TyF T3 ok.
 
@@ -72,20 +73,12 @@ pred subterms_fix i: term, o: (list term).
         std.map L subterms_fix R3,
         std.flatten R3 R',
         std.append R12 R' R.
-    subterms_fix ((fix Na _I Ty F) as Fix) R' :- 
+    subterms_fix ((fix Na _I Ty F) as Fix) [Res|R] :- 
         names Nms, std.filter Nms (x\ occurs x Fix) Nms',
         std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
-        abstract Fix NTy Res, append_nodup [Fix] [Res] R0,
+        abstract Fix NTy Res, !,
         subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
-        std.append R1 R2 R,
-        std.append R0 R R'.
-    subterms_fix ((fix Na _I Ty F) as Fix) R' :- 
-        names Nms, std.filter Nms (x\ occurs x Fix) Nms',
-        std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
-        abstract Fix NTy Res, append_nodup [] [Res] R0, !,
-        subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
-        std.append R1 R2 R,
-        std.append R0 R R'.
+        std.append R1 R2 R.
     subterms_fix _T [].
 
 pred subterms_glob_const i: term, o: (list term). 
@@ -120,3 +113,15 @@ pred globals_const_or_def_in_goal i: goal-ctx, o: (list term).
     globals_const_or_def_in_goal [(def _X0 _ _Ty X)| L] L1 :- subterms_glob_const X L',
        globals_const_or_def_in_goal L L'', std.append L' L'' L1.
     globals_const_or_def_in_goal [] [].
+
+pred abstract_unify_aux i: term, i: term, i: term.
+    abstract_unify_aux (fun _ _ F1) (fun Na Ty F2) (prod _Na Ty F3) :- !, pi x\ decl x Na Ty =>
+      abstract_unify_aux (F1 _) (F2 _) (F3 x).
+    abstract_unify_aux T1 (fun _ _ F2) (prod Na Ty F3) :- 
+      pi x\ decl x Na Ty => abstract_unify_aux T1 (F2 _) (F3 x).
+    abstract_unify_aux T1 T2 T3 :- @holes! => coq.say "before end unify" T1 T2 T3,
+        coq.elaborate-skeleton T1 T3 T1' ok, coq.elaborate-skeleton T2 T3 T2' ok, 
+        coq.unify-leq T1' T2' ok, coq.say "unified" T1' T2'.
+
+pred abstract_unify i: term, i: term.
+    abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, abstract_unify_aux T1 T2 T3.

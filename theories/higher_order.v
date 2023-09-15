@@ -1,7 +1,6 @@
 Require Import utilities.
 Require Import expand.
 Require Import elimination_fixpoints.
-Require Import elimination_fixpoints_metacoq.
 Require Import elimination_pattern_matching.
 Require Import anonymous_functions.
 Require Import instantiate.
@@ -76,7 +75,7 @@ let rec aux h :=
             | (id, opt, cstr) => let hltac2 := Control.hyp id in
               let hltac1 := Ltac1.of_constr hltac2 in ltac1:(H |- let T := type of H in let U := type of T 
               in tryif (constr_eq U Prop) then try (expand_hyp_cont H ltac:(fun H' => 
-              eliminate_fix_ho_metacoq H' ltac:(fun H'' => try (eliminate_dependent_pattern_matching H''))); clear H)
+              eliminate_fix_cont H' ltac:(fun H'' => try (eliminate_dependent_pattern_matching H''))); clear H)
 else idtac) hltac1 ; aux xs
             end
 end 

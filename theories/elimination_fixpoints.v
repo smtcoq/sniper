@@ -89,7 +89,6 @@ repeat match goal with
     end
 end.
 
-
 Ltac mypose x := pose x.
 
 Goal (forall (A : Type) (B : Type) (l : list A) (l' : list B), l = l).
@@ -112,7 +111,7 @@ Elpi Accumulate lp:{{
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok; abstract_unify X' F)) L',
       L' = [], !, gen_eqs Ctx L Glob RS.
     gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, 
       index_struct_argument F I, std.rev Ctx Ctx',
@@ -153,7 +152,7 @@ Tactic Notation "eliminate_fix_hyp" constr(H) :=
 elpi eliminate_fix_hyp (H).
 
 Ltac eliminate_fix_cont H k :=
-eliminate_fix_hyp H ; k H.
+eliminate_fix_hyp H ; idtac 1 ; k H.
 
 Section test.
 
