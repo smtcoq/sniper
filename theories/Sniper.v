@@ -185,8 +185,9 @@ repeat match goal with
 end ;
 try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
 elpi elimination_polymorphism ltac_term_list:(l) ; clear_prenex_poly_hyps_in_context) ;
+let function :=
 ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
-with | None => fail | Some pr => get_projs_in_variables pr end).
+with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
 
 Tactic Notation "snipe2" uconstr_list_sep(l, ",") :=
 let p2' := eval unfold prod_types in prod_types in

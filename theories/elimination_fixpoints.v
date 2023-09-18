@@ -111,14 +111,14 @@ Elpi Accumulate lp:{{
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok; abstract_unify X' F)) L',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok ; abstract_unify X' F)) L',
       L' = [], !, gen_eqs Ctx L Glob RS.
     gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, 
       index_struct_argument F I, std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok ; abstract_unify X' F)) L',
       std.last L' Def, 
       elim_pos_ctx Ctx' Def Def',
-      subst_anon_fix F Def' F', 
+      subst_anon_fix F Def' F',
       mkEq F F' R,
       add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
     gen_eqs _ [] _ [].
@@ -139,8 +139,8 @@ Elpi Accumulate lp:{{
     std.rev Ctx Ctx',
     std.map Glob (x\ add_pos_ctx Ctx' x) Glob',
     coq.typecheck H TyH ok,
-    subterms_fix TyH L, !, 
-    gen_eqs Ctx L Glob' R, 
+    subterms_fix TyH L, !,
+    gen_eqs Ctx L Glob' R,
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -152,7 +152,7 @@ Tactic Notation "eliminate_fix_hyp" constr(H) :=
 elpi eliminate_fix_hyp (H).
 
 Ltac eliminate_fix_cont H k :=
-eliminate_fix_hyp H ; idtac 1 ; k H.
+eliminate_fix_hyp H ; k H.
 
 Section test.
 
@@ -209,17 +209,34 @@ assert (H3 : forall A l, toto (length l) = toto ((fix length (l : list A) : nat 
   end) l) -> True) by admit. eliminate_fix_hyp H3.
 Abort.
 
-(* Test the local definitions *)
+(* Test higher-order + polymorphism *) 
 
-Goal forall (A B : Type) (f : A -> B) (n : nat), n = n-> False.
-intros A B f n;
-pose (f0 := map); 
-assert (H1 : forall (l : list A), 
-f0 A B f l = (fix map0 (l : list A) :=
-  match l with
-  | [] => []
-  | a :: t => f a :: map0 t
-  end) l) by reflexivity; eliminate_fix_hyp H1. Abort.
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Goal (forall (A B C : Type)(f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
+intros A B C f g l.
+pose (f0 := fun x : A => (f x, g x)).
+pose (f1 := map f0).
+assert (H : forall l : list A,
+    f1 l =
+    (fix map (l0 : list A) : list (B * C) :=
+       match l0 with
+       | [] => []
+       | a :: t => f0 a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H.
+assert (foo : forall l : list A,
+    f1 l = match l with
+           | [] => []
+           | a :: t => f0 a :: map f0 t
+           end) by assumption.
+Abort.
 
 End test.
 

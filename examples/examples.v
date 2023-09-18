@@ -27,7 +27,7 @@ Local Open Scope Z_scope.
 
 (** Examples on lists *)
 
-(* A simple example *)
+(* (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof. snipe. Qed.
 
@@ -149,7 +149,7 @@ Proof. intros A HA. snipe. Qed.
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
-
+ *)
 Section higher_order.
 
 Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
@@ -161,13 +161,28 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 
 (* A nice example but a bit slow ~70s: we should investigate to improve the performance *)
 
-Lemma zip_map : 
-forall (A B C : Type) (HA : CompDec A) 
-(HB: CompDec B)
-(HC : CompDec C)
-(f : A -> B) (g : A -> C) (l : list A),
+From elpi Require Import elpi.
+From Ltac2 Require Import Ltac2.
+
+Tactic Notation "scope2_aux'" constr(p1) constr(p2) := 
+let p2' := eval unfold p2 in p2 in
+intros ; 
+repeat match goal with
+| H : _ |- _  => eliminate_dependent_pattern_matching H
+| _ => fail
+end ;
+try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
+elpi elimination_polymorphism ; clear_prenex_poly_hyps_in_context) ;
+let function :=
+ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
+with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
+
+Set Default Proof Mode "Classic".
+
+Lemma zip_map A B C (HA : CompDec A) (HB : CompDec B) (HC : CompDec C): 
+forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; snipe2. Qed.
+Proof. Time intros f g l ; induction l; scope2_aux' prod_of_symb prod_types; verit. Qed.
 
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 

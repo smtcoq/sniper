@@ -5,6 +5,13 @@ pred index_struct_argument i:term, o:int.
         pi x\ index_struct_argument (F x) N, % get the body and recurse
         N1 is N + 1.
 
+pred args_before_fix i: term, o: int.
+    args_before_fix (global (const C)) I :- coq.env.const C (some Bo) _, args_before_fix Bo I.
+    args_before_fix (fun _ _ F) N1 :-
+        pi x\ args_before_fix (F x) N,
+        N1 is N + 1.
+    args_before_fix (fix _ _ _ _) 0.
+
 % builds the equality between two terms 
 % (applied to the same list of terms)
 pred mkEq_aux i: term, i: term, i: term, i: list term, o: term.
@@ -15,13 +22,22 @@ pred mkEq_aux i: term, i: term, i: term, i: list term, o: term.
 pred mkEq i: term, i: term, o: term.
     mkEq T1 T2 R :- coq.typecheck T2 T3 ok, mkEq_aux T1 T2 T3 [] R.
 
+pred nb_prod i: term, o: int.
+    nb_prod (prod Na Ty F) N' :- !, pi x\ decl x Na Ty => nb_prod (F x) N, N' is N + 1.
+    nb_prod _ 0.
+
+pred mk_napp i: term, i: int, o: term.
+    mk_napp T1 0 T1 :- !. 
+    mk_napp T1 N' (app [T2, _]) :- N is N' - 1, mk_napp T1 N T2.
+
 pred subst_anon_fix i: term, i: term, o: term.
     subst_anon_fix (fun Na Ty F) T2 (fun Na Ty R) :- pi x\ decl x Na Ty =>
-        subst_anon_fix (F x) (app [T2, x]) (R x).
-    subst_anon_fix (fix Na I Ty F) T2 T3 :- coq.say "before typecheck subst fix", 
-        coq.typecheck (fix Na I Ty F) TyF ok, coq.say "after typecheck subst fix",
-        @holes! => 
-        coq.elaborate-skeleton (F T2) TyF T3 ok.
+        subst_anon_fix (F x) T2 (R x).
+    subst_anon_fix (fix Na I Ty F) T2 T3 :-
+        coq.typecheck (fix Na I Ty F) TyF ok,
+        args_before_fix T2 Nb, mk_napp T2 Nb T2',
+        @holes! =>
+        coq.elaborate-skeleton (F T2') TyF T3 ok.
 
 pred is_fix i: term.
     is_fix (fix _ _ _ _).
@@ -119,9 +135,9 @@ pred abstract_unify_aux i: term, i: term, i: term.
       abstract_unify_aux (F1 _) (F2 _) (F3 x).
     abstract_unify_aux T1 (fun _ _ F2) (prod Na Ty F3) :- 
       pi x\ decl x Na Ty => abstract_unify_aux T1 (F2 _) (F3 x).
-    abstract_unify_aux T1 T2 T3 :- @holes! => coq.say "before end unify" T1 T2 T3,
+    abstract_unify_aux T1 T2 T3 :- @holes! =>
         coq.elaborate-skeleton T1 T3 T1' ok, coq.elaborate-skeleton T2 T3 T2' ok, 
-        coq.unify-leq T1' T2' ok, coq.say "unified" T1' T2'.
+        coq.unify-leq T1' T2' ok.
 
 pred abstract_unify i: term, i: term.
-    abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, abstract_unify_aux T1 T2 T3.
+    abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, whd1 T1 T1', abstract_unify_aux T1' T2 T3.
