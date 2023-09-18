@@ -102,6 +102,8 @@ Elpi Tactic eliminate_fix_hyp.
 Elpi Accumulate File "elpi/eliminate_fix.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
+
+(* TODO if / else elpi when L = [] to save some computation time *)
 Elpi Accumulate lp:{{
 
   pred elim_pos_ctx_rewrite i: term, i: goal, o: list (sealed-goal).
@@ -111,15 +113,17 @@ Elpi Accumulate lp:{{
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok ; abstract_unify X' F)) L',
+      elim_pos_ctx Ctx' F F', 
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
       L' = [], !, gen_eqs Ctx L Glob RS.
-    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, 
-      index_struct_argument F I, std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F ok ; abstract_unify X' F)) L',
+    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
+      elim_pos_ctx Ctx' F F',
+      index_struct_argument F' I,
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
       std.last L' Def, 
       elim_pos_ctx Ctx' Def Def',
-      subst_anon_fix F Def' F',
-      mkEq F F' R,
+      subst_anon_fix F' Def' F'',
+      mkEq F' F'' R,
       add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
     gen_eqs _ [] _ [].
 
@@ -136,11 +140,13 @@ Elpi Accumulate lp:{{
 
   solve ((goal Ctx _ _ _ [trm H]) as G) GL :-
     globals_const_or_def_in_goal Ctx Glob,
+    std.filter Glob is_fix Glob0,
     std.rev Ctx Ctx',
-    std.map Glob (x\ add_pos_ctx Ctx' x) Glob',
+    std.map Glob0 (x\ add_pos_ctx Ctx' x) Glob',
     coq.typecheck H TyH ok,
     subterms_fix TyH L, !,
-    gen_eqs Ctx L Glob' R,
+    std.map L (x\ add_pos_ctx Ctx' x) L',
+    gen_eqs Ctx L' Glob' R, coq.say "RRRRRRRRRRR" R,
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -239,6 +245,51 @@ assert (foo : forall l : list A,
 Abort.
 
 End test.
+
+Section debug_monomorphism.
+
+Variable A B C : Type.
+
+Goal (forall (f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
+intros f g l.
+pose (f0 := fun x : A => (f x, g x)).
+pose (f1 := map f0).
+pose (f2 := map f).
+pose (f3 := map (@id nat)).
+assert (H : forall l : list nat,
+    f3 l =
+    (fix map (l0 : list nat) : list nat :=
+       match l0 with
+       | [] => []
+       | a :: t => id a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H.
+assert (H1 : forall l : list A,
+    f2 l =
+    (fix map (l0 : list A) : list B :=
+       match l0 with
+       | [] => []
+       | a :: t => f a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H1.
+assert (H2 : forall l : list A,
+    f1 l =
+    (fix map (l0 : list A) : list (B * C) :=
+       match l0 with
+       | [] => []
+       | a :: t => f0 a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H2.
+assert (foo : forall l : list A,
+    f1 l = match l with
+           | [] => []
+           | a :: t => f0 a :: map f0 t
+           end) by assumption.
+Abort.
+
+
+End bug_section_variables.
 
 
 
