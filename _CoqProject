@@ -5,7 +5,6 @@ theories/indrel.v
 theories/definitions.v
 theories/expand.v
 theories/elimination_fixpoints.v
-theories/elimination_fixpoints_metacoq.v
 theories/elimination_pattern_matching.v
 theories/anonymous_functions.v
 theories/higher_order.v

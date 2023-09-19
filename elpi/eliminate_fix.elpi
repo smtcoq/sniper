@@ -43,6 +43,7 @@ pred is_fix i: term.
     is_fix (fix _ _ _ _).
     is_fix (fun N Ty F) :- pi x\ decl x N Ty => is_fix (F x).
     is_fix T :- whd1 T T', is_fix T'.
+    is_fix (app [T|L]) :- is_fix T.
 
 pred recover_types i: (list term), o: (list (pair term term)).
     recover_types [X | XS] [pr X Ty | R] :- coq.typecheck X Ty ok, 

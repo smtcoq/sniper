@@ -27,7 +27,7 @@ Local Open Scope Z_scope.
 
 (** Examples on lists *)
 
-(* (* A simple example *)
+(* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof. snipe. Qed.
 
@@ -149,7 +149,7 @@ Proof. intros A HA. snipe. Qed.
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
- *)
+
 Section higher_order.
 
 
@@ -169,7 +169,7 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope2_aux prod_of_symb prod_types. Qed.
+Proof. Time intros f g l ; induction l; snipe2. Qed.
 
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 

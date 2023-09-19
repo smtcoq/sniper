@@ -71,10 +71,45 @@ Ltac specialize_in_eq x y :=
     specialize_in_eq x y) in tac x y.
 
 Ltac intros_destructn n := 
-lazymatch n with
-| 0 => let x := fresh in intro x; destruct x
-| S ?n' => let H := fresh in intro H; intros_destructn n'
-end.
+ lazymatch n with
+    | 0 => let x := fresh in intro x; destruct x
+    | S ?n' => let H := fresh in intro H; intros_destructn n'
+  end.
+
+(* fold constants in equalities *)
+
+Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
+  match Constr.Unsafe.kind t with
+    | Constr.Unsafe.App t' a => 
+      if Constr.equal t' '(@eq) then 
+      let cst := Array.get a 1 in 
+      let cst' := Ltac1.of_constr cst in
+      let h' := Ltac1.of_constr h in
+      ltac1:(x y |- let x' := get_head x in fold x' in y) cst' h'  
+      else ()
+    | _ => ()
+  end. 
+
+Ltac2 rec fold_in_eq_aux2 (t : constr) (h : constr) :=
+  match Constr.Unsafe.kind t with
+    | Constr.Unsafe.Prod b t' => fold_in_eq_aux2 t' h
+    | _ => fold_in_eq_aux1 t h
+  end.
+
+Ltac fold_in_eq H :=
+  let T := type of H in
+  let funct := ltac2:(t h |- 
+  let t' := Ltac1.to_constr t in
+    match t' with
+      | Some t'' => 
+        let h' := Ltac1.to_constr h in
+        match h' with
+          | Some h'' => fold_in_eq_aux2 t'' h''
+          | None => ()
+        end                
+      | None => ()
+    end) in funct T H.
+
 
 (* TODO : best rewriting to handle other situations. 
 The problem is the automatic conversion made by setoid rewrite *)
@@ -84,8 +119,9 @@ repeat match goal with
 | H1 : ?Ty1 |- _ =>
   constr_eq Ty Ty1 ;
   lazymatch goal with
-    | H2 : ?T |- _ => first [setoid_rewrite H2 in H1 at 2 ; clear H2
-| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2]
+    | H2 : ?T |- _ => first [setoid_rewrite H2 in H1 at 2 ; clear H2 ; 
+try (fold_in_eq H1)
+| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 ; try (fold_in_eq H1)]
     end
 end.
 
@@ -280,10 +316,10 @@ assert (H2 : forall l : list A,
        | [] => []
        | a :: t => f0 a :: map t
        end) l) by reflexivity.
-eliminate_fix_hyp H2.
-assert (bar : forall l : list A, f1 l = match l with
+eliminate_fix_hyp H2. 
+assert (bar : forall l : list A, f2 l = match l with
                                | [] => []
-                               | a :: t => f0 a :: map f0 t
+                               | a :: t => f a :: map f t
                                end) 
 by assumption.
 assert (foo : forall l : list A,
