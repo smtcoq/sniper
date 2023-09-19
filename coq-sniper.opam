@@ -17,7 +17,8 @@ install: [
 ]
 depends: [
   "coq" {>= "8.16" & < "8.17~"}
-  "coq-metacoq-pcuic" {= "1.1+8.16"}
+  "coq-metacoq" {= "1.1+8.16"}
+  "coq-trakt"
   "coq-elpi"
   "coq-smtcoq"
 ]
