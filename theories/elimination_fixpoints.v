@@ -113,7 +113,7 @@ Elpi Accumulate lp:{{
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      elim_pos_ctx Ctx' F F', 
+      elim_pos_ctx Ctx' F F',
       std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
       L' = [], !, gen_eqs Ctx L Glob RS.
     gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
@@ -131,7 +131,7 @@ Elpi Accumulate lp:{{
     assert_list_rewrite H [pr Hyp I | XS] ((goal Ctx _ _ _ _) as G) GL :-
       int_to_term I I',
       std.rev Ctx Ctx', 
-      elim_pos_ctx Ctx Hyp Hyp',
+      elim_pos_ctx Ctx' Hyp Hyp',
       coq.ltac.call "myassert" [trm Hyp', trm I'] G [G1 | _],
       coq.ltac.open (elim_pos_ctx_rewrite H) G1 [G2 | _],
       coq.ltac.open (assert_list_rewrite H XS) G2 GL.
@@ -146,7 +146,7 @@ Elpi Accumulate lp:{{
     coq.typecheck H TyH ok,
     subterms_fix TyH L, !,
     std.map L (x\ add_pos_ctx Ctx' x) L',
-    gen_eqs Ctx L' Glob' R, coq.say "RRRRRRRRRRR" R,
+    gen_eqs Ctx L' Glob' R,
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -281,6 +281,11 @@ assert (H2 : forall l : list A,
        | a :: t => f0 a :: map t
        end) l) by reflexivity.
 eliminate_fix_hyp H2.
+assert (bar : forall l : list A, f1 l = match l with
+                               | [] => []
+                               | a :: t => f0 a :: map f0 t
+                               end) 
+by assumption.
 assert (foo : forall l : list A,
     f1 l = match l with
            | [] => []
@@ -288,8 +293,7 @@ assert (foo : forall l : list A,
            end) by assumption.
 Abort.
 
-
-End bug_section_variables.
+End debug_monomorphism.
 
 
 

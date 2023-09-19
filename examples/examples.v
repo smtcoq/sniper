@@ -152,6 +152,12 @@ Proof. intros A H; induction l; snipe. Qed.
  *)
 Section higher_order.
 
+
+Variable A B C: Type.
+Variable HA : CompDec A.
+Variable HB : CompDec B.
+Variable HC : CompDec C.
+
 Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   match l, l' with
   | [], _ => []
@@ -161,28 +167,9 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 
 (* A nice example but a bit slow ~70s: we should investigate to improve the performance *)
 
-From elpi Require Import elpi.
-From Ltac2 Require Import Ltac2.
-
-Tactic Notation "scope2_aux'" constr(p1) constr(p2) := 
-let p2' := eval unfold p2 in p2 in
-intros ; 
-repeat match goal with
-| H : _ |- _  => eliminate_dependent_pattern_matching H
-| _ => fail
-end ;
-try interp_alg_types_context_goal p2' ; try (def_fix_and_pattern_matching p1 ltac:(get_definitions_theories_no_generalize) ; 
-elpi elimination_polymorphism ; clear_prenex_poly_hyps_in_context) ;
-let function :=
-ltac2:(p2' |- match (Ltac2.Ltac1.to_constr (p2'))
-with | None => fail | Some pr => get_projs_in_variables pr end) in function p2'.
-
-Set Default Proof Mode "Classic".
-
-Lemma zip_map A B C (HA : CompDec A) (HB : CompDec B) (HC : CompDec C): 
-forall (f : A -> B) (g : A -> C) (l : list A),
+Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope2_aux' prod_of_symb prod_types; verit. Qed.
+Proof. Time intros f g l ; induction l; scope2_aux prod_of_symb prod_types. Qed.
 
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 

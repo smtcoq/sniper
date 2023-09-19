@@ -135,14 +135,14 @@ pred abstract_unify_aux i: term, i: term, i: term.
     abstract_unify_aux (fun _ _ F1) (fun Na Ty F2) (prod _Na Ty F3) :- !, 
         pi x\ decl x Na Ty =>
         abstract_unify_aux (F1 _) (F2 _) (F3 x).
-    abstract_unify_aux (fun Na Ty F1) T2 T3 :- !, 
-        pi x\ decl x Na Ty =>
+    abstract_unify_aux (fun _Na _Ty F1) T2 T3 :- !, 
         abstract_unify_aux (F1 _) T2 T3.
     abstract_unify_aux T1 (fun _ _ F2) (prod Na Ty F3) :- !,
-        pi x\ decl x Na Ty => abstract_unify_aux T1 (F2 _) (F3 x).
+        pi x\ decl x Na Ty =>
+        abstract_unify_aux T1 (F2 _) (F3 x).
     abstract_unify_aux T1 T2 T3 :- @holes! => !,
         coq.elaborate-skeleton T1 T3 T1' ok, coq.elaborate-skeleton T2 T3 T2' ok, 
-        coq.unify-leq T1' T2' ok, coq.say "UNIFIED".
+        coq.unify-leq T1' T2' ok.
 
 pred abstract_unify i: term, i: term.
     abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, whd1 T1 T1', abstract_unify_aux T1' T2 T3.
