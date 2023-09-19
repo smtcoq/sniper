@@ -71,10 +71,45 @@ Ltac specialize_in_eq x y :=
     specialize_in_eq x y) in tac x y.
 
 Ltac intros_destructn n := 
-lazymatch n with
-| 0 => let x := fresh in intro x; destruct x
-| S ?n' => let H := fresh in intro H; intros_destructn n'
-end.
+ lazymatch n with
+    | 0 => let x := fresh in intro x; destruct x
+    | S ?n' => let H := fresh in intro H; intros_destructn n'
+  end.
+
+(* fold constants in equalities *)
+
+Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
+  match Constr.Unsafe.kind t with
+    | Constr.Unsafe.App t' a => 
+      if Constr.equal t' '(@eq) then 
+      let cst := Array.get a 1 in 
+      let cst' := Ltac1.of_constr cst in
+      let h' := Ltac1.of_constr h in
+      ltac1:(x y |- let x' := get_head x in fold x' in y) cst' h'  
+      else ()
+    | _ => ()
+  end. 
+
+Ltac2 rec fold_in_eq_aux2 (t : constr) (h : constr) :=
+  match Constr.Unsafe.kind t with
+    | Constr.Unsafe.Prod b t' => fold_in_eq_aux2 t' h
+    | _ => fold_in_eq_aux1 t h
+  end.
+
+Ltac fold_in_eq H :=
+  let T := type of H in
+  let funct := ltac2:(t h |- 
+  let t' := Ltac1.to_constr t in
+    match t' with
+      | Some t'' => 
+        let h' := Ltac1.to_constr h in
+        match h' with
+          | Some h'' => fold_in_eq_aux2 t'' h''
+          | None => ()
+        end                
+      | None => ()
+    end) in funct T H.
+
 
 (* TODO : best rewriting to handle other situations. 
 The problem is the automatic conversion made by setoid rewrite *)
@@ -84,11 +119,11 @@ repeat match goal with
 | H1 : ?Ty1 |- _ =>
   constr_eq Ty Ty1 ;
   lazymatch goal with
-    | H2 : ?T |- _ => first [setoid_rewrite H2 in H1 at 2 ; clear H2
-| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2]
+    | H2 : ?T |- _ => first [setoid_rewrite H2 in H1 at 2 ; clear H2 ; 
+try (fold_in_eq H1)
+| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 ; try (fold_in_eq H1)]
     end
 end.
-
 
 Ltac mypose x := pose x.
 
@@ -103,6 +138,8 @@ Elpi Tactic eliminate_fix_hyp.
 Elpi Accumulate File "elpi/eliminate_fix.elpi".
 Elpi Accumulate File "elpi/subterms.elpi".
 Elpi Accumulate File "elpi/utilities.elpi".
+
+(* TODO if / else elpi when L = [] to save some computation time *)
 Elpi Accumulate lp:{{
 
   pred elim_pos_ctx_rewrite i: term, i: goal, o: list (sealed-goal).
@@ -112,15 +149,17 @@ Elpi Accumulate lp:{{
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
+      elim_pos_ctx Ctx' F F',
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
       L' = [], !, gen_eqs Ctx L Glob RS.
-    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, 
-      index_struct_argument F I, std.rev Ctx Ctx',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', coq.unify-leq X' F ok) L',
+    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
+      elim_pos_ctx Ctx' F F',
+      index_struct_argument F' I,
+      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
       std.last L' Def, 
       elim_pos_ctx Ctx' Def Def',
-      subst_anon_fix F Def' F', 
-      mkEq F F' R,
+      subst_anon_fix F' Def' F'',
+      mkEq F' F'' R,
       add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
     gen_eqs _ [] _ [].
 
@@ -128,7 +167,7 @@ Elpi Accumulate lp:{{
     assert_list_rewrite H [pr Hyp I | XS] ((goal Ctx _ _ _ _) as G) GL :-
       int_to_term I I',
       std.rev Ctx Ctx', 
-      elim_pos_ctx Ctx Hyp Hyp',
+      elim_pos_ctx Ctx' Hyp Hyp',
       coq.ltac.call "myassert" [trm Hyp', trm I'] G [G1 | _],
       coq.ltac.open (elim_pos_ctx_rewrite H) G1 [G2 | _],
       coq.ltac.open (assert_list_rewrite H XS) G2 GL.
@@ -137,11 +176,13 @@ Elpi Accumulate lp:{{
 
   solve ((goal Ctx _ _ _ [trm H]) as G) GL :-
     globals_const_or_def_in_goal Ctx Glob,
+    std.filter Glob is_fix Glob0,
     std.rev Ctx Ctx',
-    std.map Glob (x\ add_pos_ctx Ctx' x) Glob',
+    std.map Glob0 (x\ add_pos_ctx Ctx' x) Glob',
     coq.typecheck H TyH ok,
-    subterms_fix TyH L, !, 
-    gen_eqs Ctx L Glob' R, 
+    subterms_fix TyH L, !,
+    std.map L (x\ add_pos_ctx Ctx' x) L',
+    gen_eqs Ctx L' Glob' R,
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -210,19 +251,85 @@ assert (H3 : forall A l, toto (length l) = toto ((fix length (l : list A) : nat 
   end) l) -> True) by admit. eliminate_fix_hyp H3.
 Abort.
 
-(* Test the local definitions *)
+(* Test higher-order + polymorphism *) 
 
-Goal forall (A B : Type) (f : A -> B) (n : nat), n = n-> False.
-intros A B f n;
-pose (f0 := map); 
-assert (H1 : forall (l : list A), 
-f0 A B f l = (fix map0 (l : list A) :=
-  match l with
-  | [] => []
-  | a :: t => f a :: map0 t
-  end) l) by reflexivity; eliminate_fix_hyp H1. Abort.
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Goal (forall (A B C : Type)(f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
+intros A B C f g l.
+pose (f0 := fun x : A => (f x, g x)).
+pose (f1 := map f0).
+assert (H : forall l : list A,
+    f1 l =
+    (fix map (l0 : list A) : list (B * C) :=
+       match l0 with
+       | [] => []
+       | a :: t => f0 a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H.
+assert (foo : forall l : list A,
+    f1 l = match l with
+           | [] => []
+           | a :: t => f0 a :: map f0 t
+           end) by assumption.
+Abort.
 
 End test.
+
+Section debug_monomorphism.
+
+Variable A B C : Type.
+
+Goal (forall (f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
+intros f g l.
+pose (f0 := fun x : A => (f x, g x)).
+pose (f1 := map f0).
+pose (f2 := map f).
+pose (f3 := map (@id nat)).
+assert (H : forall l : list nat,
+    f3 l =
+    (fix map (l0 : list nat) : list nat :=
+       match l0 with
+       | [] => []
+       | a :: t => id a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H.
+assert (H1 : forall l : list A,
+    f2 l =
+    (fix map (l0 : list A) : list B :=
+       match l0 with
+       | [] => []
+       | a :: t => f a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H1.
+assert (H2 : forall l : list A,
+    f1 l =
+    (fix map (l0 : list A) : list (B * C) :=
+       match l0 with
+       | [] => []
+       | a :: t => f0 a :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H2. 
+assert (bar : forall l : list A, f2 l = match l with
+                               | [] => []
+                               | a :: t => f a :: map f t
+                               end) 
+by assumption.
+assert (foo : forall l : list A,
+    f1 l = match l with
+           | [] => []
+           | a :: t => f0 a :: map f0 t
+           end) by assumption.
+Abort.
+
+End debug_monomorphism.
 
 
 
