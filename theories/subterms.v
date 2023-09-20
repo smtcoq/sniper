@@ -2,6 +2,7 @@ From elpi Require Import elpi.
 
 Elpi Command Collect_subterms.
 Elpi Accumulate File "elpi/subterms.elpi".
+Elpi Accumulate File "elpi/utilities.elpi".
 Elpi Accumulate lp:{{
   main [trm Term] :- subterms Term L, coq.say L.
 }}.

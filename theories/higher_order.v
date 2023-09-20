@@ -84,7 +84,8 @@ in aux h0.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-induction l; Control.enter anonymous_funs_with_equations ; Control.enter prenex_higher_order_with_equations. Abort.
+induction l; Control.enter anonymous_funs_with_equations; Control.enter prenex_higher_order_with_equations.
+Abort.
 
 Tactic Notation "prenex_higher_order_with_equations" :=
 ltac2:(Control.enter prenex_higher_order_with_equations).

@@ -11,7 +11,6 @@
 
 
 Require Import MetaCoq.Template.All.
-Require Import MetaCoq.PCUIC.PCUICSubstitution.
 Require Import String.
 Require Import utilities.
 Require Import definitions.
@@ -39,12 +38,6 @@ create_evars_for_each_constructor unit.
 create_evars_for_each_constructor nat.
 Abort.
 
-Ltac intro_and_return_last_ident n := 
-match constr:(n) with
-| 0 => let u := fresh in let _ := match goal with _ => intro u end in u
-| S ?m => let H := fresh in let _ := match goal with _ => intro H end in intro_and_return_last_ident m
-end.
-
 Ltac intro_and_tuple_rec n l := 
 match constr:(n) with
 | 0 => let u := fresh in let _ := match goal with _ => intro u end in constr:((u, l))
@@ -53,6 +46,27 @@ end.
 
 Ltac intro_and_tuple n :=
 intro_and_tuple_rec n unit.
+
+Ltac intro_return_vars_aux l :=
+lazymatch goal with
+| |- forall _, forall _, _ => let H := fresh in 
+let _ := match goal with _ => intro H end in intro_return_vars_aux (H, l)
+| |- forall _, _ => let H := fresh in let _ := match goal with _ => intro H end in constr:(l)
+| _ => constr:(l)
+end.
+
+Ltac intro_return_vars := intro_return_vars_aux default.
+
+Ltac specialize_tuple p H :=
+lazymatch constr:(p) with
+| (?x, ?y) => specialize_tuple y H ; try (specialize (H x))
+| default => idtac
+end. 
+
+Goal forall (A : Type) (l : list A) (n : nat), False.
+assert (foo : forall (A : Type) (l : list A) (n : nat), l = l) by reflexivity.
+let x := intro_return_vars in specialize_tuple x foo. Abort.
+
 
 Ltac revert_tuple_clear p indu :=
 lazymatch constr:(p) with
@@ -199,20 +213,13 @@ else
 | u : Prop |- ?G => instantiate (u := G) ; destruct Hfalse' end)
 ; clear foo ; 
 repeat match goal with 
-| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u')  by 
-(first 
-[intros; try (rewrite H); reflexivity | first [
-let foo := fresh in assert (foo := H) ; intros; rewrite foo ;
-match goal with 
-| Hinv : ?U |- context [match ?expr with _ => _ end] => let U' := type of
-U in constr_eq U' Prop ; destruct expr; try intros ;
-try inversion Hinv ;
- auto end |
-repeat match goal with 
-| |- forall x, _ => intro x ; try (specialize (H x)); try (rewrite x in H) ; try 
-(inversion x) ; auto
-| _ => idtac
-end]]); clear u ; try (eliminate_dependent_pattern_matching H0) end] ; clear H ; 
+| u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u') by 
+first [ intros; rewrite H ; reflexivity 
+| let hyps := intro_return_vars in specialize_tuple hyps H ; 
+lazymatch goal with
+            | Hrew : _ |- _ => solve [rewrite Hrew in H; assumption]
+            end
+] ; clear u ; try (eliminate_dependent_pattern_matching H0) end] ; clear H ;
 clear n; clear T.
 
 Tactic Notation "eliminate_dependent_pattern_matching" constr(H) :=
@@ -226,7 +233,7 @@ Goal (forall n m : nat, dumb_def n m = false)-> False.
  intros. get_def dumb_def. expand_hyp dumb_def_def.
 eliminate_dependent_pattern_matching H0.
 get_def length. expand_hyp length_def.
-eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H1.
+eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H0.
 Abort.
 
 
@@ -236,7 +243,7 @@ eliminate_dependent_pattern_matching H.
 Abort.
 
 Lemma bar: ( forall x y, if (Nat.leb x y) then 2 + 2 = 4 else 3+4 = 6) -> False.
-intros. eliminate_dependent_pattern_matching H.
+intros. eliminate_dependent_pattern_matching H. 
 Abort.
 
 Lemma toto (A : Type) (x : list A) :
@@ -289,12 +296,12 @@ end.
 
 Goal True.
 get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
-get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H1.
-eliminate_dependent_pattern_matching H2.
+get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H0.
 eliminate_dependent_pattern_matching H0.
+eliminate_dependent_pattern_matching H.
 get_def dep_match. expand_hyp dep_match_def.
-eliminate_fix_hyp H0.
-clear - H2. eliminate_dependent_pattern_matching H2.
+eliminate_fix_hyp H.
+clear - H. eliminate_dependent_pattern_matching H.
 Abort. 
 
 Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
@@ -308,7 +315,9 @@ Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
 Goal False.
 get_def @nth. expand_hyp nth_def. 
 eliminate_fix_hyp H.  
-eliminate_dependent_pattern_matching H0.
+eliminate_dependent_pattern_matching H.
+get_def @nth_default. expand_hyp nth_default_def.
+eliminate_dependent_pattern_matching H.
 Abort.
 
 End Tests.
