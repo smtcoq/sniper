@@ -6,10 +6,10 @@ subterms (fun N Ty F) [fun N Ty F | R] :-
 subterms (fun N Ty F) R :- !,
     subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
     std.append R1 R2 R. 
-subterms (prod N Ty F) [prod N Ty F | R] :-
+subterms (prod N Ty F) [prod N Ty F | R] :- 
     subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
     std.append R1 R2 R. 
-subterms (prod N Ty F) R :- !,
+subterms (prod N Ty F) R :- !, 
     subterms Ty R1, pi x\ decl x N Ty => subterms (F x) R2,
     std.append R1 R2 R. 
 subterms (app L) R :- !,
