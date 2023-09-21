@@ -1,11 +1,14 @@
-From MetaCoq.Template Require Import utils All.
+From MetaCoq.Template Require Import All.
 From SMTCoq Require Import SMTCoq.
 Unset MetaCoq Strict Unquote Universe Mode.
 Import MCMonadNotation.
 Require Import add_hypothesis_on_parameters.
 From MetaCoq.PCUIC Require Import PCUICReflect.
-From MetaCoq.PCUIC Require Import TemplateToPCUIC.
-
+From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
+Declare Scope string_scope2.
+Notation "s1 ^ s2" := (bytestring.String.append s1 s2) : string_scope2.
+Open Scope string_scope2.
+Require Import Lia.
 (* This file transforms an inductive with prenex polymorphic parameters A1, ..., An
 into a new one with supplementary hypothesis (HA1 : CompDec A1), ..., (HAn : CompDec An) 
 taken as parameters *)
@@ -52,7 +55,7 @@ end.
 
 End utilities.
 
-Section trm.
+Section trm. Print ident.
 Variable trm : term.
 
 Definition ctors_names_compdec (l : list constructor_body) := 
@@ -294,7 +297,7 @@ match l with
 res0' <- tmEval all res.2 ;;
 res' <- tmEval all res.1 ;; 
 unquot <- tmUnquoteTyped Type res' ;;
-fresh <- tmFreshName ("compdec_hyp") ;; 
+fresh <- tmFreshName ("compdec_hyp"%bs) ;; 
 x' <- tmEval all x.1 ;;
 u <- tmLemma fresh unquot ;;
 v <- tmQuote u ;;
@@ -308,7 +311,7 @@ Definition add_compdec_inductive_and_pose_compdecs_lemmas (p : program*term)
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
        fresh_ident <- match (ind_bodies decl) with
               | x :: xs => let x_name := ind_name x in tmFreshName x_name
-              | [] => tmFreshName "empty_indu"
+              | [] => tmFreshName "empty_indu"%bs
               end ;;
        let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif fresh_ident []) in
        res <- tmEval all ind'.2 ;; 
@@ -334,7 +337,7 @@ Definition monadic_compdec_inductive (p : program*term)
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
        fresh_ident <- match (ind_bodies decl) with
               | x :: xs => let x_name := ind_name x in tmFreshName x_name
-              | [] => tmFreshName "empty_indu"
+              | [] => tmFreshName "empty_indu"%bs
               end ;;
        let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif fresh_ident []) in
        res <- tmEval all ind'.2 ;; 

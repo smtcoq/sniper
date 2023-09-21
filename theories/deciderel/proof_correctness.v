@@ -1,7 +1,6 @@
+From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
 From MetaCoq.PCUIC Require Import PCUICReflect.
-From MetaCoq Require Import All. 
-From MetaCoq.PCUIC Require Import TemplateToPCUIC.
-From MetaCoq.Template Require Import utils All.
+From MetaCoq.Template Require Import All.
 Import MCMonadNotation.
 Require Import List.
 Import ListNotations.

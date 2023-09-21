@@ -1,4 +1,4 @@
-From MetaCoq.Template Require Import utils All.
+From MetaCoq.Template Require Import All.
 Unset MetaCoq Strict Unquote Universe Mode.
 From SMTCoq Require Import SMTCoq.
 Require Import Sniper.

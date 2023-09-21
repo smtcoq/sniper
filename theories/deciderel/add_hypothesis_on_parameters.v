@@ -1,4 +1,4 @@
-From MetaCoq Require Import All.
+From MetaCoq.Template Require Import All.
 From SMTCoq Require Import SMTCoq.
 Require Import String.
 Require Import List. 

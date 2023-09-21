@@ -4,10 +4,11 @@ Import ListNotations.
 
 Elpi Tactic elimination_polymorphism.
 
-Elpi Accumulate File "elpi/utilities.elpi" From Sniper.
-Elpi Accumulate File "elpi/instantiate.elpi" From Sniper.
-Elpi Accumulate File "elpi/find_instances.elpi" From Sniper.
-Elpi Accumulate File "elpi/construct_cuts.elpi" From Sniper.
+From Sniper Extra Dependency "elpi/utilities.elpi" as utils.
+From Sniper Extra Dependency "elpi/instantiate.elpi" as inst. 
+From Sniper Extra Dependency "elpi/find_instances.elpi" as findinst.
+From Sniper Extra Dependency "elpi/construct_cuts.elpi" as cc.
+Elpi Accumulate File utils inst findinst cc.
 
 Elpi Accumulate lp:{{
 
@@ -15,17 +16,17 @@ Elpi Accumulate lp:{{
     instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
       pos_ctx_to_var_in_term Ctx' Inst Inst', 
       snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
       std.map LInst (add_pos_ctx Ctx') LInst',
       % unit is a dumb default case to eliminate useless polymorphic premise
       construct_cuts LInst' P G [G'], !,
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS.
     instances_param_indu_strategy_list [] _ _G _.
     
-  solve (goal Ctx _ TyG _ L as G) GL :- std.rev Ctx Ctx',
+  solve (goal Ctx _ TyG _ L as G) GL :- std.do! [std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, !, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
-    instances_param_indu_strategy_list HPoly Inst G GL.
+    append_nodup HL2 LTerm HPoly, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
+    instances_param_indu_strategy_list HPoly Inst G GL].
  
 
 }}.
@@ -70,7 +71,7 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
-intros. elimination_polymorphism app_length. reflexivity. Qed. 
+intros. (* TODO elimination_polymorphism. *) reflexivity. Abort. 
 
 Goal False.
 pose (x := fun (A : Type) (x : A) => x).

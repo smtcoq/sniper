@@ -1,7 +1,7 @@
 % the main fonction: assert the list of polymorphic instances and proves them
 pred construct_cuts i: (list term), i: (pair term term), i: goal, o: list sealed-goal.
     construct_cuts [X|XS] P G GS :- !, construct_cuts_aux [X|XS] P G GS.
-    construct_cuts [] (pr H _Ty) G [G'] :- 
+    construct_cuts [] (pr H _Ty) G [G'] :-
         construct_term_applied_unit H Hunit,
         std.assert-ok! (coq.elaborate-ty-skeleton Hunit _ X1) "cut formula illtyped",
         construct_term_applied H Tapp,
@@ -12,19 +12,32 @@ pred construct_cuts i: (list term), i: (pair term term), i: goal, o: list sealed
         construct_term_applied H' Tapp, !,
         refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'].
 
+% The one tactic ------------------------------------------------------------
+pred refine i:term, i:goal, o:list sealed-goal.
+refine T G GS :- refine.elaborate T G GS.
+
+refine.elaborate T (goal _ RawEv Ty Ev _) GS :-
+  RawEv = T,
+  rm-evar RawEv Ev,
+  @keepunivs! => coq.elaborate-skeleton T Ty TR ok,
+  coq.ltac.collect-goals TR GS _,
+  Ev = TR.
+
 pred construct_cuts_aux i: (list term), i: (pair term term), i: goal, o: list sealed-goal.
     %when the polymorphic hypothesis is given as parameter
-    construct_cuts_aux [X | XS] ((pr H _Ty) as P) (goal Ctx _ _ _ _ as G) [G''] :- std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
+    construct_cuts_aux [X | XS] ((pr H _Ty) as P) (goal Ctx _ _ _ _ as G) [G''] :-
+        std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
         std.assert-ok! (coq.elaborate-ty-skeleton X' _ X1) "cut formula illtyped",
         construct_term_applied H Tapp,
-        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'], !, 
+        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'], !,
         coq.ltac.open (construct_cuts_aux XS P) G' [G''].
     %when the polymorphic hypothesis is in the context
-    construct_cuts_aux [X | XS] ((pr _H Ty) as P) (goal Ctx _ _ _ _ as G) [G''] :- std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
+    construct_cuts_aux [X | XS] ((pr _H Ty) as P) (goal Ctx _ _ _ _ as G) [G''] :- 
+        std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',
         std.assert-ok! (coq.elaborate-ty-skeleton X' _ X1) "cut formula illtyped",
         find_in_context Ty Ctx Trm,
         construct_term_applied Trm Tapp,
-        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'], !, 
+        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'], !,
         coq.ltac.open (construct_cuts_aux XS P) G' [G''].
         %when the types variables are not used
     construct_cuts_aux [X | XS] ((pr _H Ty) as P) (goal Ctx _ _ _ _ as G) [G''] :- std.rev Ctx Ctx', elim_pos_ctx Ctx' X X',

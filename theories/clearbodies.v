@@ -1,4 +1,4 @@
-From MetaCoq Require Import All. 
+From MetaCoq.Template Require Import All. 
 Require Import String.
 Open Scope bs.
 From elpi Require Import elpi.

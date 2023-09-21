@@ -307,7 +307,7 @@ Abort.
 Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
     match n, l with
       | O, x :: l' => x
-      | O, other => default
+      | O, _other => default
       | S m, [] => default
       | S m, x :: t => nth m t default
     end.
