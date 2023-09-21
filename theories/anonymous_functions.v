@@ -16,14 +16,14 @@ let H := fresh "H" in assert (H : Na = t) by reflexivity.
 
 Elpi Tactic anonymous_funs.
 
-Elpi Accumulate File "elpi/higher_order.elpi".
-Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/higher_order.elpi" From Sniper.
+Elpi Accumulate File "elpi/utilities.elpi" From Sniper.
 Elpi Accumulate lp:{{
   
   pred anonyms_funs_hyps i: int, i: goal, o: list sealed-goal.
     anonyms_funs_hyps 0 _ _.
     anonyms_funs_hyps N (goal Ctx _ _ _ _ as G) GL :- ctx_to_tys Ctx Trms,
-      get_anonymous_funs_list Trms [F|L], coq.ltac.call "mypose_and_reify_def" [trm F] G [G'],
+      get_anonymous_funs_list Trms [F|_L], coq.ltac.call "mypose_and_reify_def" [trm F] G [G'],
       N1 is N - 1, coq.ltac.open (anonyms_funs_hyps N1) G' GL.
 
   pred anonyms_funs_goal i: int, i: goal, o: list sealed-goal.

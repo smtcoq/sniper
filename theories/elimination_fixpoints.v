@@ -135,9 +135,9 @@ let x' := eval cbv beta in x in
 assert x' by (intros_destructn n ; reflexivity).
 
 Elpi Tactic eliminate_fix_hyp.
-Elpi Accumulate File "elpi/eliminate_fix.elpi".
-Elpi Accumulate File "elpi/subterms.elpi".
-Elpi Accumulate File "elpi/utilities.elpi".
+Elpi Accumulate File "elpi/eliminate_fix.elpi" From Sniper.
+Elpi Accumulate File "elpi/subterms.elpi" From Sniper.
+Elpi Accumulate File "elpi/utilities.elpi" From Sniper.
 
 (* TODO if / else elpi when L = [] to save some computation time *)
 Elpi Accumulate lp:{{
