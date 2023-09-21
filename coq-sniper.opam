@@ -20,6 +20,7 @@ depends: [
   "coq-metacoq" {= "1.2+8.17"}
   "coq-trakt"
   "coq-elpi"
+  "coq-trakt"
   "coq-smtcoq"
 ]
 pin-depends: [

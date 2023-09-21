@@ -25,7 +25,6 @@ Import ListNotations.
 
 Local Open Scope Z_scope.
 
-
 (** Examples on lists *)
 
 (* A simple example *)
@@ -152,6 +151,7 @@ Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l
 Proof. intros A H; induction l; snipe. Qed.
 
 Section higher_order.
+
 
 Variable A B C: Type.
 Variable HA : CompDec A.

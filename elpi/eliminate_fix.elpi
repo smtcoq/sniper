@@ -1,0 +1,149 @@
+% returns the recursive argument of a fixpoint
+pred index_struct_argument i:term, o:int.
+    index_struct_argument (fix _ N _ _) N.
+    index_struct_argument (fun _ _ F) N1 :-
+        pi x\ index_struct_argument (F x) N, % get the body and recurse
+        N1 is N + 1.
+
+pred args_before_fix i: term, o: int.
+    args_before_fix (global (const C)) I :- coq.env.const C (some Bo) _, args_before_fix Bo I.
+    args_before_fix (fun _ _ F) N1 :-
+        pi x\ args_before_fix (F x) N,
+        N1 is N + 1.
+    args_before_fix (fix _ _ _ _) 0.
+
+% builds the equality between two terms 
+% (applied to the same list of terms)
+pred mkEq_aux i: term, i: term, i: term, i: list term, o: term.
+    mkEq_aux T1 T2 (prod Na Ty F) L (prod Na Ty R) :- pi x\ decl x Na Ty =>
+        mkEq_aux T1 T2 (F x) [x | L]  (R x).
+    mkEq_aux T1 T2 T3 L (app [ {{ @eq }}, T3, app [T1|L'], app [T2| L'] ]) :- std.rev L L'.
+
+pred mkEq i: term, i: term, o: term.
+    mkEq T1 T2 R :- coq.typecheck T2 T3 ok, mkEq_aux T1 T2 T3 [] R.
+
+pred nb_prod i: term, o: int.
+    nb_prod (prod Na Ty F) N' :- !, pi x\ decl x Na Ty => nb_prod (F x) N, N' is N + 1.
+    nb_prod _ 0.
+
+pred mk_napp i: term, i: int, o: term.
+    mk_napp T1 0 T1 :- !. 
+    mk_napp T1 N' (app [T2, _]) :- N is N' - 1, mk_napp T1 N T2.
+
+pred subst_anon_fix i: term, i: term, o: term.
+    subst_anon_fix (fun Na Ty F) T2 (fun Na Ty R) :- pi x\ decl x Na Ty =>
+        subst_anon_fix (F x) T2 (R x).
+    subst_anon_fix (fix Na I Ty F) T2 T3 :-
+        coq.typecheck (fix Na I Ty F) TyF ok,
+        args_before_fix T2 Nb, mk_napp T2 Nb T2',
+        @holes! =>
+        coq.elaborate-skeleton (F T2') TyF T3 ok.
+
+pred is_fix i: term.
+    is_fix (fix _ _ _ _).
+    is_fix (fun N Ty F) :- pi x\ decl x N Ty => is_fix (F x).
+    is_fix T :- whd1 T T', is_fix T'.
+    is_fix (app [T|L]) :- is_fix T.
+
+pred recover_types i: (list term), o: (list (pair term term)).
+    recover_types [X | XS] [pr X Ty | R] :- coq.typecheck X Ty ok, 
+        recover_types XS R.
+    recover_types [] [].
+
+type abs term.
+
+pred bind i: bool, i: term, i: term, o: term.
+    bind tt T Ty T1 :- T1 = {{ fun (x : lp:Ty) => lp:(B x) }},
+        pi x\ (copy (abs) x :- !) => bind ff T Ty (B x).
+    bind ff T _ T1 :- copy T T1.
+
+pred abstract i: term, i: list (pair term term), o: term.
+    abstract T [pr X Ty | XS] R :- (copy X abs :- !) => copy T T1, 
+        bind tt T1 Ty T2,
+        abstract T2 XS R.
+    abstract T [] T.
+
+% all the subterms which are fixpoints of a function except its toplevel fix
+pred subterms_fix_fun i: term, o: (list term).
+    subterms_fix_fun (fun N Ty F) R :- pi x\ decl x N Ty => subterms_fix_fun (F x) R.
+    subterms_fix_fun (fix N _ Ty F) R :- pi x\ decl x N Ty => subterms_fix (F x) R.
+
+%warning: does not work with not real fixpoints (there must be a recursive call)
+pred subterms_fix i: term, o: (list term). 
+    subterms_fix (sort _U) [] :- !.
+    subterms_fix (fun N Ty F) R :- !,
+        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2,
+        std.append R1 R2 R. 
+    subterms_fix (prod N Ty F) R :- !,
+        subterms_fix Ty R1, pi x\ decl x N Ty =>
+        subterms_fix (F x) R2,
+        std.append R1 R2 R.
+    subterms_fix (app L) R :- !,
+        std.map L subterms_fix R',
+        std.flatten R' R.
+    subterms_fix (global _G) [] :- !.
+    subterms_fix (let N Ty V F) R :- !,
+        subterms_fix Ty R1, subterms_fix V R2, pi x\ def x N Ty V => subterms_fix (F x) R3,
+        std.append R1 R2 R12,
+        std.append R12 R3 R.
+    subterms_fix (match T U L) R :- !, 
+        subterms_fix T R1, subterms_fix U R2, std.append R1 R2 R12,
+        std.map L subterms_fix R3,
+        std.flatten R3 R',
+        std.append R12 R' R.
+    subterms_fix ((fix Na _I Ty F) as Fix) [Res|R] :- 
+        names Nms, std.filter Nms (x\ occurs x Fix) Nms',
+        std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
+        abstract Fix NTy Res, !,
+        subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
+        std.append R1 R2 R.
+    subterms_fix _T [].
+
+pred subterms_glob_const i: term, o: (list term). 
+    subterms_glob_const (sort _U) [] :- !.
+    subterms_glob_const (fun N Ty F) R :- !,
+        subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+        std.append R1 R2 R. 
+    subterms_glob_const (prod N Ty F) R :- !, 
+        subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+        std.append R1 R2 R. 
+    subterms_glob_const (app L) R :- !,
+        std.map L subterms_glob_const R',
+        std.flatten R' R.
+    subterms_glob_const (global (const G)) [global (const G)].
+    subterms_glob_const (let N Ty V F) R :- !,
+        subterms Ty R1, subterms V R2, pi x\ def x N Ty V => subterms_glob_const (F x) R3,
+        std.append R1 R2 R12,
+        std.append R12 R3 R.
+    subterms_glob_const (match T U L) R :- !,
+        subterms_glob_const T R1, subterms_glob_const U R2, std.append R1 R2 R12,
+        std.map L subterms_glob_const R3, 
+        std.flatten R3 R',
+        std.append R12 R' R.
+    subterms_glob_const (fix Na _ Ty F) R :- !,
+        subterms_glob_const Ty R1, pi x\ decl x Na Ty => subterms_glob_const (F x) R2,
+        std.append R1 R2 R.
+    subterms_glob_const _ [].
+
+pred globals_const_or_def_in_goal i: goal-ctx, o: (list term).
+    globals_const_or_def_in_goal [(decl _ _ X)| L] L1 :- subterms_glob_const X L',
+        globals_const_or_def_in_goal L L'', std.append L' L'' L1.
+    globals_const_or_def_in_goal [(def _X0 _ _Ty X)| L] L1 :- subterms_glob_const X L',
+       globals_const_or_def_in_goal L L'', std.append L' L'' L1.
+    globals_const_or_def_in_goal [] [].
+
+pred abstract_unify_aux i: term, i: term, i: term.
+    abstract_unify_aux (fun _ _ F1) (fun Na Ty F2) (prod _Na Ty F3) :- !, 
+        pi x\ decl x Na Ty =>
+        abstract_unify_aux (F1 _) (F2 _) (F3 x).
+    abstract_unify_aux (fun _Na _Ty F1) T2 T3 :- !, 
+        abstract_unify_aux (F1 _) T2 T3.
+    abstract_unify_aux T1 (fun _ _ F2) (prod Na Ty F3) :- !,
+        pi x\ decl x Na Ty =>
+        abstract_unify_aux T1 (F2 _) (F3 x).
+    abstract_unify_aux T1 T2 T3 :- @holes! => !,
+        coq.elaborate-skeleton T1 T3 T1' ok, coq.elaborate-skeleton T2 T3 T2' ok, 
+        coq.unify-leq T1' T2' ok.
+
+pred abstract_unify i: term, i: term.
+    abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, whd1 T1 T1', abstract_unify_aux T1' T2 T3.
