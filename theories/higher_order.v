@@ -17,9 +17,9 @@ let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t 
 unfold hd in H.
 
 Elpi Tactic prenex_higher_order.
-Elpi Accumulate File "elpi/higher_order.elpi".
-Elpi Accumulate File "elpi/utilities.elpi".
-Elpi Accumulate File "elpi/subterms.elpi".
+Elpi Accumulate File "elpi/higher_order.elpi" From Sniper.
+Elpi Accumulate File "elpi/utilities.elpi" From Sniper.
+Elpi Accumulate File "elpi/subterms.elpi" From Sniper.
 Elpi Accumulate lp:{{
 
   pred mypose_list i: list (pair term (list term)), i: goal, o: list sealed-goal.
