@@ -1,5 +1,5 @@
-From MetaCoq Require Import All.
-From MetaCoq.PCUIC Require Import TemplateToPCUIC.
+From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
+From MetaCoq.Template Require Import All.
 Require Import utilities.
 Require Import List.
 Require Import String.

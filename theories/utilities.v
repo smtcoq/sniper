@@ -9,7 +9,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-From MetaCoq Require Import All. 
+From MetaCoq.Template Require Import All. 
 Require Import List.
 Import ListNotations.
 Require Import String.
