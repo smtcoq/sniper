@@ -68,14 +68,14 @@ is a decidable version of mem and the proof of this fact
 and snipe will use it to reason about the boolean function instead
 of the predicate *)
 
-Trakt Add Relation (mem) (mem_linear_decidable) (decidable_lemma).
+Trakt Add Relation 2 (mem) (mem_linear_decidable) (decidable_lemma).
 
 Lemma mem_imp_not_nil : (forall (n : Z) (l : list Z), 
 mem n l -> l <> []).
 Proof. snipe. Qed.
 
 (* We do the same for smaller_than_all *)
-Trakt Add Relation (smaller_than_all) (smaller_than_all_decidable) (decidable_lemma0).
+Trakt Add Relation 2 (smaller_than_all) (smaller_than_all_decidable) (decidable_lemma0).
 
 Lemma smaller_than_all_nil : (forall (z: Z), smaller_than_all z nil).
 Proof. snipe. Qed.
@@ -96,7 +96,7 @@ assumption.
 - intros Hyp. induction H. constructor. constructor; simpl in Hyp; 
 elim_and_and_or. apply Nat.leb_le. assumption. apply IHlist. assumption. Qed.
 
-Trakt Add Relation (elt_smaller_than) (elt_smaller_than_decidable) (decidable_lemma1).
+Trakt Add Relation 2 (elt_smaller_than) (elt_smaller_than_decidable) (decidable_lemma1).
 
 Lemma smaller_than_mem : 
 forall (n n' : Z) (l : list Z), smaller_than_all n l -> mem n' l -> Z.le n n'.
