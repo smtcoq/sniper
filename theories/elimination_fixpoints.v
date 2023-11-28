@@ -137,9 +137,9 @@ assert x' by (intros_destructn n ; reflexivity).
 Elpi Tactic eliminate_fix_hyp.
 
 
-From Sniper Extra Dependency "elpi/eliminate_fix.elpi" as elimfix.
-From Sniper Extra Dependency "elpi/subterms.elpi" as subs.
-From Sniper Extra Dependency "elpi/utilities.elpi" as utils.
+From Sniper.elpi Extra Dependency "eliminate_fix.elpi" as elimfix.
+From Sniper.elpi Extra Dependency "subterms.elpi" as subs.
+From Sniper.elpi Extra Dependency "utilities.elpi" as utils.
 Elpi Accumulate File elimfix.
 Elpi Accumulate File subs.
 Elpi Accumulate File utils.

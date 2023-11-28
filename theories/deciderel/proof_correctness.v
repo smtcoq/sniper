@@ -294,8 +294,10 @@ match h with
       end
 end in aux h t.
 
+
 Lemma eqb_of_compdec_reflexive (A : Type) (HA : CompDec A) (a : A) :
-eqb_of_compdec HA a a = true. Proof. apply compdec_eq_eqb; reflexivity. Qed.
+eqb_of_compdec HA a a = true. 
+Proof. ltac1:(rewrite <- compdec_eq_eqb; reflexivity). Qed.
 
 Ltac elim_reflexive_eqb_compdec :=
 repeat (rewrite -> eqb_of_compdec_reflexive).
@@ -486,7 +488,7 @@ Section StrongInduction.
       Nat.pred n <= Nat.pred m.
   Proof.
     induction n; cbn; intros.
-    apply le_0_n.
+    apply Nat.le_0_l.
     induction H; subst; cbn; eauto.
     destruct m; eauto.
   Qed.

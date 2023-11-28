@@ -18,9 +18,9 @@ unfold hd in H.
 
 Elpi Tactic prenex_higher_order.
 
-From Sniper Extra Dependency "elpi/higher_order.elpi" as HigherOrder.
-From Sniper Extra Dependency "elpi/utilities.elpi" as Utils.
-From Sniper Extra Dependency "elpi/subterms.elpi" as Subterms.
+From Sniper.elpi Extra Dependency "higher_order.elpi" as HigherOrder.
+From Sniper.elpi Extra Dependency "utilities.elpi" as Utils.
+From Sniper.elpi Extra Dependency "subterms.elpi" as Subterms.
 Elpi Accumulate File Utils.
 Elpi Accumulate File Subterms.
 Elpi Accumulate File HigherOrder.
