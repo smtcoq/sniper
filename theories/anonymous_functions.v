@@ -16,9 +16,10 @@ let H := fresh "H" in assert (H : Na = t) by reflexivity.
 
 Elpi Tactic anonymous_funs.
 
-From Sniper Extra Dependency "elpi/higher_order.elpi" as ho.
-From Sniper Extra Dependency "elpi/utilities.elpi" as utils.
-Elpi Accumulate File ho utils.
+From Sniper.elpi Extra Dependency "higher_order.elpi" as HigherOrder.
+Elpi Accumulate File HigherOrder.
+From Sniper.elpi Extra Dependency "utilities.elpi" as Utils.
+Elpi Accumulate File Utils.
 
 Elpi Accumulate lp:{{
   

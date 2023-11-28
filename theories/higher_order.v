@@ -17,11 +17,13 @@ let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t 
 unfold hd in H.
 
 Elpi Tactic prenex_higher_order.
-From Sniper Extra Dependency "elpi/higher_order.elpi" as ho.
-From Sniper Extra Dependency "elpi/utilities.elpi" as utils.
-From Sniper Extra Dependency "elpi/subterms.elpi" as subs.
 
-Elpi Accumulate File ho utils subs.
+From Sniper.elpi Extra Dependency "higher_order.elpi" as HigherOrder.
+From Sniper.elpi Extra Dependency "utilities.elpi" as Utils.
+From Sniper.elpi Extra Dependency "subterms.elpi" as Subterms.
+Elpi Accumulate File Utils.
+Elpi Accumulate File Subterms.
+Elpi Accumulate File HigherOrder.
 
 Elpi Accumulate lp:{{
 
