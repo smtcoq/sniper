@@ -4,10 +4,14 @@ Import ListNotations.
 
 Elpi Tactic elimination_polymorphism.
 
-Elpi Accumulate File "elpi/utilities.elpi" From Sniper.
-Elpi Accumulate File "elpi/instantiate.elpi" From Sniper.
-Elpi Accumulate File "elpi/find_instances.elpi" From Sniper.
-Elpi Accumulate File "elpi/construct_cuts.elpi" From Sniper.
+From Sniper Extra Dependency "elpi/utilities.elpi" as Utils.
+From Sniper Extra Dependency "elpi/instantiate.elpi" as Inst.
+From Sniper Extra Dependency "elpi/find_instances.elpi" as FindInst.
+From Sniper Extra Dependency "elpi/construct_cuts.elpi" as ConstructCuts.
+Elpi Accumulate File Utils.
+Elpi Accumulate File Inst.
+Elpi Accumulate File FindInst.
+Elpi Accumulate File ConstructCuts.
 
 Elpi Accumulate lp:{{
 

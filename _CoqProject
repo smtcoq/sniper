@@ -1,4 +1,5 @@
 -R . Sniper
+-Q ./elpi Sniper.elpi
 
 theories/utilities.v
 theories/indrel.v
