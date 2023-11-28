@@ -467,7 +467,7 @@ params <- tmEval all (replace_params mind_entry lpars) ;;
 new_compdecs <- tmEval all (inst_parametric_compdec_hypothesis list_compdecs) ;;
 params_to_linearize <- tmEval all (list_pars_to_linearize2 Σ params) ;; 
 match mind_entry.(mind_entry_inds) with
-| [] => tmFail "empty entry"
+| [] => tmFail "empty entry"%bs
 | [x] => new_name <- tmFreshName (x.(mind_entry_typename)^"_linear") ;;
 res <- tmEval all (linearize_oind_entry_list Σ mind_entry.(mind_entry_inds) params_to_linearize lpars npars new_compdecs new_name) ;;
 b <- tmEval all res.2 ;;
@@ -486,7 +486,7 @@ let entry :=
 |} in tmMkInductive true entry ;; tmReturn new_name
 | false => tmReturn x.(mind_entry_typename)
 end
-| x :: xs => tmFail "mutuals not supported"
+| _ :: _ => tmFail "mutuals not supported"%bs
 end.
 
 Section tests.
@@ -580,7 +580,7 @@ Inductive foo : nat -> nat -> Prop :=
 | fooc : forall n, foo n n -> foo n n.
 
 MetaCoq Run (reif_env_and_ind foo >>= 
-linearize_from_mind_entry).
+linearize_from_mind_entry). 
 
 End tests.
 

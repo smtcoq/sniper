@@ -270,6 +270,9 @@ end.
 Definition contains_prenex_poly_mind (m : mutual_inductive_body) :=
 let lpars := ind_params m in contains_prenex_poly (rev lpars). 
 
+
+Unset Universe Checking.
+
 Section commands.
 
 (* Definition add_compdec_inductive (p : program*term)
@@ -323,12 +326,12 @@ Definition add_compdec_inductive_and_pose_compdecs_lemmas (p : program*term)
        (* inductive applied case, we do not consider partials applications *) 
        let Σ := (trans_global_env p.1.1) in
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
-       let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif "no_used" u) in
+       let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif "no_used"%bs u) in
        res <- tmEval all ind'.2 ;;
        res2 <- find_compdecs res [] ;;
        decl' <- tmEval all (mind_body_to_entry decl) ;;
        tmReturn res2
-     | _ => tmFail "not an inductive"
+     | _ => tmFail "not an inductive"%bs
      end. 
 
 Definition monadic_compdec_inductive (p : program*term)
@@ -351,12 +354,12 @@ Definition monadic_compdec_inductive (p : program*term)
        (* inductive applied case, we do not consider partials applications *) 
        let Σ := (trans_global_env p.1.1) in
        decl <- tmQuoteInductive (inductive_mind ind0) ;; 
-       let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif "no_used" u) in
+       let ind' := (mk_mind_entry_compdec Σ decl CompDec_reif "no_used"%bs u) in
        res <- tmEval all ind'.2 ;; 
        res2 <- find_compdecs res [] ;;
        decl' <- tmEval all (mind_body_to_entry decl) ;;
        tmReturn (Σ, (res2, u), decl')
-     | _ => tmFail "not an inductive"
+     | _ => tmFail "not an inductive"%bs
      end.
 
 Definition reif_env_and_ind {A : Type} (t : A) :=

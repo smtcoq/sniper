@@ -1,17 +1,18 @@
-From MetaCoq.PCUIC Require Import PCUICReflect.
-From MetaCoq Require Import All. 
-From MetaCoq.PCUIC Require Import TemplateToPCUIC.
-From MetaCoq.Template Require Import utils All.
-Import MCMonadNotation.
+From MetaCoq.PCUIC Require Import PCUICReflect. 
+From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
+From MetaCoq.Template Require Import All.
+From MetaCoq Require Import Utils.
 Require Import List.
 Import ListNotations.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
+Require Import Lia.
 From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Require Import linearize_plugin.
+Import MCMonadNotation.
 
 Unset MetaCoq Strict Unquote Universe Mode.
 
@@ -24,7 +25,7 @@ end.
 (** Lookups in global envs TODO remove when integrated in Sniper **)
 
 
-Definition default_error_kn := (MPfile [], "error").
+Definition default_error_kn := (MPfile [], "error"%bs).
 
 Definition kername_term (t : term) :=
 match t with
@@ -37,7 +38,7 @@ Definition find_name_gref (t : term) :=
 match t with
 | tConst kn _ => kn.2
 | tInd indu insts => (indu.(inductive_mind)).2
-| _ => "error"
+| _ => "error"%bs
 end.
 
 Definition lookup (e : global_env) (i : term) :=
@@ -67,7 +68,7 @@ Inductive default :=.
 
 Definition default_body :=
 {|
-               ind_name := "default";
+               ind_name := "default"%bs;
                ind_indices := [];
                ind_sort := Universe.of_levels (inl PropLevel.lProp);
                ind_type :=
@@ -335,7 +336,7 @@ match m with
 | [] => []
 end.
 
-Definition dumb_term := tVar "dumb_term".
+Definition dumb_term := tVar "dumb_term"%bs.
 
 Fixpoint list_of_dumb_term (n : nat) :=
 match n with
@@ -462,7 +463,7 @@ end. *)
 Fixpoint unlift_dbs (l : list nat) (t : term) :=
 match l with
 | [] => t
-| x :: xs => subst1 (tVar "wrong_substitution") x (unlift_dbs xs t)
+| x :: xs => subst1 (tVar "wrong_substitution"%bs) x (unlift_dbs xs t)
 end.
 
 (* Transforms the type of a constructor (parameters already introduced) 
@@ -638,8 +639,8 @@ Section tests.
 Definition smaller_cons_reif := <% forall (A : Type) (l : list A) l' x x', 
 smaller l l' -> smaller (x :: l) (x' :: l') %>.
 
-Definition smaller_cons_free := 
-tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
+(* Definition smaller_cons_free := 
+tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
   (tSort (Universe.of_levels (inr (Level.Level "generate_fix.588"))))
   (tProd {| binder_name := nNamed "l"; binder_relevance := Relevant |}
      (tApp
@@ -679,7 +680,7 @@ tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
                            inductive_mind :=
                              (MPfile ["Datatypes"; "Init"; "Coq"], "list");
                            inductive_ind := 0
-                         |} 1 []) [tRel 5; tRel 1; tRel 3]])))))).
+                         |} 1 []) [tRel 5; tRel 1; tRel 3]])))))). *)
 
 Inductive Add_linear (A : Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
     Add_head : forall (x : A) (l l' : list A), eqb_of_compdec list_compdec l l' = true -> 
@@ -693,8 +694,8 @@ eqb_of_compdec list_compdec l l' = true ->
 eqb_of_compdec HA x a = true -> Add_linear A HA a l (x :: l')
   %>.
 
-Definition ty_Add_head_free :=
-tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
+(* Definition ty_Add_head_free :=
+tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
   (tSort (Universe.of_levels (inr (Level.Level "generate_fix.1773"))))
   (tProd {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
      (tApp
@@ -784,7 +785,7 @@ tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
                                  inductive_mind :=
                                    (MPfile ["Datatypes"; "Init"; "Coq"], "list");
                                  inductive_ind := 0
-                               |} 1 []) [tRel 7; tRel 4; tRel 2]])))))))).
+                               |} 1 []) [tRel 7; tRel 4; tRel 2]])))))))). *)
 
 
 Definition ty_Add_cons_reif := <% 
@@ -793,7 +794,7 @@ forall (A : Type) (HA : CompDec A) (a : A) (x y : A) (l l' : list A), eqb_of_com
 
 Parameter (e : PCUICProgram.global_env_map).
 
-Definition ty_Add_cons_free := tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
+(* Definition ty_Add_cons_free := tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
   (tSort (Universe.of_levels (inr (Level.Level "generate_fix.303"))))
   (tProd
      {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
@@ -905,7 +906,7 @@ Definition ty_Add_cons_free := tProd {| binder_name := nNamed "A"; binder_releva
                                          ["Datatypes"; "Init";
                                          "Coq"], "list");
                                     inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))).
+                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))). *)
 
 Inductive member : nat -> list nat -> Prop :=
 | MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
@@ -915,7 +916,7 @@ Inductive member : nat -> list nat -> Prop :=
 Definition member_cons_reif := 
 <% forall xs n n', Nat.eqb n n' -> member n (n'::xs) %>.
 
-Definition member_cons_free := 
+(* Definition member_cons_free := 
 tProd {| binder_name := nNamed "xs"; binder_relevance := Relevant |}
   (tApp
      (tInd
@@ -1149,7 +1150,7 @@ tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
                                          ["Datatypes"; "Init"; "Coq"],
                                       "list");
                                     inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))).
+                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))). *)
 
 Inductive add_interm : nat -> nat -> nat -> Prop :=
 | add_interm0 : forall n m, Nat.eqb n m = true -> add_interm 0 n m
@@ -1175,7 +1176,7 @@ Compute find_cstr_info e 3 test_Add []. *)
 
 Compute find_cstr_info e 3 ty_Add_cons_reif []. *)
 
-Definition ty_Add_cons_info := {|
+(* Definition ty_Add_cons_info := {|
          db_parameters := [4; 5; 6];
          premises :=
            [tApp
@@ -1230,9 +1231,9 @@ Definition ty_Add_cons_info := {|
                       "list");
                     inductive_ind := 0
                   |} 1 []) [tRel 6; tRel 2; tRel 0]]
-       |}.
+       |}. *)
 
-Definition c2 := split_conclusion ty_Add_cons_info.
+(* Definition c2 := split_conclusion ty_Add_cons_info. *)
 
 (* Compute initial_mapping e Add_reif_rec.1 Add_reif_rec.2 ty_Add_cons_reif_free 3. *)
 
@@ -1270,7 +1271,7 @@ let indu :=
 match I with
 | tInd ind _ => ind
 | _ => {|
-    inductive_mind := (MPfile ["generate_fix"], "default");
+    inductive_mind := (MPfile ["generate_fix"%bs], "default"%bs);
     inductive_ind := 0
   |}
 end in 
@@ -1297,16 +1298,16 @@ Definition print_mapping_in_term_failure m :=
 let p := List.split m in
 let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
-tApp (tVar "failure, the mapping is") (l1 ++ l2).
+tApp (tVar "failure, the mapping is"%bs) (l1 ++ l2).
 
 Definition print_unif_failed_in_term t1 t2 :=
-tApp (tVar "error unification between") [t1; t2].
+tApp (tVar "error unification between"%bs) [t1; t2].
 
 Definition print_mapping_in_term_continue m n :=
 let p := List.split m in
 let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
-tApp (tVar "continue, the mapping is") (l1 ++ l2 ++ [tApp (tVar "we should match")  [tRel n]]).
+tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]]).
 
 Fixpoint cstr_handler
 (Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
@@ -1410,14 +1411,14 @@ Definition premises_test := [tApp
               (tRel 5) [tRel 4; tRel 3; tRel 2]].
 
 
-
+(* 
 Definition pc_test :=
              [
              tApp
                (tConstruct
                   {|
                     inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+                      (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list");
                     inductive_ind := 0
                   |} 1 []) [tRel 4; tRel 1; tRel 3];
              tApp
@@ -1426,16 +1427,16 @@ Definition pc_test :=
                     inductive_mind :=
                       (MPfile ["Datatypes"; "Init"; "Coq"], "list");
                     inductive_ind := 0
-                  |} 1 []) [tRel 4; tRel 0; tRel 2]].
+                  |} 1 []) [tRel 4; tRel 0; tRel 2]]. *)
 
-Definition initial_mapping_test := 
-(initial_mapping e smaller_reif_rec.1 smaller_reif_rec.2 smaller_cons_free 1).2.2.
+(* Definition initial_mapping_test := 
+(initial_mapping e smaller_reif_rec.1 smaller_reif_rec.2 smaller_cons_free 1).2.2. *)
 
 Definition fuel := 1000. (* TODO clever fuel *)
 
-Definition test_cstr_handler :=
+(* Definition test_cstr_handler :=
 cstr_handler e genv_test vars_test ty_vars_test premises_test pc_test initial_mapping_test []
-fuel.
+fuel. *)
 
 (* Compute test_cstr_handler. *)
 
@@ -1519,7 +1520,7 @@ let premises := c.(premises) in
 MetaCoq Quote Recursively Definition add_interm_reif_rec := add_interm.
 
 
-Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Relevant |}
+(* Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Relevant |}
   (tInd
      {|
        inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
@@ -1561,7 +1562,7 @@ Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Re
                 inductive_mind :=
                   (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
                 inductive_ind := 0
-              |} 0 []; tRel 2; tRel 1]))).
+              |} 0 []; tRel 2; tRel 1]))). *)
 
 (* Compute (let c := find_cstr_info e 0 add_int [] in
 (split_conclusion c).2).
@@ -1638,7 +1639,7 @@ apply IHl in H. assumption. Qed.
 
 MetaCoq Quote Recursively Definition add_linear_reif := add_interm. *)
 
-MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear.
+MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear. 
 
 (*Definition test2 := (build_fixpoint_aux2 e add_linear_reif.1 add_linear_reif.2 [] 0).1. 
 
@@ -1855,13 +1856,15 @@ in find_common_term_in_list_of_list (aux Σ e I npars ctors_ty).
 
 (* compute find_decreasing_arg e even_reif_rec.1 even_reif_rec.2.  *)
 
-Notation tmWait := (tmMsg "").
+Notation tmWait := (tmMsg ""%bs).
 
 Definition Indu_name_decidable t :=
 match t with
 | tInd indu _ => match (inductive_mind indu) with (kn, id) => id^"_decidable" end
-| _ => "fresh_ident"
+| _ => "fresh_ident"%bs
 end.
+
+Unset Universe Checking.
 
 Definition build_fixpoint_auto {A: Type}
 (t : A) 
@@ -1881,7 +1884,7 @@ match recarg with
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
             tmDefinition fresh fixpoint_unq_term ;; tmWait
 | None => tmFail "cannot find the recursive argument automatically, you should try 
-    build_fixpoint_recarg instead"
+    build_fixpoint_recarg instead"%bs
 end.
 
 Definition build_fixpoint_recarg {A : Type}
@@ -1935,8 +1938,10 @@ match recarg with
             fix_rec <- tmQuoteRec trmdef ;;
             tmReturn (t, fresh, n', npars', fixp_trm, res0.1) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 
-    build_fixpoint_recarg instead"
+    build_fixpoint_recarg instead"%bs
 end.
+
+Set Universe Checking.
 
 Inductive Add_linear3 (A: Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
     Add_head3 : forall (x : A) (l l' : list A), eqb_of_compdec (@list_compdec A HA) l l' = true -> 
@@ -1948,12 +1953,12 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
-MetaCoq Run (linearize_and_fixpoint_auto (@Add) []). 
+MetaCoq Run (linearize_and_fixpoint_auto (@Add) []).
 MetaCoq Run (linearize_and_fixpoint_auto (@smallernat) []).
 MetaCoq Run (linearize_and_fixpoint_auto (add) []). 
  
 
-MetaCoq Run (build_fixpoint_auto even []).
+MetaCoq Run (build_fixpoint_auto even []). 
 MetaCoq Run (build_fixpoint_auto (@Add_linear) []).
 MetaCoq Run (build_fixpoint_recarg even [] 0).
 

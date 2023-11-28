@@ -1,6 +1,7 @@
 From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
 From MetaCoq.PCUIC Require Import PCUICReflect.
 From MetaCoq.Template Require Import All.
+Require Import Lia.
 Import MCMonadNotation.
 Require Import List.
 Import ListNotations.
@@ -570,16 +571,16 @@ timeout 5 (tac t t' n n').
 Ltac correctness_ltac1 t t' n n' := correctness t t' n n'.
 
 (* Thanks to Yannick Forster's trick, we can run Ltac from the TemplateMonad *)
-MetaCoq Run (tmCurrentModPath tt >>= tmDefinition "solve_ltac_mp").
+MetaCoq Run (tmCurrentModPath tt >>= tmDefinition "solve_ltac_mp"%bs).
 
 Definition solve_ltac (tac : string) {args  : Type} (a : args)  (Goal : Type) := Goal.
 Existing Class solve_ltac.
 
-Definition tmDef name {A} a := @tmDefinitionRed name (Some (unfold (solve_ltac_mp, "solve_ltac"))) A a.
+Definition tmDef name {A} a := @tmDefinitionRed name (Some (unfold (solve_ltac_mp, "solve_ltac"%bs))) A a.
 
 (* Local definition adding a new tactic *)
 
-Global Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) => unfold solve_ltac ;
+#[export] Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) => unfold solve_ltac ;
 let x := eval hnf in P.1.1.1 in
 let x' := eval hnf in P.1.1.2 in
 let n := eval hnf in P.1.2 in
@@ -596,9 +597,9 @@ Definition apply_correctness_lemma {A B : Type}
 oprf <- tmInferInstance None (solve_ltac "correctness_lemma" (t1, t2, n1, n2) 
 (dec_lemma)) ;;
              match oprf with
-             | my_Some prf => name <- tmFreshName "decidable_proof" ;; tmDefinition name prf ;; 
-              tmMsg "Automation succeed : you can use the following proof term for your equivalence proof :" ;; tmPrint name
-             | my_None => tmPrint "no proof found, you should prove the equivalence manually"
+             | my_Some prf => name <- tmFreshName "decidable_proof"%bs ;; tmDefinition name prf ;; 
+              tmMsg "Automation succeed : you can use the following proof term for your equivalence proof :"%bs ;; tmPrint name
+             | my_None => tmPrint "no proof found, you should prove the equivalence manually"%bs
              end. 
 
 (* MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
@@ -626,7 +627,7 @@ fixpoint_unq_term <- tmUnquote trm ;;
 let st := correctness_statement initial_genv.1 tquote trm in foo <- tmEval all st ;;
 st_unq <- tmUnquoteTyped Prop st ;; 
 _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars recarg)
-;; name_fresh <-tmFreshName "decidable_lemma" ;; 
+;; name_fresh <-tmFreshName "decidable_lemma"%bs ;; 
 tmLemma name_fresh st_unq ;; tmWait.
 
 
