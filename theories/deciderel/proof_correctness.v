@@ -13,6 +13,8 @@ Require Import generate_fix.
 From Ltac2 Require Import Ltac2.
 Unset MetaCoq Strict Unquote Universe Mode.
 
+Open Scope bs_scope.
+
 (** Automatic generation of the statement
 which asserts that I_decidable is sound and complete wrt I :
 forall x1 .. xn, I x1 ... xn <-> I_decidable x1 ... xn = true **) 
@@ -597,9 +599,9 @@ Definition apply_correctness_lemma {A B : Type}
 oprf <- tmInferInstance None (solve_ltac "correctness_lemma" (t1, t2, n1, n2) 
 (dec_lemma)) ;;
              match oprf with
-             | my_Some prf => name <- tmFreshName "decidable_proof"%bs ;; tmDefinition name prf ;; 
-              tmMsg "Automation succeed : you can use the following proof term for your equivalence proof :"%bs ;; tmPrint name
-             | my_None => tmPrint "no proof found, you should prove the equivalence manually"%bs
+             | my_Some prf => name <- tmFreshName "decidable_proof" ;; tmDefinition name prf ;; 
+              tmMsg "Automation succeed : you can use the following proof term for your equivalence proof :" ;; tmPrint name
+             | my_None => tmPrint "no proof found, you should prove the equivalence manually"
              end. 
 
 (* MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 

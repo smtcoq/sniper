@@ -637,16 +637,18 @@ let ty_vars := lift_list_ty (get_args_inductive_fresh_types g I) in
 Section tests. 
 
 Definition smaller_cons_reif := <% forall (A : Type) (l : list A) l' x x', 
-smaller l l' -> smaller (x :: l) (x' :: l') %>.
+smaller l l' -> smaller (x :: l) (x' :: l') %>. 
 
-(* Definition smaller_cons_free := 
+Open Scope bs_scope.
+
+Definition smaller_cons_free := 
 tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "generate_fix.588"))))
-  (tProd {| binder_name := nNamed "l"; binder_relevance := Relevant |}
+  (tSort (Universe.of_levels (inr (Level.level "generate_fix.588"%bs))))
+  (tProd {| binder_name := nNamed "l"%bs; binder_relevance := Relevant |}
      (tApp
         (tInd
            {|
-             inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
+             inductive_mind := (MPfile ["Datatypes"%bs; "Init"; "Coq"], "list");
              inductive_ind := 0
            |} []) [tRel 0])
      (tProd {| binder_name := nNamed "l'"; binder_relevance := Relevant |}
@@ -680,7 +682,7 @@ tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
                            inductive_mind :=
                              (MPfile ["Datatypes"; "Init"; "Coq"], "list");
                            inductive_ind := 0
-                         |} 1 []) [tRel 5; tRel 1; tRel 3]])))))). *)
+                         |} 1 []) [tRel 5; tRel 1; tRel 3]])))))).
 
 Inductive Add_linear (A : Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
     Add_head : forall (x : A) (l l' : list A), eqb_of_compdec list_compdec l l' = true -> 
@@ -694,9 +696,9 @@ eqb_of_compdec list_compdec l l' = true ->
 eqb_of_compdec HA x a = true -> Add_linear A HA a l (x :: l')
   %>.
 
-(* Definition ty_Add_head_free :=
+Definition ty_Add_head_free :=
 tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "generate_fix.1773"))))
+  (tSort (Universe.of_levels (inr (Level.level "generate_fix.1773"))))
   (tProd {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
      (tApp
         (tInd
@@ -785,7 +787,7 @@ tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
                                  inductive_mind :=
                                    (MPfile ["Datatypes"; "Init"; "Coq"], "list");
                                  inductive_ind := 0
-                               |} 1 []) [tRel 7; tRel 4; tRel 2]])))))))). *)
+                               |} 1 []) [tRel 7; tRel 4; tRel 2]])))))))). 
 
 
 Definition ty_Add_cons_reif := <% 
