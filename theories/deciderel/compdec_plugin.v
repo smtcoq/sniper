@@ -55,7 +55,7 @@ end.
 
 End utilities.
 
-Section trm. Print ident.
+Section trm.
 Variable trm : term.
 
 Definition ctors_names_compdec (l : list constructor_body) := 

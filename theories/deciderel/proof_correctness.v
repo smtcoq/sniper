@@ -608,7 +608,7 @@ oprf <- tmInferInstance None (solve_ltac "correctness_lemma" (t1, t2, n1, n2)
 (forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
 Add_linear A HA a x y <-> Add_linear_decidable A HA a x y = true) 3 3).  *)
 
-Obligation Tactic := auto.
+#[global,export] Obligation Tactic := auto.
 
 Module Decide.
 
