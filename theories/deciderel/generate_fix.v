@@ -1,5 +1,3 @@
-From MetaCoq.PCUIC Require Import PCUICReflect. 
-From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
 From MetaCoq.Template Require Import All.
 From MetaCoq Require Import Utils.
 Require Import List.
@@ -355,28 +353,28 @@ This mapping will be useful to know on which variables the premises of a constru
 be applied 
 In order to avoid the problem of parameters, we introduce holes (= dumb_term) in our terms *)
 
-Fixpoint unify_aux (Σ : PCUICProgram.global_env_map) (t1 t2 : term) (m : mapping) (fuel : nat) : option_unif mapping :=
+Fixpoint unify_aux (t1 t2 : term) (m : mapping) (fuel : nat) : option_unif mapping :=
 match fuel with
 | S n' =>
 match t1, t2 with
 | tRel i, tRel j => add_variable_in_mapping i j (some m)
 | tRel i, t => continue i t (* the unification is not finished : we need to pattern match on the variable of De Brujin
 index i *)
-| tApp u1 l1, tApp u2 l2 => if eqb_term (trans Σ u1) (trans Σ u2) then unify_list_aux Σ l1 l2 m n' else failure
-| _, _ =>  if eqb_term (trans Σ t1) (trans Σ t2) then (some m) else 
-if eqb_term (trans Σ t1) (trans Σ dumb_term) then some m else failure
+| tApp u1 l1, tApp u2 l2 => if eqb_term u1 u2 then unify_list_aux l1 l2 m n' else failure
+| _, _ =>  if eqb_term t1 t2 then (some m) else 
+if eqb_term t1 dumb_term then some m else failure
 end
 | 0 => failure
 end
-with unify_list_aux (Σ : PCUICProgram.global_env_map) (l1 l2 : list term) (m : mapping) (fuel : nat) : option_unif mapping :=
+with unify_list_aux (l1 l2 : list term) (m : mapping) (fuel : nat) : option_unif mapping :=
 match fuel with
 | S n' => 
 match l1, l2 with
-| x1 :: x1s, x2 :: x2s => let res := unify_aux Σ x1 x2 m n' in
+| x1 :: x1s, x2 :: x2s => let res := unify_aux x1 x2 m n' in
   match res with
   | failure => failure
   | continue db t => continue db t
-  | some m' => unify_list_aux Σ x1s x2s m' n'
+  | some m' => unify_list_aux x1s x2s m' n'
   end
 | [], [] => some m
 | _, _ => failure
@@ -384,11 +382,11 @@ end
 | 0 => failure
 end.
 
-Definition unify_mapping (Σ : PCUICProgram.global_env_map) (t1 t2 : term) (m : mapping) := 
-let fuel := PCUICSize.size (trans Σ t1) in unify_aux Σ t1 t2 m fuel.
+Definition unify_mapping (t1 t2 : term) (m : mapping) := 
+let fuel := 1000 (*  PCUICSize.size (trans Σ t1) *) in unify_aux t1 t2 m fuel.
 
-Definition unify (Σ : PCUICProgram.global_env_map) (t1 t2 : term) := 
-let fuel := PCUICSize.size (trans Σ t1) in unify_aux Σ t1 t2 [] fuel.
+Definition unify (t1 t2 : term) := 
+let fuel := 1000 (* PCUICSize.size (trans Σ t1) *) in unify_aux t1 t2 [] fuel.
 
 Fixpoint ex_list_bool {A : Type} (P : A -> bool) (l : list A) :=
 match l with
@@ -434,8 +432,8 @@ match fuel with
     end
 end.
 
-Definition contains (Σ : PCUICProgram.global_env_map) (i : nat) (t : term) :=
-let fuel := PCUICSize.size (trans Σ t) in 
+Definition contains (i : nat) (t : term) :=
+let fuel := 1000 (* PCUICSize.size (trans Σ t) *) in 
 contains_fuel i t fuel.
 
 
@@ -468,8 +466,7 @@ end.
 
 (* Transforms the type of a constructor (parameters already introduced) 
 into a record cstr_info *) 
-Fixpoint find_cstr_info_aux 
-(Σ : PCUICProgram.global_env_map) 
+Fixpoint find_cstr_info_aux
 (dbpars : list nat) (* the db indexes of the parameters *)
 (npars : nat) (* the number of parameters already introduced *)
 (t : term) (* the term we analyse *)
@@ -480,10 +477,10 @@ they are not introduced by an arrow because in the pattern matching, we will per
 match t with 
 | tProd na Ty u => 
 if Nat.eqb npars 0 then 
-if contains Σ 0 u then 
-find_cstr_info_aux Σ (List.map S dbpars) 0 u (List.map (fun x => lift 1 0 x) l) (List.map S dbs)
-else find_cstr_info_aux Σ dbpars npars u ((unlift_dbs dbs Ty) :: l) (0::List.map S dbs)
-else find_cstr_info_aux Σ (0 :: List.map S dbpars) (npars - 1) u l (List.map S dbs)
+if contains 0 u then 
+find_cstr_info_aux (List.map S dbpars) 0 u (List.map (fun x => lift 1 0 x) l) (List.map S dbs)
+else find_cstr_info_aux dbpars npars u ((unlift_dbs dbs Ty) :: l) (0::List.map S dbs)
+else find_cstr_info_aux (0 :: List.map S dbpars) (npars - 1) u l (List.map S dbs)
 (* here, t is a non dependent product so Ty should be considered as a premise *)
 | _ => {| 
       db_parameters := dbpars; 
@@ -491,8 +488,8 @@ else find_cstr_info_aux Σ (0 :: List.map S dbpars) (npars - 1) u l (List.map S 
       conclusion := unlift_dbs dbs t |}
 end.
 
-Definition find_cstr_info (Σ : PCUICProgram.global_env_map) (npars : nat) (t : term) (l : list term) :=
-find_cstr_info_aux Σ [] npars t [] [].
+Definition find_cstr_info (npars : nat) (t : term) (l : list term) :=
+find_cstr_info_aux [] npars t [] [].
 
 Fixpoint find_mapping i m :=
 match m with
@@ -524,8 +521,8 @@ match fuel with
 end.
 
 
-Definition replace_variables (Σ : PCUICProgram.global_env_map) (t : term) (m : mapping) :=
-let fuel := PCUICSize.size (trans Σ t) in 
+Definition replace_variables (t : term) (m : mapping) :=
+let fuel := (* PCUICSize.size (trans Σ t) *) 1000 in 
 replace_variables_fuel t m fuel. 
 (* for debugging only !!  
 let p := List.split m in
@@ -534,26 +531,26 @@ let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "failure, the mapping is") 
 (l1 ++ l2++ [tApp (tVar "term is") [(* replace_variables_fuel t m fuel *) t]]) *)
 
-Fixpoint find_in_list_of_triple Σ x (l : list (term*term*term)) :=
+Fixpoint find_in_list_of_triple x (l : list (term*term*term)) :=
 match l with
 | [] => None
-| (t1, t2, prf) :: xs => if eqb_term (trans Σ x) (trans Σ t1) then Some t2 else find_in_list_of_triple Σ x xs
+| (t1, t2, prf) :: xs => if eqb_term x t1 then Some t2 else find_in_list_of_triple x xs
 end.
 
-Definition get_boolean_reif Σ (t: term) (l : list (term*term*term)) 
+Definition get_boolean_reif (t: term) (l : list (term*term*term)) 
 (* l is the list of terms that should be 
 replaced with their boolean equivalent, we have (t1, t2, t1 <-> t2) *)
 := match t with
-| tApp u [x ; y ; z] => if eqb_term (trans Σ <% @eq %>) (trans Σ u) 
-                    then if eqb_term (trans Σ <%true%>) (trans Σ z) then y else t else t
-| tApp u l1 => match find_in_list_of_triple Σ u l with None => tApp u l1 | Some u' => tApp u' l1 end
+| tApp u [x ; y ; z] => if eqb_term <% @eq %> u 
+                    then if eqb_term <%true%> z then y else t else t
+| tApp u l1 => match find_in_list_of_triple u l with None => tApp u l1 | Some u' => tApp u' l1 end
 | _ => t (* TODO : handle negation *)
 end.
 
-Definition return_premises Σ (premises : list term) (m : mapping) (l : list (term*term*term)) := 
+Definition return_premises (premises : list term) (m : mapping) (l : list (term*term*term)) := 
 let fix aux prem m :=
 match prem with
-| pr :: prs => replace_variables Σ (get_boolean_reif Σ pr l) m :: aux prs m
+| pr :: prs => replace_variables (get_boolean_reif pr l) m :: aux prs m
 | [] => []
 end
 in aux premises m.
@@ -625,9 +622,9 @@ in aux l 1.
 
 
 
-Definition initial_mapping (Σ : PCUICProgram.global_env_map)
+Definition initial_mapping
 (g : global_env) (I : term) (t : term) (npars: nat) :=
-let c := find_cstr_info Σ npars t [] in
+let c := find_cstr_info npars t [] in
 let c' := split_conclusion c in
 let vars_and_map := build_initial_mapping_and_vars c' in
 let ty_vars := lift_list_ty (get_args_inductive_fresh_types g I) in
@@ -793,8 +790,6 @@ tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
 Definition ty_Add_cons_reif := <% 
 forall (A : Type) (HA : CompDec A) (a : A) (x y : A) (l l' : list A), eqb_of_compdec HA x y = true ->
                Add_linear A HA a l l' -> Add_linear A HA a (x :: l) (y :: l') %>.
-
-Parameter (e : PCUICProgram.global_env_map).
 
 (* Definition ty_Add_cons_free := tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
   (tSort (Universe.of_levels (inr (Level.Level "generate_fix.303"))))
@@ -1312,7 +1307,6 @@ let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]]).
 
 Fixpoint cstr_handler
-(Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
 (e : global_env) (* the global envronment to look for information about inductives *)
 (vars : list nat) (* the variables that we will pattern match on initialized with tRels only *)
 (ty_vars : list term) (* the inductive type of each variable *)
@@ -1326,19 +1320,18 @@ match fuel with
 | 0 => default_reif
 | S fuel' => 
  match vars, patterns_conclusion, ty_vars with
-| v :: vs, pc :: pcs, ty :: tys => match unify_mapping Σ (tRel v) pc m with 
-      | continue n pc' => build_pattern Σ e n ty pc vs tys premises pcs m ldec fuel'  
+| v :: vs, pc :: pcs, ty :: tys => match unify_mapping (tRel v) pc m with 
+      | continue n pc' => build_pattern e n ty pc vs tys premises pcs m ldec fuel'  
 (* pc' should be equal to pc *)
       | failure => default_reif
-      | some m' => cstr_handler Σ e vs tys premises pcs m' ldec fuel'
+      | some m' => cstr_handler e vs tys premises pcs m' ldec fuel'
       end
-| [], [], [] => build_andb (return_premises Σ premises m ldec) (* boolean conjunction of all the premises *)
-| _, _, _ =>  build_andb (return_premises Σ premises m ldec)
+| [], [], [] => build_andb (return_premises premises m ldec) (* boolean conjunction of all the premises *)
+| _, _, _ =>  build_andb (return_premises premises m ldec)
 end 
 end 
 with
 build_pattern 
-(Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
 (e : global_env) (* the global envronment to look for information about inductives *)
 (var : nat) (* the variable we match on *)
 (I : term) (* the inductive type corresponding to the variable we match on *) 
@@ -1360,7 +1353,7 @@ let ci := p.1 in
 let pt := p.2 in
 let args := get_type_of_args_of_each_constructor e I' in
 let list_constructors := rev (list_ctors_applied_to_params e I' lpars) in
-let fix build_branch Σ e vars ty_vars premises pattern_conclusion m args list_constructors fuel {struct fuel} :=
+let fix build_branch e vars ty_vars premises pattern_conclusion m args list_constructors fuel {struct fuel} :=
 match fuel with
 | 0 => [{| bcontext := 
 [{| binder_name := nNamed "error not enough fuel"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
@@ -1370,28 +1363,28 @@ match args, list_constructors with
 let len := Datatypes.length lty in
 let cstr_applied := apply_term c len in
 let new_mapping := lift_mapping len m in
-  {| bcontext := list_aname len ; bbody := match unify_mapping Σ cstr_applied t new_mapping
+  {| bcontext := list_aname len ; bbody := match unify_mapping cstr_applied t new_mapping
     with 
    | continue n' pc' => let ty_n' := nth (len-1-n') lty default_reif in
                     let l := build_list_of_vars len in
                     let new_vars := l++(List.map (fun x => x + len) vars) in
                     let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
-                    build_pattern Σ e n' ty_n' pc' new_vars new_tys premises patterns_conclusion new_mapping ldec fuel' 
+                    build_pattern e n' ty_n' pc' new_vars new_tys premises patterns_conclusion new_mapping ldec fuel' 
     (* <% false %> *)
    | failure => <% false %> 
    | some m' =>
 let l := build_list_of_vars len in
 let new_vars :=  List.map (fun x => x + len) vars in
 let new_tys := List.map (fun x => lift len 0 x) ty_vars in
-cstr_handler Σ e new_vars new_tys premises patterns_conclusion m' ldec fuel'
-  end |} :: build_branch Σ e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
+cstr_handler e new_vars new_tys premises patterns_conclusion m' ldec fuel'
+  end |} :: build_branch e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
 | [], [] => []
 | _, _ => (* should not happen *) [{| bcontext := 
 [{| binder_name := nNamed "error"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
 end 
 end in 
 tCase ci pt (tRel var) 
- (build_branch Σ e vars ty_vars premises patterns_conclusion m args list_constructors fuel).
+ (build_branch e vars ty_vars premises patterns_conclusion m args list_constructors fuel).
 
 Section test_cstr_handler.
 
@@ -1487,20 +1480,19 @@ end.
 
 (* initialize the function cstr_handler *)
 Definition call_cstr_handler 
-(Σ : PCUICProgram.global_env_map)
 (e : global_env) 
 (I : term)
 (t : term) 
 (npars : nat) 
 (ldec : list (term*term*term)) :=
-let im := initial_mapping Σ e I t npars in 
+let im := initial_mapping e I t npars in 
 let initial_mapping := im.2.2 in
 let ty_vars := rev im.1 in
 let vars := im.2.1 in
-let c := find_cstr_info Σ npars t [] in
+let c := find_cstr_info npars t [] in
 let patterns_conclusion := (split_conclusion c).2 in
 let premises := c.(premises) in
- cstr_handler Σ e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
+ cstr_handler e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
 
 (* Compute cstr_handler e member_reif_rec.1 
 [1; 0] [<% nat %> ; <% list nat %>] [tVar "test"] [tRel 1;
@@ -1571,8 +1563,7 @@ MetaCoq Quote Recursively Definition add_interm_reif_rec := add_interm.
 
 Compute call_cstr_handler e add_interm_reif_rec.1 add_interm_reif_rec.2 add_int 0.
  *)
-Definition build_list_of_cstr_handlers 
-(Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
+Definition build_list_of_cstr_handlers
 (e : global_env) (* the global envronment to look for information about inductives *)
 (I : term) (* the relation in Prop we want to transform into a fixpoint *) 
 (ldec : list (term*term*term)) :=
@@ -1584,12 +1575,12 @@ let info := info_nonmutual_inductive e I in
 let npars := info.1 in 
 let ctors := info.2 in
 let ctors_ty := ctors_type ctors in
-let fix aux Σ e I npars ctors_ty ldec :=
+let fix aux e I npars ctors_ty ldec :=
 match ctors_ty with
 | [] => []
-| x :: xs => call_cstr_handler Σ e I x npars ldec :: aux Σ e I npars xs ldec
+| x :: xs => call_cstr_handler e I x npars ldec :: aux e I npars xs ldec
 end in 
-(na, tys_to_bind, aux Σ e I npars ctors_ty ldec).
+(na, tys_to_bind, aux e I npars ctors_ty ldec).
 
 
 Definition build_fixpoint_aux
@@ -1605,12 +1596,11 @@ dbody := mkLambda lty (build_orb l) ;
 rarg := recarg |}] 0, ty).
 
 Definition build_fixpoint_aux2 
-(Σ : PCUICProgram.global_env_map) (* useful only to compute the size of the terms to have enough fuel *)
 (e : global_env) (* the global envronment to look for information about inductives *)
 (I : term) 
 (ldec : list (term*term*term))
 (recarg : nat) :=
-let res := build_list_of_cstr_handlers Σ e I ldec in
+let res := build_list_of_cstr_handlers e I ldec in
 let na := res.1.1 in
 let lty := res.1.2 in
 let l := res.2 in
@@ -1622,7 +1612,7 @@ even0 : even 0
 
 MetaCoq Quote Recursively Definition even_reif_rec := even.
 
-Definition test_even := (build_fixpoint_aux2 e even_reif_rec.1 even_reif_rec.2 [] 0).1.
+Definition test_even := (build_fixpoint_aux2 even_reif_rec.1 even_reif_rec.2 [] 0).1.
 
 (* (* MetaCoq Unquote Definition even_decidable := test_even. *)
 
@@ -1734,10 +1724,9 @@ match fuel with
 end.
 
 Definition find_candidates_db_for_decreasing_args_conclusion 
-(Σ : PCUICProgram.global_env_map) 
 (e: global_env)
 (t : term) :=
-let fuel := PCUICSize.size (trans Σ t) in
+let fuel := (* PCUICSize.size (trans Σ t) *) 1000 in
 match t with
 | tApp (tRel _) l => List.fold_left (fun acc (x : term) => let res := find_candidates_db_for_decreasing_args_term_aux e x fuel
                       in match res with
@@ -1799,14 +1788,13 @@ match l1 with
 end.
 
 Definition find_decreasing_arg_one_constructor 
-(Σ : PCUICProgram.global_env_map) 
 (e: global_env)
 (premises : list term)
 (npars : nat) 
 (t : term)
 := 
 let (result, b) := find_candidates_db_for_decreasing_args_premises e premises npars in
-let lrel := find_candidates_db_for_decreasing_args_conclusion Σ e t in
+let lrel := find_candidates_db_for_decreasing_args_conclusion e t in
 match b with
 | false => (Some [], false) (* not recursive *)
 | true => let res := search_list lrel result in
@@ -1832,29 +1820,28 @@ match l with
             | [] => None end in aux (rev l') ls
 end. 
 
-Definition find_decreasing_arg 
-(Σ : PCUICProgram.global_env_map) 
+Definition find_decreasing_arg
 (e: global_env)
 (I : term) :=
 let info := info_nonmutual_inductive e I in
 let npars := info.1 in 
 let ctors := info.2 in
 let ctors_ty := ctors_type ctors in
-let fix aux Σ e I npars ctors_ty :=
+let fix aux e I npars ctors_ty :=
 match ctors_ty with
 | [] => []
-| c :: cs => let info := find_cstr_info Σ npars c [] in 
+| c :: cs => let info := find_cstr_info npars c [] in 
              let prem := premises info in
              let ccl := conclusion info in
-             let result := find_decreasing_arg_one_constructor Σ e prem npars ccl in 
+             let result := find_decreasing_arg_one_constructor e prem npars ccl in 
              let opt := result.1 in
              let b := result.2 in
              match b with
-            | false => aux Σ e I npars cs
-            | true => match opt with | None => aux Σ e I npars cs | Some l => l :: aux Σ e I npars cs end
+            | false => aux e I npars cs
+            | true => match opt with | None => aux e I npars cs | Some l => l :: aux e I npars cs end
             end 
 end
-in find_common_term_in_list_of_list (aux Σ e I npars ctors_ty).
+in find_common_term_in_list_of_list (aux e I npars ctors_ty).
 
 (* compute find_decreasing_arg e even_reif_rec.1 even_reif_rec.2.  *)
 
@@ -1872,14 +1859,13 @@ Definition build_fixpoint_auto {A: Type}
 (t : A) 
 (l : list (term*term*term)):=
 p <- tmQuoteRec t ;;
-let Σ := trans_global_env p.1 in
 let indu := p.2 in 
 let name := Indu_name_decidable indu in
 let genv := p.1 in
-let recarg := find_decreasing_arg Σ genv indu in
+let recarg := find_decreasing_arg genv indu in
 match recarg with
 | Some n => fresh <- tmFreshName name ;; 
-            let fixp := build_fixpoint_aux2 Σ genv indu l n in
+            let fixp := build_fixpoint_aux2 genv indu l n in
             let fixp_ty := fixp.2 in
             let fixp_trm := fixp.1 in
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
@@ -1895,50 +1881,49 @@ Definition build_fixpoint_recarg {A : Type}
 (n : nat) 
 :=
 p <- tmQuoteRec t ;;
-let Σ := trans_global_env p.1 in
 let indu := p.2 in 
 let genv := p.1 in
 let name := Indu_name_decidable indu in
 fresh <- tmFreshName name ;; 
-            let fixp := build_fixpoint_aux2 Σ genv indu l n in
+            let fixp := build_fixpoint_aux2 genv indu l n in
             let fixp_ty := fixp.2 in
             let fixp_trm := fixp.1 in
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
-            tmDefinition fresh fixpoint_unq_term ;; tmWait. 
+            tmDefinition fresh fixpoint_unq_term ;; tmWait.
 
 Definition linearize_and_fixpoint_auto 
 {A : Type}
 (t : A)  
 (l : list (term*term*term))
 :=
-res0 <- reif_env_and_ind t ;; 
-name_indu_linear <- linearize_from_mind_entry res0 ;; 
+res0 <- tmQuoteRec t ;; 
+genv <- tmEval all res0.1 ;;
+t' <- tmEval all res0.2 ;;
+name_indu_linear <- linearize_from_mind_entry t' ;; 
 curmodpath <- tmCurrentModPath tt ;;
 let name_indu := (curmodpath, name_indu_linear) in
 let indu := tInd {| inductive_mind := name_indu ;
                   inductive_ind := 0 |} [] in
 mind <- tmQuoteInductive name_indu ;;
-let genv := res0.1.1 in
 let new_gdecl := (name_indu, (InductiveDecl mind)) :: (declarations genv ) in 
 let new_genv := {| universes := universes genv ; declarations := new_gdecl ; retroknowledge :=
 retroknowledge genv |} in
 let name := Indu_name_decidable indu in
-let Σ := trans_global_env new_genv in
-let recarg := find_decreasing_arg Σ new_genv indu in 
+let recarg := find_decreasing_arg new_genv indu in 
 let npars := Datatypes.length (params_inductive new_genv indu) in
 npars' <- tmEval all npars ;;
 match recarg with
 | Some n => fresh <- tmFreshName name ;; 
             n' <- tmEval all n ;;
-            let fixp := build_fixpoint_aux2 Σ new_genv indu l n in
+            let fixp := build_fixpoint_aux2 new_genv indu l n in
             let fixp_ty := fixp.2 in
             let fixp_trm := fixp.1 in  trm_print <- tmEval all fixp_trm ;;
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
             trmdef <- tmDefinition fresh fixpoint_unq_term ;;
             fix_rec <- tmQuoteRec trmdef ;;
-            tmReturn (t, fresh, n', npars', fixp_trm, res0.1) 
+            tmReturn (t, fresh, n', npars', fixp_trm, genv) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 
     build_fixpoint_recarg instead"%bs
 end.

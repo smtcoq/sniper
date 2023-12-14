@@ -1,6 +1,6 @@
 From MetaCoq.Template Require Import All.
-From MetaCoq.Template Require Import ReflectAst.
-Import TemplateTermDecide.
+From MetaCoq.Template Require Import Checker.
+From MetaCoq.Common Require Import config.
 Import MCMonadNotation.
 Require Import add_hypothesis_on_parameters.
 Declare Scope string_scope2.
@@ -12,17 +12,19 @@ From SMTCoq Require Import SMTCoq.
 into a new one with supplementary hypothesis (HA1 : CompDec A1), ..., (HAn : CompDec An) 
 taken as parameters *)
 
+Unset MetaCoq Strict Unquote Universe Mode.
 (* MetaCoq Quote Recursively Definition CompDec_reif_rec := CompDec. *)
 
-Definition eqb_term := @MetaCoq.Utils.ReflectEq.eqb term reflect_term.
+(* 
+From MetaCoq.Template Require Import ReflectAst.
+Import TemplateTermDecide.
 
-Print term.
+Definition eqb_term t u := match EqDec_term t u with
+  | left _ => true
+  | right _ => false
+end. *)
 
-Print term_eq_dec.
-
-Eval compute in eqb_term.
-
-Compute eqb_term <%CompDec %> <% CompDec %>.
+Definition eqb_term := @eq_term default_checker_flags init_graph.
 
 MetaCoq Quote Definition CompDec_reif := CompDec.
 
@@ -374,7 +376,7 @@ tmPrint res.
 
 End commands.
 
-Require Import ZArith.
+(* Require Import ZArith.
 Section tests.
 
 Inductive elt_list :=
@@ -386,20 +388,19 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
  | invCons : forall (a b  j: Z) (q : elt_list),
      (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
      Inv_elt_list j (Cons a b q).
-(* 
-MetaCoq Run (reif_env_and_ind (Inv_elt_list) >>= 
 
- add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint). Next Obligation. *)
+MetaCoq Run (test_compdec (Inv_elt_list)). 
 
 MetaCoq Run (test_compdec (@Add Z)).
-MetaCoq Run (reif_env_and_ind Add >>= add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint). 
-MetaCoq Run (reif_env_and_ind nat >>= add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint).
-MetaCoq Run (reif_env_and_ind prod >>= add_compdec_inductive_and_pose_compdecs_lemmas >>= tmPrint).
+MetaCoq Run (test_compdec Add). 
+MetaCoq Run (test_compdec nat).
+MetaCoq Run (test_compdec prod).
 
 Inductive Ind_test (A B : Type) : A*B -> Prop :=
 | Ind1 : forall (x : A*B), Ind_test A B x.
 
-MetaCoq Run (reif_env_and_ind Ind_test >>= add_compdec_inductive_and_pose_compdecs_lemmas  >>= tmPrint).
-MetaCoq Run (reif_env_and_ind (@Add nat) >>= monadic_compdec_inductive). 
+MetaCoq Run (test_compdec Ind_test).
+MetaCoq Run (tmQuote (@Add nat) >>= monadic_compdec_inductive).
 
-End tests. *)
+End tests.
+ *)

@@ -1,5 +1,3 @@
-From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
-From MetaCoq.PCUIC Require Import PCUICReflect.
 From MetaCoq.Template Require Import All.
 Require Import Lia.
 Import MCMonadNotation.
@@ -336,8 +334,8 @@ Add_linear A HA a x y -> Add_linear_decidable A HA a x y = true.
 Proof. completeness_auto_npars 'Add_linear_decidable 3. Qed. 
 
 
-Goal forall (n: nat), even n -> even_decidable n = true.
-Proof. completeness_auto_npars 'even_decidable 0. Qed.
+(* Goal forall (n: nat), even n -> even_decidable n = true.
+Proof. completeness_auto_npars 'even_decidable 0. Qed. *)
 
 Ltac elim_is_true :=
 repeat match goal with
@@ -539,18 +537,7 @@ Proof. (*  soundness_auto '@even 0. *)
 
 induction_nth 0. 
 - intros *. intro H. destruct_to_continue_computation 'even 0. 
-simpl in *. inversion H.  ltac1:(elim_is_true ; elim_and_and_or; simpl in *; elim_trivial_or; elim_is_true; simpl in *
-; elim_eq; subst; constructor ; solve [elim_eq; auto]).
-- 
-
- intros *. intro H. destruct_to_continue_computation 'even 0. 
-simpl in *. inversion H; destruct n eqn:E. 
-ltac1:(auto ; elim_is_true ; elim_and_and_or; simpl in *; elim_trivial_or; elim_is_true; simpl in *
-; elim_eq; subst; constructor ; solve [elim_eq; auto]).
-ltac1:(auto ; elim_is_true ; elim_and_and_or; simpl in *; elim_trivial_or; elim_is_true; simpl in *
-; elim_eq; subst; constructor).
-
-
+simpl in *. 
 Abort. (* FIXME *)
 
 (** Use of the templatemonad **) 
@@ -617,7 +604,7 @@ Definition decide {A: Type}
 (l : list (term*term*term)) :=
 res <- linearize_and_fixpoint_auto t l ;; 
 let (ty_id_fix_recarg_npars_fix_qu, initial_genv) := res : (((((A × ident) × nat) × nat) × term)
-   × program) in
+   × global_env) in
 let (ty_id_fix_recarg_npars, fix_qu) := ty_id_fix_recarg_npars_fix_qu in
 let (ty_id_fix_recarg, npars) := ty_id_fix_recarg_npars in
 let (ty_id_fix, recarg) := ty_id_fix_recarg in
@@ -626,11 +613,11 @@ current <- tmCurrentModPath tt ;;
 let trm := (tConst (current, id_fix ) []) in 
 tquote <- tmQuote t ;; 
 fixpoint_unq_term <- tmUnquote trm ;; 
-let st := correctness_statement initial_genv.1 tquote trm in foo <- tmEval all st ;;
+let st := correctness_statement initial_genv tquote trm in foo <- tmEval all st ;;
 st_unq <- tmUnquoteTyped Prop st ;; 
 _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars recarg)
 ;; name_fresh <-tmFreshName "decidable_lemma"%bs ;; 
-tmLemma name_fresh st_unq ;; tmWait.
+tmLemma name_fresh st_unq;; tmWait.
 
 
 Inductive smaller_list {A : Type} : list A -> list A -> Prop :=

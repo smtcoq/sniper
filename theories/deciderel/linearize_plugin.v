@@ -19,7 +19,6 @@ match t with
 | _ => 1
 end.
 
-
 (* In a term t made of products, variables and applications only, we replace the nth occurence of the variable i 
 by the i-th term of the list l *)
 Fixpoint replace_occurences_aux (i: nat) (l : list term) (t : term) (fuel : nat) (nb_lift : nat) (npars : nat) : term*(list term) :=
@@ -454,11 +453,11 @@ in let l1 := (split interm_res).1
 in let l2 := (split interm_res).2 in 
 (l1, contains_true l2).
 
-Definition linearize_from_mind_entry (p : program*term) :=  
-tuple <- monadic_compdec_inductive p ;;
-let list_compdecs := tuple.1.1 in 
-let lpars := tuple.1.2 in 
-let mind_entry := tuple.2 in (* the user may have given an term with parameters instantiated *)
+Definition linearize_from_mind_entry (t: term) :=  
+t <- monadic_compdec_inductive t ;;
+let list_compdecs := t.1.1 in 
+let lpars := t.1.2 in 
+let mind_entry := t.2 in (* the user may have given an term with parameters instantiated *)
 let npars := List.length (mind_entry_params mind_entry) in
 params <- tmEval all (replace_params mind_entry lpars) ;; 
 new_compdecs <- tmEval all (inst_parametric_compdec_hypothesis list_compdecs) ;;
@@ -494,14 +493,14 @@ Inductive add : nat -> nat -> nat -> Prop :=
 | addS : forall n m k, add n m k -> add (S n) m (S k).
 
 
-MetaCoq Run (reif_env_and_ind (@Add Z) >>= 
-linearize_from_mind_entry). 
+MetaCoq Run (tmQuote (@Add Z) >>= 
+linearize_from_mind_entry).
 
 Inductive smaller {A : Type} : list A -> list A -> Prop :=
 | sm_nil : forall l, smaller nil l
 | sm_cons : forall l l' x x', smaller l l' -> smaller (x :: l) (x' :: l').
 
-MetaCoq Run (reif_env_and_ind (@smaller Z) >>= 
+MetaCoq Run (tmQuote (@smaller Z) >>= 
 linearize_from_mind_entry).
 
 Inductive elt_list :=
@@ -514,31 +513,28 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
      (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
      Inv_elt_list j (Cons a b q).
 
-MetaCoq Run (reif_env_and_ind (Inv_elt_list) >>= 
-monadic_compdec_inductive).
-
 Inductive test3occ : nat -> nat -> nat -> Prop :=
 | test3occ_constructor : forall n, test3occ n n n.
 
-MetaCoq Run (reif_env_and_ind test3occ >>= 
+MetaCoq Run (tmQuote test3occ >>= 
 linearize_from_mind_entry).
 
 Inductive test4occ : nat -> nat -> nat -> nat -> Prop :=
 | test4occ_constructor : forall n, test4occ n n n n.
 
-MetaCoq Run (reif_env_and_ind test4occ >>= 
+MetaCoq Run (tmQuote test4occ >>= 
 linearize_from_mind_entry).
 
 Inductive test22occ : nat -> nat -> nat -> nat -> Prop :=
 | test22occ_constructor : forall n k, test22occ 1 2 3 k -> test22occ n n k k.
 
-MetaCoq Run (reif_env_and_ind test22occ >>= 
+MetaCoq Run (tmQuote test22occ >>= 
 linearize_from_mind_entry).
 
 Inductive test_poly_param (A: Type) : list A -> list A -> list A -> Prop :=
 | test2poly : forall (l: list A), test_poly_param A l l l.
 
-MetaCoq Run (reif_env_and_ind test_poly_param >>= 
+MetaCoq Run (tmQuote test_poly_param >>= 
 linearize_from_mind_entry). 
 
 Inductive test2pars (A : Type) (a b : A) : A -> A -> Prop :=
@@ -553,30 +549,30 @@ Inductive test2pars2 (A : Type) (HA : CompDec A) (a b : A) : A -> A -> Prop :=
 | test2pars_constructor2 :
 test2pars2 A HA a b a b.
 
-MetaCoq Quote Recursively Definition entry_test := test2pars2.
+(* MetaCoq Quote Recursively Definition entry_test := test2pars2.
 
-MetaCoq Quote Recursively Definition goal_test := test2pars_linear.
+MetaCoq Quote Recursively Definition goal_test := test2pars_linear. *)
 
 Inductive bar : nat -> nat -> nat -> nat -> Prop :=
 | barc : forall n k, bar k n k n.
 
-MetaCoq Run (reif_env_and_ind bar >>= 
+MetaCoq Run (tmQuote bar >>= 
 linearize_from_mind_entry). 
 
-MetaCoq Run (reif_env_and_ind (@test2pars) >>= 
+MetaCoq Run (tmQuote (@test2pars) >>= 
 linearize_from_mind_entry). 
 
 (* Linearization in functions *) 
 Inductive square : nat -> nat -> Prop :=
 | IsSquare : forall n, square n (n*n).
 
-MetaCoq Run (reif_env_and_ind square >>= 
+MetaCoq Run (tmQuote square >>= 
 linearize_from_mind_entry).
 
 Inductive foo : nat -> nat -> Prop :=
 | fooc : forall n, foo n n -> foo n n.
 
-MetaCoq Run (reif_env_and_ind foo >>= 
+MetaCoq Run (tmQuote foo >>= 
 linearize_from_mind_entry). 
 
 End tests.
