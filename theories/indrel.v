@@ -1,5 +1,5 @@
-From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC.
 From MetaCoq.Template Require Import All.
+From MetaCoq.Template Require Import Checker.
 Require Import utilities.
 Require Import List.
 Require Import String.
@@ -297,8 +297,8 @@ match t, nb_vars with
 end
 end.
 
-Definition inv_principle_one_constructor (Σ : PCUICProgram.global_env_map) (t : term) npars nb_vars l1 := 
-let fuel := PCUICSize.size (trans Σ t) in
+Definition inv_principle_one_constructor (t : term) npars nb_vars l1 := 
+let fuel := (* size t TODO *) 1000 in
 let nb_new_args := Datatypes.length l1 in
 let t' := lift nb_new_args 0 (skipn_forall t npars) in
 inv_principle_one_constructor_fuel t' npars nb_vars l1 fuel.
@@ -309,16 +309,16 @@ match t with
 | _ => tApp <%iff%> [t ; t']
 end. 
 
-Definition inv_principle_all_constructors Σ (l_ty_cstr : list term) (npars : nat) (list_nb_vars : list nat)
+Definition inv_principle_all_constructors (l_ty_cstr : list term) (npars : nat) (list_nb_vars : list nat)
 (t : term) (* t is forall x1, ..., xm, I x1 ... xm *)
 (l1 : list term) (* l1 is [x1 ; ... ; xm] *)  
 := 
 let fix aux l_ty_cstr npars list_nb_vars l1 :=
 match l_ty_cstr, list_nb_vars with
 | [Ty], [nb_vars] => let l1' := (List.map (fun x => lift nb_vars 0 x) l1) in 
-                       inv_principle_one_constructor Σ Ty npars nb_vars l1'
+                       inv_principle_one_constructor Ty npars nb_vars l1'
 | Ty :: Tys, nb_vars:: ln => let l1' := (List.map (fun x => lift nb_vars 0 x) l1) in 
-                             tApp <%or%> [inv_principle_one_constructor Σ Ty npars nb_vars l1' ; 
+                             tApp <%or%> [inv_principle_one_constructor Ty npars nb_vars l1' ; 
                              aux Tys npars ln l1]
 | _, _ => <% default %> 
 end
@@ -364,15 +364,13 @@ match n with
 | S n' => mkProd hole (add_prod_hole n' t)
 end.
 
-Variable (Σ : PCUICProgram.global_env_map).
-
-Definition test_add0 := add_prod_nat 3 (inv_principle_one_constructor Σ c1 0 1 [tRel 3 ; tRel 2 ; tRel 1]).
-Definition test_addS := add_prod_nat 3 (inv_principle_one_constructor Σ c2 0 3 [tRel 5 ; tRel 4 ; tRel 3]).
+Definition test_add0 := add_prod_nat 3 (inv_principle_one_constructor c1 0 1 [tRel 3 ; tRel 2 ; tRel 1]).
+Definition test_addS := add_prod_nat 3 (inv_principle_one_constructor c2 0 3 [tRel 5 ; tRel 4 ; tRel 3]).
 
 Definition test_Add0 := mkProd <% Type %> 
 (mkProd (tRel 0) 
 (mkProd (tApp <%@list%> [tRel 1])
-(mkProd (tApp <%@list%> [tRel 2]) (inv_principle_one_constructor Σ c1' 2 1 [tRel 2 ; tRel 1])))).
+(mkProd (tApp <%@list%> [tRel 2]) (inv_principle_one_constructor c1' 2 1 [tRel 2 ; tRel 1])))).
 
 Unset MetaCoq Strict Unquote Universe Mode.
 
@@ -385,7 +383,7 @@ Definition goal_Add0 := <% forall (A : Type) (a : A) (l : list A)
 MetaCoq Unquote Definition test_Add0_unq := test_Add0. 
 
 Definition test_add := 
-(inv_principle_all_constructors Σ [c1 ; c2] 0 [1 ; 3] add_app [tRel 2 ; tRel 1 ; tRel 0]).
+(inv_principle_all_constructors [c1 ; c2] 0 [1 ; 3] add_app [tRel 2 ; tRel 1 ; tRel 0]).
 
 MetaCoq Unquote Definition test_add_unq := test_add.
 
@@ -457,7 +455,6 @@ Ltac inversion_principle I :=
 let I_reif_rec := metacoq_get_value (tmQuoteRec I) in 
 let I_reif := eval cbv in I_reif_rec.2 in 
 let genv := eval cbv in I_reif_rec.1 in
-let Σ := eval cbv in (trans_global_env genv) in
 let T := type of I in 
 let T_reif := metacoq_get_value (tmQuote T) in
 let npars := eval cbv in (info_nonmutual_inductive I_reif_rec.1 I_reif).1 in
@@ -476,7 +473,7 @@ let p := eval cbv in (create_applied_term I_reif T_reif nb_args npars) in
 let t := eval cbv in p.1 in 
 let l1 := eval cbv in p.2 in
 let inv_principle_reif := eval cbv in
-(inv_principle_all_constructors Σ (List.map (fun x => subst10 I_reif x) list_constr) npars l t l1) in
+(inv_principle_all_constructors (List.map (fun x => subst10 I_reif x) list_constr) npars l t l1) in
 let inv_principle := metacoq_get_value (tmUnquoteTyped Prop inv_principle_reif)
 in let H := fresh "Hinv" in assert (H : inv_principle) by (prove_inv_principle_auto).
 
