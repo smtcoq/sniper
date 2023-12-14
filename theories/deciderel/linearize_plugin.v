@@ -8,6 +8,7 @@ Require Import Bool.
 From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
+Require Import utilities.
 Unset MetaCoq Strict Unquote Universe Mode.
 
 (** Replacement of variables **) 
@@ -90,7 +91,7 @@ end in aux n t 0.
 
 (* The same function but we ignore the parameters in the application *)
 Definition compute_occurences_max_parameters (n npars : nat) (t : term) : nat := 
-let fuel := 1000 in (* TODO : no fuel but unset guard checking *)
+let fuel := size t in
 let fix aux n npars t occurs fuel :=
 match fuel with
 | 0 => 0
@@ -374,8 +375,8 @@ Fixpoint linearizable_term (t : term) (db_indexes : list nat) :=
 match t with
 | tProd na Ty u =>  if linearizable_term Ty db_indexes then true else 
 linearizable_term u (0 :: (List.map S db_indexes))
-| tApp x l => let lnat := List.map (fun x => nb_occ_db_index l x 1000) db_indexes in 
-contains_nat_above_two lnat (* TODO fuel *)
+| tApp x l => let lnat := List.map (fun x => nb_occ_db_index l x (list_size size l)) db_indexes in 
+contains_nat_above_two lnat
 | tRel j => false   
 | _ => false
 end.

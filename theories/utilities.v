@@ -461,8 +461,6 @@ eval cbv in (get_nb_constructors i_reif_rec.2 i_reif_rec.1) in
 pose (id := n)).
 
 (*********************)
-(* \TODO temporary inserts before putting order into auxiliary functions 
-         These functions should be removed from interp_alg_types *)
 
 Definition dom_list_f ( B  :  term) (n : nat)  := 
   (* takes a type B := Prod A1 ... An . B'  and outputs (B,[A1; ... ; An]), at least if no dependencies *)
@@ -531,6 +529,44 @@ lazymatch constr:(p) with
 | (?x, ?y) => fold_tuple Na constr:(x) ; fold_tuple Na constr:(y)
 | ?H => try fold Na in H
 end.
+
+(** Size: useful to compute fuel **) 
+
+Definition def_size (size : term -> nat) (x : def term)
+  := size (dtype x) + size (dbody x).
+
+Definition mfixpoint_size (size : term -> nat) (l : mfixpoint term) :=
+  list_size (def_size size) l.
+
+Definition decl_size (size : term -> nat) (x : context_decl) :=
+  size (decl_type x) + option_default size (decl_body x) 0.
+
+Definition context_size (size : term -> nat) (l : context) :=
+  list_size (decl_size size) l. 
+
+Definition branch_size (size : term -> nat) (br : branch term) :=
+  List.length br.(bcontext) + size br.(bbody).
+
+Definition predicate_size (size : term -> nat) (p : predicate term) :=
+  list_size size p.(pparams) +
+  List.length p.(pcontext) +
+  size p.(preturn).
+
+Fixpoint size t : nat :=
+  match t with
+  | tRel i => 1
+  | tEvar ev args => S (list_size size args)
+  | tLambda na T M => S (size T + size M)
+  | tApp u v => S (size u + list_size size v)
+  | tProd na A B => S (size A + size B)
+  | tLetIn na b t b' => S (size b + size t + size b')
+  | tCase ind p c brs => S (predicate_size size p +
+    size c + list_size (branch_size size) brs)
+  | tProj p c => S (size c)
+  | tFix mfix idx => S (mfixpoint_size size mfix)
+  | tCoFix mfix idx => S (mfixpoint_size size mfix)
+  | _ => 1
+  end.
 
 From Ltac2 Require Import Ltac2.
 

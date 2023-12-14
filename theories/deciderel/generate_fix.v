@@ -9,6 +9,7 @@ From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Require Import linearize_plugin.
+Require Import utilities.
 Import MCMonadNotation.
 
 Unset MetaCoq Strict Unquote Universe Mode.
@@ -382,10 +383,10 @@ end
 end.
 
 Definition unify_mapping (t1 t2 : term) (m : mapping) := 
-let fuel := 1000 (*  PCUICSize.size (trans Σ t1) *) in unify_aux t1 t2 m fuel.
+let fuel := size t1 + size t2 in unify_aux t1 t2 m fuel.
 
 Definition unify (t1 t2 : term) := 
-let fuel := 1000 (* PCUICSize.size (trans Σ t1) *) in unify_aux t1 t2 [] fuel.
+let fuel := size t1 + size t2 in unify_aux t1 t2 [] fuel.
 
 Fixpoint ex_list_bool {A : Type} (P : A -> bool) (l : list A) :=
 match l with
@@ -394,7 +395,7 @@ match l with
 end.
 
 (* Returns true if the De Brujin index i occurs in t *)
-Fixpoint  contains_fuel (i : nat) (t : term) (fuel : nat) {struct fuel}:=
+Fixpoint contains_fuel (i : nat) (t : term) (fuel : nat) {struct fuel}:=
  match fuel with
  | 0 => false
  | S n =>
@@ -432,7 +433,7 @@ match fuel with
 end.
 
 Definition contains (i : nat) (t : term) :=
-let fuel := 1000 (* PCUICSize.size (trans Σ t) *) in 
+let fuel := size t (* PCUICSize.size (trans Σ t) *) in 
 contains_fuel i t fuel.
 
 
@@ -1630,7 +1631,7 @@ apply IHl in H. assumption. Qed.
 
 MetaCoq Quote Recursively Definition add_linear_reif := add_interm. *)
 
-MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear. 
+(* MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear.  *)
 
 (*Definition test2 := (build_fixpoint_aux2 e add_linear_reif.1 add_linear_reif.2 [] 0).1. 
 

@@ -298,7 +298,7 @@ end
 end.
 
 Definition inv_principle_one_constructor (t : term) npars nb_vars l1 := 
-let fuel := (* size t TODO *) 1000 in
+let fuel := size t in
 let nb_new_args := Datatypes.length l1 in
 let t' := lift nb_new_args 0 (skipn_forall t npars) in
 inv_principle_one_constructor_fuel t' npars nb_vars l1 fuel.
