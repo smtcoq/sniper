@@ -1,6 +1,4 @@
-From MetaCoq.PCUIC Require Import PCUICReflect.
 From MetaCoq.Template Require Import All.
-From MetaCoq.TemplatePCUIC Require Import TemplateToPCUIC. 
 Import MCMonadNotation.
 Require Import List.
 Import ListNotations.
@@ -92,8 +90,8 @@ want to linearize only the conclusion of the term *)
 end in aux n t 0.
 
 (* The same function but we ignore the parameters in the application *)
-Definition compute_occurences_max_parameters  (Σ : PCUICProgram.global_env_map) (n npars : nat) (t : term) : nat := 
-let fuel := PCUICSize.size (trans Σ t) in
+Definition compute_occurences_max_parameters (n npars : nat) (t : term) : nat := 
+let fuel := 1000 in (* TODO : no fuel but unset guard checking *)
 let fix aux n npars t occurs fuel :=
 match fuel with
 | 0 => 0
@@ -135,17 +133,17 @@ match t with
 end.
 
 Fixpoint search_list_of_compdecs_fuel
-(Σ : PCUICProgram.global_env_map) (l : list term) (lc : list (term*term)) (n : nat) {struct n} :=
+(l : list term) (lc : list (term*term)) (n : nat) {struct n} :=
 match n with
 | 0 => []
 | S n' =>
 match l with
 | [] => []
-| x :: xs => search_compdec_fuel Σ x lc n' :: search_list_of_compdecs_fuel Σ xs lc n'
+| x :: xs => search_compdec_fuel x lc n' :: search_list_of_compdecs_fuel xs lc n'
 end 
 end
 with
-search_compdec_fuel (Σ : PCUICProgram.global_env_map) (Ty : term) (l : list (term*term)) (n : nat) : term :=
+search_compdec_fuel (Ty : term) (l : list (term*term)) (n : nat) : term :=
 match n with
 | 0 => tVar "no more fuel"%bs
 | S n' =>
@@ -154,23 +152,23 @@ match l with
       | tRel n => tRel (n-1)
       | _ => tVar "the type is not a variable"%bs 
       end
-| x :: xs => if eqb_term (trans Σ Ty) (trans Σ x.2) then x.1 
+| x :: xs => if eqb_term Ty x.2 then x.1 
             else
              let (u, v) := dest_app_list Ty in
-if eqb_term (trans Σ u) (trans Σ x.2) then match x.1 with
-    | tApp u _ => tApp u (v ++ (search_list_of_compdecs_fuel Σ v l n'))
+if eqb_term u x.2 then match x.1 with
+    | tApp u _ => tApp u (v ++ (search_list_of_compdecs_fuel v l n'))
     | _ => x.1
 end else
-search_compdec_fuel Σ Ty xs n'
+search_compdec_fuel Ty xs n'
 end
 end.
 
-Definition search_compdec (Σ : PCUICProgram.global_env_map) (Ty : term) (l : list (term*term)) :=
+Definition search_compdec (Ty : term) (l : list (term*term)) :=
 let fuel := 
 match Ty with
 | tApp u v => ((Datatypes.length v) * (Datatypes.length l))%nat
 | _ => Datatypes.length l
-end in search_compdec_fuel Σ Ty l (fuel + 1000).
+end in search_compdec_fuel Ty l (fuel + 1000).
 
 
 (* Generates the equalities 
@@ -215,7 +213,7 @@ end.
 Definition mkProd_list_no_lift t l := let n := Datatypes.length l in
 mkProd_list_no_lift_aux t l n.
 
-Fixpoint linearize_aux_compdec (Σ : PCUICProgram.global_env_map) (t : term) (n: nat) (lcomp : list (term*term)) (npars : nat) : term :=
+Fixpoint linearize_aux_compdec (t : term) (n: nat) (lcomp : list (term*term)) (npars : nat) : term :=
 match n with
 | 0 => impossible_term_reif
 | S m =>
@@ -225,11 +223,11 @@ match t with
 let len := (occ - 1) in
 let l0 := get_list_of_rel occ (2*len) in 
 let res := (replace_occurences 0 l0 u npars) in 
-let comp := search_compdec Σ Ty lcomp in
+let comp := search_compdec Ty lcomp in
 let l_eq := gen_compdec_eq (lift occ 0 Ty) (lift occ 0 comp) occ in
 let l2 := mkList (lift 1 0 Ty) len in
-tProd Na Ty (mkProd_list_no_lift (mkProd_list_no_lift (linearize_aux_compdec Σ res m lcomp npars) l_eq) l2)
-else tProd Na Ty (linearize_aux_compdec Σ u m (List.map (fun x => (lift 1 0 x.1, lift 1 0 x.2)) lcomp) npars)
+tProd Na Ty (mkProd_list_no_lift (mkProd_list_no_lift (linearize_aux_compdec res m lcomp npars) l_eq) l2)
+else tProd Na Ty (linearize_aux_compdec u m (List.map (fun x => (lift 1 0 x.1, lift 1 0 x.2)) lcomp) npars)
 | _ => t 
 end
 end.
@@ -239,16 +237,16 @@ Fixpoint fuel_linearize t  := match t with
 | _ => 1
 end.
 
-Definition linearize_compdec Σ (t : term) lcomp := let fuel := fuel_linearize t in linearize_aux_compdec Σ t fuel
+Definition linearize_compdec (t : term) lcomp := let fuel := fuel_linearize t in linearize_aux_compdec t fuel
 lcomp.
 
 
-Fixpoint gen_compdec_eq_params_aux Σ Ty lcomp nb_eq nbvar var_eq :=
-let comp := search_compdec Σ Ty lcomp in
+Fixpoint gen_compdec_eq_params_aux Ty lcomp nb_eq nbvar var_eq :=
+let comp := search_compdec Ty lcomp in
 match nb_eq with
 | 0 => []
 | S nb_eq => mkEq bool_reif (mkCompdecEq Ty comp (tRel nbvar) (tRel var_eq)) true_reif ::
-gen_compdec_eq_params_aux Σ (lift 1 0 Ty) lcomp nb_eq (S nbvar) (S var_eq)
+gen_compdec_eq_params_aux (lift 1 0 Ty) lcomp nb_eq (S nbvar) (S var_eq)
 end.
 
 Fixpoint get_list_of_rel2 (n1 n2 : nat) := 
@@ -261,29 +259,29 @@ end.
 
 Fixpoint replace_occurences_aux (i: nat) (l : list term) (t : term) (fuel : nat) (nb_lift : nat) (npars : nat) *)
 
-Definition linearize_parameter_compdec Σ  (lcomp : list (term*term)) (t: term) (Typars : list term) (npars : nat) :=
-let fix aux Σ lcomp t Typars npars nb_lift_reccall nb_reccall l_types := 
+Definition linearize_parameter_compdec  (lcomp : list (term*term)) (t: term) (Typars : list term) (npars : nat) :=
+let fix aux lcomp t Typars npars nb_lift_reccall nb_reccall l_types := 
 match Typars with
 | [] => match l_types with
         | [] => t
         | _:: _ => mkProd_list_no_lift t l_types
         end
 | Ty :: xs => let actual_par := Datatypes.length xs in
-let occ := compute_occurences_max_parameters Σ (nb_reccall+nb_lift_reccall) npars t in
+let occ := compute_occurences_max_parameters (nb_reccall+nb_lift_reccall) npars t in
 if Nat.ltb 0 occ then (* tProd na Ty (linearize_parameter_compdec_aux Σ lcomp u npars') *)
 let l0 := get_list_of_rel2 occ (occ + nb_lift_reccall) in
 let res := replace_occurences_pars (nb_reccall+nb_lift_reccall) l0 t npars in
 let Ty_lifted := (lift (S actual_par) 0 Ty) in
-let comp := search_compdec Σ Ty_lifted lcomp in
-let l_eq := gen_compdec_eq_params_aux Σ (lift occ 0 Ty_lifted) lcomp occ (occ+nb_reccall) 0 in
+let comp := search_compdec Ty_lifted lcomp in
+let l_eq := gen_compdec_eq_params_aux (lift occ 0 Ty_lifted) lcomp occ (occ+nb_reccall) 0 in
 let l2 := mkList Ty_lifted occ in
 let new_types := List.map (fun x => lift (2*occ) nb_reccall x) l_types in
 let l' := l2++l_eq++new_types in
-aux Σ lcomp res xs npars ((2*occ+nb_lift_reccall)%nat)
+aux lcomp res xs npars ((2*occ+nb_lift_reccall)%nat)
 (S nb_reccall) l'
-else aux Σ lcomp t xs npars nb_lift_reccall (S nb_reccall) l_types
+else aux lcomp t xs npars nb_lift_reccall (S nb_reccall) l_types
 end
-in aux Σ lcomp t (rev Typars) npars 0 0 [].
+in aux lcomp t (rev Typars) npars 0 0 [].
 
 (*(tApp (tRel 8)
                                                 [tRel 7; tRel 6; 
@@ -331,13 +329,13 @@ match l with
 | x :: xs => let y := app_or_not x.1.1 x.2 in (y, x.1.2) :: inst_parametric_compdec_hypothesis xs 
 end.
 
-Fixpoint list_pars_to_linearize2 Σ (l : list context_decl) := 
+Fixpoint list_pars_to_linearize2 (l : list context_decl) := 
 match l with
 | [] => []
 | x :: xs => let Ty := decl_type x in match Ty with
-        | tSort s  => list_pars_to_linearize2 Σ xs
-        | tApp u l => if eqb_term (trans Σ u) (trans Σ <% CompDec %>)  then list_pars_to_linearize2 Σ xs else x :: list_pars_to_linearize2 Σ xs
-        | _ => x :: list_pars_to_linearize2 Σ xs
+        | tSort s  => list_pars_to_linearize2 xs
+        | tApp u l => if eqb_term u <% CompDec %>  then list_pars_to_linearize2 xs else x :: list_pars_to_linearize2 xs
+        | _ => x :: list_pars_to_linearize2 xs
         end
 end. 
 
@@ -389,7 +387,7 @@ match l with
 | x :: xs => linearizable_term x [] || linearizable_list_term xs
 end.
 
-Definition linearize_oind_entry Σ (oinde : one_inductive_entry) 
+Definition linearize_oind_entry (oinde : one_inductive_entry) 
 (params : list context_decl) (* list of params not instantiated: obtained by getting the mind entry *)
 (lpars : list term) (* list of params instantiated (given by the user) *)
 (npars : nat) 
@@ -398,18 +396,18 @@ list_compdecs
 :=
 let nb_shift := Datatypes.length lpars in
 let new_arity := (subst lpars (npars - nb_shift) oinde.(mind_entry_arity)) in
-let params2 := list_pars_to_linearize2 Σ params in
+let params2 := list_pars_to_linearize2 params in
 let new_consnames := List.map (fun x => x^"_linear") oinde.(mind_entry_consnames) in
 let lc := oinde.(mind_entry_lc) in
 let b := linearizable_list_term lc in 
 let new_lc := 
 if b then
 if nb_shift =? 0 then
-List.map (fun x => linearize_parameter_compdec Σ list_compdecs
-(linearize_compdec Σ x list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) lc
+List.map (fun x => linearize_parameter_compdec list_compdecs
+(linearize_compdec x list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) lc
 else
-List.map (fun x => eliminate_first_nargs (linearize_parameter_compdec Σ list_compdecs
-(linearize_compdec Σ (subst lpars (npars - nb_shift) x) list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) nb_shift)
+List.map (fun x => eliminate_first_nargs (linearize_parameter_compdec list_compdecs
+(linearize_compdec (subst lpars (npars - nb_shift) x) list_compdecs npars) (List.map (fun x => x.(decl_type)) params2) npars) nb_shift)
  lc
 else lc
 in (
@@ -448,28 +446,27 @@ match l with
 end.
 
 (* Warning: because of the only one ident, does not work for mutuals *)
-Definition linearize_oind_entry_list Σ (l : list one_inductive_entry) (params : list context_decl) lpars npars
+Definition linearize_oind_entry_list (l : list one_inductive_entry) (params : list context_decl) lpars npars
 list_compdecs new_name : (list one_inductive_entry)*bool :=
 let interm_res :=
-List.map (fun x => linearize_oind_entry Σ x params lpars npars list_compdecs new_name) l
+List.map (fun x => linearize_oind_entry x params lpars npars list_compdecs new_name) l
 in let l1 := (split interm_res).1 
 in let l2 := (split interm_res).2 in 
 (l1, contains_true l2).
 
 Definition linearize_from_mind_entry (p : program*term) :=  
 tuple <- monadic_compdec_inductive p ;;
-let Σ := tuple.1.1 in
-let list_compdecs := tuple.1.2.1 in 
-let lpars := tuple.1.2.2 in 
+let list_compdecs := tuple.1.1 in 
+let lpars := tuple.1.2 in 
 let mind_entry := tuple.2 in (* the user may have given an term with parameters instantiated *)
 let npars := List.length (mind_entry_params mind_entry) in
 params <- tmEval all (replace_params mind_entry lpars) ;; 
 new_compdecs <- tmEval all (inst_parametric_compdec_hypothesis list_compdecs) ;;
-params_to_linearize <- tmEval all (list_pars_to_linearize2 Σ params) ;; 
+params_to_linearize <- tmEval all (list_pars_to_linearize2 params) ;; 
 match mind_entry.(mind_entry_inds) with
 | [] => tmFail "empty entry"%bs
 | [x] => new_name <- tmFreshName (x.(mind_entry_typename)^"_linear") ;;
-res <- tmEval all (linearize_oind_entry_list Σ mind_entry.(mind_entry_inds) params_to_linearize lpars npars new_compdecs new_name) ;;
+res <- tmEval all (linearize_oind_entry_list mind_entry.(mind_entry_inds) params_to_linearize lpars npars new_compdecs new_name) ;;
 b <- tmEval all res.2 ;;
 match b with
 | true =>
