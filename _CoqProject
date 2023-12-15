@@ -1,5 +1,13 @@
+-R ./orchestrator Sniper.orchestrator
 -R . Sniper
 -Q ./elpi Sniper.elpi
+-docroot Sniper
+
+orchestrator/Triggers.v
+orchestrator/Tactics.v
+orchestrator/Printer.v
+orchestrator/Orchestrator.v
+
 
 theories/utilities.v
 theories/indrel.v
