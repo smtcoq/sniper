@@ -126,5 +126,3 @@ Ltac2 rec orchestrator n trigs tacs trigtacs :=
 - relancer sur Actema
 *)
 
-
-
