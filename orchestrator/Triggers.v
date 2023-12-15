@@ -279,7 +279,7 @@ but we want to distinguish between Prop, Set and Type_i, i >= 0 *)
           | TProp => if equal c 'Prop then Some (cons_option (interpret_flag c fl) []) else None
           | TSet => if equal c 'Set then Some (cons_option (interpret_flag c fl) []) else None
           | TBigType => 
-            if Bool.and (equal c 'Type) (Bool.neg (equal c 'Set))
+            if Bool.and (Bool.neg (equal c 'Prop)) (Bool.neg (equal c 'Set))
             then Some (cons_option (interpret_flag c fl) []) else None
         end
     | Prod bi t, TProd tte1 tte2 fl => 

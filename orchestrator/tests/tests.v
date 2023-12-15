@@ -1,5 +1,5 @@
-Require Import Orchestrator.Triggers.
-Require Import Orchestrator.Printer.
+Require Import Triggers.
+Require Import Printer.
 Require Import List.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr.
@@ -92,6 +92,10 @@ Abort.
 Goal unit.
 test_trigger (TIs (TGoal, NotArg) (TTerm 'unit (Arg id))). (* unit is in the list of used arguments *)
 Abort.
+
+Goal False.
+ltac1:(pose proof app_nil_end).
+test_trigger (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
 
 
 

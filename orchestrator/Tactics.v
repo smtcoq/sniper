@@ -61,7 +61,7 @@ End tests.
 
 
 Ltac2 trigger_definitions :=
-  TDisj (TContains (TGoal, NotArg) (TConstant None NotArg)) (TContains (TSomeHyp, NotArg)  (TConstant None (Arg id))).
+  TDisj (TContains (TGoal, NotArg) (TConstant None (Arg id))) (TContains (TSomeHyp, NotArg)  (TConstant None (Arg id))).
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).
@@ -72,8 +72,8 @@ Ltac2 trigger_fixpoints :=
 Ltac2 trigger_pattern_matching :=
   TContains (TSomeHyp, Arg id) (TCase tDiscard tDiscard None NotArg).
 
-Ltac2 trigger_polymorphism :=
-  TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
+Ltac2 trigger_polymorphism () :=
+  TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TTerm 'Type NotArg) tDiscard NotArg)).
 
 Ltac2 trigger_higher_order :=
   TContains (TSomeHyp, Arg id) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
@@ -85,12 +85,9 @@ Ltac2 trigger_generation_principle :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
 Ltac2 trigger_anonymous_funs () :=
-  TDisj (TMetaLetIn (TContains (TSomeHyp, Arg id) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
+  TMetaLetIn (TContains (TSomeHyp, Arg Constr.type) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
   (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))))
-  (TMetaLetIn (TContains (TGoal, NotArg) (TLambda tDiscard tDiscard (Arg id))) ["f"]
-  (TNot (TMetaLetIn (TContains (TGoal, NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
+  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))).
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool () :=

@@ -71,13 +71,13 @@ Ltac2 rec orchestrator_aux
   env (* local triggers variables *)
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
-  tacs (* Tactics (as strings, should have same length as triggers) *)
+  (tacs : string list) (* Tactics, should have same length as triggers) *)
   trigtacs (* Triggered tactics, pair between a string and a list of arguments *) :=
   match trigs, tacs with
     | [], _ :: _ => fail "you forgot have more tactics than triggers"
     | _ :: _, [] => fail "you have more triggers than tactics"
     | [], [] => ()
-    | trig :: trigs', (tac, name) :: tacs' => 
+    | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
          let it := interpret_trigger (cg.(cgstate)) env env_args scg trig in
          let _ := print_interpreted_trigger it in 
@@ -90,7 +90,7 @@ Ltac2 rec orchestrator_aux
                let _ := printf "%s was already applied" name in
               orchestrator_aux cg env scg trigs' tacs' trigtacs
             else 
-              (run tac l ;
+              (run name l ;
               let _ := printf "Automatically applied %s" name in 
               trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) ;
               Control.enter (fun () =>
