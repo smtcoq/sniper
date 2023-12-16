@@ -701,12 +701,12 @@ Ltac2 interpret_trigger cg env env_args scg (t : trigger) : constr list option :
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
             | Some [] => None
-            | Some (lc :: lcs) => 
+            | Some (lc :: lcs) => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
                 let _ := bind_triggers env lc ls in
-                let it2 := interpret_trigger cg env env_args scg flag_letin t2 in 
+                let it2 := interpret_trigger cg env env_args scg flag_letin t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
                 match it2 with
-                  | Some l =>
+                  | Some l => 
                       if flag_letin then Some l
                       else let res := (List.filter_out (fun x => List.mem (List.equal equal) x (env_args.(args_used))) l) in
                       if Int.equal 0 (List.length res) then None else Some res

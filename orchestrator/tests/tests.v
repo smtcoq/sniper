@@ -96,7 +96,22 @@ Abort.
 Goal False.
 ltac1:(pose proof app_nil_end).
 test_trigger (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
+Abort.
 
+Ltac2 trigger_trakt_bool () :=
+  TMetaLetIn (TIs (TSomeHyp, (Arg type)) (TType 'Prop NotArg)) ["H"]
+  (TNot (TIs (TNamed "H", NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
+
+(* test for trakt tactic *)
+Lemma toto (H : true = false) (H1 : andb true true = true) (n : nat) (H2 : False) : True.
+Proof.
+test_trigger (trigger_trakt_bool ()).
+Abort.
+
+Goal False.
+ltac1:(pose proof app_nil_end).
+test_trigger (trigger_trakt_bool ()).
+Abort.
 
 
 

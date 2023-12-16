@@ -76,7 +76,7 @@ Ltac2 trigger_polymorphism () :=
   TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TTerm 'Type NotArg) tDiscard NotArg)).
 
 Ltac2 trigger_higher_order :=
-  TContains (TSomeHyp, Arg id) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
+  TContains (TSomeHyp, NotArg) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
 
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
@@ -91,8 +91,8 @@ Ltac2 trigger_anonymous_funs () :=
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool () :=
-  TMetaLetIn (TNot (TIs (TSomeHyp, Arg id) (TEq (TInd (Some "bool") NotArg) tDiscard tDiscard NotArg))) ["H"]
-  (TIs (TNamed "H", NotArg) (TType 'Prop NotArg)).
+  TMetaLetIn (TIs (TSomeHyp, (Arg Constr.type)) (TType 'Prop NotArg)) ["H"]
+  (TNot (TIs (TNamed "H", NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
 
 (* Ltac2 trigger_trakt_Z_bool := *)
 
