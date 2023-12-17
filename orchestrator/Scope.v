@@ -127,7 +127,7 @@ Ltac my_higher_order := prenex_higher_order.
 
 Ltac my_fixpoints H := eliminate_fix_hyp H.
 
-Ltac my_pattern_matching H := eliminate_dependent_pattern_matching H.
+Ltac my_pattern_matching H := try (eliminate_dependent_pattern_matching H).
 
 Ltac my_anonymous_functions := anonymous_funs.
 
@@ -163,9 +163,9 @@ Local Open Scope Z_scope.
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof.
-Time scope; verit. (* Finished transaction in 0.507 secs (0.471u,0.01s) (successful) *)
-Undo.
-Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *)
+(* Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *)
+Undo. *)
+Time scope; verit.
 Qed.
 
 Section Generic.
@@ -175,8 +175,8 @@ Section Generic.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
   Time scope; verit. (* Finished transaction in 0.549 secs (0.516u,0.s) (successful) *)
-  Undo.
-  Time snipe. (* Finished transaction in 3.028 secs (2.64u,0.015s) (successful) *)
+(*   Undo.
+  Time snipe. (* Finished transaction in 3.028 secs (2.64u,0.015s) (successful) *) *)
   Qed.
 
 End Generic.
@@ -194,8 +194,8 @@ Theorem app_eq_unit_auto :
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof.
   Time intros ; scope; verit. (* Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
-  Undo.  
-  Time snipe. (*Finished transaction in 5.66 secs (4.35u,0.006s) (successful) *) Qed.
+(*   Undo.  
+  Time snipe. (*Finished transaction in 5.66 secs (4.35u,0.006s) (successful) *) *) Qed.
 
 
 End destruct_auto.
@@ -210,14 +210,14 @@ Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
   | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
-(* (* The proof of this lemma, except induction, can be automatized *)
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof. intros A H x l1 l2. 
+Proof. intros A H x l1 l2.
 Time induction l1 as [ | x0 l0 IH]; simpl; ltac2:(Control.enter (fun () => scope ())) ; verit.
-Time induction l1 as [ | x0 l0 IH]; simpl; snipe (* Finished transaction in 9.089 secs (7.921u,0.005s) (successful). *)
+(* Finished transaction in 1.518 secs (1.456u,0.019s) (successful) *)
+(* Time induction l1 as [ | x0 l0 IH]; simpl; snipe Finished transaction in 9.089 secs (7.921u,0.005s) (successful). *)
 
-Qed. TODO => fixpoints never stops for some reason *)
+Qed.
 
 Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
@@ -328,10 +328,24 @@ Undo. pose proof List.app_nil_r. Time scope; verit.
 Qed.
  *)
 
+Ltac2 scope2 () := orchestrator 20
+[trigger_anonymous_funs () ; trigger_higher_order ; 
+trigger_definitions; trigger_higher_order_equalities; 
+trigger_fixpoints; trigger_pattern_matching; 
+trigger_algebraic_types; trigger_polymorphism (); 
+trigger_generation_principle ; trigger_trakt_bool ()] 
+["my_anonymous_functions" ; "my_higher_order"; 
+"my_get_def"; "my_higher_order_equalities"; 
+"my_fixpoints"; "my_pattern_matching"; 
+"my_algebraic_types"; "my_polymorphism"; 
+"my_gen_principle_temporary" ; "my_trakt_bool"] { triggered_tacs := (init_triggered ()) }.
+
+Tactic Notation "scope2" := ltac2:(scope2 ()).
+
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- snipe app_nil_r.
+- snipe app_nil_r. Undo. pose proof app_nil_r. scope2; verit.
 - snipe (app_ass, app_nil_r).
 Qed.
 

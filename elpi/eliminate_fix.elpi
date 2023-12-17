@@ -147,3 +147,11 @@ pred abstract_unify_aux i: term, i: term, i: term.
 
 pred abstract_unify i: term, i: term.
     abstract_unify T1 T2 :- coq.typecheck T2 T3 ok, whd1 T1 T1', abstract_unify_aux T1' T2 T3.
+
+% if we have a term of the form forall x1 ... xn, t x1 ... xn = u x1 ... xn
+% and another one of the form forall y1 ... yn, u y1 ... yn = v y1 ... xn,
+% returns forall x1 ... xn, t x1 ... xn = v y1 ... yn
+pred setoid_rewrite i: term, i: term, o: term.
+    setoid_rewrite (prod Na Ty F) (prod _Na' _Ty' G) (prod Na Ty R) :- pi x\ decl x Na Ty =>
+        setoid_rewrite (F x) (G x) (R x).
+    setoid_rewrite (app [{{@eq}}, Ty, T, U]) (app [{{@eq}}, _, U, V]) (app [{{@eq}}, Ty, T, V]).

@@ -17,6 +17,46 @@ Import ListNotations.
 From Ltac2 Require Import Ltac2.
 Set Default Proof Mode "Classic".
 
+From Sniper.elpi Extra Dependency "eliminate_fix.elpi" as elimfix.
+From Sniper.elpi Extra Dependency "subterms.elpi" as subs.
+From Sniper.elpi Extra Dependency "utilities.elpi" as utils.
+
+Ltac assert2 H2 Ty :=
+  let H3 := fresh in 
+  assert (H3 : Ty) by (intros; rewrite <- H2 ; auto).
+
+Elpi Tactic setoid_rewrite_at2.
+Elpi Accumulate File elimfix subs utils.
+
+
+Elpi Accumulate lp:{{
+
+  solve ((goal _ _ _ _ [trm H1, trm H2]) as G) GL :- std.do! [
+     coq.typecheck H1 Ty1 ok,
+     coq.typecheck H2 Ty2 ok,
+     setoid_rewrite Ty1 Ty2 Ty3, 
+     coq.ltac.call "assert2" [trm H2, trm Ty3] G GL, !].
+  solve _ _ :- coq.ltac.fail 0 _.
+
+
+}}.
+
+Elpi Typecheck.
+
+Tactic Notation "setoid_rewrite_at2" constr(H1) constr(H2) :=
+  elpi setoid_rewrite_at2 (H1) (H2) ; clear H2 ; clear H1.
+
+Section test_rewrite.
+
+Goal forall (f g h : forall (A B C : Type), A -> B -> C)
+(H1 : forall A B C a b, f A B C a b = g A B C a b)
+(H2 : forall A B C a b, g A B C a b = h A B C a b), False.
+intros.
+setoid_rewrite_at2 H1 H2. Abort.
+
+End test_rewrite.
+
+
 (* Quick patch : setoid_rewrite does not 
 work with higher-order arguments, 
 works only when the hypothesis we want to 
@@ -119,9 +159,8 @@ repeat match goal with
 | H1 : ?Ty1 |- _ =>
   constr_eq Ty Ty1 ;
   lazymatch goal with
-    | H2 : ?T |- _ => first [setoid_rewrite H2 in H1 at 2 ; clear H2 ; 
-try (fold_in_eq H1)
-| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 ; try (fold_in_eq H1)]
+    | H2 : ?T |- _ => first [first [setoid_rewrite H2 in H1 at 2 ; clear H2
+| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 ; try (fold_in_eq H1)] | setoid_rewrite_at2 H1 H2 ]
     end
 end.
 
@@ -135,11 +174,6 @@ let x' := eval cbv beta in x in
 assert x' by (intros_destructn n ; reflexivity).
 
 Elpi Tactic eliminate_fix_hyp.
-
-
-From Sniper.elpi Extra Dependency "eliminate_fix.elpi" as elimfix.
-From Sniper.elpi Extra Dependency "subterms.elpi" as subs.
-From Sniper.elpi Extra Dependency "utilities.elpi" as utils.
 Elpi Accumulate File elimfix.
 Elpi Accumulate File subs.
 Elpi Accumulate File utils.
@@ -242,18 +276,18 @@ length l = (fix length (l : list A) : nat :=
   | _ :: l' => S (length l')
   end) l) -> False -> True) by (intros H1 HFalse; destruct HFalse).
 eliminate_fix_hyp H1.
-assert (H2 : forall n m, toto (Nat.add n m) =
+assert (H2' : forall n m, toto (Nat.add n m) =
 (fix add (n m : nat) :=
   match n with
   | 0 => m
   | S p => S (add p m)
   end) n m) by admit.
-eliminate_fix_cont H2 ltac:(fun H => idtac).
-assert (H3 : forall A l, toto (length l) = toto ((fix length (l : list A) : nat :=
+eliminate_fix_cont H2' ltac:(fun H => idtac).
+assert (H3' : forall A l, toto (length l) = toto ((fix length (l : list A) : nat :=
   match l with
   | [] => 0
   | _ :: l' => S (length l')
-  end) l) -> True) by admit. eliminate_fix_hyp H3.
+  end) l) -> True) by admit. eliminate_fix_hyp H3'.
 Abort.
 
 (* Test higher-order + polymorphism *) 
@@ -306,14 +340,14 @@ assert (H : forall l : list nat,
        | a :: t => id a :: map t
        end) l) by reflexivity.
 eliminate_fix_hyp H.
-assert (H1 : forall l : list A,
+assert (H1' : forall l : list A,
     f2 l =
     (fix map (l0 : list A) : list B :=
        match l0 with
        | [] => []
        | a :: t => f a :: map t
        end) l) by reflexivity.
-eliminate_fix_hyp H1.
+eliminate_fix_hyp H1'.
 assert (H2 : forall l : list A,
     f1 l =
     (fix map (l0 : list A) : list (B * C) :=
