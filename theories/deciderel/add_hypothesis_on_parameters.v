@@ -1,25 +1,23 @@
 From MetaCoq.Template Require Import All.
-From SMTCoq Require Import SMTCoq.
 Require Import String.
 Require Import List. 
 Import ListNotations.
+Require Import utilities.
 Unset MetaCoq Strict Unquote Universe Mode.
 
-Section utilities.
+(** The purpose of this file is to transform an 
+inductive of type [A1 -> ... -> An -> B1 -> ... Bm], 
+(where the Ais are parameters and the Bjs are indexes)
+into a new inductive of type 
+[A1 -> P A1 -> ... -> An -> P An -> B1 ... -> Bm].
+[P] is a property on types (think of [EqDec], or in the SMTCoq case, 
+of [CompDec]) *)
 
-Definition mkProdName na T u :=
-tProd {| binder_name := nNamed na ; binder_relevance := Relevant |} T u.
+Section P.
 
-Inductive impossible_term :=.
-MetaCoq Quote Definition impossible_term_reif := impossible_term.
-
-End utilities.
-
-Section trm.
-
-Variable trm : term.
-Definition term_rel0 := 
-tApp trm [tRel 0].
+Variable P : term.
+Definition P_app := 
+tApp P [tRel 0].
 
 (* As the source is the type A1 -> ... -> An 
 and the target has type A1 -> foo A1 -> A2 -> foo A2 ... -> An -> foo An, 
@@ -35,7 +33,7 @@ Definition liftn (n : nat) (t : term) := liftn_aux n 0 t.
 Fixpoint add_trm_parameter_aux (t : term) (n : nat) (lrel : list term) (fuel : nat) : term :=
 let len := Datatypes.length lrel in
 match fuel with
-| 0 => impossible_term_reif
+| 0 => default_reif
 | S m => 
 match t with
 | tProd Na u v => let u' := match u with
@@ -57,7 +55,7 @@ end.
 
 (* Auxiliary functions to find a new suitable name *)
 Definition find_name_trm : ident :=
-match trm with
+match P with
 | tInd i _ => ("H"++(i.(inductive_mind)).2)%bs
 | tConst k _ => k.2
 | _ => "new_ident"%bs
@@ -76,7 +74,7 @@ match t with
 | tProd Na u v => match u with
       | tSort s => if negb (Universe.is_prop s) then 
                    let acc' := (List.map (lift 1 0) acc) ++ [tRel 0] in
-                   tProd Na (tSort s) (mkProdName (find_name_trm) (term_rel0) (add_trm_for_each_poly_var v acc' fuel))
+                   tProd Na (tSort s) (mkProdName (find_name_trm) (P_app) (add_trm_for_each_poly_var v acc' fuel))
 else let len := Datatypes.length acc in (add_trm_parameter_aux t len acc fuel)
       | _ => let len := Datatypes.length acc in add_trm_parameter_aux t len acc fuel
       end
@@ -91,10 +89,9 @@ end.
 Definition add_trm_parameter (t : term) :=
 let fuel := fuel_trm t in add_trm_for_each_poly_var t [] fuel.
 
-End trm.
+End P.
 
 (* Section tests_CompDec.
-
 
 MetaCoq Quote Recursively Definition Add_reif_rec := Add.
 
@@ -110,7 +107,7 @@ Inductive Add_compdec (A : Type) (HA : CompDec A) (a: A) : list A -> list A -> P
 
 
 Definition test :=  tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-                (tSort (Universe.of_levels (inr (Level.Level "compdecs_poly_ind.164"%bs))))
+                (tSort (Universe.of_levels (inr (Level.level "compdecs_poly_ind.164"%bs))))
                 (tProd {| binder_name := nNamed "a"%bs; binder_relevance := Relevant |}
                    (tRel 0)
                    (tProd {| binder_name := nNamed "l"%bs; binder_relevance := Relevant |}
@@ -136,7 +133,7 @@ Definition test :=  tProd {| binder_name := nNamed "A"%bs; binder_relevance := R
 MetaCoq Quote Definition nat_reif := nat.
 
 Definition ty_Add_cons := tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-                       (tSort (Universe.of_levels (inr (Level.Level "compdecs_poly_ind.201"%bs))))
+                       (tSort (Universe.of_levels (inr (Level.level "compdecs_poly_ind.201"%bs))))
                        (tProd {| binder_name := nNamed "a"%bs; binder_relevance := Relevant |} 
                           (tRel 0)
                           (tProd {| binder_name := nNamed "x"%bs; binder_relevance := Relevant |}
@@ -186,6 +183,7 @@ Inductive test_indu_inst (a : nat) : list nat -> list nat -> Prop :=
 MetaCoq Quote Definition test_indu_inst_reif := test_indu_inst.
 
 MetaCoq Unquote Definition test1 := (subst10 test_indu_inst_reif (add_trm_parameter CompDec_reif <% forall a l l', test_indu_inst a l l' %>)).
+Print test1.
 (* test1 has not changed as expected *) 
 
 MetaCoq Unquote Definition ty_Add_cons_test := (subst10 Add_compdec_reif (add_trm_parameter CompDec_reif ty_Add_cons )).
@@ -204,7 +202,7 @@ Definition ty_prod_reif := tProd
                 |}
                 (tSort
                    (Universe.of_levels
-                      (inr (Level.Level "Coq.Init.Datatypes.22"%bs))))
+                      (inr (Level.level "Coq.Init.Datatypes.22"%bs))))
                 (tProd
                    {|
                      binder_name := nNamed "B"%bs;
@@ -213,7 +211,7 @@ Definition ty_prod_reif := tProd
                    (tSort
                       (Universe.of_levels
                          (inr
-                            (Level.Level "Coq.Init.Datatypes.23"%bs))))
+                            (Level.level "Coq.Init.Datatypes.23"%bs))))
                    (tProd
                       {|
                         binder_name := nAnon;
@@ -238,18 +236,20 @@ Inductive test_two_params (A B : Type) :=
 Inductive test_two_params_compdec (A : Type) (HA : CompDec A) (B : Type) (HB : CompDec B) :=
 |test0compdec : test_two_params_compdec A HA B HB.
 
-MetaCoq Quote Recursively Definition test_two_params_reif := test_two_params.
+MetaCoq Quote Recursively Definition test_two_params_reif := test_two_params. 
 MetaCoq Quote Recursively Definition test_two_params_compdec_reif := test_two_params_compdec.
 
 Definition ty_test0_reif := tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-                (tSort (Universe.of_levels (inr (Level.Level "compdecs_poly_ind.218"%bs))))
+                (tSort (Universe.of_levels (inr (Level.level "compdecs_poly_ind.218"%bs))))
                 (tProd {| binder_name := nNamed "B"%bs; binder_relevance := Relevant |}
-                   (tSort (Universe.of_levels (inr (Level.Level "compdecs_poly_ind.219"%bs))))
+                   (tSort (Universe.of_levels (inr (Level.level "compdecs_poly_ind.219"%bs))))
                    (tApp (tRel 2) [tRel 1; tRel 0])).
 
 MetaCoq Quote Definition goal2 := (forall A HA B HB, test_two_params_compdec A HA B HB).
 
 MetaCoq Unquote Definition test_two_params_comp := (subst10 test_two_params_compdec_reif.2 (add_trm_parameter CompDec_reif ty_test0_reif )).
+Print test_two_params_comp.
 MetaCoq Unquote Definition test3 := (subst10 Add_compdec_reif (add_trm_parameter CompDec_reif test)).
+Print test3.
 
 End tests_CompDec. *)
