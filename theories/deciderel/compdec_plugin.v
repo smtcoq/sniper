@@ -1,30 +1,20 @@
 From MetaCoq.Template Require Import All.
-From MetaCoq.Template Require Import Checker.
-From MetaCoq.Common Require Import config.
+From SMTCoq Require Import SMTCoq.
 Import MCMonadNotation.
 Require Import add_hypothesis_on_parameters.
+Require Import utilities.
+Require Import Lia.
+
 Declare Scope string_scope2.
 Notation "s1 ^ s2" := (bytestring.String.append s1 s2) : string_scope2.
+
 Open Scope string_scope2.
-Require Import Lia.
-From SMTCoq Require Import SMTCoq.
-(* This file transforms an inductive with prenex polymorphic parameters A1, ..., An
+
+(** This file transforms an inductive with prenex polymorphic parameters A1, ..., An
 into a new one with supplementary hypothesis (HA1 : CompDec A1), ..., (HAn : CompDec An) 
 taken as parameters *)
 
 Unset MetaCoq Strict Unquote Universe Mode.
-(* MetaCoq Quote Recursively Definition CompDec_reif_rec := CompDec. *)
-
-(* 
-From MetaCoq.Template Require Import ReflectAst.
-Import TemplateTermDecide.
-
-Definition eqb_term t u := match EqDec_term t u with
-  | left _ => true
-  | right _ => false
-end. *)
-
-Definition eqb_term := @eq_term default_checker_flags init_graph.
 
 MetaCoq Quote Definition CompDec_reif := CompDec.
 
@@ -62,7 +52,6 @@ match l1 with
 | x :: xs => if Inb_term  x.1 (split l2).1 then append_nodup_term_list_term xs l2 else
       x :: append_nodup_term_list_term xs l2
 end.
-
 
 End utilities.
 
@@ -112,7 +101,7 @@ match l with
 let res := aux (List.map (fun x => let ty' := lift 1 0 x.(decl_type) in
 {| decl_name := x.(decl_name) ; decl_body := x.(decl_body); decl_type := ty' |}) xs) (S n) trm fuel' in
 let new_name := trm_aname trm x.(decl_name) in
-      (x :: (({| decl_name := new_name ; decl_body := None ; decl_type := term_rel0 trm |})) ::  res.1, res.2)
+      (x :: (({| decl_name := new_name ; decl_body := None ; decl_type := P_app trm |})) ::  res.1, res.2)
 else let res := aux xs n trm fuel' in (x :: res.1, res.2)
   | _ => let res := aux xs n trm fuel' in (x :: res.1, res.2)
   end
@@ -237,8 +226,6 @@ tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tSort fresh_uni
  (gen_compdec_statement_aux2 t (List.map (lift 1 0) xs) fuel' ))
 end
 end.
-
-
 
 Fixpoint contains_trel (l : list term) :=
 match l with

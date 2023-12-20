@@ -24,11 +24,11 @@ end.
 by the i-th term of the list l *)
 Fixpoint replace_occurences_aux (i: nat) (l : list term) (t : term) (fuel : nat) (nb_lift : nat) (npars : nat) : term*(list term) :=
 match fuel with
-  | 0 => (impossible_term_reif, [])
+  | 0 => (default_reif, [])
   | S n => 
     match t with
     | tApp u l0 => replace_occurences_ignore_params i u l0 l n nb_lift npars
-    | tRel j => if i =? j then (hd impossible_term_reif l, tl l)
+    | tRel j => if i =? j then (hd default_reif l, tl l)
       else ((lift (2*nb_lift) i (tRel j)), l)
     | tProd Na Ty u => let Ty' := (lift (2*nb_lift) i Ty)in 
         let u' := (replace_occurences_aux (i+1) (List.map (lift 1 0) l) u n nb_lift npars).1 in
@@ -52,7 +52,7 @@ end
 with replace_occurences_ignore_params 
 (i: nat) (u : term) (l : list term) (l' : list term) (fuel : nat) (nb_lift: nat) (npars : nat) : term*(list term) :=
 match fuel with
-| 0 => (impossible_term_reif, [])
+| 0 => (default_reif, [])
 | S fuel =>
 match u with
 | tRel j => let u' := (lift (2*nb_lift) i (tRel j)) in
@@ -215,7 +215,7 @@ mkProd_list_no_lift_aux t l n.
 
 Fixpoint linearize_aux_compdec (t : term) (n: nat) (lcomp : list (term*term)) (npars : nat) : term :=
 match n with
-| 0 => impossible_term_reif
+| 0 => default_reif
 | S m =>
 match t with
 | tProd Na Ty u => let occ := (compute_occurences_max 0 u) in

@@ -10,10 +10,34 @@
 (**************************************************************************)
 
 From MetaCoq.Template Require Import All. 
+From MetaCoq.Template Require Import Checker.
+From MetaCoq.Common Require Import config.
 Require Import List.
 Import ListNotations.
 Require Import String.
 Require Import ZArith.
+
+(** Generic *)
+
+Definition revmap {A B : Type } ( f : A -> B) (l : list A) :=
+  let fix aux l acc :=
+  match l with
+  | [] => acc 
+  | x :: l => aux l (f x :: acc ) end
+  in aux l [].
+
+Definition rev_acc_add l :=
+let fix aux l s acc :=
+match l with
+  | [] => acc
+  | x :: l => let s' := x + s in aux l s' (s' :: acc)
+end in aux l 0 [].
+
+(** We need to define a boolean equality between terms, 
+but we do not care about universes constrains, as we are working 
+in monomorphic universes in our plugin *)
+
+Definition eqb_term := @eq_term default_checker_flags init_graph.
 
 (** Quoted useful terms **)
 
@@ -38,73 +62,7 @@ MetaCoq Quote Definition nat_reif := nat.
 Inductive default :=.
 MetaCoq Quote Definition default_reif := default.
 
-(** Tail-recursive (actually linear) version of List.length **)
-Definition leng {A : Type} (l : list A ) :=
-  let fix aux l acc :=
-  match l with
-  | [] => acc
-  | _ :: l0 => aux l0 (S acc) 
-  end
-  in aux l 0.
-
-
-(** Tail-recursive (actually linear) version of List.rev **)
-
-Definition tr_rev {A : Type} (l : list A) :=
-  let fix aux l acc :=
-  match l with
-  | [] => acc 
-  | x :: l => aux l (x :: acc ) end
-  in aux l []. 
-
-
-(** Tail-recursive (actually linear) version of flatten **)
-Definition tr_flatten {A : Type} (l : list (list A)) :=
-  let fix aux l acc :=
-  match l with
-  | [] => acc 
-  | l0 :: l => aux l (rev_append l0 acc)
-  end in tr_rev (aux l []).
-
-(** tr_revmap f [a1 ; ... ; an ] = [f an ; .... ; f a1 ]
- tail-recursive (actually linear)
-**)
-Definition tr_revmap {A B : Type } ( f : A -> B) (l : list A) :=
-  let fix aux l acc :=
-  match l with
-  | [] => acc 
-  | x :: l => aux l (f x :: acc ) end
-  in aux l [].
-
-(** rec_acc_add [n_1 ; .... ; n_c ] = [n ]
-**)
-Definition rev_acc_add l :=
-let fix aux l s acc :=
-match l with
-  | [] => acc
-  | x :: l => let s' := x+s in aux l s'  (s' :: acc)
-end in aux l 0 [].
-
-Goal False.
-let x := constr:(rev_acc_add [2 ; 3 ; 8]) in pose x as kik ; compute in kik.
-Abort.
-
-(** Tail-recursive (actually linear) version of List.map 
-    Sometimes, cannot replace List.map, because Coq cannot guess the decreasing argument
-**)
-
-Definition tr_map {A B : Type} (f: A -> B) (l : list A) :=
-  let l0 := tr_rev l in 
-  let fix aux l acc :=
-  match l with
-  | [] => acc 
-  | x :: l => aux l (f x :: acc ) end
-  in aux l0 [].
-
-
-
 (** Functions to build MetaCoq terms **)
-
 
 (*  declaring variables   *)
 Open Scope string_scope.
@@ -125,7 +83,7 @@ Definition mkLam Ty t := match Ty with
 | _ => tLambda (mkNamed "x"%bs) Ty t
 end.
 
-Definition mkProdName na T u := (* \TODO use mkProdName in files *)
+Definition mkProdName na T u := 
 tProd (mkNamed na) T u.
 
 (* mkProd [A1 ; .... ; An ] t = tProd _ An. ... tProd _ A1. t   (reverts list) *)
@@ -146,9 +104,7 @@ match l with
 end.
 
 
-
 (** mkLam [A1 ; .... ; An ] t = Lam "x/A" An. ... tProd "x/A" A1. t   (reverts list) **)
-(** tail-recursive **)
 (* warning: t should have been previously lifted if necessary*)
 Fixpoint mkLam_rec (l : list term)  (t: term) := 
 match l with 
@@ -231,7 +187,7 @@ end.
 
 Definition get_params_from_mind mind :=
   let p := mind.(ind_npars) in 
-  let l0 := tr_revmap (fun d => d.(decl_type)) mind.(ind_params)
+  let l0 := revmap (fun d => d.(decl_type)) mind.(ind_params)
 in (p, l0).
 
 Definition default_body :=
@@ -467,7 +423,7 @@ Definition dom_list_f ( B  :  term) (n : nat)  :=
   (* does not handle debruijn indices *)
   let fix dlaux B n acc :=
   match n with
-  | 0 => (B,tr_rev acc) 
+  | 0 => (B, List.rev acc) 
   | S n => match B with
           | tProd na A B' =>  dlaux B' n (A :: acc)
           | _ => (B,[]) (* this case shouldn't happen *)
@@ -501,7 +457,7 @@ Definition debruijn0 (indu : inductive) (no : nat) (u : Instance.t ) (B : term) 
     | 0 => acc 
     | S k => aux1 k  ((tInd (switch_inductive indu k) u):: acc) 
     end in
-  let oind_list := tr_rev (aux1 no [] )
+  let oind_list := List.rev (aux1 no [] )
   in  subst0 oind_list B .
 
 (***********************)

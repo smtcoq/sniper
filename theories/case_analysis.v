@@ -184,7 +184,7 @@ Definition mkCase_list_param (ln : list nat)  (i : nat) (j : nat) : list (branch
   | [] => acc
   | nq :: ln => aux ln (S q)  ({| bcontext := list_aname nq ; bbody := result_branch_proj_or_default nq i j q |} :: acc) 
   end
-  in tr_rev (aux ln 0 []). 
+  in List.rev (aux ln 0 []). 
 
 (* We use Coq type inference to avoid bothering with 
 typing the match and the parameters *)
@@ -224,14 +224,14 @@ in
 let fix aux2 llAu' ln' i'  acc :=
 match (i',llAu',ln') with
 | (0,[],[]) => acc
-| (S i,lAi :: llAu' , ni :: ln' ) => aux2 llAu' ln' i ((aux1 i ni (tr_rev lAi) []) :: acc)
+| (S i,lAi :: llAu' , ni :: ln' ) => aux2 llAu' ln' i ((aux1 i ni (List.rev lAi) []) :: acc)
 | _ => []
 end in
-aux2 (tr_rev llAunlift) (tr_rev ln) k []. 
+aux2 (List.rev llAunlift) (List.rev ln) k []. 
 
 
 Ltac declare_projs_ctor_i na p lP_rev I indu llAu ln i lAi ni :=
-  let _ := match goal with _ =>  idtac end in let lAi' := constr:(tr_rev lAi) in 
+  let _ := match goal with _ =>  idtac end in let lAi' := constr:(List.rev lAi) in 
   let rec aux1 i j lAi' acc :=
   lazymatch j with
   | 0 => constr:(acc)
@@ -266,8 +266,8 @@ Ltac declare_projs_ctor_i na p lP_rev I indu llAu ln i lAi ni :=
   *)
 
 Ltac declare_projs na p lP_rev I indu llAu ln nc :=
-  let llAu_rev := constr:(tr_rev llAu) in let ln_rev := 
-constr:(tr_rev ln)    
+  let llAu_rev := constr:(List.rev llAu) in let ln_rev := 
+constr:(List.rev ln)    
 in 
  let rec aux llAu' ln' k  acc :=
 let y := constr:(((k,llAu'),ln')) 
@@ -313,7 +313,7 @@ Definition proj_return_types (llA: list (list term)) :=
     match lA with
     | [] => acc 
     | A :: tlA => aux ((unlift i A) :: acc ) (S i) tlA
-  end  in  (tr_map (fun lA => tr_rev(aux [] 0  lA)) llA).
+  end  in  (List.map (fun lA => List.rev(aux [] 0  lA)) llA).
 
 
 
@@ -366,7 +366,7 @@ let fix aux lprojs i  acc :=
    | (pki :: lprojs, S i) => aux lprojs i ((tApp pki (holes_p' p i))::acc)
    | _ => [] (* this case does not happen *)
   end in 
-  mkEq hole (tRel 0) (tApp ctor (rev_append (list_of_holes p) (tr_rev (aux projs (S db) [])))).
+  mkEq hole (tRel 0) (tApp ctor (rev_append (list_of_holes p) (List.rev (aux projs (S db) [])))).
 
 
 (* get_generation_disjunction p ctors list_proj ldb 
@@ -387,8 +387,8 @@ let fix aux lprojs i  acc :=
   | ([],[],[]) => acc
   | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_projs p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
- end in let lN := rev_acc_add (tr_rev ln)   (* perhaps some optimization there *) 
- in tProd (mkNamed "x") (tApp I (Rel_list p N)) (mkOr_n (tr_rev (aux lc list_proj lN []))) .
+ end in let lN := rev_acc_add (List.rev ln)    
+ in tProd (mkNamed "x") (tApp I (Rel_list p N)) (mkOr_n (List.rev (aux lc list_proj lN []))) .
 
 
 
@@ -400,7 +400,7 @@ let fix aux lprojs i  acc :=
     **)
 (* \Q : do we need this function? *)
 Definition args_of_projs_in_disj (ln : list nat) : list (list term) :=
-  let ln_rev := tr_rev ln in
+  let ln_rev := List.rev ln in
   let fix aux l0 acc res :=
   match l0 with
   | [] => res
@@ -437,8 +437,8 @@ Ltac gen_statement t :=
    in  lazymatch eval hnf in gct with 
     | (?lBfA,?ln) => lazymatch eval hnf in lBfA with
       | (?lBf,?llA) =>  lazymatch eval cbv in lBf with
-        | (?lB,?lc) => let llAtrunc := eval compute in (tr_map (skipn p) llA) in  let nc := eval compute in (leng ln) in 
-        let lP_rev := eval compute in (tr_rev lP) in let llAu := eval compute in (proj_return_types llAtrunc) in 
+        | (?lB,?lc) => let llAtrunc := eval compute in (List.map (skipn p) llA) in  let nc := eval compute in (List.length ln) in 
+        let lP_rev := eval compute in (List.rev lP) in let llAu := eval compute in (proj_return_types llAtrunc) in 
         let t_reif := constr:(tInd indu u) in  let N := constr:(fold_left Nat.add ln 0) in
         let res3 := 
          declare_projs t p lP_rev t_reif indu llAu ln nc in 
