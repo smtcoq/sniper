@@ -137,7 +137,7 @@ Definition cutEvar (t: term) :=
  (* is_inj B f [A1 ; ... ; An ] is the reification of 
  *) 
 Definition is_inj (B f : term ) (lA : list term) (p : nat)  :=
-  let n := leng lA in 
+  let n := List.length lA in 
   let d := n - p in let f' := cutEvar f in 
   let fix aux1 (lA : list term) (p i j : nat) (l1 l2 : list term) :=
     match (lA , p ) with 
@@ -213,11 +213,11 @@ Ltac ctors_are_inj_tac lB lf lA ln p :=
 
 
 Definition new_codom_disj (B f g: term)  (lAf lAg : list term) (p : nat)  :=
-  let (n,n') := (leng lAf , leng lAg) in 
+  let (n,n') := (List.length lAf , List.length lAg) in 
    let (d,d') := ( n - p, n' - p) in 
     let fix removeandlift p l :=
       match (p, l)  with
-      | (0 , _) => tr_rev (lAf ++ tr_map (lift0 d) l) (* \TODO not tail-recursive, optimize *)
+      | (0 , _) => List.rev (lAf ++ List.map (lift0 d) l)
       | ( S p , x :: l) => removeandlift p l 
       | ( S _, []) => [] (* this case doesn't happen *)
       end 
@@ -279,8 +279,8 @@ Fixpoint is_in_codom (B t f: term ) (lA : list term) :=
 
 
 Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (list term) ) (p : nat) :=
-  let lD' := tr_map(fun l => (@List.skipn term p l)) lD in 
-  let lLen := tr_map  (fun l => (@leng term l) ) lD' in 
+  let lD' := List.map(fun l => (@List.skipn term p l)) lD in 
+  let lLen := List.map  (fun l => (@List.length term l) ) lD' in 
   let fix aux0 k i l  :=
     (* outputs [tRel (i+k) ; ... ; tRel i ] ++ l *)
     match k with
@@ -294,7 +294,7 @@ Definition union_direct_total (lB : list term ) (lf : list term) (lD : list (lis
     | A :: lArev => aux1 lArev (tApp ex_reif [(lift0 1 A) ; tLambda (mkNamed "x"%bs) (lift0 1 A) t])
     end 
   in 
-  let aux2 B f lA k := aux1 (tr_rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
+  let aux2 B f lA k := aux1 (List.rev lA) (mkEq (lift0 1 B) (tRel k) (tApp f (aux0 p (k+1) (aux0 k 0 [])))) in 
   let fix aux3 lB lf lD lLen t := 
     match (((lB, lf) , lD), lLen )  with
     | ((([], []),[]),[]) => t
@@ -358,8 +358,6 @@ Ltac ctor_ex_case :=
 Ltac codom_union_total_tac B lf lA :=
   let toto := fresh "H" in pose_unquote_term_hnf (codom_union_total B lf lA) toto ; assert toto; unfold toto ;[ (let x := fresh "x" in intro x ; destruct x ; ctor_ex_case ) | ..] ; subst toto. *) 
   
-
-(* \TODO see if useful / move in utilities *)
 Ltac dotac n t :=
   match constr:(n) with
   | 0 => idtac
@@ -455,7 +453,7 @@ Ltac fo_prop_of_cons_tac_gen statement t :=
     lazymatch eval hnf in geip with
     | (?mind,?induu) => lazymatch eval hnf in induu with
       | (?indu,?u) => let indu_p := constr:(mind.(ind_npars)) in 
-            let no := constr:(leng mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u mind ; clear geip
+            let no := constr:(List.length mind.(ind_bodies)) in treat_ctor_mind_tac_gen statement indu indu_p no u mind ; clear geip
          end 
      end 
     .
@@ -527,6 +525,7 @@ end.
 Ltac interp_alg_types_context_goal p := 
 interp_alg_types_context_aux p.
 
+Section Test.
 
 Goal forall (x : option bool) (l : list nat) (u : Z), x = x -> l =l -> u = u.
 intros ; interp_alg_types_context_goal (bool, Z). 
@@ -535,14 +534,13 @@ Abort.
 Goal forall (l : list Z) (x : Z),  hd_error l = Some x -> (l <> []).
 intros.
 interp_alg_types_context_goal (bool, Z).
-
 Abort.
 
-Section Test. 
 Variable A : Type. 
+
 Lemma hd_error_tl_repr : forall l (a:A) r,
-   hd_error l = Some a /\ tl l = r <-> l = a :: r.
-  Proof. intros l.
+hd_error l = Some a /\ tl l = r <-> l = a :: r.
+Proof. intros l.
 interp_alg_types_context_goal bool.
 Abort.
 
