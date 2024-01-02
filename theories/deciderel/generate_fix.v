@@ -84,6 +84,14 @@ match res with
 | None => (0, [])
 end.
 
+Definition nb_args_inductive (e : global_env) (i : term) :=
+let res := info_inductive e i in
+match res with
+| Some mind => 
+    let body := hd default_body mind.(ind_bodies) in mind.(ind_npars) + List.length (body.(ind_indices))
+| None => 0
+end.
+
 Definition get_args_inductive (e : global_env) (i : term) :=
 let res := info_inductive e i in
 match res with
@@ -96,16 +104,6 @@ match res with
                end in aux indices
 | None => []
 end.
-
-MetaCoq Quote Recursively Definition cons_reif_rec := @cons.
-
-MetaCoq Quote Recursively Definition Add_reif_rec := @Add.
-
-MetaCoq Quote Recursively Definition list_reif_rec := @list.
-(* 
-Compute info_nonmutual_inductive list_reif_rec.1 list_reif_rec.2.
-
-Compute info_inductive Add_reif_rec.1 Add_reif_rec.2. *)
 
 Definition all_type_to_fresh := fun t =>
 match t with
@@ -172,120 +170,6 @@ match I with
 | _ => []
 end.
 
-
-Definition is_S (n : nat) := 
-match n with
-| 0 => false
-| S n => true
-end.
-Definition is_S_reif := <% fun (n : nat) =>
-match n with
-| 0 => false
-| S n => true
-end %>.
-
-
-Definition is_cons_reif := <% fun (A : Type) (l : list A) =>
-match l with
-| nil => false
-| cons x xs => true
-end %>.
-
-Inductive smaller {A : Type} : list A -> list A -> Prop :=
-| sm_nil : forall l, smaller nil l
-| sm_cons : forall l l' x x', smaller l l' -> smaller (x :: l) (x' :: l').
-
-Lemma smaller_correct_and_complete (A : Type) (l l' : list A) : smaller l l' <-> 
-Datatypes.length l <= Datatypes.length l'.
-Proof.
-split.
-intros H. induction H.
-simpl; destruct l ; lia.
-simpl; destruct l ; lia.
-generalize dependent l'. induction l; intros l' H. 
-inversion H; try constructor.
-destruct l'; simpl in H; inversion H.
-constructor. apply IHl. lia.
-constructor. apply IHl. lia.
-Qed. 
-
-Fixpoint smaller_dec {A : Type} (l l' : list A) :=
-match l with
-| nil => true
-| cons x xs => match l' with  
-      | cons x' xs' => smaller_dec xs xs'
-      | nil => false
-      end
-end.
-
-Fixpoint smaller_dec_bis {A : Type} (l l' : list A) :=
-match l with
-| nil => true
-| cons x xs => false 
-end
-|| 
-match l with
-| nil => false
-| cons x xs => match l' with
-          | nil => false
-          | cons x' xs' => smaller_dec_bis xs xs'
-end
-end.
-
-Definition smaller_dec_reif := <% 
-fix aux {A : Type} (l l' : list A) :=
-match l with
-| nil => true
-| cons x xs => match l' with  
-      | cons x' xs' => aux xs xs'
-      | nil => false
-      end
-end %>.
-
-Definition smaller_dec_bis_reif := 
-<% fix aux 
-{A : Type} (l l' : list A) :=
-match l with
-| nil => true
-| cons x xs => false 
-end
-|| 
-match l with
-| nil => false
-| cons x xs => match l' with
-          | nil => false
-          | cons x' xs' => aux xs xs'
-end
-end %>.
-
-Lemma smaller_dec_correct_and_complete (A : Type) (l l' : list A) : smaller l l' <-> 
-smaller_dec l l' = true.
-Proof. split. 
-- intros H. induction H.
-simpl; auto.
-simpl; auto.
-- generalize dependent l'.
-induction l; intros; try destruct l'; try constructor ; try inversion H ; auto. Qed.
-
-Lemma smaller_dec_bis_correct_and_complete (A : Type) (l l' : list A) : smaller l l' <-> 
-smaller_dec_bis l l' = true.
-Proof.
-split.
-- intros H; induction H; simpl; auto.
-- generalize dependent l'; induction l; intros l' H;
-destruct l' ; auto; try constructor; try inversion H.
-apply IHl in H. assumption. Qed. 
-
-
-
-(*  | tCase : case_info ->
-            predicate term -> term -> list (branch term) -> term 
-Record case_info : Set := mk_case_info
-  { ci_ind : inductive;  ci_npar : nat;  ci_relevance : relevance }
-
-Record branch (term : Type) : Type := mk_branch
-  { bcontext : list aname;  bbody : term }.
-*)
 
 (** Unfication algorithm **)
 
@@ -385,7 +269,7 @@ match l with
 end. 
 
 Definition get_fix_bodies (l : list (def term)) : list term :=
-List.map (fun x => x.(dbody)) l. Print nth.
+List.map (fun x => x.(dbody)) l. 
 
 (* Returns true if the De Brujin index i occurs in t *)
 Fixpoint contains_fuel (i : nat) (t : term) (fuel : nat) {struct fuel}:=
@@ -442,19 +326,6 @@ starting from the latest introduced *)
   conclusion : term (* the conclusion : should be the inductive applied to its arguments *)
 }.
 
-Inductive add : nat -> nat -> nat -> Prop :=
-| add0 : forall n, add 0 n n
-| addS : forall n m k, add n m k -> add (S n) m (S k).
-
-Definition test_unlift := <% forall (n m : nat), n = m -> (forall (k l : nat), 
-k = l -> add n m k /\ add n m l) %>.
-
-(* Fixpoint unlift (n : nat) (t: term) := 
-match n with
-| 0 => t
-| S n' => subst10 (tRel 0) (unlift n' t)
-end. *)
-
 Fixpoint unlift_dbs (l : list nat) (t : term) :=
 match l with
 | [] => t
@@ -485,7 +356,7 @@ else find_cstr_info_aux (0 :: List.map S dbpars) (npars - 1) u l (List.map S dbs
       conclusion := unlift_dbs dbs t |}
 end.
 
-Definition find_cstr_info (npars : nat) (t : term) (l : list term) :=
+Definition find_cstr_info (npars : nat) (t : term) :=
 find_cstr_info_aux [] npars t [] [].
 
 Fixpoint find_mapping i m :=
@@ -519,7 +390,7 @@ end.
 
 
 Definition replace_variables (t : term) (m : mapping) :=
-let fuel := (* PCUICSize.size (trans Σ t) *) 1000 in 
+let fuel := size t in 
 replace_variables_fuel t m fuel. 
 (* for debugging only !!  
 let p := List.split m in
@@ -579,6 +450,14 @@ match t with
 | _ => (0, 0,  [], [])
 end.
 
+Definition split_conclusion' (c: cstr_info) :  nat * (list term) * (list term) :=
+let npars := Datatypes.length c.(db_parameters) in
+let t := c.(conclusion) in (* the conclusion is the inductive applied to its arguments *)
+match t with
+| tApp (tRel n) l => (n, List.firstn npars l, List.skipn npars l)
+| _ => (0,  [], [])
+end.
+
 Fixpoint build_list_of_vars (n : nat) :=
 match n with
 | 0 => []
@@ -615,17 +494,58 @@ match l with
 | [] => []
 | x :: xs => lift n 0 x :: aux xs (S n) 
 end 
-in aux l 1.
-
-
+in aux l 1. 
 
 Definition initial_mapping
 (g : global_env) (I : term) (t : term) (npars: nat) :=
-let c := find_cstr_info npars t [] in
+let c := find_cstr_info npars t in
 let c' := split_conclusion c in
 let vars_and_map := build_initial_mapping_and_vars c' in
 let ty_vars := lift_list_ty (get_args_inductive_fresh_types g I) in
 (ty_vars, vars_and_map).
+ Print cstr_info.
+
+Definition initial_mappings_aux 
+(e : global_env)
+(I : term)
+(npars_args : nat) 
+:=
+let info := info_nonmutual_inductive e I in
+let npars := info.1 in
+let ctors := info.2 in
+let ctors_type := List.map cstr_type ctors in
+let nb_args := (nb_args_inductive e I - npars_args) in
+let npars_vars := npars - npars_args in 
+let initial_vars := build_list_of_vars (nb_args - npars) in
+let db_pars_fix := List.map (fun x => nb_args + x) (build_list_of_vars npars_vars) in
+let db_fix_fix := nb_args + npars_vars in
+let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
+  let fix aux ctors_type :=
+    match ctors_type with
+      | c :: cs => 
+          let info := find_cstr_info npars c in
+          let res := split_conclusion' info in
+          let db_fix_rel := res.1.1 in (* the DB index of the fixpoint in the conclusion of the inductive *)
+          let pars_rel := res.1.2 in (* the parameters in the conclusion of the inductive *)
+          let db_pars_rel := only_variables pars_rel in (* the DB indexes of the parameters *)
+          ((db_fix_fix, db_fix_rel) :: combine db_pars_fix db_pars_rel) :: aux cs
+      | [] => []
+    end
+  in (ty_vars, initial_vars, aux ctors_type).
+
+Definition initial_mappings 
+(e : global_env)
+(I : term) :=
+match I with
+  | tApp I' l => initial_mappings_aux e I' (Datatypes.length l)
+  | _ => initial_mappings_aux e I 0
+end.
+
+MetaCoq Quote Recursively Definition Add_reif_rec := @Add.
+
+Compute (initial_mappings Add_reif_rec.1 Add_reif_rec.2).
+
+
 
 
 Section tests. 
@@ -1318,8 +1238,7 @@ match fuel with
 | S fuel' => 
  match vars, patterns_conclusion, ty_vars with
 | v :: vs, pc :: pcs, ty :: tys => match unify_mapping (tRel v) pc m with 
-      | continue n pc' => build_pattern e n ty pc vs tys premises pcs m ldec fuel'  
-(* pc' should be equal to pc *)
+      | continue _ _ => build_pattern e v ty pc vs tys premises pcs m ldec fuel'  
       | failure => default_reif
       | some m' => cstr_handler e vs tys premises pcs m' ldec fuel'
       end
@@ -1383,76 +1302,140 @@ end in
 tCase ci pt (tRel var) 
  (build_branch e vars ty_vars premises patterns_conclusion m args list_constructors fuel).
 
-Section test_cstr_handler.
+Fixpoint unify_list_mapping
+(t: term) 
+(pcs : list term) 
+(ms : list mapping) : option (list (option_unif mapping)) :=
+match pcs, ms with
+  | [], [] => Some []
+  | pc :: pcs, m :: ms => 
+      let opt := unify_list_mapping t pcs ms in 
+        match opt with
+          | None => None
+          | Some x => Some (unify_mapping t pc m :: x)
+        end
+  | _, _ => None
+end.
 
-MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller.
+Definition unifs_all_some (ms : list (option_unif mapping)) :=
+List.forallb (fun x => match x with | some _ => true | _ => false end) ms.
 
-(* We build a pattern matching for the cons case of smaller *)
+Definition unifs_contains_failure (ms : list (option_unif mapping)) :=
+List.existsb (fun x => match x with | failure => true | _ => false end) ms.
 
-Definition genv_test := smaller_reif_rec.1.
+Fixpoint replace_mappings 
+(ms : list mapping)
+(lunif : list (option_unif mapping)) :=
+match ms, lunif with
+| m :: ms, (some m') :: lunif => m' :: replace_mappings ms lunif
+| m :: ms, _ :: lunif => m :: replace_mappings ms lunif
+| [], [] => []
+| _, _ => []
+end.
 
-(* Compute get_type_of_args_of_each_constructor genv_test <%@list%>.
-Compute list_ctors_applied_to_params genv_test <%@list%> [<%nat%>].
- *)
-Definition vars_test := [1 ; 0].
+Definition replace_head {A : Type} (x : A) (l : list A) :=
+  match l with
+    | y :: xs => x :: xs
+    | [] => [x]
+  end.
 
-Definition ty_vars_test : list term := [tApp <%@list%> [tRel 2] ; tApp <%@list%> [tRel 2]].
-
-
-Definition premises_test := [tApp
-              (tRel 5) [tRel 4; tRel 3; tRel 2]].
-
-
-(* 
-Definition pc_test :=
-             [
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 4; tRel 1; tRel 3];
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 4; tRel 0; tRel 2]]. *)
-
-(* Definition initial_mapping_test := 
-(initial_mapping e smaller_reif_rec.1 smaller_reif_rec.2 smaller_cons_free 1).2.2. *)
-
-Definition fuel := 1000. (* TODO clever fuel *)
-
-(* Definition test_cstr_handler :=
-cstr_handler e genv_test vars_test ty_vars_test premises_test pc_test initial_mapping_test []
-fuel. *)
-
-(* Compute test_cstr_handler. *)
-
-MetaCoq Quote Recursively Definition foo := Nat.add.
-
-Definition sm_cons_name := {| binder_name := nNamed "sm_cons_test"%bs ; binder_relevance := Relevant |}.
-
-Definition test_term t :=
-tFix 
-[{| dname := sm_cons_name ;
-dtype :=
-tProd mknAnon <% Type %> 
-(tProd mknAnon (tApp <%@list%> [tRel 0]) (tProd mknAnon (tApp <%@list%> [tRel 1]) <% bool %>));
-dbody :=
-tLambda mknAnon <% Type %> 
-(tLambda mknAnon (tApp <%@list%> [tRel 0]) (tLambda mknAnon (tApp <%@list%> [tRel 1]) t)) ;
-rarg := 1 |}] 0.
-
-(* MetaCoq Unquote Definition cstr_handler1 := (test_term test_cstr_handler).  *)
-
-(* Print cstr_handler1. *)
-
-End test_cstr_handler.
-
+Fixpoint cstr_handler_list
+(e : global_env) (* the global envronment to look for information about inductives *)
+(vars : list nat) (* the variables that we will pattern match on initialized with tRels only *)
+(ty_vars : list term) (* the inductive type of each variable *)
+(premises : list (list term)) (* the premises: need to be true whenever the unification is done *)
+(patterns_conclusion : list (list term)) (* the unification is made between the variables and the patterns *)
+(ms : list mapping) (* the initial mapping of variables *)
+(ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
+(fuel : nat) (* some fuel *)
+: term := 
+match fuel with
+| 0 => default_reif
+| S fuel' => 
+ match vars, patterns_conclusion, ty_vars with
+| v :: vs, pcs :: pcss, ty :: tys => 
+    match pcs with 
+      | _ :: _ => 
+          let opt := unify_list_mapping (tRel v) pcs ms in
+          match opt with 
+            | None => default_reif (* should not happen : the mappings is of the same size as pc => one mapping for constructor *)
+            | Some lunif => 
+                let ms' := replace_mappings ms lunif in
+                if unifs_all_some lunif then cstr_handler_list e vs tys premises pcss ms' ldec fuel'
+                else if unifs_contains_failure lunif then default_reif 
+                else build_pattern_list e v ty pcs vs tys premises pcss ms' ldec fuel' 
+          end
+      | [] => <% false %> (* this case happens when there is no constructor in the inductive *)
+    end
+| [], [], [] => let comb := List.combine premises ms in 
+    build_orb (List.map (fun x => build_andb (return_premises x.1 x.2 ldec)) comb) 
+| _, _, _ => let comb := List.combine premises ms in 
+    build_orb (List.map (fun x => build_andb (return_premises x.1 x.2 ldec)) comb) 
+end
+end
+with
+build_pattern_list
+(e : global_env) (* the global envronment to look for information about inductives *)
+(var : nat) (* the variable we match on *)
+(I : term) (* the inductive type corresponding to the variable we match on *) 
+(ts: list term) (* the terms to unify *)
+(vars : list nat) (* the variables that we will pattern match initialized with tRels only *)
+(ty_vars : list term) (* the inductive type of each variable *)
+(premises : list (list term)) (* the premises: need to be true whenever the unification is done *)
+(patterns_conclusion : list (list term))
+(m : list mapping) (* the initial mapping of variables *)
+(ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
+(fuel : nat) (* some fuel *)
+:= 
+let I' := head_term I in
+let lpars0 := tail_term I in 
+let npars := Datatypes.length lpars0 in
+let lpars := list_of_dumb_term npars in
+let p := build_case_info_and_pterm e I' in
+let ci := p.1 in
+let pt := p.2 in
+let args := get_type_of_args_of_each_constructor e I' in
+let list_constructors := rev (list_ctors_applied_to_params e I' lpars) in
+let fix build_branch_list e vars ty_vars premises pattern_conclusion ms args list_constructors fuel {struct fuel} :=
+match fuel with
+| 0 => [{| bcontext := 
+[{| binder_name := nNamed "error not enough fuel"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
+| S fuel' =>
+match args, list_constructors with
+| lty :: ltys, c :: cs => 
+  let len := Datatypes.length lty in
+  let cstr_applied := apply_term c len in
+  let new_mappings := List.map (fun x => lift_mapping len x) ms in
+  {| bcontext := list_aname len ; bbody := 
+  let fix aux new_mappings ts :=
+  match new_mappings, ts with
+    | [], [] => <% false %> 
+    | new_mapping :: new_mappings', t :: ts' => 
+        match unify_mapping cstr_applied t new_mapping with 
+          | continue n' pc' => 
+                    let ty_n' := nth (len-1-n') lty default_reif in
+                    let l := build_list_of_vars len in
+                    let new_vars := l++(List.map (fun x => x + len) vars) in
+                    let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
+                    let pcs' := replace_head pc' ts in
+                    build_pattern_list e n' ty_n' pcs' new_vars new_tys premises patterns_conclusion new_mappings ldec fuel' 
+          | failure => aux new_mappings' ts'
+          | some m' => 
+              let l := build_list_of_vars len in
+              let new_vars :=  List.map (fun x => x + len) vars in
+              let new_tys := List.map (fun x => lift len 0 x) ty_vars in
+              let ms' := replace_head m' ms in
+          cstr_handler_list e new_vars new_tys premises patterns_conclusion ms' ldec fuel'
+          end 
+    | _, _ => default_reif (* should not happen : as many mappings as terms *)
+end in aux new_mappings ts |} :: build_branch_list e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
+| [], [] => []
+| _, _ => (* should not happen *) [{| bcontext := 
+[{| binder_name := nNamed "error"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
+end 
+end in 
+tCase ci pt (tRel var) 
+ (build_branch_list e vars ty_vars premises patterns_conclusion m args list_constructors fuel).
 
 (* build_orb needed *)
 
@@ -1491,75 +1474,39 @@ let patterns_conclusion := (split_conclusion c).2 in
 let premises := c.(premises) in
  cstr_handler e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
 
-(* Compute cstr_handler e member_reif_rec.1 
-[1; 0] [<% nat %> ; <% list nat %>] [tVar "test"] [tRel 1;
-       tApp
-         (tConstruct
-            {|
-              inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-              inductive_ind := 0
-            |} 1 [])
-         [tInd
-            {|
-              inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-              inductive_ind := 0
-            |} []; tRel 0; tRel 2]] [(2, 2)] [] 1000. *)
+Print initial_mapping.
 
-(* Compute call_cstr_handler (trans_global_env member_reif_rec.1) member_reif_rec.1 member_reif_rec.2 member_cons_free 0.
+(* initialize the function cstr_handler_list *)
+Definition call_cstr_handler_list 
+(e : global_env) 
+(I : term)
+(ts : list term) 
+(npars : nat) 
+(ldec : list (term*term*term)) :=
+let fix aux ts :=
+match ts with
+  | [] => []
+  | t :: ts =>
+      let im := initial_mapping e I t npars in 
+      let initial_mapping := im.2.2 in
+      let ty_vars := rev im.1 in
+      let vars := im.2.1 in
+      let c := find_cstr_info npars t [] in
+      let patterns_conclusion := (split_conclusion c).2 in
+      let premises := c.(premises) in
+      (vars, initial_mapping, premises, patterns_conclusion) :: aux ts
+  end 
+in
+let res := aux ts in
+let mappings := List.map (fun x => x.2.1) res in
+let premises := List.map (fun x => x.2.1.1) res in
+let patterns := List.map (fun x => x.2.2.2) res in
+let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
+let vars := 
+cstr_handler e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
 
- *)
-MetaCoq Quote Recursively Definition add_interm_reif_rec := add_interm.
 
 
-(* Definition add_int := tProd {| binder_name := nNamed "n"; binder_relevance := Relevant |}
-  (tInd
-     {|
-       inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-       inductive_ind := 0
-     |} [])
-  (tProd {| binder_name := nNamed "m"; binder_relevance := Relevant |}
-     (tInd
-        {|
-          inductive_mind :=
-            (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-          inductive_ind := 0
-        |} [])
-     (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-        (tApp
-           (tInd
-              {|
-                inductive_mind :=
-                  (MPfile ["Logic"; "Init"; "Coq"], "eq");
-                inductive_ind := 0
-              |} [])
-           [tInd
-              {|
-                inductive_mind :=
-                  (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-                inductive_ind := 0
-              |} [];
-           tApp (tConst (MPfile ["Nat"; "Init"; "Coq"], "eqb") [])
-             [tRel 1; tRel 0];
-           tConstruct
-             {|
-               inductive_mind :=
-                 (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-               inductive_ind := 0
-             |} 0 []])
-        (tApp
-           (tRel 3)
-           [tConstruct
-              {|
-                inductive_mind :=
-                  (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-                inductive_ind := 0
-              |} 0 []; tRel 2; tRel 1]))). *)
-
-(* Compute (let c := find_cstr_info e 0 add_int [] in
-(split_conclusion c).2).
-
-Compute call_cstr_handler e add_interm_reif_rec.1 add_interm_reif_rec.2 add_int 0.
- *)
 Definition build_list_of_cstr_handlers
 (e : global_env) (* the global envronment to look for information about inductives *)
 (I : term) (* the relation in Prop we want to transform into a fixpoint *) 
@@ -1611,72 +1558,6 @@ MetaCoq Quote Recursively Definition even_reif_rec := even.
 
 Definition test_even := (build_fixpoint_aux2 even_reif_rec.1 even_reif_rec.2 [] 0).1.
 
-(* (* MetaCoq Unquote Definition even_decidable := test_even. *)
-
-Definition test := (build_fixpoint_aux2 e smaller_reif_rec.1 smaller_reif_rec.2 [] 1).1.
-
-(* MetaCoq Unquote Definition smaller_decidable := test. *)
-
-Lemma test_unq : forall (A : Type) (l l' : list A), 
- smaller l l' <-> smaller_decidable A l l' = true.
-Proof.
-split.
-- intros H; induction H; simpl; auto.
-- generalize dependent l'; induction l; intros l' H;
-destruct l' ; auto; try constructor; try inversion H.
-apply IHl in H. assumption. Qed. 
-
-MetaCoq Quote Recursively Definition add_linear_reif := add_interm. *)
-
-(* MetaCoq Quote Recursively Definition Add_linear_rec := Add_linear.  *)
-
-(*Definition test2 := (build_fixpoint_aux2 e add_linear_reif.1 add_linear_reif.2 [] 0).1. 
-
-Definition test3 := (build_fixpoint_aux2 e Add_linear_rec.1 Add_linear_rec.2 [] 3).1.
-
-MetaCoq Unquote Definition add_decidable := test2.
-
-MetaCoq Unquote Definition Add_decidable := test3.
-
-Lemma dec_Add : forall (A : Type) (HA : CompDec A) (a: A) (l l': list A),
-Add_linear A HA a l l' <-> Add_decidable A HA a l l' = true.
-Proof.
-intros A HA a l l'.
-split.
-- intros H. induction H.
-  + destruct l; simpl; auto. rewrite H0. simpl. rewrite H. auto.
-rewrite H. rewrite H0. auto.
-  + simpl. rewrite IHAdd_linear. rewrite H. rewrite ssrbool.orbT. reflexivity.
--  generalize dependent l. induction l' ; intros l H ; destruct l ; auto.
-inversion H. inversion H. inversion H.
-rewrite ssrbool.orbF in H1.
-constructor.
-apply andb_prop in H1. firstorder.
-apply andb_prop in H1. firstorder.
-simpl in H.
-destruct (eqb_of_compdec HA a0 a && eqb_of_compdec list_compdec (a1 :: l) l') eqn:E.
-apply andb_prop in E. firstorder.
-simpl in H.
-constructor. firstorder. firstorder.
-simpl in H.
-apply andb_prop in H. destruct H. apply IHl' in H. constructor 2. apply H0.
-assumption. Qed.
-
-
-Lemma dec_add : forall (n m k : nat), add_decidable n m k = true <-> add n m k.
-Proof.
-intros. split.
-+ intros H.
-generalize dependent m. generalize dependent k.
-induction n.
-- intros; simpl in H. destruct (m =? k) eqn:E. symmetry in E.
-apply beq_nat_eq in E. subst. constructor. inversion H.
-- intros. destruct k. simpl in H. inversion H.
-constructor. apply IHn. auto.
-+ intros H. induction H. 
-simpl. destruct (n =? n) eqn:E. auto. 
-apply beq_nat_false in E. elim E; reflexivity.
-auto. Qed. *)
 
 (** Functions to compute the recursive argument **) 
 
@@ -1937,14 +1818,14 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
-MetaCoq Run (linearize_and_fixpoint_auto (@Add) []).
+MetaCoq Run (linearize_and_fixpoint_auto (@Add) []). 
 MetaCoq Run (linearize_and_fixpoint_auto (@smallernat) []).
 MetaCoq Run (linearize_and_fixpoint_auto (add) []). 
  
 
 MetaCoq Run (build_fixpoint_auto even []). 
 MetaCoq Run (build_fixpoint_auto (@Add_linear) []).
-MetaCoq Run (build_fixpoint_recarg even [] 0). Print even_decidable.
+MetaCoq Run (build_fixpoint_recarg even [] 0). 
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []). 
 

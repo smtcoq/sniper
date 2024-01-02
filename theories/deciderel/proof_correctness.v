@@ -549,8 +549,6 @@ simpl in *. constructor.
 intros H. inversion H.
 Abort. (* FIXME *)
 
-Print even_decidable.s
-
 (** Use of the templatemonad **) 
 
 Ltac2 ltac1_to_constr_unsafe (input : Ltac1.t) :=
