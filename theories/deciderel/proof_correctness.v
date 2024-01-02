@@ -514,18 +514,25 @@ Section StrongInduction.
 
 End StrongInduction. 
 
+Fixpoint even_decidable2 (n: nat) :=
+match n with
+  | 0 => true
+  | 1 => false
+  | S (S n) => even_decidable2 n
+end.
+
+(* Require Import FunInd.
+Functional Scheme even_ind := Induction for even_decidable2 Sort Prop.
+
+Set Default Proof Mode "Classic".
+
 Lemma soundness_ev :
-forall (n : nat), even_decidable n -> even n.
+forall (n : nat), even_decidable2 n -> even n.
 Proof.
-ltac1:(pose proof (H := strong_induction)).
-specialize (H (fun (n : nat) => even_decidable n -> even n)).
-simpl in H. apply H.
-intro m.
-intro H1. intro H2.
-destruct m.
-- constructor.
-- destruct m. inversion H2. constructor.
-apply H1. ltac1:(lia). inversion H2. unfold is_true. assumption. Qed.
+intros n. functional induction (even_decidable2 n) using even_ind.
+- intros H; constructor.
+- intros H; inversion H.
+- intros H. apply IHb in H. constructor. assumption.) Qed. *)
 
 Lemma test : forall (A : Type) (HA: CompDec A) (a : A) (l : list A) (l' : list A),
 Add a l l' <-> Add_linear_decidable A HA a l l' = true.
@@ -537,8 +544,12 @@ Proof. (*  soundness_auto '@even 0. *)
 
 induction_nth 0. 
 - intros *. intro H. destruct_to_continue_computation 'even 0. 
-simpl in *. 
+simpl in *. constructor.
+- destruct n. intros H. inversion H.
+intros H. inversion H.
 Abort. (* FIXME *)
+
+Print even_decidable.s
 
 (** Use of the templatemonad **) 
 

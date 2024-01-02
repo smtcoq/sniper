@@ -300,22 +300,12 @@ Arguments continue {A}.
 
 Definition mapping := list (nat * nat).
 
-(* TODO use only one of the two below *)
-Fixpoint in_mapping (i j : nat) (m : mapping) :=
-match m with
-| [] => 0
-| (i', j') :: m' => if Nat.eqb i i' then (if Nat.eqb j j' then 1 else 2)
-else if Nat.eqb j j' then 2 else in_mapping i j m'
-end.
-
 Fixpoint replace_in_mapping (i j : nat) (m : mapping) :=
 match m with
 | [] => [(i, j)]
 | (i', j') :: m' => if Nat.eqb i i' then (i', j) :: m' else 
 (i', j') :: (replace_in_mapping i j m')
 end.
-
-(* Compute in_mapping 2 3 [(1, 2); (3, 4)]. *)
 
 Definition add_variable_in_mapping (i j : nat) (m : option_unif mapping) :=
 match m with
@@ -356,28 +346,28 @@ In order to avoid the problem of parameters, we introduce holes (= dumb_term) in
 Fixpoint unify_aux (t1 t2 : term) (m : mapping) (fuel : nat) : option_unif mapping :=
 match fuel with
 | S n' =>
-match t1, t2 with
-| tRel i, tRel j => add_variable_in_mapping i j (some m)
-| tRel i, t => continue i t (* the unification is not finished : we need to pattern match on the variable of De Brujin
+  match t1, t2 with
+  | tRel i, tRel j => add_variable_in_mapping i j (some m)
+  | tRel i, t => continue i t (* the unification is not finished : we need to pattern match on the variable of De Brujin
 index i *)
-| tApp u1 l1, tApp u2 l2 => if eqb_term u1 u2 then unify_list_aux l1 l2 m n' else failure
-| _, _ =>  if eqb_term t1 t2 then (some m) else 
-if eqb_term t1 dumb_term then some m else failure
-end
+  | tApp u1 l1, tApp u2 l2 => if eqb_term u1 u2 then unify_list_aux l1 l2 m n' else failure
+  | _, _ =>  if eqb_term t1 t2 then (some m) else 
+             if eqb_term t1 dumb_term then some m else failure
+  end
 | 0 => failure
 end
 with unify_list_aux (l1 l2 : list term) (m : mapping) (fuel : nat) : option_unif mapping :=
 match fuel with
 | S n' => 
-match l1, l2 with
-| x1 :: x1s, x2 :: x2s => let res := unify_aux x1 x2 m n' in
-  match res with
-  | failure => failure
-  | continue db t => continue db t
-  | some m' => unify_list_aux x1s x2s m' n'
-  end
-| [], [] => some m
-| _, _ => failure
+  match l1, l2 with
+  | x1 :: x1s, x2 :: x2s => let res := unify_aux x1 x2 m n' in
+    match res with
+    | failure => failure
+    | continue db t => continue db t
+    | some m' => unify_list_aux x1s x2s m' n'
+    end
+  | [], [] => some m
+  | _, _ => failure
 end
 | 0 => failure
 end.
@@ -392,7 +382,10 @@ Fixpoint ex_list_bool {A : Type} (P : A -> bool) (l : list A) :=
 match l with
 | [] => false
 | x :: xs => P x || ex_list_bool P xs
-end.
+end. 
+
+Definition get_fix_bodies (l : list (def term)) : list term :=
+List.map (fun x => x.(dbody)) l. Print nth.
 
 (* Returns true if the De Brujin index i occurs in t *)
 Fixpoint contains_fuel (i : nat) (t : term) (fuel : nat) {struct fuel}:=
@@ -410,10 +403,14 @@ Fixpoint contains_fuel (i : nat) (t : term) (fuel : nat) {struct fuel}:=
      | tApp u l =>  contains_fuel i u n ||  contains_fuel_list i l n
      | tCase _ _ trm br =>  contains_fuel i trm n ||  contains_fuel_branch i br n
      | tProj _ u =>  contains_fuel i u n
-     | _ => false (* TODO fix and cofix *)
+     | tFix fixs n' | tCoFix fixs n' => 
+          let bods := get_fix_bodies fixs in
+          let u := nth n' bods <% default %> in 
+          contains_fuel i u n
+     | _ => false 
      end
  end
-with  contains_fuel_list (i : nat) (l : list term) (fuel : nat) {struct fuel}:=
+with contains_fuel_list (i : nat) (l : list term) (fuel : nat) {struct fuel}:=
 match fuel with
   | 0 => false
   | S n =>
@@ -422,7 +419,7 @@ match fuel with
     | x :: xs =>  contains_fuel i x n ||  contains_fuel_list i xs n
     end
   end
-with  contains_fuel_branch (i : nat) (l : list (branch term)) (fuel : nat) :=
+with contains_fuel_branch (i : nat) (l : list (branch term)) (fuel : nat) :=
 match fuel with
   | 0 => false
   | S n =>
@@ -433,7 +430,7 @@ match fuel with
 end.
 
 Definition contains (i : nat) (t : term) :=
-let fuel := size t (* PCUICSize.size (trans Σ t) *) in 
+let fuel := size t in 
 contains_fuel i t fuel.
 
 
@@ -1947,7 +1944,7 @@ MetaCoq Run (linearize_and_fixpoint_auto (add) []).
 
 MetaCoq Run (build_fixpoint_auto even []). 
 MetaCoq Run (build_fixpoint_auto (@Add_linear) []).
-MetaCoq Run (build_fixpoint_recarg even [] 0).
+MetaCoq Run (build_fixpoint_recarg even [] 0). Print even_decidable.
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []). 
 
