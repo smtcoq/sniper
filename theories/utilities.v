@@ -19,6 +19,20 @@ Require Import ZArith.
 
 (** Generic *)
 
+
+Fixpoint flatten {A: Type} (l : list (list A)) :=
+match l with
+| [] => []
+| x :: xs => x ++ flatten xs
+end.
+
+
+Definition replace_head {A : Type} (x : A) (l : list A) :=
+  match l with
+    | y :: xs => x :: xs
+    | [] => [x]
+  end.
+
 Definition revmap {A B : Type } ( f : A -> B) (l : list A) :=
   let fix aux l acc :=
   match l with
@@ -60,7 +74,36 @@ MetaCoq Quote Definition Z_reif := Z.
 MetaCoq Quote Definition nat_reif := nat.
 
 Inductive default :=.
-MetaCoq Quote Definition default_reif := default.
+Definition default_reif := <% default %>.
+
+Definition default_body :=
+{|
+               ind_name := "default"%bs;
+               ind_indices := [];
+               ind_sort := Universe.of_levels (inl PropLevel.lProp);
+               ind_type :=
+                 tSort (Universe.of_levels (inl PropLevel.lProp));
+               ind_kelim := IntoAny;
+               ind_ctors := [];
+               ind_projs := [];
+               ind_relevance := Relevant
+             |}.
+
+Definition default_error_kn := (MPfile [], "error"%bs).
+
+Definition kername_term (t : term) :=
+match t with
+| tConst kn _ => kn
+| tInd indu insts => indu.(inductive_mind)
+| _ => default_error_kn
+end.
+
+Definition find_name_gref (t : term) :=
+match t with
+| tConst kn _ => kn.2
+| tInd indu insts => (indu.(inductive_mind)).2
+| _ => "error"%bs
+end.
 
 (** Functions to build MetaCoq terms **)
 
@@ -157,16 +200,6 @@ Definition mkOr_n (l : list term) :=
 
 Definition mknAnon := {| binder_name := nAnon ; binder_relevance := Relevant |}.
 
-
-Definition default_error_kn := (MPfile [], "error"%bs).
-
-Definition kername_term (t : term) :=
-match t with
-| tConst kn _ => kn
-| tInd indu insts => indu.(inductive_mind)
-| _ => default_error_kn
-end.
-
 Definition lookup (e : global_env) (i : term) :=
 let decls := e.(declarations) in
 let kn := kername_term i in
@@ -190,18 +223,13 @@ Definition get_params_from_mind mind :=
   let l0 := revmap (fun d => d.(decl_type)) mind.(ind_params)
 in (p, l0).
 
-Definition default_body :=
-{|
-               ind_name := "default"%bs;
-               ind_indices := [];
-               ind_sort := Universe.of_levels (inl PropLevel.lProp);
-               ind_type :=
-                 tSort (Universe.of_levels (inl PropLevel.lProp));
-               ind_kelim := IntoAny;
-               ind_ctors := [];
-               ind_projs := [];
-               ind_relevance := Relevant
-             |}.
+
+Definition number_of_indu (i : term) :=
+match i with
+| tInd indu _ => indu.(inductive_ind)
+| _ => 0
+end.
+
 
 
 (** if I is a nonmutual inductive, returns the pair between the number of its parameters 
@@ -213,6 +241,26 @@ match res with
 | None => (0, [])
 end.
 
+Definition nb_args_inductive (e : global_env) (i : term) :=
+let res := info_inductive e i in
+match res with
+| Some mind => 
+    let body := hd default_body mind.(ind_bodies) in mind.(ind_npars) + List.length (body.(ind_indices))
+| None => 0
+end.
+
+Definition get_args_inductive (e : global_env) (i : term) :=
+let res := info_inductive e i in
+match res with
+| Some mind => let body := hd default_body mind.(ind_bodies) in 
+               let indices := body.(ind_indices) in 
+               let fix aux indices :=
+               match indices with
+               | [] => []
+               | x :: xs => x.(decl_type) :: aux xs
+               end in aux indices
+| None => []
+end.
 
 Definition no_prod (t: term) := match t with 
   | tProd _ _ _ => false 

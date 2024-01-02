@@ -14,96 +14,7 @@ Import MCMonadNotation.
 
 Unset MetaCoq Strict Unquote Universe Mode.
 
-Fixpoint flatten {A: Type} (l : list (list A)) :=
-match l with
-| [] => []
-| x :: xs => x ++ flatten xs
-end.
-
-(** Lookups in global envs TODO remove when integrated in Sniper **)
-
-
-Definition default_error_kn := (MPfile [], "error"%bs).
-
-Definition kername_term (t : term) :=
-match t with
-| tConst kn _ => kn
-| tInd indu insts => indu.(inductive_mind)
-| _ => default_error_kn
-end.
-
-Definition find_name_gref (t : term) :=
-match t with
-| tConst kn _ => kn.2
-| tInd indu insts => (indu.(inductive_mind)).2
-| _ => "error"%bs
-end.
-
-Definition lookup (e : global_env) (i : term) :=
-let decls := e.(declarations) in
-let kn := kername_term i in
-let fix aux decls kn := 
-match decls with
-| (kn', gdecl) :: decls' => if eq_kername kn kn' then Some gdecl else aux decls' kn
-| [] => None
-end in aux decls kn.
-
-Definition number_of_indu (i : term) :=
-match i with
-| tInd indu _ => indu.(inductive_ind)
-| _ => 0
-end.
-
-Definition info_inductive (e : global_env) (i : term) :=
-let res := lookup e i in 
-match res with
-| Some (ConstantDecl _) => None
-| Some (InductiveDecl mind) => Some mind
-| None => None
-end.
-
-Inductive default :=.
-
-Definition default_body :=
-{|
-               ind_name := "default"%bs;
-               ind_indices := [];
-               ind_sort := Universe.of_levels (inl PropLevel.lProp);
-               ind_type :=
-                 tSort (Universe.of_levels (inl PropLevel.lProp));
-               ind_kelim := IntoAny;
-               ind_ctors := [];
-               ind_projs := [];
-               ind_relevance := Relevant
-             |}.
-
-Definition info_nonmutual_inductive (e : global_env) (i : term) :=
-let res := info_inductive e i in
-match res with
-| Some mind =>  (mind.(ind_npars), (hd default_body mind.(ind_bodies)).(ind_ctors))
-| None => (0, [])
-end.
-
-Definition nb_args_inductive (e : global_env) (i : term) :=
-let res := info_inductive e i in
-match res with
-| Some mind => 
-    let body := hd default_body mind.(ind_bodies) in mind.(ind_npars) + List.length (body.(ind_indices))
-| None => 0
-end.
-
-Definition get_args_inductive (e : global_env) (i : term) :=
-let res := info_inductive e i in
-match res with
-| Some mind => let body := hd default_body mind.(ind_bodies) in 
-               let indices := body.(ind_indices) in 
-               let fix aux indices :=
-               match indices with
-               | [] => []
-               | x :: xs => x.(decl_type) :: aux xs
-               end in aux indices
-| None => []
-end.
+(** Auxiliaries functions *)
 
 Definition all_type_to_fresh := fun t =>
 match t with
@@ -313,9 +224,44 @@ match fuel with
     end
 end.
 
+
+Fixpoint unify_list_mapping
+(t: term) 
+(pcs : list term) 
+(ms : list mapping) : option (list (option_unif mapping)) :=
+match pcs, ms with
+  | [], [] => Some []
+  | pc :: pcs, m :: ms => 
+      let opt := unify_list_mapping t pcs ms in 
+        match opt with
+          | None => None
+          | Some x => Some (unify_mapping t pc m :: x)
+        end
+  | _, _ => None
+end.
+
+Definition unifs_all_some (ms : list (option_unif mapping)) :=
+List.forallb (fun x => match x with | some _ => true | _ => false end) ms.
+
+Definition unifs_contains_failure (ms : list (option_unif mapping)) :=
+List.existsb (fun x => match x with | failure => true | _ => false end) ms.
+
+Fixpoint replace_mappings 
+(ms : list mapping)
+(lunif : list (option_unif mapping)) :=
+match ms, lunif with
+| m :: ms, (some m') :: lunif => m' :: replace_mappings ms lunif
+| m :: ms, _ :: lunif => m :: replace_mappings ms lunif
+| [], [] => []
+| _, _ => []
+end.
+
 Definition contains (i : nat) (t : term) :=
 let fuel := size t in 
 contains_fuel i t fuel.
+
+(** Informations contained in constructors, useful 
+to get premises, conclusions and to initialize mappings *)
 
 
 Record cstr_info : Type := mkCstr_info
@@ -442,15 +388,7 @@ end.
 (premises : list term)
 (conclusion : term) => then, the conclusion is splitted to get patterns_conslusion *)
 
-Definition split_conclusion (c: cstr_info) :  nat * nat * (list term) * (list term) :=
-let npars := Datatypes.length c.(db_parameters) in
-let t := c.(conclusion) in (* the conclusion is the inductive applied to its arguments *)
-match t with
-| tApp (tRel n) l => (n, npars, List.firstn npars l, List.skipn npars l)
-| _ => (0, 0,  [], [])
-end.
-
-Definition split_conclusion' (c: cstr_info) :  nat * (list term) * (list term) :=
+Definition split_conclusion (c: cstr_info) :  nat * (list term) * (list term) :=
 let npars := Datatypes.length c.(db_parameters) in
 let t := c.(conclusion) in (* the conclusion is the inductive applied to its arguments *)
 match t with
@@ -471,22 +409,6 @@ match l with
 | [] => []
 end.
 
-Definition build_initial_mapping_and_vars (info_conclusion : nat * nat * (list term) * (list term)) :=
-let db_fix_rel := info_conclusion.1.1.1 in (* the de brujin index which corresponds to the inductive *)
-let npars := info_conclusion.1.1.2 in (* the number of parameters *)
-let pars_rel := info_conclusion.1.2 in (* the parameters in the conclusion of the inductive *)
-let db_pars_rel := only_variables pars_rel in (* the DB indexes of the parameters *)
-let npars_variables := 
-Datatypes.length db_pars_rel in (* the number of parameters which are variables *)
-let args_rel := info_conclusion.2 in (* the arguments (non parameters) of the inductive *)
-let nb_new_vars := Datatypes.length args_rel in (* the number of variable we will pattern match on *)
-let initial_vars := build_list_of_vars nb_new_vars in (* building of DB indexes of these variables *)
-let db_pars_fix := List.map (fun x => nb_new_vars + x) (build_list_of_vars npars_variables) in (* builiding 
-of DB indexes for parameters which are a variable *)
-let db_fix_fix := nb_new_vars + npars_variables in (* the DB index of the fixpoint *)
-let initial_mapping := (db_fix_fix, db_fix_rel) :: combine db_pars_fix db_pars_rel in
-(initial_vars, initial_mapping).
-
 (* lift 1 0 the first term, lift 2 0 the second term, ..., lift n 0 the nth term *)
 Definition lift_list_ty (l : list term) :=
 let fix aux l n :=
@@ -496,14 +418,13 @@ match l with
 end 
 in aux l 1. 
 
-Definition initial_mapping
-(g : global_env) (I : term) (t : term) (npars: nat) :=
-let c := find_cstr_info npars t in
-let c' := split_conclusion c in
-let vars_and_map := build_initial_mapping_and_vars c' in
-let ty_vars := lift_list_ty (get_args_inductive_fresh_types g I) in
-(ty_vars, vars_and_map).
- Print cstr_info.
+Record init_mapping :=
+{ 
+  ty_vars : list term;
+  init_vars : list nat;
+  mappings : list mapping;
+  init_premises : list (list term);
+  patterns : list (list term) }.
 
 Definition initial_mappings_aux 
 (e : global_env)
@@ -514,9 +435,9 @@ let info := info_nonmutual_inductive e I in
 let npars := info.1 in
 let ctors := info.2 in
 let ctors_type := List.map cstr_type ctors in
-let nb_args := (nb_args_inductive e I - npars_args) in
+let nb_args := nb_args_inductive e I - npars in
 let npars_vars := npars - npars_args in 
-let initial_vars := build_list_of_vars (nb_args - npars) in
+let initial_vars := build_list_of_vars nb_args in
 let db_pars_fix := List.map (fun x => nb_args + x) (build_list_of_vars npars_vars) in
 let db_fix_fix := nb_args + npars_vars in
 let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
@@ -524,634 +445,38 @@ let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
     match ctors_type with
       | c :: cs => 
           let info := find_cstr_info npars c in
-          let res := split_conclusion' info in
+          let res := split_conclusion info in
           let db_fix_rel := res.1.1 in (* the DB index of the fixpoint in the conclusion of the inductive *)
           let pars_rel := res.1.2 in (* the parameters in the conclusion of the inductive *)
           let db_pars_rel := only_variables pars_rel in (* the DB indexes of the parameters *)
-          ((db_fix_fix, db_fix_rel) :: combine db_pars_fix db_pars_rel) :: aux cs
-      | [] => []
+          let patterns_conclusion := (split_conclusion info).2 in
+          let premises := premises info in
+          let res := aux cs in
+          (((db_fix_fix, db_fix_rel) :: combine db_pars_fix db_pars_rel) :: res.1.1, premises :: res.1.2, patterns_conclusion :: res.2)
+      | [] => ([], [], [])
     end
-  in (ty_vars, initial_vars, aux ctors_type).
+  in 
+  let res := aux ctors_type in
+  {| ty_vars := ty_vars ; init_vars := initial_vars ; mappings := res.1.1; init_premises := res.1.2; patterns := res.2 |}.
+
 
 Definition initial_mappings 
 (e : global_env)
-(I : term) :=
+(I : term)
+:=
 match I with
   | tApp I' l => initial_mappings_aux e I' (Datatypes.length l)
   | _ => initial_mappings_aux e I 0
 end.
 
-MetaCoq Quote Recursively Definition Add_reif_rec := @Add.
 
-Compute (initial_mappings Add_reif_rec.1 Add_reif_rec.2).
+Inductive even : nat -> Prop :=
+even0 : even 0
+| evenSS : forall n, even n -> even (S (S n)).
 
+MetaCoq Quote Recursively Definition ev := even.
 
-
-
-Section tests. 
-
-Definition smaller_cons_reif := <% forall (A : Type) (l : list A) l' x x', 
-smaller l l' -> smaller (x :: l) (x' :: l') %>. 
-
-Open Scope bs_scope.
-
-Definition smaller_cons_free := 
-tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.level "generate_fix.588"%bs))))
-  (tProd {| binder_name := nNamed "l"%bs; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-             inductive_mind := (MPfile ["Datatypes"%bs; "Init"; "Coq"], "list");
-             inductive_ind := 0
-           |} []) [tRel 0])
-     (tProd {| binder_name := nNamed "l'"; binder_relevance := Relevant |}
-        (tApp
-           (tInd
-              {|
-                inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                inductive_ind := 0
-              |} []) [tRel 1])
-        (tProd {| binder_name := nNamed "x"; binder_relevance := Relevant |}
-           (tRel 2)
-           (tProd
-              {| binder_name := nNamed "x'"; binder_relevance := Relevant |}
-              (tRel 3)
-              (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-                 (tApp
-                    (tRel 5) [tRel 4; tRel 3; tRel 2])
-                 (tApp
-                    (tRel 6)
-                    [tRel 5;
-                    tApp
-                      (tConstruct
-                         {|
-                           inductive_mind :=
-                             (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                           inductive_ind := 0
-                         |} 1 []) [tRel 5; tRel 2; tRel 4];
-                    tApp
-                      (tConstruct
-                         {|
-                           inductive_mind :=
-                             (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                           inductive_ind := 0
-                         |} 1 []) [tRel 5; tRel 1; tRel 3]])))))).
-
-Inductive Add_linear (A : Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
-    Add_head : forall (x : A) (l l' : list A), eqb_of_compdec list_compdec l l' = true -> 
-eqb_of_compdec HA x a = true -> Add_linear A HA a l (x :: l')
-  | Add_cons : forall (x y : A) (l l' : list A), eqb_of_compdec HA x y = true ->
-               Add_linear A HA a l l' -> Add_linear A HA a (x :: l) (y :: l').
-
-Definition ty_Add_head_reif := <% 
-forall (A : Type) (HA : CompDec A) (a : A) (x : A) (l l' : list A), 
-eqb_of_compdec list_compdec l l' = true -> 
-eqb_of_compdec HA x a = true -> Add_linear A HA a l (x :: l')
-  %>.
-
-Definition ty_Add_head_free :=
-tProd {| binder_name := nNamed "A"%bs; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.level "generate_fix.1773"))))
-  (tProd {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-             inductive_mind := (MPfile ["SMT_classes"], "CompDec");
-             inductive_ind := 0
-           |} []) [tRel 0])
-     (tProd {| binder_name := nNamed "a"; binder_relevance := Relevant |} 
-        (tRel 1)
-        (tProd {| binder_name := nNamed "x"; binder_relevance := Relevant |} 
-           (tRel 2)
-           (tProd {| binder_name := nNamed "l"; binder_relevance := Relevant |}
-              (tApp
-                 (tInd
-                    {|
-                      inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                      inductive_ind := 0
-                    |} []) [tRel 3])
-              (tProd {| binder_name := nNamed "l'"; binder_relevance := Relevant |}
-                 (tApp
-                    (tInd
-                       {|
-                         inductive_mind :=
-                           (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                         inductive_ind := 0
-                       |} []) [tRel 4])
-                 (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-                    (tApp
-                       (tInd
-                          {|
-                            inductive_mind := (MPfile ["Logic"; "Init"; "Coq"], "eq");
-                            inductive_ind := 0
-                          |} [])
-                       [tInd
-                          {|
-                            inductive_mind :=
-                              (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-                            inductive_ind := 0
-                          |} [];
-                       tApp (tConst (MPfile ["SMT_classes"], "eqb_of_compdec") [])
-                         [tApp
-                            (tInd
-                               {|
-                                 inductive_mind :=
-                                   (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                                 inductive_ind := 0
-                               |} []) [tRel 5];
-                         tApp
-                           (tConst (MPfile ["SMT_classes_instances"], "list_compdec")
-                              []) [tRel 5; tRel 4]; tRel 1; 
-                         tRel 0];
-                       tConstruct
-                         {|
-                           inductive_mind :=
-                             (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-                           inductive_ind := 0
-                         |} 0 []])
-                    (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-                       (tApp
-                          (tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile ["Logic"; "Init"; "Coq"], "eq");
-                               inductive_ind := 0
-                             |} [])
-                          [tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-                               inductive_ind := 0
-                             |} [];
-                          tApp (tConst (MPfile ["SMT_classes"], "eqb_of_compdec") [])
-                            [tRel 6; tRel 5; tRel 3; tRel 4];
-                          tConstruct
-                            {|
-                              inductive_mind :=
-                                (MPfile ["Datatypes"; "Init"; "Coq"], "bool");
-                              inductive_ind := 0
-                            |} 0 []])
-                       (tApp
-                          (tRel 8)
-                          [tRel 7; tRel 6; tRel 5; tRel 3;
-                          tApp
-                            (tConstruct
-                               {|
-                                 inductive_mind :=
-                                   (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                                 inductive_ind := 0
-                               |} 1 []) [tRel 7; tRel 4; tRel 2]])))))))). 
-
-
-Definition ty_Add_cons_reif := <% 
-forall (A : Type) (HA : CompDec A) (a : A) (x y : A) (l l' : list A), eqb_of_compdec HA x y = true ->
-               Add_linear A HA a l l' -> Add_linear A HA a (x :: l) (y :: l') %>.
-
-(* Definition ty_Add_cons_free := tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "generate_fix.303"))))
-  (tProd
-     {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-             inductive_mind := (MPfile ["SMT_classes"], "CompDec");
-             inductive_ind := 0
-           |} []) [tRel 0])
-     (tProd
-        {|
-          binder_name := nNamed "a"; binder_relevance := Relevant
-        |} (tRel 1)
-        (tProd
-           {|
-             binder_name := nNamed "x"; binder_relevance := Relevant
-           |} (tRel 2)
-           (tProd
-              {|
-                binder_name := nNamed "y";
-                binder_relevance := Relevant
-              |} (tRel 3)
-              (tProd
-                 {|
-                   binder_name := nNamed "l";
-                   binder_relevance := Relevant
-                 |}
-                 (tApp
-                    (tInd
-                       {|
-                         inductive_mind :=
-                           (MPfile ["Datatypes"; "Init"; "Coq"],
-                           "list");
-                         inductive_ind := 0
-                       |} []) [tRel 4])
-                 (tProd
-                    {|
-                      binder_name := nNamed "l'";
-                      binder_relevance := Relevant
-                    |}
-                    (tApp
-                       (tInd
-                          {|
-                            inductive_mind :=
-                              (MPfile ["Datatypes"; "Init"; "Coq"],
-                              "list");
-                            inductive_ind := 0
-                          |} []) [tRel 5])
-                    (tProd
-                       {|
-                         binder_name := nAnon;
-                         binder_relevance := Relevant
-                       |}
-                       (tApp
-                          (tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile ["Logic"; "Init"; "Coq"],
-                                 "eq");
-                               inductive_ind := 0
-                             |} [])
-                          [tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile
-                                    ["Datatypes"; "Init"; "Coq"],
-                                 "bool");
-                               inductive_ind := 0
-                             |} [];
-                          tApp
-                            (tConst
-                               (MPfile ["SMT_classes"],
-                               "eqb_of_compdec") [])
-                            [tRel 6; tRel 5; tRel 3; tRel 2];
-                          tConstruct
-                            {|
-                              inductive_mind :=
-                                (MPfile ["Datatypes"; "Init"; "Coq"],
-                                "bool");
-                              inductive_ind := 0
-                            |} 0 []])
-                       (tProd
-                          {|
-                            binder_name := nAnon;
-                            binder_relevance := Relevant
-                          |}
-                         (tApp (tRel 8)
-                             [tRel 7; tRel 6; 
-                             tRel 5; tRel 2; 
-                             tRel 1])
-                          (tApp
-                             (tRel 9)
-                             [tRel 8; tRel 7; 
-                             tRel 6;
-                             tApp
-                               (tConstruct
-                                  {|
-                                    inductive_mind :=
-                                      (MPfile
-                                         ["Datatypes"; "Init";
-                                         "Coq"], "list");
-                                    inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 5; tRel 3];
-                             tApp
-                               (tConstruct
-                                  {|
-                                    inductive_mind :=
-                                      (MPfile
-                                         ["Datatypes"; "Init";
-                                         "Coq"], "list");
-                                    inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))). *)
-
-Inductive member : nat -> list nat -> Prop :=
-| MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
-| MemRecur : forall xs n n',
-    member n xs -> member n (n'::xs).
-
-Definition member_cons_reif := 
-<% forall xs n n', Nat.eqb n n' -> member n (n'::xs) %>.
-
-(* Definition member_cons_free := 
-tProd {| binder_name := nNamed "xs"; binder_relevance := Relevant |}
-  (tApp
-     (tInd
-        {|
-          inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-          inductive_ind := 0
-        |} [])
-     [tInd
-        {|
-          inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-          inductive_ind := 0
-        |} []])
-  (tProd {| binder_name := nNamed "n"; binder_relevance := Relevant |}
-     (tInd
-        {|
-          inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-          inductive_ind := 0
-        |} [])
-     (tProd {| binder_name := nNamed "n'"; binder_relevance := Relevant |}
-        (tInd
-           {|
-             inductive_mind := (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-             inductive_ind := 0
-           |} [])
-        (tProd {| binder_name := nAnon; binder_relevance := Relevant |}
-           (tApp (tConst (MPfile ["Datatypes"; "Init"; "Coq"], "is_true") [])
-              [tApp (tConst (MPfile ["Nat"; "Init"; "Coq"], "eqb") [])
-                 [tRel 1; tRel 0]])
-           (tApp
-              (tRel 3)
-              [tRel 2;
-              tApp
-                (tConstruct
-                   {|
-                     inductive_mind :=
-                       (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                     inductive_ind := 0
-                   |} 1 [])
-                [tInd
-                   {|
-                     inductive_mind :=
-                       (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-                     inductive_ind := 0
-                   |} []; tRel 1; tRel 3]])))).
-
-MetaCoq Quote Recursively Definition member_reif_rec := member.
-(* Compute initial_mapping e member_reif_rec.1 member_reif_rec.2 member_cons_free 0.
-
-Compute  split_conclusion ({|
-         db_parameters := [];
-         premises :=
-           [tApp (tConst (MPfile ["Datatypes"; "Init"; "Coq"], "is_true") [])
-              [tApp (tConst (MPfile ["Nat"; "Init"; "Coq"], "eqb") [])
-                 [tRel 1; tRel 0]]];
-         conclusion :=
-           tApp
-             (tRel 3)
-             [tRel 1;
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                    inductive_ind := 0
-                  |} 1 [])
-               [tInd
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "nat");
-                    inductive_ind := 0
-                  |} []; tRel 0; tRel 2]]
-       |}).
-
-Compute find_cstr_info e 0 member_cons_reif [].
-
-Compute find_cstr_info e 1 smaller_cons_reif [].
-
-Compute find_cstr_info e 3 ty_Add_head_reif [].
- *)
-(* MetaCoq Quote Recursively Definition Add_linear_reif := Add_linear.
-
-MetaCoq Quote Recursively Definition smaller_reif_rec := @smaller. *)
-(* 
-Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_head_free 3.
-Compute initial_mapping e Add_linear_reif.1 Add_linear_reif.2 ty_Add_cons_free 3.
-
-Compute initial_mapping e smaller_reif_rec.1 smaller_reif_rec.2 smaller_cons_free 1.
- *)
-Definition smaller_cons_info := 
-{|
-         db_parameters := [4];
-         premises :=
-           [tApp
-              (tInd
-                 {|
-                   inductive_mind := (MPfile ["generate_fix"], "smaller");
-                   inductive_ind := 0
-                 |} []) [tRel 4; tRel 3; tRel 2]];
-         conclusion :=
-           tApp
-             (tRel 5)
-             [tRel 4;
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 4; tRel 1; tRel 3];
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile ["Datatypes"; "Init"; "Coq"], "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 4; tRel 0; tRel 2]]
-       |}.
-
-Definition c1 := split_conclusion smaller_cons_info.
-
-(* Compute build_initial_mapping_and_vars c1. *)
-
-
-Definition ty_Add_cons_reif_free := 
-tProd {| binder_name := nNamed "A"; binder_relevance := Relevant |}
-  (tSort (Universe.of_levels (inr (Level.Level "generate_fix.1187"))))
-  (tProd
-     {| binder_name := nNamed "HA"; binder_relevance := Relevant |}
-     (tApp
-        (tInd
-           {|
-             inductive_mind := (MPfile ["SMT_classes"], "CompDec");
-             inductive_ind := 0
-           |} []) [tRel 0])
-     (tProd
-        {| binder_name := nNamed "a"; binder_relevance := Relevant |}
-        (tRel 1)
-        (tProd
-           {|
-             binder_name := nNamed "x"; binder_relevance := Relevant
-           |} (tRel 2)
-           (tProd
-              {|
-                binder_name := nNamed "y";
-                binder_relevance := Relevant
-              |} (tRel 3)
-              (tProd
-                 {|
-                   binder_name := nNamed "l";
-                   binder_relevance := Relevant
-                 |}
-                 (tApp
-                    (tInd
-                       {|
-                         inductive_mind :=
-                           (MPfile ["Datatypes"; "Init"; "Coq"],
-                           "list");
-                         inductive_ind := 0
-                       |} []) [tRel 4])
-                 (tProd
-                    {|
-                      binder_name := nNamed "l'";
-                      binder_relevance := Relevant
-                    |}
-                    (tApp
-                       (tInd
-                          {|
-                            inductive_mind :=
-                              (MPfile ["Datatypes"; "Init"; "Coq"],
-                              "list");
-                            inductive_ind := 0
-                          |} []) [tRel 5])
-                    (tProd
-                       {|
-                         binder_name := nAnon;
-                         binder_relevance := Relevant
-                       |}
-                       (tApp
-                          (tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile ["Logic"; "Init"; "Coq"],
-                                 "eq");
-                               inductive_ind := 0
-                             |} [])
-                          [tInd
-                             {|
-                               inductive_mind :=
-                                 (MPfile ["Datatypes"; "Init"; "Coq"],
-                                 "bool");
-                               inductive_ind := 0
-                             |} [];
-                          tApp
-                            (tConst
-                               (MPfile ["SMT_classes"],
-                               "eqb_of_compdec") [])
-                            [tRel 6; tRel 5; tRel 3; tRel 2];
-                          tConstruct
-                            {|
-                              inductive_mind :=
-                                (MPfile ["Datatypes"; "Init"; "Coq"],
-                                "bool");
-                              inductive_ind := 0
-                            |} 0 []])
-                       (tProd
-                          {|
-                            binder_name := nAnon;
-                            binder_relevance := Relevant
-                          |}
-                          (tApp
-                             (tRel 9)
-                             [tRel 7; tRel 6; tRel 5; tRel 2; tRel 1])
-                          (tApp
-                             (tRel 9)
-                             [tRel 8; tRel 7; 
-                             tRel 6;
-                             tApp
-                               (tConstruct
-                                  {|
-                                    inductive_mind :=
-                                      (MPfile
-                                         ["Datatypes"; "Init"; "Coq"],
-                                      "list");
-                                    inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 5; tRel 3];
-                             tApp
-                               (tConstruct
-                                  {|
-                                    inductive_mind :=
-                                      (MPfile
-                                         ["Datatypes"; "Init"; "Coq"],
-                                      "list");
-                                    inductive_ind := 0
-                                  |} 1 []) [tRel 8; tRel 4; tRel 2]]))))))))). *)
-
-Inductive add_interm : nat -> nat -> nat -> Prop :=
-| add_interm0 : forall n m, Nat.eqb n m = true -> add_interm 0 n m
-| add_intermS : forall n m k, add_interm n m k -> add_interm (S n) m (S k).
-
-Definition ty_add_interm0_reif := 
-<% forall n m, Nat.eqb n m = true -> add_interm 0 n m %>.
-
-(* Variable AddCompDecAdd_linear : forall (A : Type), CompDec A -> A -> list A -> list A -> Prop.
-Variable compdec_hyp : forall (A : Type), CompDec A -> CompDec (list A).
-
-Definition test_Add := <% forall (A : Type) (HCompDecA : CompDec A) (a : A) (H: A),
-                              eqb_of_compdec HCompDecA a H = true ->
-                              forall l H0 : list A,
-                              eqb_of_compdec (compdec_hyp A HCompDecA) l H0 = true ->
-                              AddCompDecAdd_linear A HCompDecA a l (H :: H0) %>.
-
-Variable (e : PCUICProgram.global_env_map).
-
-Compute find_cstr_info e 3 test_Add []. *)
-
-(* Compute find_cstr_info e 0 ty_add_interm0_reif [].
-
-Compute find_cstr_info e 3 ty_Add_cons_reif []. *)
-
-(* Definition ty_Add_cons_info := {|
-         db_parameters := [4; 5; 6];
-         premises :=
-           [tApp
-              (tRel 7)
-              [tRel 6; tRel 5; tRel 4; tRel 1; tRel 0];
-           tApp
-             (tInd
-                {|
-                  inductive_mind :=
-                    (MPfile ["Logic"; "Init"; "Coq"],
-                    "eq");
-                  inductive_ind := 0
-                |} [])
-             [tInd
-                {|
-                  inductive_mind :=
-                    (MPfile ["Datatypes"; "Init"; "Coq"],
-                    "bool");
-                  inductive_ind := 0
-                |} [];
-             tApp
-               (tConst
-                  (MPfile ["SMT_classes"],
-                  "eqb_of_compdec") [])
-               [tRel 6; tRel 5; tRel 3; tRel 2];
-             tConstruct
-               {|
-                 inductive_mind :=
-                   (MPfile ["Datatypes"; "Init"; "Coq"],
-                   "bool");
-                 inductive_ind := 0
-               |} 0 []]];
-         conclusion :=
-           tApp
-             (tRel 7)
-             [tRel 6; tRel 5; tRel 4;
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile
-                         ["Datatypes"; "Init"; "Coq"],
-                      "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 6; tRel 3; tRel 1];
-             tApp
-               (tConstruct
-                  {|
-                    inductive_mind :=
-                      (MPfile
-                         ["Datatypes"; "Init"; "Coq"],
-                      "list");
-                    inductive_ind := 0
-                  |} 1 []) [tRel 6; tRel 2; tRel 0]]
-       |}. *)
-
-(* Definition c2 := split_conclusion ty_Add_cons_info. *)
-
-(* Compute initial_mapping e Add_reif_rec.1 Add_reif_rec.2 ty_Add_cons_reif_free 3. *)
-
-End tests.
+Compute (initial_mappings ev.1 ev.2).
 
 Fixpoint list_of_holes (n : nat) :=
 match n with
@@ -1190,9 +515,9 @@ match I with
   |}
 end in 
 ({| ci_ind := indu ; ci_npar := npars; ci_relevance := Relevant |},
-{| puinst := []; (* TODO ?? *) 
-pparams := list_of_holes npars; (* TODO ??? *)
-pcontext := [mknAnon]; (* TODO ?? as clause (should not be a problem) *)
+{| puinst := [];  
+pparams := list_of_holes npars; 
+pcontext := [mknAnon]; (* as clause (should not be a problem) *)
 preturn := <% bool %> |}).
 
 Definition apply_term (t : term) (n : nat) :=
@@ -1222,122 +547,6 @@ let p := List.split m in
 let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]]).
-
-Fixpoint cstr_handler
-(e : global_env) (* the global envronment to look for information about inductives *)
-(vars : list nat) (* the variables that we will pattern match on initialized with tRels only *)
-(ty_vars : list term) (* the inductive type of each variable *)
-(premises : list term) (* the premises: need to be true whenever the unification is done *)
-(patterns_conclusion : list term) (* the unification is made between the variables and the patterns *)
-(m : mapping) (* the initial mapping of variables *)
-(ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
-(fuel : nat) (* some fuel *)
-: term := 
-match fuel with
-| 0 => default_reif
-| S fuel' => 
- match vars, patterns_conclusion, ty_vars with
-| v :: vs, pc :: pcs, ty :: tys => match unify_mapping (tRel v) pc m with 
-      | continue _ _ => build_pattern e v ty pc vs tys premises pcs m ldec fuel'  
-      | failure => default_reif
-      | some m' => cstr_handler e vs tys premises pcs m' ldec fuel'
-      end
-| [], [], [] => build_andb (return_premises premises m ldec) (* boolean conjunction of all the premises *)
-| _, _, _ =>  build_andb (return_premises premises m ldec)
-end 
-end 
-with
-build_pattern 
-(e : global_env) (* the global envronment to look for information about inductives *)
-(var : nat) (* the variable we match on *)
-(I : term) (* the inductive type corresponding to the variable we match on *) 
-(t: term) (* the term to unify *)
-(vars : list nat) (* the variables that we will pattern match initialized with tRels only *)
-(ty_vars : list term) (* the inductive type of each variable *)
-(premises : list term) (* the premises: need to be true whenever the unification is done *)
-(patterns_conclusion : list term)
-(m : mapping) (* the initial mapping of variables *)
-(ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
-(fuel : nat) (* some fuel *)
-:= 
-let I' := head_term I in
-let lpars0 := tail_term I in 
-let npars := Datatypes.length lpars0 in
-let lpars := list_of_dumb_term npars in
-let p := build_case_info_and_pterm e I' in
-let ci := p.1 in
-let pt := p.2 in
-let args := get_type_of_args_of_each_constructor e I' in
-let list_constructors := rev (list_ctors_applied_to_params e I' lpars) in
-let fix build_branch e vars ty_vars premises pattern_conclusion m args list_constructors fuel {struct fuel} :=
-match fuel with
-| 0 => [{| bcontext := 
-[{| binder_name := nNamed "error not enough fuel"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
-| S fuel' =>
-match args, list_constructors with
-| lty :: ltys, c :: cs => 
-let len := Datatypes.length lty in
-let cstr_applied := apply_term c len in
-let new_mapping := lift_mapping len m in
-  {| bcontext := list_aname len ; bbody := match unify_mapping cstr_applied t new_mapping
-    with 
-   | continue n' pc' => let ty_n' := nth (len-1-n') lty default_reif in
-                    let l := build_list_of_vars len in
-                    let new_vars := l++(List.map (fun x => x + len) vars) in
-                    let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
-                    build_pattern e n' ty_n' pc' new_vars new_tys premises patterns_conclusion new_mapping ldec fuel' 
-    (* <% false %> *)
-   | failure => <% false %> 
-   | some m' =>
-let l := build_list_of_vars len in
-let new_vars :=  List.map (fun x => x + len) vars in
-let new_tys := List.map (fun x => lift len 0 x) ty_vars in
-cstr_handler e new_vars new_tys premises patterns_conclusion m' ldec fuel'
-  end |} :: build_branch e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
-| [], [] => []
-| _, _ => (* should not happen *) [{| bcontext := 
-[{| binder_name := nNamed "error"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
-end 
-end in 
-tCase ci pt (tRel var) 
- (build_branch e vars ty_vars premises patterns_conclusion m args list_constructors fuel).
-
-Fixpoint unify_list_mapping
-(t: term) 
-(pcs : list term) 
-(ms : list mapping) : option (list (option_unif mapping)) :=
-match pcs, ms with
-  | [], [] => Some []
-  | pc :: pcs, m :: ms => 
-      let opt := unify_list_mapping t pcs ms in 
-        match opt with
-          | None => None
-          | Some x => Some (unify_mapping t pc m :: x)
-        end
-  | _, _ => None
-end.
-
-Definition unifs_all_some (ms : list (option_unif mapping)) :=
-List.forallb (fun x => match x with | some _ => true | _ => false end) ms.
-
-Definition unifs_contains_failure (ms : list (option_unif mapping)) :=
-List.existsb (fun x => match x with | failure => true | _ => false end) ms.
-
-Fixpoint replace_mappings 
-(ms : list mapping)
-(lunif : list (option_unif mapping)) :=
-match ms, lunif with
-| m :: ms, (some m') :: lunif => m' :: replace_mappings ms lunif
-| m :: ms, _ :: lunif => m :: replace_mappings ms lunif
-| [], [] => []
-| _, _ => []
-end.
-
-Definition replace_head {A : Type} (x : A) (l : list A) :=
-  match l with
-    | y :: xs => x :: xs
-    | [] => [x]
-  end.
 
 Fixpoint cstr_handler_list
 (e : global_env) (* the global envronment to look for information about inductives *)
@@ -1382,7 +591,7 @@ build_pattern_list
 (vars : list nat) (* the variables that we will pattern match initialized with tRels only *)
 (ty_vars : list term) (* the inductive type of each variable *)
 (premises : list (list term)) (* the premises: need to be true whenever the unification is done *)
-(patterns_conclusion : list (list term))
+(patterns_conclusion : list (list term)) (* the rest of the patterns *)
 (m : list mapping) (* the initial mapping of variables *)
 (ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
 (fuel : nat) (* some fuel *)
@@ -1425,7 +634,7 @@ match args, list_constructors with
               let new_vars :=  List.map (fun x => x + len) vars in
               let new_tys := List.map (fun x => lift len 0 x) ty_vars in
               let ms' := replace_head m' ms in
-          cstr_handler_list e new_vars new_tys premises patterns_conclusion ms' ldec fuel'
+              cstr_handler_list e new_vars new_tys premises patterns_conclusion ms' ldec fuel'
           end 
     | _, _ => default_reif (* should not happen : as many mappings as terms *)
 end in aux new_mappings ts |} :: build_branch_list e vars ty_vars premises patterns_conclusion m ltys cs fuel' 
@@ -1458,105 +667,43 @@ match l with
 end.
 
 
-(* initialize the function cstr_handler *)
-Definition call_cstr_handler 
-(e : global_env) 
-(I : term)
-(t : term) 
-(npars : nat) 
-(ldec : list (term*term*term)) :=
-let im := initial_mapping e I t npars in 
-let initial_mapping := im.2.2 in
-let ty_vars := rev im.1 in
-let vars := im.2.1 in
-let c := find_cstr_info npars t [] in
-let patterns_conclusion := (split_conclusion c).2 in
-let premises := c.(premises) in
- cstr_handler e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
-
-Print initial_mapping.
-
 (* initialize the function cstr_handler_list *)
 Definition call_cstr_handler_list 
 (e : global_env) 
 (I : term)
-(ts : list term) 
-(npars : nat) 
 (ldec : list (term*term*term)) :=
-let fix aux ts :=
-match ts with
-  | [] => []
-  | t :: ts =>
-      let im := initial_mapping e I t npars in 
-      let initial_mapping := im.2.2 in
-      let ty_vars := rev im.1 in
-      let vars := im.2.1 in
-      let c := find_cstr_info npars t [] in
-      let patterns_conclusion := (split_conclusion c).2 in
-      let premises := c.(premises) in
-      (vars, initial_mapping, premises, patterns_conclusion) :: aux ts
-  end 
-in
-let res := aux ts in
-let mappings := List.map (fun x => x.2.1) res in
-let premises := List.map (fun x => x.2.1.1) res in
-let patterns := List.map (fun x => x.2.2.2) res in
-let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
-let vars := 
-cstr_handler e vars ty_vars premises patterns_conclusion initial_mapping ldec 1000 (* TODO fuel *).
-
-
-
-Definition build_list_of_cstr_handlers
-(e : global_env) (* the global envronment to look for information about inductives *)
-(I : term) (* the relation in Prop we want to transform into a fixpoint *) 
-(ldec : list (term*term*term)) :=
-let na := find_name_gref I in 
-let lty := rev (get_args_inductive_fresh_types e I) in
-let typars := params_inductive e I in
-let tys_to_bind := typars ++ lty in
-let info := info_nonmutual_inductive e I in
-let npars := info.1 in 
-let ctors := info.2 in
-let ctors_ty := ctors_type ctors in
-let fix aux e I npars ctors_ty ldec :=
-match ctors_ty with
-| [] => []
-| x :: xs => call_cstr_handler e I x npars ldec :: aux e I npars xs ldec
-end in 
-(na, tys_to_bind, aux e I npars ctors_ty ldec).
-
+let im := initial_mappings e I in
+cstr_handler_list e (init_vars im) (ty_vars im) (init_premises im) (patterns im) (mappings im) ldec 1000.
 
 Definition build_fixpoint_aux
 (recarg : nat) (* the recusive argument to build the fixpoint *)
-(l : list term) (* each constructor handler *)
+(t : term) (* the big match *)
 na (* a name for the fixpoint *)
 (lty : list term) (* the list of types of the arguments (already lifted) *) :=
 let ty := mkProd lty <% bool %> in
 (tFix 
 [{| dname := {| binder_name := nNamed (na++"_decidable")%bs ; binder_relevance := Relevant |} ;
 dtype := ty ;
-dbody := mkLambda lty (build_orb l) ;
+dbody := mkLambda lty t ;
 rarg := recarg |}] 0, ty).
+
 
 Definition build_fixpoint_aux2 
 (e : global_env) (* the global envronment to look for information about inductives *)
 (I : term) 
 (ldec : list (term*term*term))
 (recarg : nat) :=
-let res := build_list_of_cstr_handlers e I ldec in
-let na := res.1.1 in
-let lty := res.1.2 in
-let l := res.2 in
-build_fixpoint_aux recarg l na lty.
-
-Inductive even : nat -> Prop :=
-even0 : even 0
-| evenSS : forall n, even n -> even (S (S n)).
+let na := find_name_gref I in
+let lty := rev (get_args_inductive_fresh_types e I) in
+let res := call_cstr_handler_list e I ldec in
+build_fixpoint_aux recarg res na lty.
 
 MetaCoq Quote Recursively Definition even_reif_rec := even.
 
 Definition test_even := (build_fixpoint_aux2 even_reif_rec.1 even_reif_rec.2 [] 0).1.
+
+Compute test_even.
+
 
 
 (** Functions to compute the recursive argument **) 
@@ -1708,7 +855,7 @@ let ctors_ty := ctors_type ctors in
 let fix aux e I npars ctors_ty :=
 match ctors_ty with
 | [] => []
-| c :: cs => let info := find_cstr_info npars c [] in 
+| c :: cs => let info := find_cstr_info npars c in 
              let prem := premises info in
              let ccl := conclusion info in
              let result := find_decreasing_arg_one_constructor e prem npars ccl in 
