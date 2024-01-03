@@ -146,6 +146,7 @@ match fuel with
   | tRel i, t => continue i t (* the unification is not finished : we need to pattern match on the variable of De Brujin
 index i *)
   | tApp u1 [], u2 => unify_aux u1 u2 m n'
+  | tApp u1 l, tRel _ => if (List.forallb (fun x => eqb_term x dumb_term) l) then unify_aux u1 t2 m n' else failure
   | tApp u1 l1, tApp u2 l2 => if eqb_term u1 u2 then unify_list_aux l1 l2 m n' else failure
   | tConstruct _ _ _, tRel _ => some m
   | _, _ =>  if eqb_term t1 t2 then (some m) else 
@@ -494,6 +495,24 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
+Variable test : forall (A : Type), CompDec A -> CompDec (list A).
+
+(* Inductive AddCompDecAdd_linear (A : Type) (HCompDecA : CompDec A) (a : A) : list A -> list A -> Prop :=
+    Add_headHCompDec_linear : forall H : A,
+                              eqb_of_compdec HCompDecA a H = true ->
+                              forall l H0 : list A,
+                              eqb_of_compdec (test A HCompDecA) l H0 = true ->
+                              AddCompDecAdd_linear A HCompDecA a l (H :: H0)
+  | Add_consHCompDec_linear : forall x H : A,
+                              eqb_of_compdec HCompDecA x H = true ->
+                              forall l l' : list A,
+                              AddCompDecAdd_linear A HCompDecA a l l' ->
+                              AddCompDecAdd_linear A HCompDecA a (x :: l) (H :: l').
+
+MetaCoq Quote Recursively Definition Add_test := AddCompDecAdd_linear. *)
+
+(* Compute (initial_mappings Add_test.1 Add_test.2). *)
+
 MetaCoq Quote Recursively Definition ev := even.
 
 MetaCoq Quote Recursively Definition smnat := smallernat.
@@ -609,7 +628,7 @@ match fuel with
                 let b := unifs_all_some lunif in
                 if andb b (negb (is_empty pcss)) then cstr_handler_list e vs tys premises pcss ms' ldec fuel'
                 else if b then build_andb (return_premises (hd [] premises) (hd [] ms') ldec)
-                else build_pattern_list e v ty pcs vs tys premises pcss ms' ldec fuel' 
+                else build_pattern_list e v ty pcs vs tys premises pcss patterns_conclusion ms' ldec fuel' 
           end
       | [] => <% false %> (* this case happens when there is no constructor in the inductive *)
     end
@@ -627,9 +646,10 @@ build_pattern_list
 (ty_vars : list term) (* the inductive type of each variable *)
 (premises : list (list term)) (* the premises: need to be true whenever the unification is done *)
 (patterns_conclusion : list (list term)) (* the rest of the patterns *)
+(patterns_conclusion' : list (list term)) (* a copy of the patterns *)
 (ms : list mapping) (* the initial mapping of variables *)
 (ldec : list (term*term*term)) (* a list of inductive predicates and their boolean translation *)
-(fuel : nat) (* some fuel *)
+(fuel : nat) (* some fuel *) : term
 := 
 let I' := head_term I in
 let lpars0 := tail_term I in 
@@ -640,7 +660,7 @@ let ci := p.1 in
 let pt := p.2 in
 let args := get_type_of_args_of_each_constructor e I' in
 let list_constructors := rev (list_ctors_applied_to_params e I' lpars) in
-let fix build_branch_list e vars ty_vars ts premises pattern_conclusion ms args list_constructors fuel {struct fuel} :=
+let fix build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms args list_constructors fuel {struct fuel} :=
 match fuel with
 | 0 => [{| bcontext := 
 [{| binder_name := nNamed "error not enough fuel"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
@@ -651,33 +671,36 @@ match args, list_constructors with
   let cstr_applied := apply_term c len in
   let new_mappings := List.map (fun x => lift_mapping len x) ms in
   {| bcontext := list_aname len ; bbody := 
-  let fix aux new_mappings ts premises patterns_conclusion :=
+  let fix aux new_mappings ts premises patterns_conclusion patterns_conclusion' :=
   match new_mappings, ts with
     | [], [] => <% false %>
     | new_mapping :: new_mappings', t :: ts' => 
         match unify_mapping cstr_applied t new_mapping with 
-          | continue n' pc' =>
+          | continue n' pc' => (* we need to continue to match the variable n' against pc' *)
                     let ty_n' := nth (len-1-n') lty default_reif in
                     let l := build_list_of_vars len in
                     let new_vars := l++(List.map (fun x => x + len) vars) in
                     let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
                     let pcs' := replace_head pc' ts in
-                    build_pattern_list e n' ty_n' pcs' new_vars new_tys premises patterns_conclusion new_mappings ldec fuel' 
-          | failure => aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion)
+                    build_pattern_list e n' ty_n' pcs' new_vars new_tys premises patterns_conclusion patterns_conclusion' new_mappings ldec fuel' 
+          | failure => (* failure : we need to try another constructor for this variable so we remove the premises of the first constructor  *)
+              aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion) patterns_conclusion'
           | some m' =>
-                if is_empty patterns_conclusion then (* no more patterns to match so we should try other constructors *)
-                  let res := (aux new_mappings' ts' (tl premises) []) in
+                if is_empty patterns_conclusion then (* no more patterns to match so we should if other constructors can match *)
+                  let new_vars :=  List.map (fun x => x + len) vars in
+                  let new_tys := List.map (fun x => lift len 0 x) ty_vars in
+                  let res := aux new_mappings' ts (tl premises) (List.map (fun x => tl x) patterns_conclusion') patterns_conclusion' in
                   if eqb_term res <% false %> then
-                   build_andb (return_premises (hd [] premises) m' ldec)
+                 (*  build_andb (return_premises (hd [] premises) m' ldec) *) <% toto %>
                   else
-                    tApp <% orb %> [build_andb (return_premises (hd [] premises) m' ldec); res]
-                else
+                    tApp <% orb %> [build_andb (return_premises (hd [] premises) m' ldec); res ]
+                else (* need to check if the other variables can match *)
                   let ms' := replace_head m' new_mappings in
                   let new_vars :=  List.map (fun x => x + len) vars in
                   let new_tys := List.map (fun x => lift len 0 x) ty_vars in
                   let new_patterns := List.map (fun x => [hd default_reif x]) patterns_conclusion in (* we are commited to the first constructor now *)
                   let res := cstr_handler_list e new_vars new_tys [hd [] premises] new_patterns [m'] ldec fuel' in
-                  let res2 := aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion) in
+                  let res2 := aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion) (List.map (fun x => tl x) patterns_conclusion') in
                   if eqb_term res <% false %> then 
                     res2 
                   else if eqb_term res2 <% false %> then res
@@ -686,15 +709,15 @@ match args, list_constructors with
           end 
     | _, _ => default_reif (* should not happen : as many mappings as terms *)
   end 
-  in aux new_mappings ts premises patterns_conclusion |} ::
-    build_branch_list e vars ty_vars ts premises patterns_conclusion ms ltys cs fuel' 
+  in aux new_mappings ts premises patterns_conclusion patterns_conclusion' |} ::
+    build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms ltys cs fuel' 
 | [], [] => []
 | _, _ => (* should not happen *) [{| bcontext := 
 [{| binder_name := nNamed "error"%bs ; binder_relevance := Relevant |}]; bbody := default_reif |}]
 end 
 end in 
 tCase ci pt (tRel var) 
- (build_branch_list e vars ty_vars ts premises patterns_conclusion ms args list_constructors fuel).
+ (build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms args list_constructors fuel).
 
 (* build_orb needed *)
 
@@ -936,7 +959,7 @@ match recarg with
 | Some n => fresh <- tmFreshName name ;; 
             let fixp := build_fixpoint_aux2 genv indu l n in
             let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;; (* tmPrint trm_print ;; *)
+            let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;; tmPrint trm_print ;; 
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
             tmDefinition fresh fixpoint_unq_term ;; tmWait
@@ -998,20 +1021,56 @@ match recarg with
 end.
 
 Set Universe Checking.
-
+(* 
 Inductive Add_linear3 (A: Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
     Add_head3 : forall (x : A) (l l' : list A), eqb_of_compdec (@list_compdec A HA) l l' = true -> 
 eqb_of_compdec HA x a = true -> Add_linear3 A HA a l (x :: l')
   | Add_cons3 : forall (l l' : list A) (x y : A), eqb_of_compdec HA x y = true ->
-               Add_linear3 A HA a l l' -> Add_linear3 A HA a (x :: l) (y :: l').
+               Add_linear3 A HA a l l' -> Add_linear3 A HA a (x :: l) (y :: l'). *)
 
-MetaCoq Run (build_fixpoint_auto even []).
+MetaCoq Run (build_fixpoint_auto (Add_linear) []). Print Add_linear_decidable.
+
+MetaCoq Run (build_fixpoint_auto even []). Print even_decidable.
  
-MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []).
+MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []). Print smallernat_decidable.
 
-MetaCoq Run (linearize_and_fixpoint_auto (add) []).
+MetaCoq Run (linearize_and_fixpoint_auto (add) []). Print add_linear_decidable.
 
-MetaCoq Run (linearize_and_fixpoint_auto (@Add) []). Print AddCompDecAdd_linear_decidable. 
+Variable list_Z_eqb : list Z -> list Z -> bool.
+
+Fixpoint toto' (a : Z) (l l' : list Z) :=
+  match l with
+    | [] => 
+        match l' with
+          | [] => false
+          | x :: xs => list_Z_eqb xs l && Z.eqb a x
+        end
+    | x :: xs => 
+        match l' with
+          | [] => false
+          | y :: ys => list_Z_eqb ys l && Z.eqb a y || toto' a xs ys
+        end
+  end. 
+
+(* MetaCoq Quote Definition test1 :=
+(fix toto' (a : Z) (l l' : list Z) {struct l} : bool :=
+  match l with
+  | [] =>
+      match l' with
+      | [] => false
+      | x :: xs => list_Z_eqb xs l && (a =? x)%Z
+      end
+  | _ :: xs =>
+      match l' with
+      | [] => false
+      | y :: ys => list_Z_eqb ys l && (a =? y)%Z || toto' a xs ys
+      end
+  end. *)
+
+ Print AddCompDecAdd_linear. 
+Print Add.
+
+
 MetaCoq Run (build_fixpoint_auto even []). 
 MetaCoq Run (build_fixpoint_auto (@Add_linear) []). Print Add_linear_decidable. Print Add_linear.
 MetaCoq Run (build_fixpoint_recarg even [] 0). 
