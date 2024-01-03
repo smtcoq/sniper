@@ -295,9 +295,9 @@ they are not introduced by an arrow because in the pattern matching, we will per
 match t with 
 | tProd na Ty u => 
 if Nat.eqb npars 0 then 
-if contains 0 u then 
-find_cstr_info_aux (List.map S dbpars) 0 u (List.map (fun x => lift 1 0 x) l) (List.map S dbs)
-else find_cstr_info_aux dbpars npars u ((unlift_dbs dbs Ty) :: l) (0::List.map S dbs)
+  if contains 0 u then 
+    find_cstr_info_aux (List.map S dbpars) 0 u (List.map (fun x => lift 1 0 x) l) (List.map S dbs)
+  else find_cstr_info_aux dbpars npars u ((unlift_dbs dbs Ty) :: l) (0::List.map S dbs)
 else find_cstr_info_aux (0 :: List.map S dbpars) (npars - 1) u l (List.map S dbs)
 (* here, t is a non dependent product so Ty should be considered as a premise *)
 | _ => {| 
@@ -495,7 +495,7 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
-Variable test : forall (A : Type), CompDec A -> CompDec (list A).
+(* Variable test : forall (A : Type), CompDec A -> CompDec (list A). *)
 
 (* Inductive AddCompDecAdd_linear (A : Type) (HCompDecA : CompDec A) (a : A) : list A -> list A -> Prop :=
     Add_headHCompDec_linear : forall H : A,
@@ -511,11 +511,21 @@ Variable test : forall (A : Type), CompDec A -> CompDec (list A).
 
 MetaCoq Quote Recursively Definition Add_test := AddCompDecAdd_linear. *)
 
+(* Variable nat_compdec : CompDec nat. *)
+
+(* Inductive add_linear : nat -> nat -> nat -> Prop :=
+    add0_linear : forall n H : nat, eqb_of_compdec nat_compdec n H = true -> add_linear 0 n H
+  | addS_linear : forall n m k : nat, add_linear n m k -> add_linear (S n) m (S k). *)
+
 (* Compute (initial_mappings Add_test.1 Add_test.2). *)
 
 MetaCoq Quote Recursively Definition ev := even.
 
 MetaCoq Quote Recursively Definition smnat := smallernat.
+
+(* MetaCoq Quote Recursively Definition add_linear_r := add_linear. 
+
+Compute (initial_mappings add_linear_r.1 add_linear_r.2). *)
 
 Compute (initial_mappings smnat.1 smnat.2).
 
@@ -578,20 +588,21 @@ let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "failure, the mapping is"%bs) (l1 ++ l2).
 
-Definition print_mapping_in_term_success m :=
+Definition print_mapping_in_term_success m l :=
 let p := List.split m in
 let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
-tApp (tVar "sucess, the mapping is"%bs) (l1 ++ l2).
+tApp (tVar "sucess, the mapping is"%bs) (l1 ++ l2 ++ l).
 
 Definition print_unif_failed_in_term t1 t2 :=
 tApp (tVar "error unification between"%bs) [t1; t2].
 
-Definition print_mapping_in_term_continue m n :=
+Definition print_mapping_in_term_continue m n t :=
 let p := List.split m in
 let l1 := List.map (fun x => tRel x) p.1 in
 let l2 := List.map (fun x => tRel x) p.2 in
-tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]]).
+tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]] ++
+[tApp (tVar "the new pattern is"%bs)  [t]]).
 
 Variable toto : bool.
 
@@ -602,6 +613,8 @@ Variable toto3 : bool -> bool.
 Variable toto4 : list nat -> bool.
 
 Definition toto_reif := <% toto %>.
+
+Definition fail := 0.
 
 Fixpoint cstr_handler_list
 (e : global_env) (* the global envronment to look for information about inductives *)
@@ -628,12 +641,12 @@ match fuel with
                 let b := unifs_all_some lunif in
                 if andb b (negb (is_empty pcss)) then cstr_handler_list e vs tys premises pcss ms' ldec fuel'
                 else if b then build_andb (return_premises (hd [] premises) (hd [] ms') ldec)
-                else build_pattern_list e v ty pcs vs tys premises pcss patterns_conclusion ms' ldec fuel' 
+                else build_pattern_list e v ty pcs vars ty_vars premises pcss patterns_conclusion ms' ldec fuel'
           end
       | [] => <% false %> (* this case happens when there is no constructor in the inductive *)
     end
-| [], [], [] => tVar "no_more_patterns"%bs 
-| _, _, _ => tVar "not_the_same_size"%bs
+| [], [], [] => <% false %> 
+| _, _, _ => <% false %>
 end
 end
 with
@@ -671,45 +684,48 @@ match args, list_constructors with
   let cstr_applied := apply_term c len in
   let new_mappings := List.map (fun x => lift_mapping len x) ms in
   {| bcontext := list_aname len ; bbody := 
+
   let fix aux new_mappings ts premises patterns_conclusion patterns_conclusion' :=
   match new_mappings, ts with
     | [], [] => <% false %>
     | new_mapping :: new_mappings', t :: ts' => 
-        match unify_mapping cstr_applied t new_mapping with 
+        match unify_mapping cstr_applied (lift len 0 t) new_mapping with 
           | continue n' pc' => (* we need to continue to match the variable n' against pc' *)
                     let ty_n' := nth (len-1-n') lty default_reif in
                     let l := build_list_of_vars len in
                     let new_vars := l++(List.map (fun x => x + len) vars) in
                     let new_tys := lty++List.map (fun x => lift len 0 x) ty_vars in
                     let pcs' := replace_head pc' ts in
-                    build_pattern_list e n' ty_n' pcs' new_vars new_tys premises patterns_conclusion patterns_conclusion' new_mappings ldec fuel' 
+                    build_pattern_list e n' ty_n' pcs' new_vars new_tys premises patterns_conclusion patterns_conclusion' new_mappings ldec fuel'
           | failure => (* failure : we need to try another constructor for this variable so we remove the premises of the first constructor  *)
-              aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion) patterns_conclusion'
+              <% fail %>
           | some m' =>
                 if is_empty patterns_conclusion then (* no more patterns to match so we should if other constructors can match *)
                   let new_vars :=  List.map (fun x => x + len) vars in
                   let new_tys := List.map (fun x => lift len 0 x) ty_vars in
-                  let res := aux new_mappings' ts (tl premises) (List.map (fun x => tl x) patterns_conclusion') patterns_conclusion' in
-                  if eqb_term res <% false %> then
-                 (*  build_andb (return_premises (hd [] premises) m' ldec) *) <% toto %>
-                  else
-                    tApp <% orb %> [build_andb (return_premises (hd [] premises) m' ldec); res ]
-                else (* need to check if the other variables can match *)
-                  let ms' := replace_head m' new_mappings in
+                  let res := aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion') patterns_conclusion' in
+                  let res2 := build_andb (return_premises (hd [] premises) m' ldec) in
+                  if orb (eqb_term res <% false %>) (eqb_term res <% fail %>) then res2
+                  else if orb (eqb_term res <%true %>) (eqb_term res2 <%true%>) then <% true %>
+                  else tApp <% orb %> [res2; res ]
+                else (* the other variables of the first constructor have to match *)
                   let new_vars :=  List.map (fun x => x + len) vars in
                   let new_tys := List.map (fun x => lift len 0 x) ty_vars in
                   let new_patterns := List.map (fun x => [hd default_reif x]) patterns_conclusion in (* we are commited to the first constructor now *)
-                  let res := cstr_handler_list e new_vars new_tys [hd [] premises] new_patterns [m'] ldec fuel' in
+                  let res := cstr_handler_list e (tl new_vars) (tl new_tys) [hd [] premises] new_patterns [m'] ldec fuel' in
                   let res2 := aux new_mappings' ts' (tl premises) (List.map (fun x => tl x) patterns_conclusion) (List.map (fun x => tl x) patterns_conclusion') in
                   if eqb_term res <% false %> then 
                     res2 
-                  else if eqb_term res2 <% false %> then res
-                  else tApp <% orb %> [ res ; res2]
+                  else if orb (eqb_term res2 <% false %>) (eqb_term res2 <% fail %>)  then res
+                  else if orb (eqb_term res <%true %>) (eqb_term res2 <%true%>) then <% true %> else tApp <% orb %> [res ; res2]
                 
           end 
     | _, _ => default_reif (* should not happen : as many mappings as terms *)
   end 
-  in aux new_mappings ts premises patterns_conclusion patterns_conclusion' |} ::
+  in let res := aux new_mappings ts premises patterns_conclusion patterns_conclusion' in
+if eqb_term res <% fail %> then  
+aux (tl new_mappings) (tl ts) (tl premises) (List.map (fun x => tl x) patterns_conclusion) (List.map (fun x => tl x) patterns_conclusion')
+else res |} ::
     build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms ltys cs fuel' 
 | [], [] => []
 | _, _ => (* should not happen *) [{| bcontext := 
@@ -719,7 +735,156 @@ end in
 tCase ci pt (tRel var) 
  (build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms args list_constructors fuel).
 
+MetaCoq Quote Recursively Definition prgrm := Add_linear.
+
+Compute (initial_mappings prgrm.1 prgrm.2). Compute (info_inductive prgrm.1 prgrm.2).
+
+Compute unify_mapping 
+( tApp (tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs);
+                        inductive_ind := 0
+                      |} 1 []) [tVar "dumb_term"%bs; tRel 1; tRel 0])
+
+
+                 (tApp
+                   (tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs);
+                        inductive_ind := 0
+                      |} 1 [])
+                   [tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs);
+                        inductive_ind := 0
+                      |} []; tRel 4; tRel 2]) [(5, 4) ; (4, 3)] .
+
+Eval compute in return_premises [
+                 tApp
+                   (tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs],
+                           "eq"%bs);
+                        inductive_ind := 0
+                      |} [])
+                   [tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "bool"%bs);
+                        inductive_ind := 0
+                      |} [];
+                    tApp
+                      (tConst
+                         (MPfile
+                            ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs],
+                          "eqb_of_compdec"%bs) [])
+                      [tApp
+                         (tInd
+                            {|
+                              inductive_mind :=
+                                (MPfile
+                                   ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                                 "list"%bs);
+                              inductive_ind := 0
+                            |} [])
+                         [tInd
+                            {|
+                              inductive_mind :=
+                                (MPfile
+                                   ["BinNums"%bs; "Numbers"%bs; "Coq"%bs],
+                                 "Z"%bs);
+                              inductive_ind := 0
+                            |} []];
+                       tConst
+                         (MPfile
+                            ["linearize_plugin"%bs; "deciderel"%bs;
+                             "theories"%bs; "Sniper"%bs],
+                          "compdec_hyp"%bs) []; 
+                       tRel 1; tRel 0];
+                    tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "bool"%bs);
+                        inductive_ind := 0
+                      |} 0 []];
+                 tApp
+                   (tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs],
+                           "eq"%bs);
+                        inductive_ind := 0
+                      |} [])
+                   [tInd
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "bool"%bs);
+                        inductive_ind := 0
+                      |} [];
+                    tApp
+                      (tConst
+                         (MPfile
+                            ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs],
+                          "eqb_of_compdec"%bs) [])
+                      [tInd
+                         {|
+                           inductive_mind :=
+                             (MPfile
+                                ["BinNums"%bs; "Numbers"%bs; "Coq"%bs],
+                              "Z"%bs);
+                           inductive_ind := 0
+                         |} [];
+                       tConst
+                         (MPfile
+                            ["linearize_plugin"%bs; "deciderel"%bs;
+                             "theories"%bs; "Sniper"%bs],
+                          "compdec_hyp0"%bs) []; 
+                       tRel 3; tRel 2];
+                    tConstruct
+                      {|
+                        inductive_mind :=
+                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
+                           "bool"%bs);
+                        inductive_ind := 0
+                      |} 0 []]] [(5, 4) ; (4, 3) ; (1, 4) ; (0, 2)] [].
+
+Eval compute in (cstr_handler_list prgrm.1 [0] [tApp (tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} [])
+                             [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []]]
+
+
+
+
+
+                           [[tApp (tInd {| inductive_mind := (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs], "eq"%bs); inductive_ind := 0 |} [])
+                             [tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} [];
+                              tApp (tConst (MPfile ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs], "eqb_of_compdec"%bs) [])
+                                [tApp (tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} [])
+                                   [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []];
+                                 tConst (MPfile ["linearize_plugin"%bs; "deciderel"%bs; "theories"%bs; "Sniper"%bs], "compdec_hyp"%bs) []; tRel 1; tRel 0];
+                              tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} 0 []];
+                           tApp (tInd {| inductive_mind := (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs], "eq"%bs); inductive_ind := 0 |} [])
+                             [tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} [];
+                              tApp (tConst (MPfile ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs], "eqb_of_compdec"%bs) [])
+                                [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} [];
+                                 tConst (MPfile ["linearize_plugin"%bs; "deciderel"%bs; "theories"%bs; "Sniper"%bs], "compdec_hyp0"%bs) []; tRel 3; tRel 2];
+                              tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} 0 []]]]
+
+
+                           [[tApp (tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} 1 [])
+                             [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []; tRel 2; tRel 0]]]
+                            [[(3, 4) ; (2, 3)]] [] 1000).
+
+
+
 (* build_orb needed *)
+
 
 Fixpoint mkLambda (l : list term) (t : term) :=
 match l with
@@ -1031,10 +1196,10 @@ eqb_of_compdec HA x a = true -> Add_linear3 A HA a l (x :: l')
 MetaCoq Run (build_fixpoint_auto (Add_linear) []). Print Add_linear_decidable.
 
 MetaCoq Run (build_fixpoint_auto even []). Print even_decidable.
- 
+
 MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []). Print smallernat_decidable.
 
-MetaCoq Run (linearize_and_fixpoint_auto (add) []). Print add_linear_decidable.
+MetaCoq Run (linearize_and_fixpoint_auto (add) []). Print add_linear_decidable. 
 
 Variable list_Z_eqb : list Z -> list Z -> bool.
 
@@ -1067,11 +1232,6 @@ Fixpoint toto' (a : Z) (l l' : list Z) :=
       end
   end. *)
 
- Print AddCompDecAdd_linear. 
-Print Add.
-
-
-MetaCoq Run (build_fixpoint_auto even []). 
 MetaCoq Run (build_fixpoint_auto (@Add_linear) []). Print Add_linear_decidable. Print Add_linear.
 MetaCoq Run (build_fixpoint_recarg even [] 0). 
 
@@ -1137,7 +1297,7 @@ Inductive lset : list nat -> Prop :=
            lset (n::xs).
 MetaCoq Run (build_fixpoint_recarg lset [] 0).
 
-End test3.
+End test3. *)
 
 
 
