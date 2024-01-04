@@ -387,6 +387,18 @@ match l with
 | x :: xs => tApp <% andb %> [x ; build_andb xs]
 end.
 
+Definition pos_tRels (l : list term) :=
+  let fix aux l n :=
+  match l with
+    | x :: xs => 
+        match x with
+          | tRel i => (n - 1, i) :: aux xs (n - 1)      
+          | _ => aux xs (n -1)
+        end 
+    | [] => []
+    end in aux l (length l).
+
+
 (* (* the information found about the constructor *)
 (db_parameters : list nat)
 (premises : list term)
@@ -396,7 +408,7 @@ Definition split_conclusion (c: cstr_info) :  nat * (list term) * (list term) :=
 let npars := Datatypes.length c.(db_parameters) in
 let t := c.(conclusion) in (* the conclusion is the inductive applied to its arguments *)
 match t with
-| tApp (tRel n) l => (n, List.firstn npars l, List.skipn npars l)
+| tApp (tRel n) l => let l' := List.skipn npars l in (n, List.firstn npars l, l')
 | _ => (0,  [], [])
 end.
 
@@ -467,14 +479,16 @@ let ty_vars := lift_list_ty (get_args_inductive_fresh_types e I) in
           let pars_rel := res.1.2 in (* the parameters in the conclusion of the inductive *)
           let db_pars_rel := only_variables pars_rel in (* the DB indexes of the parameters *)
           let patterns_conclusion := (split_conclusion info).2 in
+          let mapping_vars := pos_tRels patterns_conclusion in
           let premises := premises info in
           let res := aux cs in
-          (((db_fix_fix, db_fix_rel) :: combine db_pars_fix db_pars_rel) :: res.1.1, premises :: res.1.2, patterns_conclusion :: res.2)
+          (((db_fix_fix, db_fix_rel) :: (combine db_pars_fix db_pars_rel) ++ mapping_vars ) :: res.1.1, premises :: res.1.2, patterns_conclusion :: res.2)
       | [] => ([], [], [])
     end
   in 
   let res := aux ctors_type in
   {| ty_vars := ty_vars ; init_vars := initial_vars ; mappings := res.1.1; init_premises := res.1.2; patterns :=  transpose res.2 default_reif |}.
+
 
 
 Definition initial_mappings 
@@ -526,10 +540,6 @@ MetaCoq Quote Recursively Definition smnat := smallernat.
 (* MetaCoq Quote Recursively Definition add_linear_r := add_linear. 
 
 Compute (initial_mappings add_linear_r.1 add_linear_r.2). *)
-
-Compute (initial_mappings smnat.1 smnat.2).
-
-MetaCoq Quote Recursively Definition Add_r := @Add.
 
 Fixpoint list_of_holes (n : nat) :=
 match n with
@@ -604,7 +614,10 @@ let l2 := List.map (fun x => tRel x) p.2 in
 tApp (tVar "continue, the mapping is"%bs) (l1 ++ l2 ++ [tApp (tVar "we should match"%bs)  [tRel n]] ++
 [tApp (tVar "the new pattern is"%bs)  [t]]).
 
-Variable toto : bool.
+(*
+Useful for debug: insert totos in cstr_handler_list
+
+ Variable toto : bool.
 
 Variable toto2 : list nat.
 
@@ -612,7 +625,7 @@ Variable toto3 : bool -> bool.
 
 Variable toto4 : list nat -> bool.
 
-Definition toto_reif := <% toto %>.
+Definition toto_reif := <% toto %>. *)
 
 Definition fail := 0.
 
@@ -689,7 +702,7 @@ match args, list_constructors with
   match new_mappings, ts with
     | [], [] => <% false %>
     | new_mapping :: new_mappings', t :: ts' => 
-        match unify_mapping cstr_applied (lift len 0 t) new_mapping with 
+        match unify_mapping cstr_applied t new_mapping with 
           | continue n' pc' => (* we need to continue to match the variable n' against pc' *)
                     let ty_n' := nth (len-1-n') lty default_reif in
                     let l := build_list_of_vars len in
@@ -723,8 +736,10 @@ match args, list_constructors with
     | _, _ => default_reif (* should not happen : as many mappings as terms *)
   end 
   in let res := aux new_mappings ts premises patterns_conclusion patterns_conclusion' in
-if eqb_term res <% fail %> then  
+if eqb_term res <% fail %> then 
+let res2 := 
 aux (tl new_mappings) (tl ts) (tl premises) (List.map (fun x => tl x) patterns_conclusion) (List.map (fun x => tl x) patterns_conclusion')
+in if eqb_term res2 <%fail %> then <% false %> else res2
 else res |} ::
     build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms ltys cs fuel' 
 | [], [] => []
@@ -734,157 +749,6 @@ end
 end in 
 tCase ci pt (tRel var) 
  (build_branch_list e vars ty_vars ts premises patterns_conclusion patterns_conclusion' ms args list_constructors fuel).
-
-MetaCoq Quote Recursively Definition prgrm := Add_linear.
-
-Compute (initial_mappings prgrm.1 prgrm.2). Compute (info_inductive prgrm.1 prgrm.2).
-
-Compute unify_mapping 
-( tApp (tConstruct
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs);
-                        inductive_ind := 0
-                      |} 1 []) [tVar "dumb_term"%bs; tRel 1; tRel 0])
-
-
-                 (tApp
-                   (tConstruct
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs);
-                        inductive_ind := 0
-                      |} 1 [])
-                   [tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs);
-                        inductive_ind := 0
-                      |} []; tRel 4; tRel 2]) [(5, 4) ; (4, 3)] .
-
-Eval compute in return_premises [
-                 tApp
-                   (tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs],
-                           "eq"%bs);
-                        inductive_ind := 0
-                      |} [])
-                   [tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
-                           "bool"%bs);
-                        inductive_ind := 0
-                      |} [];
-                    tApp
-                      (tConst
-                         (MPfile
-                            ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs],
-                          "eqb_of_compdec"%bs) [])
-                      [tApp
-                         (tInd
-                            {|
-                              inductive_mind :=
-                                (MPfile
-                                   ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
-                                 "list"%bs);
-                              inductive_ind := 0
-                            |} [])
-                         [tInd
-                            {|
-                              inductive_mind :=
-                                (MPfile
-                                   ["BinNums"%bs; "Numbers"%bs; "Coq"%bs],
-                                 "Z"%bs);
-                              inductive_ind := 0
-                            |} []];
-                       tConst
-                         (MPfile
-                            ["linearize_plugin"%bs; "deciderel"%bs;
-                             "theories"%bs; "Sniper"%bs],
-                          "compdec_hyp"%bs) []; 
-                       tRel 1; tRel 0];
-                    tConstruct
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
-                           "bool"%bs);
-                        inductive_ind := 0
-                      |} 0 []];
-                 tApp
-                   (tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs],
-                           "eq"%bs);
-                        inductive_ind := 0
-                      |} [])
-                   [tInd
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
-                           "bool"%bs);
-                        inductive_ind := 0
-                      |} [];
-                    tApp
-                      (tConst
-                         (MPfile
-                            ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs],
-                          "eqb_of_compdec"%bs) [])
-                      [tInd
-                         {|
-                           inductive_mind :=
-                             (MPfile
-                                ["BinNums"%bs; "Numbers"%bs; "Coq"%bs],
-                              "Z"%bs);
-                           inductive_ind := 0
-                         |} [];
-                       tConst
-                         (MPfile
-                            ["linearize_plugin"%bs; "deciderel"%bs;
-                             "theories"%bs; "Sniper"%bs],
-                          "compdec_hyp0"%bs) []; 
-                       tRel 3; tRel 2];
-                    tConstruct
-                      {|
-                        inductive_mind :=
-                          (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs],
-                           "bool"%bs);
-                        inductive_ind := 0
-                      |} 0 []]] [(5, 4) ; (4, 3) ; (1, 4) ; (0, 2)] [].
-
-Eval compute in (cstr_handler_list prgrm.1 [0] [tApp (tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} [])
-                             [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []]]
-
-
-
-
-
-                           [[tApp (tInd {| inductive_mind := (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs], "eq"%bs); inductive_ind := 0 |} [])
-                             [tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} [];
-                              tApp (tConst (MPfile ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs], "eqb_of_compdec"%bs) [])
-                                [tApp (tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} [])
-                                   [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []];
-                                 tConst (MPfile ["linearize_plugin"%bs; "deciderel"%bs; "theories"%bs; "Sniper"%bs], "compdec_hyp"%bs) []; tRel 1; tRel 0];
-                              tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} 0 []];
-                           tApp (tInd {| inductive_mind := (MPfile ["Logic"%bs; "Init"%bs; "Coq"%bs], "eq"%bs); inductive_ind := 0 |} [])
-                             [tInd {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} [];
-                              tApp (tConst (MPfile ["SMT_classes"%bs; "classes"%bs; "SMTCoq"%bs], "eqb_of_compdec"%bs) [])
-                                [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} [];
-                                 tConst (MPfile ["linearize_plugin"%bs; "deciderel"%bs; "theories"%bs; "Sniper"%bs], "compdec_hyp0"%bs) []; tRel 3; tRel 2];
-                              tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "bool"%bs); inductive_ind := 0 |} 0 []]]]
-
-
-                           [[tApp (tConstruct {| inductive_mind := (MPfile ["Datatypes"%bs; "Init"%bs; "Coq"%bs], "list"%bs); inductive_ind := 0 |} 1 [])
-                             [tInd {| inductive_mind := (MPfile ["BinNums"%bs; "Numbers"%bs; "Coq"%bs], "Z"%bs); inductive_ind := 0 |} []; tRel 2; tRel 0]]]
-                            [[(3, 4) ; (2, 3)]] [] 1000).
-
-
-
-(* build_orb needed *)
-
 
 Fixpoint mkLambda (l : list term) (t : term) :=
 match l with
@@ -1124,7 +988,7 @@ match recarg with
 | Some n => fresh <- tmFreshName name ;; 
             let fixp := build_fixpoint_aux2 genv indu l n in
             let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;; tmPrint trm_print ;; 
+            let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;; tmPrint trm_print ;;
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
             tmDefinition fresh fixpoint_unq_term ;; tmWait
@@ -1186,56 +1050,22 @@ match recarg with
 end.
 
 Set Universe Checking.
-(* 
-Inductive Add_linear3 (A: Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
-    Add_head3 : forall (x : A) (l l' : list A), eqb_of_compdec (@list_compdec A HA) l l' = true -> 
-eqb_of_compdec HA x a = true -> Add_linear3 A HA a l (x :: l')
-  | Add_cons3 : forall (l l' : list A) (x y : A), eqb_of_compdec HA x y = true ->
-               Add_linear3 A HA a l l' -> Add_linear3 A HA a (x :: l) (y :: l'). *)
 
-MetaCoq Run (build_fixpoint_auto (Add_linear) []). Print Add_linear_decidable.
+Section test.
 
-MetaCoq Run (build_fixpoint_auto even []). Print even_decidable.
+MetaCoq Run (build_fixpoint_auto (Add_linear) []). 
 
-MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []). Print smallernat_decidable.
+MetaCoq Run (build_fixpoint_auto even []).
 
-MetaCoq Run (linearize_and_fixpoint_auto (add) []). Print add_linear_decidable. 
+MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []).
 
-Variable list_Z_eqb : list Z -> list Z -> bool.
+MetaCoq Run (linearize_and_fixpoint_auto (add) []).
 
-Fixpoint toto' (a : Z) (l l' : list Z) :=
-  match l with
-    | [] => 
-        match l' with
-          | [] => false
-          | x :: xs => list_Z_eqb xs l && Z.eqb a x
-        end
-    | x :: xs => 
-        match l' with
-          | [] => false
-          | y :: ys => list_Z_eqb ys l && Z.eqb a y || toto' a xs ys
-        end
-  end. 
-
-(* MetaCoq Quote Definition test1 :=
-(fix toto' (a : Z) (l l' : list Z) {struct l} : bool :=
-  match l with
-  | [] =>
-      match l' with
-      | [] => false
-      | x :: xs => list_Z_eqb xs l && (a =? x)%Z
-      end
-  | _ :: xs =>
-      match l' with
-      | [] => false
-      | y :: ys => list_Z_eqb ys l && (a =? y)%Z || toto' a xs ys
-      end
-  end. *)
-
-MetaCoq Run (build_fixpoint_auto (@Add_linear) []). Print Add_linear_decidable. Print Add_linear.
-MetaCoq Run (build_fixpoint_recarg even [] 0). 
+MetaCoq Run (build_fixpoint_recarg even [] 0).
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []). 
+
+End test.
 
 Section test2.
 
@@ -1255,15 +1085,15 @@ Inductive smaller2 : list nat -> list nat -> Prop :=
               smaller2 l l' -> smaller2 (x :: l) (x' :: l').
 
 
-MetaCoq Run (build_fixpoint_auto (@smaller2) []).
-MetaCoq Run (build_fixpoint_auto (@Add_linear2) []).
+MetaCoq Run (build_fixpoint_auto (@smaller2) []). Print smaller2_decidable. 
+MetaCoq Run (build_fixpoint_auto (@Add_linear2) []). Print Add_linear2_decidable.
 
-Inductive member2 : nat -> list nat -> Prop :=
-| MemMatch2 : forall xs n , member2 n (n ::xs)
-| MemRecur2 : forall xs n n',
-    member2 n xs -> member2 n (n'::xs).
+Inductive member : nat -> list nat -> Prop :=
+| MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
+| MemRecur : forall xs n n',
+    member n xs -> member n (n'::xs).
 
-MetaCoq Run (build_fixpoint_auto member []). 
+MetaCoq Run (build_fixpoint_auto member []). Print member_decidable. 
 
 End test2.
 
@@ -1281,13 +1111,14 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
      (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
      Inv_elt_list j (Cons a b q).
 
-MetaCoq Run (build_fixpoint_auto (Inv_elt_list) [(<%Z.le%>, <%Z.leb%>, <%Zle_is_le_bool%>)]).
+MetaCoq Run (build_fixpoint_auto (Inv_elt_list) [(<%Z.le%>, <%Z.leb%>, <%Zle_is_le_bool%>)]). 
+Print Inv_elt_list_decidable.
 
 Inductive smaller_Z : list Z -> list Z -> Prop :=
 | sm_nil_Z : forall l, smaller_Z [] l
 | sm_cons_Z : forall x x' l l', smaller_Z l l' -> smaller_Z (x :: l) (x' :: l').
 
-MetaCoq Run (build_fixpoint_auto (smaller_Z) []). 
+MetaCoq Run (build_fixpoint_auto (smaller_Z) []).
 
 Inductive lset : list nat -> Prop :=
 | Empty : lset []
@@ -1295,7 +1126,7 @@ Inductive lset : list nat -> Prop :=
            negb (member_decidable n xs) = true ->
            lset xs ->
            lset (n::xs).
-MetaCoq Run (build_fixpoint_recarg lset [] 0).
+MetaCoq Run (build_fixpoint_recarg lset [] 0). 
 
 End test3. *)
 
