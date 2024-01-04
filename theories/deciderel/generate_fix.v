@@ -1051,6 +1051,15 @@ End test.
 
 Section test2.
 
+
+Inductive Add_linear' (A : Type) (HA : CompDec A) (a : A) : list A -> list A -> Prop :=
+    Add_head : forall (x : A) (l l' : list A), eqb_of_compdec list_compdec l l' = true -> 
+eqb_of_compdec HA x a = true -> Add_linear' A HA a l (x :: l')
+  | Add_cons : forall (x y : A) (l l' : list A), eqb_of_compdec HA x y = true ->
+               Add_linear' A HA a l l' -> Add_linear' A HA a (x :: l) (y :: l').
+
+MetaCoq Run (build_fixpoint_auto (@Add_linear') []).
+
 Variable A : Type.
 Variable HA : CompDec A.
 Variable a : A.

@@ -98,10 +98,10 @@ elim_and_and_or. apply Nat.leb_le. assumption. apply IHlist. assumption. Qed.
 
 Trakt Add Relation 2 (elt_smaller_than) (elt_smaller_than_decidable) (decidable_lemma1).
 
-Lemma smaller_than_mem : 
+(* Lemma smaller_than_mem : 
 forall (n n' : Z) (l : list Z), smaller_than_all n l -> mem n' l -> Z.le n n'.
 Proof.
-intros n n' l H1 H2. induction l; snipe. Qed.
+intros n n' l H1 H2. induction l; snipe. Qed.  TODO silent simplifications veriT *)
 
 (* An example with instantiated polymorphic types :
 the inductive says that second list is smaller than the second one 
