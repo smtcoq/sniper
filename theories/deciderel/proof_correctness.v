@@ -8,6 +8,7 @@ Require Import ZArith.
 Require Import Bool.
 From SMTCoq Require Import SMTCoq.
 Require Import generate_fix.
+Require Import utilities.
 From Ltac2 Require Import Ltac2.
 Unset MetaCoq Strict Unquote Universe Mode.
 
@@ -103,8 +104,8 @@ end.
 
 (** Tests **)
 
-MetaCoq Unquote Definition correctness_test := 
-(correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>).
+(* MetaCoq Unquote Definition correctness_test := 
+(correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>). *)
 (* MetaCoq Unquote Definition correctness_test' := 
 (correctness_statement Add_linear_rec.1 Add_linear_rec.2 <%Add_decidable%>).
  *)
@@ -329,9 +330,10 @@ let n' := constr_to_int n in completeness_auto_npars t n'. *)
 
 
 
+
 Goal forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
-Add_linear A HA a x y -> Add_linear_decidable A HA a x y = true.
-Proof. completeness_auto_npars 'Add_linear_decidable 3. Qed. 
+Add_linear' A HA a x y -> Add_linear'_decidable A HA a x y = true.
+Proof. completeness_auto_npars 'Add_linear'_decidable 3. Qed. 
 
 
 (* Goal forall (n: nat), even n -> even_decidable n = true.
@@ -422,8 +424,8 @@ elim_trivial_or ; elim_is_true ; simpl in * ; elim_eq; subst; constructor ; solv
 
 Lemma soundness_auto_Add_linear:
 forall (A : Type) (HA : CompDec A) (a: A) (x y : list A),
-Add_linear_decidable A HA a x y = true -> Add_linear A HA a x y.
-Proof. soundness_auto_recarg_npars 'Add_linear 3 3.
+Add_linear'_decidable A HA a x y = true -> Add_linear' A HA a x y.
+Proof. soundness_auto_recarg_npars 'Add_linear' 3 3.
 Qed.
 
 Inductive smaller {A : Type} : list A -> list A -> Prop :=
@@ -462,83 +464,29 @@ end.
 Ltac2 correctness_auto (t: constr) (t': constr) (n : int) (m : int) :=
 intros; split > [ltac1:(revert_all) ; completeness_auto_npars t' n | ltac1:(revert_all) ; soundness_auto_recarg_npars t m n].
 
-(* Strong induction for nat *)
+Require Import FunInd.
 
-Require Import PeanoNat.
+Ltac2 correctness_auto_scheme (t: constr) (t': constr) (scheme : constr) (n : int) :=
+intros; split > 
+  [ltac1:(revert_all) ; completeness_auto_npars t' n | 
+   intros ; 
+   let scheme_ltac1 := Ltac1.of_constr scheme in
+   let funct := Ltac1.of_constr t' in
+   ltac1:(scheme t |- match goal with | _ : ?x = true |- _ =>
+   let t' := get_head x in constr_eq t t' ; functional induction x using scheme end ;
+   try (intros; constructor) ;  try (intros ; match goal with | H : _ |- _ => inversion H end) ;
+   try (match goal with | H : _ -> ?t |- ?t => apply H end) ; try (assumption)) scheme_ltac1 funct].
 
-Section StrongInduction.
-
-  Variable P:nat -> Prop.
-
-  (** The stronger inductive hypothesis given in strong induction. The standard
-  [nat ] induction principle provides only n = pred m, with [P 0] required
-  separately. *)
-  Hypothesis IH : forall m, (forall n, n < m -> P n) -> P m.
-
-  Lemma P0 : P 0.
-  Proof.
-    apply IH; intros. 
-    ltac1:(lia).
-  Qed.
-
-  Local Hint Resolve P0 : core.
-
-  Lemma pred_increasing : forall n m,
-      n <= m ->
-      Nat.pred n <= Nat.pred m.
-  Proof.
-    induction n; cbn; intros.
-    apply Nat.le_0_l.
-    induction H; subst; cbn; eauto.
-    destruct m; eauto.
-  Qed.
-
-  Local Hint Resolve le_S_n: core.
-
-  (** * Strengthen the induction hypothesis. *)
-
-  Local Lemma strong_induction_all : forall n,
-      (forall m, m <= n -> P m).
-  Proof.
-    ltac1:(induction n; intros;
-      match goal with
-      | [ H: _ <= _ |- _ ] =>
-        inversion H
-      end; eauto).
-  Qed.
-
-  Theorem strong_induction : forall n, P n.
-  Proof.
-    eauto using strong_induction_all.
-  Qed.
-
-End StrongInduction. 
-
-Lemma soundness_ev :
-forall (n : nat), even_decidable n -> even n.
+Lemma correctness_ev :
+forall (n : nat), even n <-> even_decidable n = true.
 Proof.
-ltac1:(pose proof (H := strong_induction)).
-specialize (H (fun (n : nat) => even_decidable n -> even n)).
-simpl in H. apply H.
-intro m.
-intro H1. intro H2.
-destruct m.
-- constructor.
-- destruct m. inversion H2. constructor.
-apply H1. ltac1:(lia). inversion H2. unfold is_true. assumption. Qed.
+Functional Scheme even_ind := Induction for even_decidable Sort Prop.
+correctness_auto_scheme 'even 'even_decidable 'even_ind 0. Qed.
 
 Lemma test : forall (A : Type) (HA: CompDec A) (a : A) (l : list A) (l' : list A),
-Add a l l' <-> Add_linear_decidable A HA a l l' = true.
-Proof. correctness_auto '@Add '@Add_linear_decidable 3 3. Qed. 
+Add a l l' <-> Add_linear'_decidable A HA a l l' = true.
+Proof. correctness_auto '@Add '@Add_linear_decidable 3 3. Abort. 
 
-Lemma soundness_auto_ev :
-forall (n : nat), even_decidable n -> even n.
-Proof. (*  soundness_auto '@even 0. *)
-
-induction_nth 0. 
-- intros *. intro H. destruct_to_continue_computation 'even 0. 
-simpl in *. 
-Abort. (* FIXME *)
 
 (** Use of the templatemonad **) 
 
@@ -612,7 +560,7 @@ let (ty, id_fix) := ty_id_fix in
 current <- tmCurrentModPath tt ;; 
 let trm := (tConst (current, id_fix ) []) in 
 tquote <- tmQuote t ;; 
-fixpoint_unq_term <- tmUnquote trm ;; 
+fixpoint_unq_term <- tmUnquote trm ;;
 let st := correctness_statement initial_genv tquote trm in foo <- tmEval all st ;;
 st_unq <- tmUnquoteTyped Prop st ;; 
 _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars recarg)
@@ -637,10 +585,16 @@ MetaCoq Run (decide (mem) []).
 Next Obligation.
 exact decidable_proof. Qed. 
 
-MetaCoq Run (decide (member2) []). 
+(* Inductive member : nat -> list nat -> Prop :=
+| MemMatch' : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
+| MemRecur' : forall xs n n',
+    member n xs -> member n (n'::xs).
+
+
+MetaCoq Run (linearize_and_fixpoint_auto (member) []). 
 Next Obligation.
 exact decidable_proof0.
-Qed.
+Qed. *)
 
 End Decide.
 
