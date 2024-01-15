@@ -1047,6 +1047,14 @@ MetaCoq Run (build_fixpoint_recarg even [] 0).
 
 MetaCoq Run (build_fixpoint_auto (@smaller) []).
 
+Inductive member' (B: Type) : B -> list B -> Prop :=
+| MemMatch' : forall xs n, member' B n (n::xs)
+| MemRecur' : forall xs n n',
+    member' B n xs -> member' B n (n'::xs).
+
+
+MetaCoq Run (linearize_and_fixpoint_auto member' []).
+
 End test.
 
 Section test2.
@@ -1080,14 +1088,16 @@ MetaCoq Run (build_fixpoint_auto (@smaller2) []).
 
 MetaCoq Run (build_fixpoint_auto (@Add_linear2) []). 
 
+
+End test2.
+
+
 Inductive member : nat -> list nat -> Prop :=
 | MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
 | MemRecur : forall xs n n',
     member n xs -> member n (n'::xs).
 
 MetaCoq Run (build_fixpoint_auto member []). 
-
-End test2.
 
 Section test3.
 
