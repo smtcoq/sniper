@@ -948,27 +948,23 @@ match t with
 | _ => "fresh_ident"%bs
 end.
 
-Unset Universe Checking.
-
 Definition build_fixpoint_auto {A: Type}
 (t : A) 
-(l : list (term*term*term)):=
+(l : list (term*term*term)) :=
 p <- tmQuoteRec t ;;
 let indu := p.2 in 
 let name := Indu_name_decidable indu in
 let genv := p.1 in
 let recarg := find_decreasing_arg genv indu in
 match recarg with
-| Some n => fresh <- tmFreshName name ;; 
-            let fixp := build_fixpoint_aux2 genv indu l n in
-            let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;; 
-            fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
-            fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
-            tmDefinition fresh fixpoint_unq_term ;; tmWait
+| Some n => let fixp := build_fixpoint_aux2 genv indu l n in
+            let fixp_trm := fixp.1 in
+            fresh <- tmFreshName name ;;
+            tmMkDefinition fresh fixp_trm
 | None => tmFail "cannot find the recursive argument automatically, you should try 
     build_fixpoint_recarg instead"%bs
 end.
+
 
 Definition build_fixpoint_recarg {A : Type}
 (t : A)
@@ -980,12 +976,11 @@ let indu := p.2 in
 let genv := p.1 in
 let name := Indu_name_decidable indu in
 fresh <- tmFreshName name ;; 
-            let fixp := build_fixpoint_aux2 genv indu l n in
-            let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in
-            fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
-            fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
-            tmDefinition fresh fixpoint_unq_term ;; tmWait.
+let fixp := build_fixpoint_aux2 genv indu l n in
+let fixp_trm := fixp.1 in
+tmMkDefinition fresh fixp_trm.
+
+Unset Universe Checking.
 
 Definition linearize_and_fixpoint_auto 
 {A : Type}
@@ -1016,8 +1011,7 @@ match recarg with
             let fixp_trm := fixp.1 in  trm_print <- tmEval all fixp_trm ;;
             fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
             fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
-            trmdef <- tmDefinition fresh fixpoint_unq_term ;;
-            fix_rec <- tmQuoteRec trmdef ;;
+            foo <- tmMkDefinition fresh fixp_trm ;;
             tmReturn (t, fresh, n', npars', fixp_trm, genv) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 
     build_fixpoint_recarg instead"%bs
@@ -1027,6 +1021,11 @@ Set Universe Checking.
 
 Section test.
 
+Inductive member : nat -> list nat -> Prop :=
+| MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
+| MemRecur : forall xs n n',
+    member n xs -> member n (n'::xs).
+
 Inductive even : nat -> Prop :=
 even0 : even 0
 | evenSS : forall n, even n -> even (S (S n)).
@@ -1035,11 +1034,13 @@ Inductive smallernat : list nat -> list nat -> Prop :=
 | cons1 : forall l', smallernat [] l'
 | cons2 : forall l l' x x', smallernat l l' -> smallernat (x :: l) (x' :: l').
 
+MetaCoq Run (build_fixpoint_auto member []).   
+
 MetaCoq Run (build_fixpoint_auto (Add_linear) []). 
 
 MetaCoq Run (build_fixpoint_auto even []).
 
-MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []). 
+MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []).
 
 MetaCoq Run (linearize_and_fixpoint_auto (add) []). 
 
@@ -1051,7 +1052,6 @@ Inductive member' (B: Type) : B -> list B -> Prop :=
 | MemMatch' : forall xs n, member' B n (n::xs)
 | MemRecur' : forall xs n n',
     member' B n xs -> member' B n (n'::xs).
-
 
 MetaCoq Run (linearize_and_fixpoint_auto member' []).
 
@@ -1090,14 +1090,6 @@ MetaCoq Run (build_fixpoint_auto (@Add_linear2) []).
 
 
 End test2.
-
-
-Inductive member : nat -> list nat -> Prop :=
-| MemMatch : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
-| MemRecur : forall xs n n',
-    member n xs -> member n (n'::xs).
-
-MetaCoq Run (build_fixpoint_auto member []). 
 
 Section test3.
 

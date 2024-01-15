@@ -269,6 +269,7 @@ Definition contains_prenex_poly_mind (m : mutual_inductive_body) :=
 let lpars := ind_params m in contains_prenex_poly (rev lpars). 
 
 Section commands. 
+
 (* Definition add_compdec_inductive (p : program*term)
   : TemplateMonad unit
   := match p.2 with
@@ -327,7 +328,7 @@ Definition add_compdec_inductive_and_pose_compdecs_lemmas (t : term)
        decl' <- tmEval all (mind_body_to_entry decl) ;;
        tmReturn res2
      | _ => tmFail "not an inductive"%bs
-     end. 
+     end.
 
 Definition monadic_compdec_inductive (t : term)
   := match t with
@@ -354,7 +355,7 @@ Definition monadic_compdec_inductive (t : term)
        decl' <- tmEval all (mind_body_to_entry decl) ;;
        tmReturn ((res2, u), decl')
      | _ => tmFail "not an inductive"%bs
-     end.
+     end. 
 
 Definition test_compdec {A : Type} (t: A) :=
 t' <- tmQuote t ;;
