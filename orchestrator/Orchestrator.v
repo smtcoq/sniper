@@ -118,8 +118,13 @@ Ltac2 rec orchestrator n trigs tacs trigtacs :=
   orchestrator_aux cg env scg trigs tacs trigtacs ; 
   Control.enter (fun () => orchestrator (Int.sub n 1) trigs tacs trigtacs).
 
+Ltac tutu x := idtac x.
+
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
+- Rajouter les let ... in
+- Ltac2 notations (thunks)
+- Option debug
 - regarder crush ou le crush des software foundations
 - essayer d'ajouter autoinduct à Snipe
 - 2 types de tactiques: celles qui disent ce qu'elles font et celles qui ne le disent pas 

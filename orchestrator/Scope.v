@@ -31,7 +31,9 @@ Ltac2 trigger_polymorphism () :=
  TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
 
 Ltac2 scope_triggers () := 
-  [trigger_trakt_bool ();
+  [
+TIs (TGoal, NotArg) tDiscard;
+trigger_trakt_bool ();
    trigger_definitions; 
    trigger_higher_order_equalities;
    trigger_fixpoints;
@@ -143,14 +145,16 @@ Ltac2 trigger_generation_principle :=
   (TContains (TSomeHyp, NotArg) (TInd None (NotArg))).
 
 Ltac2 scope () := orchestrator 5 
-[trigger_anonymous_funs () ; trigger_higher_order ; 
+[
+TIs (TGoal, Arg id) tDiscard;
+trigger_anonymous_funs () ; trigger_higher_order ; 
 trigger_definitions; trigger_higher_order_equalities; 
 trigger_fixpoints; trigger_pattern_matching; 
 trigger_algebraic_types; trigger_polymorphism (); 
 trigger_generation_principle ; trigger_trakt_bool ()] 
-["my_anonymous_functions" ; "my_higher_order"; 
+["tutu"; "my_anonymous_functions" ; "my_higher_order"; 
 "my_get_def"; "my_higher_order_equalities"; 
-"my_fixpoints"; "my_pattern_matching"; 
+"eliminate_fix_hyp"; "my_pattern_matching"; 
 "my_algebraic_types"; "my_polymorphism"; 
 "my_gen_principle_temporary" ; "my_trakt_bool"] { triggered_tacs := (init_triggered ()) }.
 
@@ -175,7 +179,7 @@ Section Generic.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
   Time scope; verit. (* Finished transaction in 0.549 secs (0.516u,0.s) (successful) *)
-(*   Undo.
+(* Undo.
   Time snipe. (* Finished transaction in 3.028 secs (2.64u,0.015s) (successful) *) *)
   Qed.
 
