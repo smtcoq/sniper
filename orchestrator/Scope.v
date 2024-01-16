@@ -143,7 +143,7 @@ Ltac my_fixpoints H := eliminate_fix_hyp H.
 
 Ltac my_pattern_matching H := try (eliminate_dependent_pattern_matching H).
 
-Ltac my_anonymous_functions := anonymous_funs.
+Ltac my_anonymous_functions := anonymous_funs. (* TODO : wrong trigger, avoid higher order equalities (= priorities ??) *)
 
 Ltac my_algebraic_types t := try (interp_alg_types t).
 
@@ -152,15 +152,45 @@ Ltac my_gen_principle t :=
 
 Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 
-Ltac my_polymorphism := elimination_polymorphism unit.
+Ltac my_polymorphism_elpi := elimination_polymorphism.
+Ltac my_polymorphism := inst.
 
 Ltac2 trigger_generation_principle := TOneTime.
 
-Ltac2 scope () := orchestrator 5 
+Ltac2 scope () := orchestrator 5
 { all_tacs := 
 [
-("my_get_def", trigger_definitions);
 ("my_anonymous_functions", trigger_anonymous_funs ()) ;
+("my_get_def", trigger_definitions);
+("my_higher_order_equalities", trigger_higher_order_equalities);
+("my_fixpoints", trigger_fixpoints);
+("my_pattern_matching", trigger_pattern_matching);
+("my_algebraic_types", trigger_algebraic_types);
+("my_gen_principle_temporary", trigger_generation_principle);
+("my_polymorphism_elpi", trigger_polymorphism ()) ] }
+{ triggered_tacs := (init_triggered ()) }.
+
+Tactic Notation "scope" := ltac2:(scope ()).
+
+Local Open Scope Z_scope.
+
+Require Import List.
+Import ListNotations.
+
+Section higher_order.
+
+
+Variable A B C: Type.
+Variable HA : CompDec A.
+Variable HB : CompDec B.
+Variable HC : CompDec C.
+
+Ltac2 scope2 () := orchestrator 5
+{ all_tacs := 
+[
+("my_higher_order", trigger_higher_order) ;
+("my_anonymous_functions", trigger_anonymous_funs ()) ;
+("my_get_def", trigger_definitions);
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
@@ -169,9 +199,42 @@ Ltac2 scope () := orchestrator 5
 ("my_polymorphism", trigger_polymorphism ()) ] }
 { triggered_tacs := (init_triggered ()) }.
 
-Tactic Notation "scope" := ltac2:(scope ()).
 
-Local Open Scope Z_scope.
+
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
+Proof.
+Time intros f g l ; induction l ; ltac2:(Control.enter (fun () => scope2 ())).
+expand_hyp H. eliminate_fix_hyp H4.
+
+ verit.
+
+Qed. TODO *)
+
+(* 
+TODO no applicable 
+
+An example with higher order and anonymous functions 
+Note that as map should be instantiated by f and g, 
+it does not work by using an induction principle which generalizes 
+on f and g, so f and g have to be introduced before l 
+It also work only with snipe2 because the arrow type instances will 
+make SMTCoq complain 
+Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+map g (map f l) = map (fun x => g (f x)) l.
+Proof.
+Time induction l; snipe2. (* Finished transaction in 17.149 secs (15.047u,0.08s) (successful) *)
+Undo.
+(* Time induction l; ltac2:(Control.enter (fun () => scope ())) ; verit. *)
+Abort. *)
+End higher_order.
 
 (** Examples on lists *)
 
@@ -208,7 +271,11 @@ Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof. 
-intros ; scope; verit. (* Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
+intros ; scope; verit.
+(*
+TODO local defs => distinguish
+
+ Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
 (*   Undo.  
   Time snipe. (*Finished transaction in 5.66 secs (4.35u,0.006s) (successful) *) *) Qed.
 
@@ -249,8 +316,8 @@ Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: l
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof. intros A H. 
 
-Time snipe @search_app. (* Finished transaction in 5.777 secs (5.007u,0.s) (successful) *)
-Undo.
+(* Time snipe @search_app. Finished transaction in 5.777 secs (5.007u,0.s) (successful) *)
+(* Undo. *)
 pose proof search_app.
 Time scope; verit. (* Finished transaction in 0.842 secs (0.76u,0.007s) (successful) *)
 
@@ -262,8 +329,8 @@ Qed.
 Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
     search b (a :: l) -> eqb_of_compdec HA a b \/ search b l.
 Proof. intros A HA.  
-Time snipe. (* Finished transaction in 2.652 secs (2.239u,0.s) (successful) *)
-Undo.
+(* Time snipe. *) (* Finished transaction in 2.652 secs (2.239u,0.s) (successful) *)
+(* Undo. *)
 Time scope; verit. (* Finished transaction in 0.434 secs (0.405u,0.s) (successful) *)
 
 Qed.
@@ -272,55 +339,12 @@ Qed.
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. 
- intros A H. Time induction l; snipe. (* Finished transaction in 4.195 secs (3.601u,0.s) (successful) *)
-Undo.
+(*  intros A H. Time induction l; snipe. *) (* Finished transaction in 4.195 secs (3.601u,0.s) (successful) *)
+(* Undo. *)
 Time induction l ; ltac2:(Control.enter (fun () => scope ())) ; verit. 
 (* Finished transaction in 0.952 secs (0.902u,0.s) (successful) *)
 
 Qed.
-
-Section higher_order.
-
-
-Variable A B C: Type.
-Variable HA : CompDec A.
-Variable HB : CompDec B.
-Variable HC : CompDec C.
-
-Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
-  match l, l' with
-  | [], _ => []
-  | x :: xs, [] => []
-  | x :: xs, y :: ys => (x, y) :: zip xs ys 
-  end.
-
-(*
-(* A nice example but a bit slow ~70s: we should investigate to improve the performance *)
-
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. (* Time intros f g l ; induction l; snipe2.  *)
-Time intros f g l ; induction l ; ltac2:(Control.enter (fun () => scope ())) ; verit.
-
-Qed. TODO *)
-
-(* 
-TODO no applicable 
-
-An example with higher order and anonymous functions 
-Note that as map should be instantiated by f and g, 
-it does not work by using an induction principle which generalizes 
-on f and g, so f and g have to be introduced before l 
-It also work only with snipe2 because the arrow type instances will 
-make SMTCoq complain 
-Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
-map g (map f l) = map (fun x => g (f x)) l.
-Proof.
-Time induction l; snipe2. (* Finished transaction in 17.149 secs (15.047u,0.08s) (successful) *)
-Undo.
-(* Time induction l; ltac2:(Control.enter (fun () => scope ())) ; verit. *)
-Abort. *)
-End higher_order.
 
 From Sniper Require Import tree.
 
@@ -328,8 +352,8 @@ From Sniper Require Import tree.
 
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
-Proof. Time intros t a t' b; snipe. (* 2.752 s *)
-Undo.
+Proof. (* Time intros t a t' b; snipe. (* 2.752 s *)
+Undo. *)
 Time intros t a t' b ; ltac2:(Control.enter (fun () => scope ())) ; verit.
 (* Finished transaction in 0.785 secs (0.754u,0.s) (successful) *)
 Qed.
@@ -343,95 +367,22 @@ Undo. pose proof List.app_nil_r. Time scope; verit.
 Qed.
  *)
 
-Ltac my_polymorphism2 := elimination_polymorphism unit.
-
-(* From Ltac2 Require Import Printf.
-
-Ltac2 rec orchestrator_aux
-  cg (* Coq Goal or modified Coq Goal *)
-  env (* local triggers variables *)
-  scg (* Subterms already computed in the proof state *)
-  trigs (* Triggers *)
-  (tacs : string list) (* Tactics, should have same length as triggers) *)
-  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) :=
-  match trigs, tacs with
-    | [], _ :: _ => fail "you forgot have more tactics than triggers"
-    | _ :: _, [] => fail "you have more triggers than tactics"
-    | [], [] => ()
-    | trig :: trigs', name :: tacs' => 
-         let env_args := get_args_used name trigtacs in
-         let it := interpret_trigger (cg.(cgstate)) env env_args scg trig in
-         let _ := print_interpreted_trigger it in 
-         match it with
-          | None => 
-             let _ := printf "The following tactic was not triggered: %s" name  in 
-             let _ := if String.equal name "my_polymorphism" then print_triggered_tacs (trigtacs.(triggered_tacs)) else () in
-             orchestrator_aux cg env scg trigs' tacs' trigtacs
-          | Some l => 
-            let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
-            if Bool.and lnotempty 
-              (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
-               let _ := printf "%s was already applied" name in
-              orchestrator_aux cg env scg trigs' tacs' trigtacs
-            else 
-              (run name l ;
-              let _ := printf "Automatically applied %s" name in 
-              let _ := if lnotempty then
-              trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
-              else () in
-              Control.enter (fun () =>
-              let cg' := cg.(cgstate) in
-              let (hs1, g1) := cg' in
-              let hs2 := Control.hyps () in
-              let g2 := Control.goal () in
-              let g3 :=
-              match g1 with
-                | None => None
-                | Some g1' => if Constr.equal g1' g2 then None else Some g2 
-              end in
-              cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux cg env scg trigs tacs trigtacs))
-        end
-  end. *)
-
-Ltac2 scope2 () := orchestrator 20
-[trigger_anonymous_funs () ; trigger_higher_order ; 
-trigger_definitions; trigger_higher_order_equalities; 
-trigger_fixpoints; trigger_pattern_matching; 
-trigger_algebraic_types; trigger_polymorphism (); 
-trigger_generation_principle ; trigger_trakt_bool ()] 
-["my_anonymous_functions" ; "my_higher_order"; 
-"my_get_def"; "my_higher_order_equalities"; 
-"my_fixpoints"; "my_pattern_matching"; 
-"my_algebraic_types"; "my_polymorphism"; 
-"my_gen_principle_temporary" ; "my_trakt_bool"] { triggered_tacs := (init_triggered ()) }.
-
-Ltac2 scope3 () := orchestrator 10 [trigger_polymorphism ()] ["my_polymorphism"]
-{ triggered_tacs := (init_triggered ()) }.
-
-Tactic Notation "scope2" := ltac2:(scope2 ()).
-
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r.
-assert (H6 : forall (A : Type) (x : tree),
-     rev_elements A x = rev_elements_aux A [] x) by admit.  scope2; verit.
-
-
- verit.
-- snipe (app_ass, app_nil_r).
+- (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r. scope; verit.
+- pose proof List.app_ass. pose proof List.app_nil_r. scope; verit.
 Qed.
 
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. Time snipe (rev_elements_app, app_nil_r). 
+Proof. (* Time snipe (rev_elements_app, app_nil_r).  *)
 (* Finished transaction in 11.955 secs (10.477u,0.007s) (successful) *)
-Undo.
+(* Undo. *)
 pose proof rev_elements_app.
-pose proof app_nil_r.
-Fail scope; verit. Abort.
+pose proof List.app_nil_r.
+scope; verit. Qed.
 
 
 
