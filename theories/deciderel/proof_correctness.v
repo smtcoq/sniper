@@ -567,40 +567,13 @@ _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars 
 ;; name_fresh <-tmFreshName "decidable_lemma"%bs ;; 
 tmLemma name_fresh st_unq;; tmWait.
 
-
-Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
-| smNil : forall l, smaller_list [] l
-| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
-
-MetaCoq Run (decide (@smaller_list nat) []).
-Next Obligation.
-Abort.
-
-
-Inductive mem : nat -> list nat -> Prop :=
-    MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
-  | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
-
-MetaCoq Run (decide (mem) []).
-Next Obligation.
-exact decidable_proof. Qed. 
-
-(* Inductive member : nat -> list nat -> Prop :=
-| MemMatch' : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
-| MemRecur' : forall xs n n',
-    member n xs -> member n (n'::xs).
-
-
-MetaCoq Run (linearize_and_fixpoint_auto (member) []). 
-Next Obligation.
-exact decidable_proof0.
-Qed. *)
-
 End Decide.
+
+Import Decide.
 
 Section Poly.
 
-Import Decide.
+
 Variable A: Type.
 Variable HA : CompDec A.
 
@@ -623,6 +596,34 @@ subst. constructor. apply IHl1. assumption.
 Qed.
 
 End Poly.
+
+Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
+| smNil : forall l, smaller_list [] l
+| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
+
+MetaCoq Run (decide (@smaller_list nat) []).
+Next Obligation.
+Abort.
+
+Inductive mem : nat -> list nat -> Prop :=
+    MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
+  | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
+
+MetaCoq Run (decide (mem) []).
+Next Obligation.
+exact decidable_proof. Qed. 
+
+(* Inductive member : nat -> list nat -> Prop :=
+| MemMatch' : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
+| MemRecur' : forall xs n n',
+    member n xs -> member n (n'::xs).
+
+
+MetaCoq Run (linearize_and_fixpoint_auto (member) []). 
+Next Obligation.
+exact decidable_proof0.
+Qed. *)
+
 
 
 
