@@ -73,7 +73,8 @@ Ltac2 trigger_pattern_matching :=
   TContains (TSomeHyp, Arg id) (TCase tDiscard tDiscard None NotArg).
 
 Ltac2 trigger_polymorphism () :=
-  TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TTerm 'Type NotArg) tDiscard NotArg)).
+ TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) 
+       (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
 
 Ltac2 trigger_higher_order :=
   TContains (TSomeHyp, NotArg) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
@@ -81,8 +82,20 @@ Ltac2 trigger_higher_order :=
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
-Ltac2 trigger_generation_principle :=
-  TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
+Ltac2 rec codomain_not_prop_aux (c: constr) :=
+  match Constr.Unsafe.kind c with
+  | Constr.Unsafe.Prod bi c' => codomain_not_prop_aux c'
+  | Constr.Unsafe.App x1 arr => codomain_not_prop_aux x1
+  | _ => if Constr.equal c 'Prop then false else true
+  end.
+
+Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
+
+Ltac2 trigger_generation_principle () :=
+  TDisj (TMetaLetIn (TContains (TGoal, NotArg) (TInd None (Arg id))) ["Indu"]
+         (TPred (TNamed "Indu", Arg id) codomain_not_prop))
+        (TMetaLetIn (TContains (TSomeHyp, NotArg) (TInd None (Arg id))) ["Indu"] 
+        (TPred (TNamed "Indu", Arg id) codomain_not_prop)).
 
 Ltac2 trigger_anonymous_funs () :=
   TMetaLetIn (TContains (TSomeHyp, Arg Constr.type) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]

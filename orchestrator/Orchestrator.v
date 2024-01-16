@@ -52,6 +52,21 @@ Ltac2 rec diff_hyps hs1 hs2 :=
     | x :: xs, [] => [] (* we do not consider removed hypotheses *)
   end.
 
+Ltac2 is_tonetime t :=
+  match t with
+  | TOneTime => true
+  | _ => false
+  end.
+
+Ltac2 filter_onetime lt :=
+  List.filter_out is_tonetime lt.
+
+(* TODO : not optimal but this is sufficient to start with *)
+
+Ltac2 check_no_more_to_apply lt cg env env_args scg b trig_list :=
+  let its := 
+  
+
 
 (* Ltac2 Type subterms_coq_goal := { mutable subs : (ident*constr list) list * (constr list) option }.
 Defined in Triggers.v file *)
@@ -62,12 +77,14 @@ Defined in Triggers.v file *)
   - the local triggers variables 
   - the subterms of a term (goal or hypothesis) already computed 
   - the (non absolute) name of the tactics already triggered, with its arguments
-(warning: the tactics taking no arguments are NEVER considered as already triggered) *)  
+(warning: the tactics taking no arguments are NEVER considered as already triggered
+except if their trigger is OneTime) *)  
 
 (* Improvement l empty => not in the list of tac already triggered *)
 (* optimisation: do not reinterpret triggers when the tactic does nothing *)
 Ltac2 rec orchestrator_aux
   cg (* Coq Goal or modified Coq Goal *)
+  global_flag (* a boolean: is the state global ? *)
   env (* local triggers variables *)
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
@@ -79,20 +96,26 @@ Ltac2 rec orchestrator_aux
     | [], [] => ()
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
-         let it := interpret_trigger (cg.(cgstate)) env env_args scg trig in
+         let it := interpret_trigger (cg.(cgstate)) env env_args scg global_flag trig in
          let _ := print_interpreted_trigger it in 
          match it with
           | None => let _ := printf "The following tactic was not triggered: %s" name  in 
-             orchestrator_aux cg env scg trigs' tacs' trigtacs
+             orchestrator_aux cg global_flag env scg trigs' tacs' trigtacs
           | Some l => 
-            if Bool.and (Bool.neg (Int.equal (List.length l) 0)) 
+            let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
+            if Bool.and lnotempty 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
                let _ := printf "%s was already applied" name in
-              orchestrator_aux cg env scg trigs' tacs' trigtacs
+              orchestrator_aux cg global_flag env scg trigs' tacs' trigtacs
+            else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
+                    let _ := printf "%s was already applied one time" name in
+                    orchestrator_aux cg global_flag env scg trigs' tacs' trigtacs 
             else 
               (run name l ;
               let _ := printf "Automatically applied %s" name in 
-              trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) ;
+              let _ := if Bool.or lnotempty (is_tonetime trig) then
+              trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
+              else () in
               Control.enter (fun () =>
               let cg' := cg.(cgstate) in
               let (hs1, g1) := cg' in
@@ -104,7 +127,7 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux cg env scg trigs tacs trigtacs))
+              orchestrator_aux cg false env scg trigs tacs trigtacs))
         end
   end.
 
@@ -115,14 +138,14 @@ Ltac2 rec orchestrator n trigs tacs trigtacs :=
   let cg := { cgstate := (hyps, Some g) } in 
   let env := { env_triggers := [] } in
   let scg := { subterms_coq_goal := ([], None) } in
-  orchestrator_aux cg env scg trigs tacs trigtacs ; 
+  orchestrator_aux cg true env scg trigs tacs trigtacs ; 
   Control.enter (fun () => orchestrator (Int.sub n 1) trigs tacs trigtacs).
-
-Ltac tutu x := idtac x.
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
+- une liste de paires au lieu de 2 listes
 - Rajouter les let ... in
+- position des arguments
 - Ltac2 notations (thunks)
 - Option debug
 - regarder crush ou le crush des software foundations

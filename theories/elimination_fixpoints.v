@@ -229,8 +229,10 @@ Elpi Accumulate lp:{{
 
 Elpi Typecheck.
 
-Tactic Notation "eliminate_fix_hyp" constr(H) :=
+Tactic Notation "eliminate_fix_hyp'" constr(H) :=
 elpi eliminate_fix_hyp (H).
+
+Ltac eliminate_fix_hyp H := eliminate_fix_hyp' H.
 
 Ltac eliminate_fix_cont H k :=
 eliminate_fix_hyp H ; k H.

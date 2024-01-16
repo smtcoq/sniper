@@ -1,5 +1,8 @@
 From Ltac2 Require Import Ltac2.
 
+
+Ltac tutu x := idtac x.
+
 Require Import ZArith.
 Require Import PArith.BinPos.
 Require Import SMTCoq.bva.BVList.
@@ -27,8 +30,7 @@ Require Import Orchestrator.
 
 Set Default Proof Mode "Classic".
 
-Ltac2 trigger_polymorphism () :=
- TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
+From Ltac2 Require Import Printf.
 
 Ltac2 scope_triggers () := 
   [
@@ -41,7 +43,7 @@ trigger_trakt_bool ();
    trigger_higher_order;
    trigger_anonymous_funs ();
    trigger_algebraic_types;
-   trigger_generation_principle;
+   trigger_generation_principle ();
    trigger_polymorphism ()].
 
 Ltac2 init_triggered ():=
@@ -117,11 +119,21 @@ Ltac2 init_triggered ():=
 ("my_algebraic_types", [constr:(@CompDec)]);
 ("my_algebraic_types", [constr:(Comparable)]);
 ("my_algebraic_types", [constr:(Inhabited)]);
-("my_algebraic_types", [constr:(OrderedType.Compare)])].
+("my_algebraic_types", [constr:(OrderedType.Compare)]);
+("my_gen_principle", [constr:(Z)]);
+("my_gen_principle", [constr:(bool)]);
+("my_gen_principle", [constr:(positive)]);
+("my_gen_principle", [constr:(N)]);
+("my_gen_principle", [constr:(nat)]);
+("my_gen_principle", [constr:(EqbType)]);
+("my_gen_principle", [constr:(@CompDec)]);
+("my_gen_principle", [constr:(Comparable)]);
+("my_gen_principle", [constr:(Inhabited)]);
+("my_gen_principle", [constr:(OrderedType.Compare)])].
 
 Ltac my_get_def t := get_def t.
 
-Ltac my_trakt_bool := revert_all ; trakt bool ; intros.
+(* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  TODO : CompDecs  !! *)
 
 Ltac my_higher_order_equalities H := expand_hyp H ; clear H.
 
@@ -135,28 +147,27 @@ Ltac my_anonymous_functions := anonymous_funs.
 
 Ltac my_algebraic_types t := try (interp_alg_types t).
 
-Ltac my_gen_principle t := pose_gen_statement t.
+Ltac my_gen_principle t := 
+ pose_gen_statement t.
 
 Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 
-Ltac my_polymorphism := elimination_polymorphism.
+Ltac my_polymorphism := elimination_polymorphism unit.
 
-Ltac2 trigger_generation_principle :=
-  (TContains (TSomeHyp, NotArg) (TInd None (NotArg))).
+Ltac2 trigger_generation_principle := TOneTime.
 
 Ltac2 scope () := orchestrator 5 
+{ all_tacs := 
 [
-TIs (TGoal, Arg id) tDiscard;
-trigger_anonymous_funs () ; trigger_higher_order ; 
-trigger_definitions; trigger_higher_order_equalities; 
-trigger_fixpoints; trigger_pattern_matching; 
-trigger_algebraic_types; trigger_polymorphism (); 
-trigger_generation_principle ; trigger_trakt_bool ()] 
-["tutu"; "my_anonymous_functions" ; "my_higher_order"; 
-"my_get_def"; "my_higher_order_equalities"; 
-"eliminate_fix_hyp"; "my_pattern_matching"; 
-"my_algebraic_types"; "my_polymorphism"; 
-"my_gen_principle_temporary" ; "my_trakt_bool"] { triggered_tacs := (init_triggered ()) }.
+("my_get_def", trigger_definitions);
+("my_anonymous_functions", trigger_anonymous_funs ()) ;
+("my_higher_order_equalities", trigger_higher_order_equalities);
+("my_fixpoints", trigger_fixpoints);
+("my_pattern_matching", trigger_pattern_matching);
+("my_algebraic_types", trigger_algebraic_types);
+("my_gen_principle_temporary", trigger_generation_principle);
+("my_polymorphism", trigger_polymorphism ()) ] }
+{ triggered_tacs := (init_triggered ()) }.
 
 Tactic Notation "scope" := ltac2:(scope ()).
 
@@ -169,7 +180,7 @@ Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof.
 (* Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *)
 Undo. *)
-Time scope; verit.
+Time scope; verit. 
 Qed.
 
 Section Generic.
@@ -196,8 +207,8 @@ Section destruct_auto.
 Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
-  Proof.
-  Time intros ; scope; verit. (* Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
+  Proof. 
+intros ; scope; verit. (* Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
 (*   Undo.  
   Time snipe. (*Finished transaction in 5.66 secs (4.35u,0.006s) (successful) *) *) Qed.
 
@@ -332,6 +343,57 @@ Undo. pose proof List.app_nil_r. Time scope; verit.
 Qed.
  *)
 
+Ltac my_polymorphism2 := elimination_polymorphism unit.
+
+(* From Ltac2 Require Import Printf.
+
+Ltac2 rec orchestrator_aux
+  cg (* Coq Goal or modified Coq Goal *)
+  env (* local triggers variables *)
+  scg (* Subterms already computed in the proof state *)
+  trigs (* Triggers *)
+  (tacs : string list) (* Tactics, should have same length as triggers) *)
+  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) :=
+  match trigs, tacs with
+    | [], _ :: _ => fail "you forgot have more tactics than triggers"
+    | _ :: _, [] => fail "you have more triggers than tactics"
+    | [], [] => ()
+    | trig :: trigs', name :: tacs' => 
+         let env_args := get_args_used name trigtacs in
+         let it := interpret_trigger (cg.(cgstate)) env env_args scg trig in
+         let _ := print_interpreted_trigger it in 
+         match it with
+          | None => 
+             let _ := printf "The following tactic was not triggered: %s" name  in 
+             let _ := if String.equal name "my_polymorphism" then print_triggered_tacs (trigtacs.(triggered_tacs)) else () in
+             orchestrator_aux cg env scg trigs' tacs' trigtacs
+          | Some l => 
+            let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
+            if Bool.and lnotempty 
+              (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
+               let _ := printf "%s was already applied" name in
+              orchestrator_aux cg env scg trigs' tacs' trigtacs
+            else 
+              (run name l ;
+              let _ := printf "Automatically applied %s" name in 
+              let _ := if lnotempty then
+              trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
+              else () in
+              Control.enter (fun () =>
+              let cg' := cg.(cgstate) in
+              let (hs1, g1) := cg' in
+              let hs2 := Control.hyps () in
+              let g2 := Control.goal () in
+              let g3 :=
+              match g1 with
+                | None => None
+                | Some g1' => if Constr.equal g1' g2 then None else Some g2 
+              end in
+              cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
+              orchestrator_aux cg env scg trigs tacs trigtacs))
+        end
+  end. *)
+
 Ltac2 scope2 () := orchestrator 20
 [trigger_anonymous_funs () ; trigger_higher_order ; 
 trigger_definitions; trigger_higher_order_equalities; 
@@ -344,12 +406,20 @@ trigger_generation_principle ; trigger_trakt_bool ()]
 "my_algebraic_types"; "my_polymorphism"; 
 "my_gen_principle_temporary" ; "my_trakt_bool"] { triggered_tacs := (init_triggered ()) }.
 
+Ltac2 scope3 () := orchestrator 10 [trigger_polymorphism ()] ["my_polymorphism"]
+{ triggered_tacs := (init_triggered ()) }.
+
 Tactic Notation "scope2" := ltac2:(scope2 ()).
 
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- snipe app_nil_r. Undo. pose proof app_nil_r. scope2; verit.
+- (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r.
+assert (H6 : forall (A : Type) (x : tree),
+     rev_elements A x = rev_elements_aux A [] x) by admit.  scope2; verit.
+
+
+ verit.
 - snipe (app_ass, app_nil_r).
 Qed.
 

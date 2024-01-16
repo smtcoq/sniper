@@ -3,6 +3,7 @@ From Ltac2 Require Import Init.
 From Ltac2 Require Import Constr.
 From Ltac2 Require Import Std.
 From Ltac2 Require Import Env.
+From Ltac2 Require Import Message.
 Import Unsafe.
 Set Default Proof Mode "Classic".
 
@@ -83,6 +84,7 @@ Ltac2 Type rec trigger := [
   | TNot (trigger) (* negation of a trigger *)
   | TMetaLetIn (trigger, string list, trigger) (* TMetaLetIn t1 s t2 binds all constrs produced by interpret_trigger t1
 and gives them the corresponding names in s, adds thems to the environment and interprets t2 that may contain some TNamed "foo" *)
+  | TOneTime (* trigger one time the tactic, only if the state is global (all the hypotheses and the goal are considered) *)
   ].
 
 Ltac2 rec bind_triggers env (lc : constr list) (ls : string list) :=
@@ -279,8 +281,8 @@ but we want to distinguish between Prop, Set and Type_i, i >= 0 *)
           | TProp => if equal c 'Prop then Some (cons_option (interpret_flag c fl) []) else None
           | TSet => if equal c 'Set then Some (cons_option (interpret_flag c fl) []) else None
           | TBigType => 
-            if Bool.and (Bool.neg (equal c 'Prop)) (Bool.neg (equal c 'Set))
-            then Some (cons_option (interpret_flag c fl) []) else None
+              if Bool.and (Bool.neg (equal c 'Prop)) (Bool.neg (equal c 'Set))
+                then Some (cons_option (interpret_flag c fl) []) else None
         end
     | Prod bi t, TProd tte1 tte2 fl => 
         let ty := Binder.type bi in
@@ -626,6 +628,8 @@ Ltac2 interpret_trigger_contains cg env (scg : subterms_coq_goal) tv tf : (const
             end
     end.
 
+Ltac2 interpret_trigger_onetime b := if b then Some [[]] else None.
+
 Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
   match l1 with
     | [] => [] 
@@ -635,8 +639,8 @@ Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
 
 (* Ltac2 Eval cartesian_product [[1; 2] ; [3; 4]] [[5; 6]; [7]]. *)
 
-Ltac2 interpret_trigger cg env env_args scg (t : trigger) : constr list option :=
-  let rec interpret_trigger cg env env_args scg flag_letin t := 
+Ltac2 interpret_trigger cg env env_args scg b (t : trigger) : constr list option :=
+  let rec interpret_trigger cg env env_args scg flag_letin b t := 
   match t with
     | TIs (a, fl) b =>
         match interpret_trigger_is cg env a b with
@@ -665,9 +669,9 @@ Ltac2 interpret_trigger cg env env_args scg (t : trigger) : constr list option :
           | None => None
         end
     | TConj t1 t2 => 
-      match interpret_trigger cg env env_args scg flag_letin t1 with
+      match interpret_trigger cg env env_args scg flag_letin b t1 with
         | Some res => 
-          match interpret_trigger cg env env_args scg flag_letin t2 with
+          match interpret_trigger cg env env_args scg flag_letin b t2 with
             | Some res' => 
                 let l := cartesian_product res res' in
                 if flag_letin then Some l 
@@ -678,32 +682,33 @@ Ltac2 interpret_trigger cg env env_args scg (t : trigger) : constr list option :
         | None => None
       end              
     | TDisj t1 t2 => 
-      match interpret_trigger cg env env_args scg flag_letin t1 with 
+      match interpret_trigger cg env env_args scg flag_letin b t1 with 
         | Some res => 
-            match interpret_trigger cg env env_args scg flag_letin t1 with
+            match interpret_trigger cg env env_args scg flag_letin b t1 with
                | None => Some res
                | Some res' => Some (List.append res res')
             end 
         | None => 
-          match interpret_trigger cg env env_args scg flag_letin t2 with
+          match interpret_trigger cg env env_args scg flag_letin b t2 with
             | Some res' => Some res'
             | None => None
           end
       end
 (* warning: "not" works only with no arguments *)
     | TNot t' => 
-        match interpret_trigger cg env env_args scg flag_letin t' with
+        match interpret_trigger cg env env_args scg flag_letin b t' with
           | Some _ => None
           | None => Some [[]]
         end
+    | TOneTime => interpret_trigger_onetime b
     | TMetaLetIn t1 ls t2 =>
-       let it1 := interpret_trigger cg env env_args scg true t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
+       let it1 := interpret_trigger cg env env_args scg true b t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
             | Some [] => None
             | Some (lc :: lcs) => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
                 let _ := bind_triggers env lc ls in
-                let it2 := interpret_trigger cg env env_args scg flag_letin t2 in
+                let it2 := interpret_trigger cg env env_args scg flag_letin b t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
                 match it2 with
                   | Some l => 
@@ -722,7 +727,7 @@ Ltac2 interpret_trigger cg env env_args scg (t : trigger) : constr list option :
            | None => None
          end in aux it1 cg env scg ls t2
     end 
-in match interpret_trigger cg env env_args scg false t with
+in match interpret_trigger cg env env_args scg false b t with
     | None => None
     | Some l => let l' := List.hd l in if List.for_all is_closed l' then Some l' 
         else Control.throw (NotClosed "the interpretation of a trigger cannot return open terms")
