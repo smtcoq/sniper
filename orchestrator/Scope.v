@@ -131,13 +131,16 @@ Ltac2 init_triggered ():=
 ("my_gen_principle", [constr:(Inhabited)]);
 ("my_gen_principle", [constr:(OrderedType.Compare)])].
 
+Ltac2 trigger_higher_order :=
+  TOneTime.
+
 Ltac my_get_def t := get_def t.
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  TODO : CompDecs  !! *)
 
 Ltac my_higher_order_equalities H := expand_hyp H ; clear H.
 
-Ltac my_higher_order := prenex_higher_order.
+Ltac my_higher_order := prenex_higher_order_with_equations.
 
 Ltac my_fixpoints H := eliminate_fix_hyp H.
 
@@ -157,10 +160,12 @@ Ltac my_polymorphism := inst.
 
 Ltac2 trigger_generation_principle := TOneTime.
 
+Ltac2 trigger_anonymous_funs := TOneTime.
+
 Ltac2 scope () := orchestrator 5
 { all_tacs := 
 [
-("my_anonymous_functions", trigger_anonymous_funs ()) ;
+("my_anonymous_functions", trigger_anonymous_funs) ;
 ("my_get_def", trigger_definitions);
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
@@ -170,7 +175,24 @@ Ltac2 scope () := orchestrator 5
 ("my_polymorphism_elpi", trigger_polymorphism ()) ] }
 { triggered_tacs := (init_triggered ()) }.
 
+Ltac2 scope2 () := orchestrator 5
+{ all_tacs := 
+[
+("my_anonymous_functions", trigger_anonymous_funs) ;
+("my_get_def", trigger_definitions);
+("my_higher_order_equalities", trigger_higher_order_equalities);
+("my_fixpoints", trigger_fixpoints);
+("my_pattern_matching", trigger_pattern_matching);
+("my_algebraic_types", trigger_algebraic_types);
+("my_gen_principle_temporary", trigger_generation_principle)(* ;
+("my_polymorphism", trigger_polymorphism ()) *) ] }
+{ triggered_tacs := (init_triggered ()) }.
+
 Tactic Notation "scope" := ltac2:(scope ()).
+
+Tactic Notation "scope" := ltac2:(Control.enter (fun () => scope ())).
+
+Tactic Notation "scope2" := ltac2:(Control.enter (fun () => scope2 ())).
 
 Local Open Scope Z_scope.
 
@@ -179,27 +201,10 @@ Import ListNotations.
 
 Section higher_order.
 
-
 Variable A B C: Type.
 Variable HA : CompDec A.
 Variable HB : CompDec B.
 Variable HC : CompDec C.
-
-Ltac2 scope2 () := orchestrator 5
-{ all_tacs := 
-[
-("my_higher_order", trigger_higher_order) ;
-("my_anonymous_functions", trigger_anonymous_funs ()) ;
-("my_get_def", trigger_definitions);
-("my_higher_order_equalities", trigger_higher_order_equalities);
-("my_fixpoints", trigger_fixpoints);
-("my_pattern_matching", trigger_pattern_matching);
-("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle);
-("my_polymorphism", trigger_polymorphism ()) ] }
-{ triggered_tacs := (init_triggered ()) }.
-
-
 
 Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   match l, l' with
@@ -211,7 +216,16 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; induction l ; ltac2:(Control.enter (fun () => scope2 ())).
+Time intros f g l ; scope2. revert_all. 
+eliminate_dependent_pattern_matching H1.
+
+
+
+ verit. 
+
+eliminate_fix_hyp H2.
+
+clear H2. verit.
 expand_hyp H. eliminate_fix_hyp H4.
 
  verit.

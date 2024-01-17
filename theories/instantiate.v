@@ -2,6 +2,10 @@ From elpi Require Import elpi.
 Require Import List.
 Import ListNotations.
 
+Ltac my_refine T inst :=
+  refine ((fun (x : T) => _) inst).
+  
+
 Elpi Tactic elimination_polymorphism.
 
 From Sniper.elpi Extra Dependency "utilities.elpi" as Utils.
@@ -17,18 +21,22 @@ Elpi Accumulate lp:{{
 
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
     instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
-      pos_ctx_to_var_in_term Ctx' Inst Inst', 
-      snd P HPoly,
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
-      std.map LInst (add_pos_ctx Ctx') LInst',
+      pos_ctx_to_var_in_term Ctx' Inst Inst',
+      snd P HPoly, 
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      std.map LInst (add_pos_ctx Ctx') LInst', 
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst' P G [G'], !,
+      construct_cuts LInst' P G [G'|_], !, 
       coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS.
     instances_param_indu_strategy_list [] _ _G _.
     
-  solve (goal Ctx _ TyG _ L as G) GL :- std.do! [std.rev Ctx Ctx',
-    collect_hypotheses_from_context Ctx HL HL1, polymorphic_hypotheses HL1 HL2, argument_to_term L LTerm, 
-    append_nodup HL2 LTerm HPoly, find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
+  solve (goal Ctx _ TyG _ L as G) GL :- std.do! 
+    [std.rev Ctx Ctx',
+    collect_hypotheses_from_context Ctx HL HL1, 
+    polymorphic_hypotheses HL1 HL2, 
+    argument_to_term L LTerm, 
+    append_nodup HL2 LTerm HPoly, 
+    find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
     instances_param_indu_strategy_list HPoly Inst G GL].
  
 
@@ -74,7 +82,7 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
-intros. (* TODO elimination_polymorphism. *) reflexivity. Abort. 
+intros. (* elimination_polymorphism. *) reflexivity. Abort. 
 
 Goal False.
 pose (x := fun (A : Type) (x : A) => x).
@@ -87,7 +95,34 @@ Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B),
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
 (x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
 intro H. elimination_polymorphism. split. assumption. split. assumption. assumption.
-Qed. 
+Qed.
+
+Section Tests.
+
+
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+
+
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C) (l : list A),
+let f0 := fun x : A => (f x, g x) in
+(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
+ map H10 (h :: l0) = H10 h :: map H10 l0) ->
+map f0 l = zip (map f l) (map g l)).
+Proof. intros.
+elimination_polymorphism.
+Abort.
+
+End Tests.
+
+
 
 
 

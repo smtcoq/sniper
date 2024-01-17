@@ -85,3 +85,27 @@ in aux h0.
 
 Tactic Notation "anonymous_funs" :=
 ltac2:(Control.enter anonymous_funs_with_equations).
+
+Require Import List. 
+Import ListNotations.
+
+(* Section tests.
+
+Set Default Proof Mode "Classic".
+
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Lemma zip_map : forall (A B C : Type) (f : A -> B) (g : A -> C) (l : list A),
+map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
+Proof.
+intros.
+anonymous_funs.
+Abort.
+
+End tests. *)
+

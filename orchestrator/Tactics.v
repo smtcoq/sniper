@@ -98,9 +98,13 @@ Ltac2 trigger_generation_principle () :=
         (TPred (TNamed "Indu", Arg id) codomain_not_prop)).
 
 Ltac2 trigger_anonymous_funs () :=
+  TDisj (
   TMetaLetIn (TContains (TSomeHyp, Arg Constr.type) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
   (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))).
+  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))))
+  (TMetaLetIn (TContains (TGoal, Arg id) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
+  (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
+  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool () :=

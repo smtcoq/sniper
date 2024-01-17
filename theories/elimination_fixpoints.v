@@ -190,7 +190,7 @@ Elpi Accumulate lp:{{
     gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
       elim_pos_ctx Ctx' F F',
       std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
-      L' = [], !, gen_eqs Ctx L Glob RS.
+      if (L' = []) (gen_eqs Ctx L Glob RS) fail.
     gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
       elim_pos_ctx Ctx' F F',
       index_struct_argument F' I,
@@ -219,9 +219,9 @@ Elpi Accumulate lp:{{
     std.rev Ctx Ctx',
     std.map Glob0 (x\ add_pos_ctx Ctx' x) Glob',
     coq.typecheck H TyH ok,
-    subterms_fix TyH L, !,
+    subterms_fix TyH L, !, 
     std.map L (x\ add_pos_ctx Ctx' x) L',
-    gen_eqs Ctx L' Glob' R, 
+    gen_eqs Ctx L' Glob' R,
     add_pos_ctx Ctx' TyH TyH',
     assert_list_rewrite TyH' R G GL.
 
@@ -358,6 +358,15 @@ assert (H2 : forall l : list A,
        | a :: t => f0 a :: map t
        end) l) by reflexivity.
 eliminate_fix_hyp H2. 
+unfold f0 in f1.
+assert (H3 : forall l : list A,
+    f1 l =
+    (fix map (l0 : list A) : list (B * C) :=
+       match l0 with
+       | [] => []
+       | a :: t => (f a, g a) :: map t
+       end) l) by reflexivity.
+eliminate_fix_hyp H3.
 assert (bar : forall l : list A, f2 l = match l with
                                | [] => []
                                | a :: t => f a :: map f t

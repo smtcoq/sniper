@@ -41,12 +41,12 @@ pred globals_using_var i: term, o: (list (pair term (list int))).
     globals_using_var T L :- indu_using_var T L1, cstr_using_var T L2, std.append L1 L2 L.
 
 pred instances_param_indu_strategy_aux i: term, i: list (pair term (list term)),  i: list term, o: list term.
-    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :- 
+    instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :-
         (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', not (L' = []), !, 
         generate_instances_list I L' L R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux ((prod _Na Ty _F) as I) L SubTy R' :-
-        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), globals_using_var I L', L' = [], !,  instantiate_term_list I SubTy R,
+        (coq.unify-leq Ty {{ Type }} ok ; coq.unify-leq Ty {{ Set }} ok), instantiate_term_list I SubTy R,
         instances_param_indu_strategy_aux_list R L SubTy R'.
     instances_param_indu_strategy_aux H _L _SubTy [H]. % no instances if the hypothesis is not polymorphic
 
