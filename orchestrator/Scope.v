@@ -176,9 +176,9 @@ Ltac2 scope () := orchestrator 3
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle);
 ("my_polymorphism_elpi", trigger_polymorphism ()) ] }
-{ triggered_tacs := (init_triggered ()) }.
+{ triggered_tacs := (init_triggered ()) } {old_hyps_and_defs  := [] }.
 
-Ltac2 scope2 () := orchestrator 5
+Ltac2 scope2 () := orchestrator 1
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
@@ -189,7 +189,7 @@ Ltac2 scope2 () := orchestrator 5
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle)(* ;
 ("my_polymorphism", trigger_polymorphism ()) *) ] }
-{ triggered_tacs := (init_triggered ()) }.
+{ triggered_tacs := (init_triggered ()) } {old_hyps_and_defs  := [] }.
 
 Tactic Notation "scope" := ltac2:(scope ()).
 
@@ -220,8 +220,6 @@ Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
 Time intros f g l ; scope2. elimination_polymorphism.
-- (* pose_gen_statement prod. specialize (gen_prod B C). *)
-clear x0 x2 x3 x4 H4 H1 H22 H18 H25 H21 H7 H3 elpi_ctx_entry_34_.
 verit.
 
  verit.

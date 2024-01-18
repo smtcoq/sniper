@@ -86,6 +86,7 @@ Ltac2 rec orchestrator_aux
   cg (* Coq Goal or modified Coq Goal *)
   global_flag (* a boolean: is the state global ? *)
   env (* local triggers variables *)
+  env_old (* already computed types *)
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
   (tacs : string list) (* Tactics, should have same length as triggers) *)
@@ -93,26 +94,26 @@ Ltac2 rec orchestrator_aux
   match trigs, tacs with
     | [], _ :: _ => fail "you forgot have more tactics than triggers"
     | _ :: _, [] => fail "you have more triggers than tactics"
-    | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs
+    | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
-         let it := interpret_trigger (cg.(cgstate)) env env_args scg global_flag trig in
+         let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag trig in
          let _ := print_interpreted_trigger it in let _ := print_state (cg.(cgstate)) in
          match it with
           | None => let _ := printf "The following tactic was not triggered: %s" name  in 
-             orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs
+             orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs
           | Some l => 
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
             if Bool.and lnotempty 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
                let _ := printf "%s was already applied" name in
-              orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs
+              orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs
             else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
                     let _ := printf "%s was already applied one time" name in
-                    orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs 
+                    orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs 
             else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then 
               let _ := printf "%s is global and cannot be applied in a local state" name in 
-              orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs                
+              orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs                
             else 
               (run name l ;
               let _ := printf "Automatically applied %s" name in 
@@ -131,10 +132,10 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux alltacs fuel cg false env scg trigs tacs trigtacs))
+              orchestrator_aux alltacs fuel cg false env env_old scg trigs tacs trigtacs))
         end
   end
- with orchestrator n alltacs trigtacs :=
+ with orchestrator n alltacs trigtacs env_old :=
   if Int.equal n 0 then () else
   let g := Control.goal () in
   let hyps := Control.hyps () in
@@ -145,12 +146,11 @@ Ltac2 rec orchestrator_aux
   let alltacs'' := List.split alltacs' in
   let tacs := fst alltacs'' in
   let trigs := snd alltacs'' in
-  let _ := orchestrator_aux alltacs n cg true env scg trigs tacs trigtacs in
-  Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs).
+  let _ := orchestrator_aux alltacs n cg true env env_old scg trigs tacs trigtacs in
+  Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old).
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
-- Rajouter les let ... in
 - position des arguments
 - Ltac2 notations (thunks)
 - Option debug
