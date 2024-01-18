@@ -131,9 +131,6 @@ Ltac2 init_triggered ():=
 ("my_gen_principle", [constr:(Inhabited)]);
 ("my_gen_principle", [constr:(OrderedType.Compare)])].
 
-Ltac2 trigger_higher_order :=
-  TOneTime.
-
 Ltac my_get_def t := get_def t.
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  TODO : CompDecs  !! *)
@@ -162,10 +159,16 @@ Ltac2 trigger_generation_principle := TOneTime.
 
 Ltac2 trigger_anonymous_funs := TOneTime.
 
-Ltac2 scope () := orchestrator 5
+
+Ltac2 trigger_higher_order :=
+  TOneTime.
+
+
+Ltac2 scope () := orchestrator 3
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
+("my_higher_order", trigger_higher_order) ;
 ("my_get_def", trigger_definitions);
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
@@ -216,7 +219,18 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; scope2. revert_all. 
+Time intros f g l ; scope2. elimination_polymorphism.
+- (* pose_gen_statement prod. specialize (gen_prod B C). *)
+clear x0 x2 x3 x4 H4 H1 H22 H18 H25 H21 H7 H3 elpi_ctx_entry_34_.
+verit.
+
+ verit.
+
+
+clearbody proj_list. clearbody proj_list0. 
+
+
+ verit. elimination_polymorphism.
 eliminate_dependent_pattern_matching H1.
 
 

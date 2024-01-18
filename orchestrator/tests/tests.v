@@ -26,7 +26,7 @@ Ltac2 test_trigger (t: trigger) :=
   let env := env_triggers () in
   let initcomp := initial_computed_subterms () in
   let args := args_used () in
-  let res := interpret_trigger init env args initcomp t in
+  let res := interpret_trigger init env args initcomp true t in
   print_interpreted_trigger res.
  
 Ltac2 test_anon () :=
@@ -112,6 +112,26 @@ Goal False.
 ltac1:(pose proof app_nil_end).
 test_trigger (trigger_trakt_bool ()).
 Abort.
+
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Ltac2 trigger_pattern_matching :=
+  TContains (TSomeHyp, Arg id) (TCase tDiscard tDiscard None NotArg).
+
+Goal (forall (H1 : forall (A B : Type) (l : list A) (l' : list B),
+     zip l l' =
+     match l with
+     | [] => []
+     | x :: xs => match l' with
+                  | [] => []
+                  | y :: ys => (x, y) :: zip xs ys
+                  end end), False).
+Proof. intros. test_trigger (trigger_pattern_matching). Abort.
 
 
 

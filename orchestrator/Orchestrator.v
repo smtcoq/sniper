@@ -97,7 +97,7 @@ Ltac2 rec orchestrator_aux
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
          let it := interpret_trigger (cg.(cgstate)) env env_args scg global_flag trig in
-         let _ := print_interpreted_trigger it in 
+         let _ := print_interpreted_trigger it in let _ := print_state (cg.(cgstate)) in
          match it with
           | None => let _ := printf "The following tactic was not triggered: %s" name  in 
              orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs
@@ -110,9 +110,13 @@ Ltac2 rec orchestrator_aux
             else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
                     let _ := printf "%s was already applied one time" name in
                     orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs 
+            else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then 
+              let _ := printf "%s is global and cannot be applied in a local state" name in 
+              orchestrator_aux alltacs fuel cg global_flag env scg trigs' tacs' trigtacs                
             else 
               (run name l ;
               let _ := printf "Automatically applied %s" name in 
+              let _ := print_bool (is_tonetime trig) in 
               let _ := if Bool.or lnotempty (is_tonetime trig) then
               trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
               else () in

@@ -73,8 +73,12 @@ Ltac2 trigger_pattern_matching :=
   TContains (TSomeHyp, Arg id) (TCase tDiscard tDiscard None NotArg).
 
 Ltac2 trigger_polymorphism () :=
- TDisj (TIs (TSomeHyp, NotArg)  (TProd (TSort TSet NotArg) tDiscard NotArg)) 
-       (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
+ TDisj (TMetaLetIn (TIs (TSomeHyp, Arg (fun x => Constr.type (Constr.type x) ) )  
+       (TProd (TSort TSet NotArg) tDiscard NotArg))  ["Ty"]
+       (TIs (TNamed "Ty", NotArg) (TSort TProp NotArg)))
+       (TMetaLetIn (TIs (TSomeHyp, Arg (fun x => Constr.type (Constr.type x) ) )  
+       (TProd (TSort TBigType NotArg) tDiscard NotArg))  ["Ty"]
+       (TIs (TNamed "Ty", NotArg) (TSort TProp NotArg))).
 
 Ltac2 trigger_higher_order :=
   TContains (TSomeHyp, NotArg) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
