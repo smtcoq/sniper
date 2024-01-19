@@ -14,6 +14,7 @@ Ltac2 Type cgstate :=
 Ltac2 Type all_tacs :=
   { mutable all_tacs : (string * trigger) list }.
 
+
 Ltac2 Type triggered_tacs :=
   { mutable triggered_tacs : (string * constr list) list }.
 
@@ -85,6 +86,7 @@ Ltac2 rec orchestrator_aux
   fuel
   cg (* Coq Goal or modified Coq Goal *)
   global_flag (* a boolean: is the state global ? *)
+  flag_old_type (* the types of the arguments should have not changed *)
   env (* local triggers variables *)
   env_old (* already computed types *)
   scg (* Subterms already computed in the proof state *)
@@ -97,25 +99,27 @@ Ltac2 rec orchestrator_aux
     | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
-         let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag trig in
+         let _ := print_old_types_and_defs env_old in
+         let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag flag_old_type name trig in
          let _ := print_interpreted_trigger it in let _ := print_state (cg.(cgstate)) in
          match it with
-          | None => let _ := printf "The following tactic was not triggered: %s" name  in 
-             orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs
+          | None => let _ := printf "NONE: The following tactic was not triggered: %s" name  in 
+             orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs
           | Some l => 
+            
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
-            if Bool.and lnotempty 
+            if Bool.and (Bool.and (Bool.equal ((flag_old_type).(flag_old_type)) true) lnotempty) 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
                let _ := printf "%s was already applied" name in
-              orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs
             else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
                     let _ := printf "%s was already applied one time" name in
-                    orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs 
+                    orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs 
             else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then 
               let _ := printf "%s is global and cannot be applied in a local state" name in 
-              orchestrator_aux alltacs fuel cg global_flag env env_old scg trigs' tacs' trigtacs                
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs                
             else 
-              (run name l ;
+              (run name l;
               let _ := printf "Automatically applied %s" name in 
               let _ := print_bool (is_tonetime trig) in 
               let _ := if Bool.or lnotempty (is_tonetime trig) then
@@ -132,7 +136,7 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux alltacs fuel cg false env env_old scg trigs tacs trigtacs))
+              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs trigtacs))
         end
   end
  with orchestrator n alltacs trigtacs env_old :=
@@ -146,7 +150,7 @@ Ltac2 rec orchestrator_aux
   let alltacs'' := List.split alltacs' in
   let tacs := fst alltacs'' in
   let trigs := snd alltacs'' in
-  let _ := orchestrator_aux alltacs n cg true env env_old scg trigs tacs trigtacs in
+  let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs trigtacs in
   Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old).
 
 (** 

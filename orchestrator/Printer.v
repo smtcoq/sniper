@@ -54,6 +54,16 @@ print (of_string "The hyps in the state are of type") ;
 print_hyps hs ;
 Message.print (Message.of_string "End state").
 
+Ltac2 print_old_types_and_defs env_old :=
+let old := (env_old).(old_types_and_defs) in
+List.iter (fun (x, y, z) =>
+print (of_string ("The tactic is:")) ;
+print (of_string x);
+print (of_string ("The term is:")) ;
+print (of_constr y); 
+print (of_string ("The type is:")) ;
+print (of_constr z)) old.
+
 Ltac2 rec print_triggered_tacs trigtacs :=
   match trigtacs with
     | [] => Message.print (Message.of_string "empty list")

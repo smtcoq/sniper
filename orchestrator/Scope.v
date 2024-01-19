@@ -164,7 +164,7 @@ Ltac2 trigger_higher_order :=
   TOneTime.
 
 
-Ltac2 scope () := orchestrator 3
+Ltac2 scope () := orchestrator 5
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
@@ -176,9 +176,9 @@ Ltac2 scope () := orchestrator 3
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle);
 ("my_polymorphism_elpi", trigger_polymorphism ()) ] }
-{ triggered_tacs := (init_triggered ()) } {old_hyps_and_defs  := [] }.
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
-Ltac2 scope2 () := orchestrator 1
+Ltac2 scope2 () := orchestrator 3
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
@@ -189,7 +189,7 @@ Ltac2 scope2 () := orchestrator 1
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle)(* ;
 ("my_polymorphism", trigger_polymorphism ()) *) ] }
-{ triggered_tacs := (init_triggered ()) } {old_hyps_and_defs  := [] }.
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
 Tactic Notation "scope" := ltac2:(scope ()).
 
@@ -219,7 +219,9 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; scope2. elimination_polymorphism.
+Time intros f g l ; scope. elimination_polymorphism.
+
+ verit.
 verit.
 
  verit.
