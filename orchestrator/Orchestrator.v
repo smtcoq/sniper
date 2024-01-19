@@ -99,9 +99,7 @@ Ltac2 rec orchestrator_aux
     | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
-         let _ := print_old_types_and_defs env_old in
          let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag flag_old_type name trig in
-         let _ := print_interpreted_trigger it in let _ := print_state (cg.(cgstate)) in
          match it with
           | None => let _ := printf "NONE: The following tactic was not triggered: %s" name  in 
              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs

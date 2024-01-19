@@ -55,13 +55,34 @@ intros H1 H2.
 run "myapply2" ['H1; 'H2].
 Qed.
 
-End tests. 
+End tests.
+
+Ltac2 is_prod (c: constr) :=
+  match Constr.Unsafe.kind c with
+    | Constr.Unsafe.Prod _ _ => true
+    | _ => false
+  end.
+
+Ltac2 not_higher_order (c: constr) :=
+let t := Constr.type c in
+let rec aux t :=
+  match Constr.Unsafe.kind t with
+    | Constr.Unsafe.Prod bind t' => 
+        Bool.and (let ty := Constr.Binder.type bind in Bool.neg (is_prod ty)) (aux t')
+    | _ => true
+  end
+in aux t.
+
+(* Ltac2 Eval (not_higher_order '@map). *)
 
 (** Triggers for Sniper tactics *)
 
 
-Ltac2 trigger_definitions :=
-  TDisj (TContains (TGoal, NotArg) (TConstant None (Arg id))) (TContains (TSomeHyp, NotArg)  (TConstant None (Arg id))).
+Ltac2 trigger_definitions () :=
+  TDisj (TMetaLetIn (TContains (TGoal, NotArg) (TConstant None (Arg id))) ["def"]
+         (TPred (TNamed "def", Arg id) not_higher_order))
+        (TMetaLetIn (TContains (TSomeHyp, NotArg) (TConstant None (Arg id))) ["def"]
+         (TPred (TNamed "def", Arg id) not_higher_order)).
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).

@@ -1,17 +1,17 @@
 % the main fonction: assert the list of polymorphic instances and proves them
 pred construct_cuts i: (list term), i: (pair term term), i: goal, o: list sealed-goal.
     construct_cuts [X|XS] P G GS :- !, construct_cuts_aux [X|XS] P G GS.
-    construct_cuts [] (pr H _Ty) G [G'] :-
+    construct_cuts [] (pr _H Ty) (goal Ctx _ _ _ _ as G) [G'|_]:-                    
+        find_in_context Ty Ctx H',
+        construct_term_applied_unit H' Hunit,
+        std.assert-ok! (coq.elaborate-skeleton Hunit _ X1) "cut formula illtyped",
+        construct_term_applied H' Tapp, !,
+        std.ignore-failure!(refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'| _]).    
+    construct_cuts [] (pr H _Ty) G [G'|_] :-
         construct_term_applied_unit H Hunit,
         std.assert-ok! (coq.elaborate-ty-skeleton Hunit _ X1) "cut formula illtyped",
         construct_term_applied H Tapp,
-        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'].
-    construct_cuts [] (pr _H Ty) (goal Ctx _ _ _ _ as G) [G']:-                    
-        find_in_context Ty Ctx H',
-        construct_term_applied_unit H' Hunit,
-        std.assert-ok! (coq.elaborate-ty-skeleton Hunit _ X1) "cut formula illtyped",
-        construct_term_applied H' Tapp, !,
-        refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'| _].
+        std.ignore-failure! (refine (app [(fun `new_hyp` X1 _), Tapp]) G [G'|_]).
     construct_cuts _ _ _ _ :- coq.error "wrong monomorphic instances provided".
 
 pred construct_cuts_aux i: (list term), i: (pair term term), i: goal, o: list sealed-goal.

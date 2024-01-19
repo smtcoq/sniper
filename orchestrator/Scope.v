@@ -1,6 +1,5 @@
 From Ltac2 Require Import Ltac2.
 
-
 Ltac tutu x := idtac x.
 
 Require Import ZArith.
@@ -36,7 +35,7 @@ Ltac2 scope_triggers () :=
   [
 TIs (TGoal, NotArg) tDiscard;
 trigger_trakt_bool ();
-   trigger_definitions; 
+   trigger_definitions (); 
    trigger_higher_order_equalities;
    trigger_fixpoints;
    trigger_pattern_matching;
@@ -169,7 +168,7 @@ Ltac2 scope () := orchestrator 5
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
 ("my_higher_order", trigger_higher_order) ;
-("my_get_def", trigger_definitions);
+("my_get_def", trigger_definitions ());
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
@@ -178,17 +177,18 @@ Ltac2 scope () := orchestrator 5
 ("my_polymorphism_elpi", trigger_polymorphism ()) ] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
-Ltac2 scope2 () := orchestrator 3
+Ltac2 scope2 () := orchestrator 5
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
-("my_get_def", trigger_definitions);
+("my_higher_order", trigger_higher_order) ;
+("my_get_def", trigger_definitions ());
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle)(* ;
-("my_polymorphism", trigger_polymorphism ()) *) ] }
+("my_gen_principle_temporary", trigger_generation_principle);
+("my_polymorphism", trigger_polymorphism ()) ] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
 Tactic Notation "scope" := ltac2:(scope ()).
@@ -216,52 +216,20 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+(* Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; scope. elimination_polymorphism.
+Time intros f g l ; induction l ; scope2. *)
 
- verit.
-verit.
-
- verit.
-
-
-clearbody proj_list. clearbody proj_list0. 
-
-
- verit. elimination_polymorphism.
-eliminate_dependent_pattern_matching H1.
-
-
-
- verit. 
-
-eliminate_fix_hyp H2.
-
-clear H2. verit.
-expand_hyp H. eliminate_fix_hyp H4.
-
- verit.
-
-Qed. TODO *)
-
-(* 
-TODO no applicable 
-
-An example with higher order and anonymous functions 
-Note that as map should be instantiated by f and g, 
-it does not work by using an induction principle which generalizes 
-on f and g, so f and g have to be introduced before l 
-It also work only with snipe2 because the arrow type instances will 
-make SMTCoq complain 
-Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+(* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-Time induction l; snipe2. (* Finished transaction in 17.149 secs (15.047u,0.08s) (successful) *)
-Undo.
-(* Time induction l; ltac2:(Control.enter (fun () => scope ())) ; verit. *)
-Abort. *)
+induction l; scope; verit.
+- verit.
+-
+ Qed. *)
+
+
 End higher_order.
 
 (** Examples on lists *)
@@ -300,12 +268,7 @@ Theorem app_eq_unit_auto :
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof. 
 intros ; scope; verit.
-(*
-TODO local defs => distinguish
-
- Finished transaction in 1.781 secs (1.144u,0.007s) (successful) *)
-(*   Undo.  
-  Time snipe. (*Finished transaction in 5.66 secs (4.35u,0.006s) (successful) *) *) Qed.
+Qed.
 
 
 End destruct_auto.
