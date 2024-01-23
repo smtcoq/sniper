@@ -29,9 +29,25 @@ let rec tac T :=
   | _ => fail
   end in tac T) ; clear Hfalse.
 
+
+(* Avoid to unfold CompDecs *)
+Ltac has_subterms_type_CompDec t :=
+  let T := type of t in 
+  let T' := get_head T in 
+  match T' with
+  | CompDec => idtac
+  | context c[@CompDec _ ] => idtac
+  end.
+
 Goal False.
 contains_ho_argument (@List.fold_left).
 (* contains_ho_argument (@List.hd). *) Abort.
+
+Goal False.
+has_subterms_type_CompDec (Nat_compdec).
+has_subterms_type_CompDec (list_compdec).
+Fail has_subterms_type_CompDec True.
+Abort.
                 
 Ltac assert_and_prove_eq_cont x x' k := 
 let H := fresh x "_def" in 
@@ -48,7 +64,7 @@ let x' := eval unfold x in x in
 assert_and_prove_eq_cont x x' k ;
 get_definitions_aux0 (p, x) (p', x) p'' k k')
 | _ : context C[?x] |- _ => is_not_in_tuple p x ; 
-tryif (first [contains_ho_argument x | has_local_def x]) then
+tryif (first [ first [contains_ho_argument x | has_local_def x] | has_subterms_type_CompDec x]) then
 get_definitions_aux0 (p, x) p' p'' k k' else
 (let T := type of x in let T' := get_head T in is_not_in_tuple p'' T' ;
 let x' := eval unfold x in x in  
