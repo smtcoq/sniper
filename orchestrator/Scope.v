@@ -173,8 +173,8 @@ Ltac2 scope () := orchestrator 5
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle);
-("my_polymorphism_elpi", trigger_polymorphism ()) ] }
+("my_gen_principle_temporary", trigger_generation_principle)(* ;
+("my_polymorphism_elpi", trigger_polymorphism ()) *) ] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
 Ltac2 scope2 () := orchestrator 5
@@ -216,10 +216,11 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-(* Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; induction l ; scope2. *)
+Time intros f g l ; induction l. 
+- scope. elimination_polymorphism. verit.
 
 (* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
