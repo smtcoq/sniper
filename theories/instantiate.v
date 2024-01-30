@@ -120,6 +120,28 @@ Proof. intros.
 elimination_polymorphism.
 Abort.
 
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C),
+let f0 := fun x : A => (f x, g x) in
+let f1 := @map A (B * C) f0 in
+let f2 := @map A B f in
+let f3 := @map A C g in
+(forall (H5 H7 : Type) (l' : list H7), @zip H5 H7 [] l' = []) ->
+(forall (H7 H9 : Type) (H10 : H7) (H11 : list H7), @zip H7 H9 (H10 :: H11) [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7) (H11 : list H7) (h : H9) (l : list H9),
+ @zip H7 H9 (H10 :: H11) (h :: l) = (H10, h) :: @zip H7 H9 H11 l) ->
+f1 [] = [] ->
+(forall (a : A) (l : list A), f1 (a :: l) = f0 a :: f1 l) ->
+f2 [] = [] ->
+(forall (a : A) (l : list A), f2 (a :: l) = f a :: f2 l) ->
+f3 [] = [] ->
+(forall (a : A) (l : list A), f3 (a :: l) = g a :: f3 l) ->
+(forall (x : Type) (x0 x1 : x) (x2 x3 : list x), x0 :: x2 = x1 :: x3 -> x0 = x1 /\ x2 = x3) ->
+(forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
+(forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) ->
+f1 [] = @zip B C (f2 []) (f3 [])).
+Proof. intros. clearbody f0 f1 f2 f3. elimination_polymorphism.
+
 End Tests.
 
 
