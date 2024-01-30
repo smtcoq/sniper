@@ -980,7 +980,6 @@ let fixp := build_fixpoint_aux2 genv indu l n in
 let fixp_trm := fixp.1 in
 tmMkDefinition fresh fixp_trm.
 
-Unset Universe Checking.
 
 Definition linearize_and_fixpoint_auto 
 {A : Type}
@@ -1009,15 +1008,11 @@ match recarg with
             let fixp := build_fixpoint_aux2 new_genv indu l n in
             let fixp_ty := fixp.2 in
             let fixp_trm := fixp.1 in  trm_print <- tmEval all fixp_trm ;;
-            fixpoint_unq_ty <- tmUnquoteTyped Type fixp_ty ;;
-            fixpoint_unq_term <- tmUnquoteTyped fixpoint_unq_ty fixp_trm ;;
-            foo <- tmMkDefinition fresh fixp_trm ;;
+            tmMkDefinition fresh fixp_trm ;;
             tmReturn (t, fresh, n', npars', fixp_trm, genv) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 
     build_fixpoint_recarg instead"%bs
 end.
-
-Set Universe Checking.
 
 Section test.
 
@@ -1084,10 +1079,9 @@ Inductive smaller2 : list nat -> list nat -> Prop :=
               smaller2 l l' -> smaller2 (x :: l) (x' :: l').
 
 
-MetaCoq Run (build_fixpoint_auto (@smaller2) []). 
+MetaCoq Run (build_fixpoint_auto (@smaller2) []).
 
 MetaCoq Run (build_fixpoint_auto (@Add_linear2) []). 
-
 
 End test2.
 
