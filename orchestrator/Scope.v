@@ -220,7 +220,30 @@ Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
 Time intros f g l ; induction l. 
-- scope. elimination_polymorphism. verit.
+- scope. clearbody f0 f1 f2 f3. elimination_polymorphism. verit.
+- (* TODO : polymorphism buggy with local definitions (+ anonymous functions 
+does not work *)
+
+scope. clearbody f0 f1 f2 f3. 
+assert (toto : forall (a: A), f0 a = (f a, g a)). admit.
+elimination_polymorphism. verit.
+rewrite H4. rewrite H1.
+rewrite H2. rewrite H5.
+
+
+ elimination_polymorphism.
+clearbody  elpi_ctx_entry_210_ elpi_ctx_entry_211_.
+
+
+
+rewrite elpi_ctx_entry_202_. rewrite elpi_ctx_entry_206_.
+destruct (gen_list.
+ rewrite x25.
+
+
+verit.
+
+
 
 (* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
