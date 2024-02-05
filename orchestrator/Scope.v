@@ -167,13 +167,13 @@ Ltac2 scope () := orchestrator 5
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
-("my_higher_order", trigger_higher_order) ;
+(* ("my_higher_order", trigger_higher_order) ; *)
 ("my_get_def", trigger_definitions ());
-("my_higher_order_equalities", trigger_higher_order_equalities);
+("my_higher_order_equalities", trigger_higher_order_equalities); 
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle)(* ;
+("my_gen_principle_temporary", trigger_generation_principle) (* ;
 ("my_polymorphism_elpi", trigger_polymorphism ()) *) ] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
 
@@ -216,41 +216,24 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+(* Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
 Proof.
-Time intros f g l ; induction l. 
-- scope. clearbody f0 f1 f2 f3. elimination_polymorphism. verit.
+intros f g l ; induction l. 
+- Time scope; verit.
 - (* TODO : polymorphism buggy with local definitions (+ anonymous functions 
 does not work *)
-
-scope. clearbody f0 f1 f2 f3. 
-assert (toto : forall (a: A), f0 a = (f a, g a)). admit.
-elimination_polymorphism. verit.
-rewrite H4. rewrite H1.
-rewrite H2. rewrite H5.
+scope. 
+assert (toto : forall (a: A), elpi_ctx_entry_80_ a = (elpi_ctx_entry_76_ a, elpi_ctx_entry_77_ a)). admit.
+verit. Abort. *)
 
 
- elimination_polymorphism.
-clearbody  elpi_ctx_entry_210_ elpi_ctx_entry_211_.
-
-
-
-rewrite elpi_ctx_entry_202_. rewrite elpi_ctx_entry_206_.
-destruct (gen_list.
- rewrite x25.
-
-
-verit.
-
-
-
-(* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; scope; verit.
+induction l.
+- scope. prenex_higher_order_with_equations. verit.
 - verit.
--
  Qed. *)
 
 

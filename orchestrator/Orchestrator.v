@@ -92,7 +92,7 @@ Ltac2 rec orchestrator_aux
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
   (tacs : string list) (* Tactics, should have same length as triggers) *)
-  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) : unit :=
+  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) : unit := 
   match trigs, tacs with
     | [], _ :: _ => fail "you forgot have more tactics than triggers"
     | _ :: _, [] => fail "you have more triggers than tactics"
@@ -103,8 +103,7 @@ Ltac2 rec orchestrator_aux
          match it with
           | None => let _ := printf "NONE: The following tactic was not triggered: %s" name  in 
              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs
-          | Some l => 
-            
+          | Some l =>
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
             if Bool.and (Bool.and (Bool.equal ((flag_old_type).(flag_old_type)) true) lnotempty) 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
@@ -155,6 +154,7 @@ Ltac2 rec orchestrator_aux
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
 - position des arguments
 - Ltac2 notations (thunks)
+- idée de Matthieu Sozeau, tag pour ce qui doit être unfoldé ou non, plutôt que de le mettre à l'intérieur des triggers
 - Option debug
 - regarder crush ou le crush des software foundations
 - essayer d'ajouter autoinduct à Snipe
