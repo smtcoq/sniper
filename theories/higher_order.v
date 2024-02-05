@@ -73,18 +73,33 @@ let h := Control.hyps () in
 let () := ltac1:(prenex_higher_order) in
 let h' := Control.hyps () in 
 let h0 := new_hypothesis h h' in 
-let rec aux h :=
-  match h with
+let rec aux h0 :=
+  match h0 with
   | [] => ()
   | x :: xs => match x with
-            | (id, opt, cstr) => let hltac2 := Control.hyp id in
-              let hltac1 := Ltac1.of_constr hltac2 in ltac1:(H |- let T := type of H in let U := type of T 
-              in tryif (constr_eq U Prop) then try (expand_hyp_cont H ltac:(fun H' => 
-              eliminate_fix_cont H' ltac:(fun H'' => try (eliminate_dependent_pattern_matching H''))); clear H)
-else idtac) hltac1 ; aux xs
+            | (id, opt, cstr) =>
+              let hltac2 := Control.hyp id in
+              let hltac1 := Ltac1.of_constr hltac2 in 
+              ltac1:(H |- 
+                let T := type of H in 
+                let U := type of T in
+                  tryif (constr_eq U Prop) then 
+                  try (expand_hyp_cont H ltac:(fun H' => 
+                    eliminate_fix_cont H' ltac:(fun H'' => 
+                      try (eliminate_dependent_pattern_matching H''))); clear H) else idtac) hltac1 ; 
+               aux xs
             end
 end 
 in aux h0.
+
+
+Tactic Notation "prenex_higher_order_with_equations" :=
+ltac2:(Control.enter prenex_higher_order_with_equations).
+
+
+Import ListNotations.
+
+Section Tests.
 
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
@@ -92,5 +107,17 @@ intros.
 induction l; Control.enter anonymous_funs_with_equations; Control.enter prenex_higher_order_with_equations.
 Abort.
 
-Tactic Notation "prenex_higher_order_with_equations" :=
-ltac2:(Control.enter prenex_higher_order_with_equations).
+Goal (
+forall (A B C : Type)
+(f : A -> B)
+(g : B -> C),
+let f0 := fun x : A => g (f x) in
+((forall x : A, f0 x = g (f x)) ->
+(forall (x : Type) (x0 x1 : x) (x2 x3 : list x),
+     x0 :: x2 = x1 :: x3 -> x0 = x1 /\ x2 = x3) ->
+(forall (x : Type) (x0 : x) (x1 : list x),
+     [] = x0 :: x1) ->
+map g (map f []) = map f0 [])).
+Proof. intros. ltac1:(prenex_higher_order_with_equations). Abort.
+
+End Tests.
