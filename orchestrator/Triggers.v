@@ -905,6 +905,8 @@ Ltac2 toto () :=
 (tlet H := (triggered when (TSomeHyp) is (tDiscard) on (Arg (fun x => type x))) in 
 triggered when (TNamed "H") is tDiscard).
 
+(* TODO : a constr_to_trigger function to have nice notations for triggers *)
+
 
 
 
