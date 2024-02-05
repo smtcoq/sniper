@@ -628,17 +628,16 @@ ltac2:(cltac1 |- let cltac2 := Ltac1.to_constr cltac1 in
   | Some c => is_local_def c
 end) in tac c.
 
-(* new_hypothesis h h++h' returns h' *)
-(* Note: code duplication with deciderel *)
+(* warning: works only if length (h2) > length (h1) and 
+if no idents are exchanged or disappeared *)
 Ltac2 rec new_hypothesis
 (h1: (ident * constr option * constr) list) 
 (h2 : (ident * constr option * constr) list) := 
 match h1 with
 | [] => h2
-| x :: xs => match h2 with
-        | [] => []
-        | y :: ys => new_hypothesis xs ys
-      end
+| (id, _, _) :: xs => 
+   let h2' := List.filter (fun (x, y, z) => Ident.equal x id) h2
+   in new_hypothesis xs h2'
 end.
 
 Ltac2 rec hyps_printer (h : (ident * constr option * constr) list) 
