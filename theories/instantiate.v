@@ -20,23 +20,24 @@ Elpi Accumulate File ConstructCuts.
 Elpi Accumulate lp:{{
 
  pred instances_param_indu_strategy_list i: list (pair term term), i: list (pair term (list term)), i: goal, o: list sealed-goal.
-    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- std.rev Ctx Ctx',
+    instances_param_indu_strategy_list [P | XS] Inst (goal Ctx _ _ _TyG _ as G) GS :- 
+      std.rev Ctx Ctx',
       pos_ctx_to_var_in_term Ctx' Inst Inst',
-      snd P HPoly, 
-      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !, 
+      snd P HPoly,
+      instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
       std.map LInst (add_pos_ctx Ctx') LInst', 
       % unit is a dumb default case to eliminate useless polymorphic premise
-      construct_cuts LInst' P G [G'|_], !, 
-      coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS.
+      construct_cuts LInst' P G [G'|_],
+      if (coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS) true (instances_param_indu_strategy_list XS Inst G GS).
     instances_param_indu_strategy_list [] _ _G _.
     
   solve (goal Ctx _ TyG _ L as G) GL :- std.do! 
     [std.rev Ctx Ctx',
     collect_hypotheses_from_context Ctx HL HL1, 
-    polymorphic_hypotheses HL1 HL2, 
+    polymorphic_hypotheses HL1 HL2,
     argument_to_term L LTerm, 
     append_nodup HL2 LTerm HPoly, 
-    find_instantiated_params_in_list Ctx' [TyG |HL] Inst,
+    find_instantiated_params_in_list Ctx' [TyG |HL] Inst, 
     instances_param_indu_strategy_list HPoly Inst G GL].
  
 
@@ -140,7 +141,7 @@ f3 [] = [] ->
 (forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
 (forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) ->
 f1 [] = @zip B C (f2 []) (f3 [])).
-Proof. intros. clearbody f0 f1 f2 f3. elimination_polymorphism.
+Proof. intros. elimination_polymorphism. Abort.
 
 End Tests.
 
