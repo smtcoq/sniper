@@ -869,7 +869,41 @@ in match interpret_trigger cg env env_args env_old scg false b flo nametac t wit
   end.
 
 (* TODO : improve the selection of args by designating their order (an integer) and an Ltac2 function f: constr -> constr.
-eg : (1, id) (1, type) etc *) 
+eg : (1, id) (1, type) etc *)
+
+(** Notations *)
+
+Ltac2 Notation "AnyHyp" := TSomeHyp.
+
+Ltac2 Notation "AnyHypProp" := TSomeHypProp.
+
+Ltac2 Notation "triggered" "when" "(" tv(tactic) ")" "is" t(tactic) :=
+  TIs (tv, NotArg) t.
+
+Ltac2 Notation "triggered" "when" "(" tv(tactic) ")" "is" "(" t(tactic) ")"  "on" a(tactic) :=
+  TIs (tv, a) t.
+
+Ltac2 Notation "triggered" "when" "(" tv(tactic) ")" "contains" t(tactic) :=
+  TContains (tv, NotArg) t.
+
+Ltac2 Notation "triggered" "when" "(" tv(tactic) ")" "contains" "(" t(tactic) ")"  "on" a(tactic) :=
+  TContains (tv, a) t.
+
+Ltac2 Notation "tlet" ids(list1(ident, ";")) ":=" "(" t1(tactic) ")" "in" t2(tactic)  :=
+  let ids := List.map Ident.to_string ids in
+  TMetaLetIn t1 ids t2.
+
+Ltac2 Eval (triggered when (TSomeHyp) is tDiscard).
+
+Ltac2 Eval (triggered when (TSomeHyp) is (tDiscard) on NotArg).
+
+Ltac2 Eval (triggered when (AnyHypProp) contains TTerm 'Set NotArg).
+
+Ltac2 Eval (triggered when (AnyHypProp) contains (TTerm 'Set NotArg) on (Arg type)).
+
+Ltac2 toto () :=
+(tlet H := (triggered when (TSomeHyp) is (tDiscard) on (Arg (fun x => type x))) in 
+triggered when (TNamed "H") is tDiscard).
 
 
 
