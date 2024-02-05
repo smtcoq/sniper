@@ -37,7 +37,9 @@ pred elim_pos_ctx i: goal-ctx, i: term, o: term.
     elim_pos_ctx Ctx A B :- elim_pos_ctx_aux Ctx 0 A B.
 
 pred pos_ctx_to_var_in_term_aux i: goal-ctx, i: list term, o: list term.
-    pos_ctx_to_var_in_term_aux Ctx [(pos_ctx N)| XS] [X|XS'] :- !, pos_ctx_to_var_in_term_aux Ctx XS XS', nth N Ctx (decl X _ _).
+    pos_ctx_to_var_in_term_aux Ctx [(pos_ctx N)| XS] [X|XS'] :- nth N Ctx (decl X _ _), !, pos_ctx_to_var_in_term_aux Ctx XS XS'.
+    pos_ctx_to_var_in_term_aux Ctx [(pos_ctx N)| XS] [X|XS'] :-
+    pos_ctx_to_var_in_term_aux Ctx XS XS', nth N Ctx (def X _ _ _).
     pos_ctx_to_var_in_term_aux Ctx [(app L)| XS] [app L'|XS'] :- !, std.map L (pos_ctx_to_var Ctx) L',
         pos_ctx_to_var_in_term_aux Ctx XS XS'. 
     pos_ctx_to_var_in_term_aux Ctx [T|XS] [T| XS'] :- pos_ctx_to_var_in_term_aux Ctx XS XS'.
