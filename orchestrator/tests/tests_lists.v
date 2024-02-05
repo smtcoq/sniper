@@ -41,18 +41,17 @@ Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
 Goal definition_no_variables -> True.
 scope.
 Abort.
-(* 
 
-TODO
+
 Lemma nth_default_eq :
     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
 Proof. intros A HA n ; induction n.  
-  - scope. verit.
+  - intros; scope. verit.
   - intros l ; destruct l.
-    * snipe2.
-    * scope. get_projs_st option. specialize (gen_option A d).
+    * scope; verit.
+    * scope. (* get_projs_st option. specialize (gen_option A d). *)
       (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *)
-Abort. *)
+Abort.
 
 (* Test projs, two versions *)
 Variable A : Type.
@@ -176,13 +175,6 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
   Proof.
   intros ; scope; verit. Qed.
 
-(*   Lemma app_inj_tail :
-    forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
-  Proof.
-  intros; induction x; scope2. verit.
-    Time induction x ; snipe. Undo. Time induction x ; snipe2.
-  Qed. TODO
- *)
   Lemma in_app_or : forall (l m:list A) (a:A), Inb a (l ++ m) -> or (Inb a l) (Inb a m).
   Proof.
     intros l m b. Time induction l; scope; verit. 
@@ -202,14 +194,11 @@ Section Pairs.
 
   Definition fst (p:A * B) := match p with (x, y) => x end.
   Definition snd (p:A * B) := match p with (x, y) => y end.
-(* 
-
-TODO
 
 Lemma surjective_pairing :
   forall (p:A * B), p = (fst p, snd p).
-Proof. scope2. verit. Time snipe. Undo. Time snipe2. Qed.
- *)
+Proof. intros; scope; verit. Qed.
+
 End Pairs.
 
 
