@@ -175,7 +175,7 @@ Ltac2 scope () := orchestrator 5
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle) ;
 ("my_polymorphism_elpi", trigger_polymorphism ()) ] }
-{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
 Ltac2 scope2 () := orchestrator 5
 { all_tacs := 
@@ -189,7 +189,7 @@ Ltac2 scope2 () := orchestrator 5
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle);
 ("my_polymorphism", trigger_polymorphism ()) ] }
-{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] }.
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
 Tactic Notation "scope" := ltac2:(scope ()).
 
@@ -202,7 +202,9 @@ Local Open Scope Z_scope.
 Require Import List.
 Import ListNotations.
 
-(* Section Debug.
+
+(*
+Section Debug.
 
 Variable (A : Type).
 Variable (HA: CompDec A).

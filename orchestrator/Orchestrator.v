@@ -64,12 +64,57 @@ Ltac2 is_tonetime t :=
 
 Ltac2 filter_onetime lt :=
   List.filter_out is_tonetime lt. 
-  
+ 
 
+Ltac2 Type verbosity :=
+[ Nothing | Info | Debug | Full ].
 
-(* Ltac2 Type subterms_coq_goal := { mutable subs : (ident*constr list) list * (constr list) option }.
-Defined in Triggers.v file *)
+Ltac2 leq_verb (v1 : verbosity) (v2 : verbosity) :=
+  match v1 with
+    | Nothing => true
+    | Info => 
+        match v2 with
+          | Nothing => false
+          | _ => true
+        end
+    | Debug =>
+        match v2 with
+          | Nothing => false
+          | Info => false
+          | _ => true
+        end 
+    | Full => 
+        match v2 with
+          | Full => true
+          | _ => false
+        end
+   end. 
 
+Ltac2 print_tactic_not_triggered (v : verbosity) (s : string) :=
+if leq_verb v Debug then () else
+printf "NONE: The following tactic was not triggered: %s" s.
+
+Ltac2 print_tactic_already_applied (v : verbosity) (s : string) (l : constr list) :=
+if leq_verb v Debug then () else
+(printf "%s was already applied with the following args :" s ; 
+List.iter (fun x => printf "%t" x) l).
+
+Ltac2 print_tactic_already_applied_once (v : verbosity) (s : string) :=
+if leq_verb v Debug then () else
+printf "%s was already applied one time" s.
+
+Ltac2 print_tactic_global_in_local (v : verbosity) (s : string) :=
+if leq_verb v Debug then () else
+printf "%s is global and cannot be applied in a local state" s.
+
+Ltac2 print_state_verb (v : verbosity) cg :=
+if leq_verb v Debug then () else
+print_state (cg.(cgstate)).
+
+Ltac2 print_applied_tac (v : verbosity) (s : string) (l : constr list) :=
+if leq_verb v Nothing then () else
+(printf "Automatically applied %s with the following args" s ;
+List.iter (fun x => printf "%t" x) l).
 
 (** The Orchestrator uses four states: 
   - the hypotheses and the goal changed by the application of a previous tactic (or the initial goal)
@@ -92,33 +137,35 @@ Ltac2 rec orchestrator_aux
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
   (tacs : string list) (* Tactics, should have same length as triggers) *)
-  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) : unit := 
+  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) 
+  (v: verbosity) : (* number of information required *) unit := 
+  print_state_verb v cg ;
   match trigs, tacs with
     | [], _ :: _ => fail "you forgot have more tactics than triggers"
     | _ :: _, [] => fail "you have more triggers than tactics"
-    | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old
+    | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old v
     | trig :: trigs', name :: tacs' => 
          let env_args := get_args_used name trigtacs in
          let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag flag_old_type name trig in
          match it with
-          | None => let _ := printf "NONE: The following tactic was not triggered: %s" name  in 
-             orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs
+          | None =>
+             print_tactic_not_triggered v name ;
+             orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
           | Some l =>
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
             if Bool.and (Bool.and (Bool.equal ((flag_old_type).(flag_old_type)) true) lnotempty) 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
-               let _ := printf "%s was already applied" name in
-              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs
+              print_tactic_already_applied v name l ;
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
             else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
-                    let _ := printf "%s was already applied one time" name in
-                    orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs 
-            else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then 
-              let _ := printf "%s is global and cannot be applied in a local state" name in 
-              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs                
+               print_tactic_already_applied_once v name ;
+               orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
+            else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then
+              print_tactic_global_in_local v name ;
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v                
             else 
               (run name l;
-              let _ := printf "Automatically applied %s" name in 
-              let _ := print_bool (is_tonetime trig) in 
+              print_applied_tac v name l ;
               let _ := if Bool.or lnotempty (is_tonetime trig) then
               trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
               else () in
@@ -133,10 +180,10 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs trigtacs))
+              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs trigtacs v))
         end
   end
- with orchestrator n alltacs trigtacs env_old :=
+ with orchestrator n alltacs trigtacs env_old v :=
   if Int.equal n 0 then () else
   let g := Control.goal () in
   let hyps := Control.hyps () in
@@ -147,15 +194,14 @@ Ltac2 rec orchestrator_aux
   let alltacs'' := List.split alltacs' in
   let tacs := fst alltacs'' in
   let trigs := snd alltacs'' in
-  let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs trigtacs in
-  Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old).
+  let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs trigtacs v in
+  Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old v).
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
 - position des arguments
 - Ltac2 notations (thunks)
 - idée de Matthieu Sozeau, tag pour ce qui doit être unfoldé ou non, plutôt que de le mettre à l'intérieur des triggers
-- Option debug
 - regarder crush ou le crush des software foundations
 - essayer d'ajouter autoinduct à Snipe
 - 2 types de tactiques: celles qui disent ce qu'elles font et celles qui ne le disent pas 
