@@ -3,11 +3,12 @@
 -Q ./elpi Sniper.elpi
 -docroot Sniper
 
-orchestrator/Triggers.v
-orchestrator/Tactics.v
-orchestrator/Printer.v
-orchestrator/Orchestrator.v
-orchestrator/Scope.v
+orchestrator/triggers.v
+orchestrator/tactics.v
+orchestrator/printer.v
+orchestrator/orchestrator.v
+orchestrator/preproc.v
+orchestrator/scope.v
 
 
 theories/utilities.v
