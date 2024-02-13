@@ -4,8 +4,8 @@ From Ltac2 Require Import Constr.
 From Ltac2 Require Import String.
 Require Import List.
 Import ListNotations.
-Require Import Printer.
-Require Import Triggers.
+Require Import printer.
+Require Import triggers.
 
 From Sniper Require Import utilities.
 
@@ -16,17 +16,18 @@ Declare ML Module "coq-smtcoq.smtcoq".
 (** Add compdecs is an atomic transformation not related to Trakt *)
 
 Ltac add_compdecs_terms t :=
-  let t' := get_head t in
+  let T := type of t in
+  first [ first [constr_eq T Type | constr_eq T Set] ;
   match goal with
       (* If it is already in the local context, do nothing *)
     | _ : SMT_classes.CompDec t |- _ => idtac
     (* Otherwise, add it in the local context *)
     | _ =>
-      let p := fresh "p" in
+      let p := fresh "p" in 
         assert (p:SMT_classes.CompDec t);
         [ try (exact _)       (* Use the typeclass machinery *)
         | .. ]
-  end.
+  end | idtac].
 
 (** Remove add compdecs from SMTCoq's preprocess1 *)
 
@@ -210,7 +211,12 @@ Ltac2 trigger_anonymous_funs () :=
   (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
 
 Ltac2 trigger_add_compdecs () :=
-  triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg. 
+  TDisj (TDisj
+  (triggered when (AnyHyp) contains TEq (TApp (TAny (Arg id)) tDiscard NotArg) tDiscard tDiscard NotArg)
+  (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg))
+(TDisj
+  (triggered when (TGoal) contains TEq (TApp (TAny (Arg id)) tDiscard NotArg) tDiscard tDiscard NotArg)
+  (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)). 
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool () :=

@@ -4,9 +4,9 @@ From Ltac2 Require Import Constr.
 From Ltac2 Require Import Printf.
 Require Import List.
 Import ListNotations.
-Require Import Printer.
-Require Import Triggers.
-Require Import Tactics.
+Require Import printer.
+Require Import triggers.
+Require Import triggers_tactics.
 
 Ltac2 Type cgstate := 
   { mutable cgstate : ((ident * constr option * constr) list)*(constr option) }.

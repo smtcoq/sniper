@@ -20,9 +20,9 @@ From Sniper Require Import instantiate.
 From Sniper Require Import Sniper.
 
 Require Import triggers_tactics.
-Require Import Triggers.
-Require Import Printer.
-Require Import Orchestrator.
+Require Import triggers.
+Require Import printer.
+Require Import orchestrator.
 
 Set Default Proof Mode "Classic".
 
@@ -157,7 +157,7 @@ Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 Ltac my_polymorphism_elpi := elimination_polymorphism.
 Ltac my_polymorphism := inst.
 
-Ltac my_add_compdec t := add_compdecs_term t.
+Ltac my_add_compdec t := add_compdecs_terms t.
 
 Ltac2 trigger_generation_principle := TOneTime.
 
@@ -247,11 +247,10 @@ Proof.
 intros f g l ; induction l; time (scope; verit).
 (* Tactic call ran for 94.262 secs (93.569u,0.299s) (success) *) Abort. *)
 
-
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; time (scope; verit_no_check).
+induction l; time scope; verit_no_check.
 Qed.
 
 
@@ -292,7 +291,7 @@ Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof. 
-intros ; scope; verit.
+intros ; scope; verit_no_check.
 Qed.
 
 
@@ -311,7 +310,7 @@ Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof. intros A H x l1 l2.
-Time induction l1 as [ | x0 l0 IH]; simpl; ltac2:(Control.enter (fun () => scope ())) ; verit.
+Time induction l1 as [ | x0 l0 IH]; simpl; ltac2:(Control.enter (fun () => scope ())) ; verit_no_check.
 (* Finished transaction in 1.518 secs (1.456u,0.019s) (successful) *)
 (* Time induction l1 as [ | x0 l0 IH]; simpl; snipe Finished transaction in 9.089 secs (7.921u,0.005s) (successful). *)
 
@@ -335,7 +334,7 @@ Proof. intros A H.
 (* Time snipe @search_app. Finished transaction in 5.777 secs (5.007u,0.s) (successful) *)
 (* Undo. *)
 pose proof search_app.
-Time scope; verit. (* Finished transaction in 0.842 secs (0.76u,0.007s) (successful) *)
+Time scope; verit_no_check. (* Finished transaction in 0.842 secs (0.76u,0.007s) (successful) *)
 
 
 Qed.
@@ -347,7 +346,7 @@ Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
 Proof. intros A HA.  
 (* Time snipe. *) (* Finished transaction in 2.652 secs (2.239u,0.s) (successful) *)
 (* Undo. *)
-Time scope; verit. (* Finished transaction in 0.434 secs (0.405u,0.s) (successful) *)
+Time scope; verit_no_check. (* Finished transaction in 0.434 secs (0.405u,0.s) (successful) *)
 
 Qed.
 
@@ -357,7 +356,7 @@ Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l
 Proof. 
 (*  intros A H. Time induction l; snipe. *) (* Finished transaction in 4.195 secs (3.601u,0.s) (successful) *)
 (* Undo. *)
-Time induction l ; ltac2:(Control.enter (fun () => scope ())) ; verit. 
+Time induction l ; ltac2:(Control.enter (fun () => scope ())) ; verit_no_check. 
 (* Finished transaction in 0.952 secs (0.902u,0.s) (successful) *)
 
 Qed.
@@ -370,7 +369,7 @@ Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. (* Time intros t a t' b; snipe. (* 2.752 s *)
 Undo. *)
-Time intros t a t' b ; ltac2:(Control.enter (fun () => scope ())) ; verit.
+Time intros t a t' b ; ltac2:(Control.enter (fun () => scope ())) ; verit_no_check.
 (* Finished transaction in 0.785 secs (0.754u,0.s) (successful) *)
 Qed.
 
@@ -386,8 +385,8 @@ Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r. scope; verit.
-- pose proof List.app_ass. pose proof List.app_nil_r. scope; verit.
+- (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r. scope; verit_no_check.
+- pose proof List.app_ass. pose proof List.app_nil_r. scope; verit_no_check.
 Qed.
 
 
@@ -398,7 +397,7 @@ Proof. (* Time snipe (rev_elements_app, app_nil_r).  *)
 (* Undo. *)
 pose proof rev_elements_app.
 pose proof List.app_nil_r.
-scope; verit. Qed.
+scope; verit_no_check. Qed.
 
 
 

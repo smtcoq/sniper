@@ -1,4 +1,4 @@
-Require Import Triggers.
+Require Import triggers.
 From Ltac2 Require Import Ltac2.
 Require Import Ltac2.Printf.
 Require Import Ltac2.Message.

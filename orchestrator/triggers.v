@@ -864,8 +864,12 @@ Ltac2 interpret_trigger cg env env_args env_old scg b flo nametac (t : trigger) 
     end 
 in match interpret_trigger cg env env_args env_old scg false b flo nametac t with
     | None => None
-    | Some l => let l' := List.hd l in if List.for_all is_closed l' then Some l' 
-        else Control.throw (NotClosed "the interpretation of a trigger cannot return open terms")
+    | Some l => 
+        let rec aux l := 
+        match l with
+          | l' :: ls => let l' := List.hd l in if List.for_all is_closed l' then Some l' else aux ls
+          | [] => None (* a transformation cannot have open terms as arguments so we remove the interpretation of triggers when it is the case *)
+        end in aux l
   end.
 
 (* TODO : improve the selection of args by designating their order (an integer) and an Ltac2 function f: constr -> constr.
