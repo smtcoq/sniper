@@ -4,10 +4,9 @@
 -docroot Sniper
 
 orchestrator/triggers.v
-orchestrator/tactics.v
+orchestrator/triggers_tactics.v
 orchestrator/printer.v
 orchestrator/orchestrator.v
-orchestrator/preproc.v
 orchestrator/scope.v
 
 

@@ -1,13 +1,10 @@
 From Ltac2 Require Import Ltac2.
 
-Ltac tutu x := idtac x.
-
 Require Import ZArith.
 Require Import PArith.BinPos.
-Require Import SMTCoq.bva.BVList.
 Require Import NArith.BinNatDef.
 
-From SMTCoq Require Import SMT_classes SMT_classes_instances.
+From SMTCoq Require Import SMT_classes SMT_classes_instances BVList FArray.
 
 From Trakt Require Import Trakt.
 
@@ -22,7 +19,7 @@ From Sniper Require Import anonymous_functions.
 From Sniper Require Import instantiate.
 From Sniper Require Import Sniper.
 
-Require Import Tactics.
+Require Import triggers_tactics.
 Require Import Triggers.
 Require Import Printer.
 Require Import Orchestrator.
@@ -128,7 +125,13 @@ Ltac2 init_triggered ():=
 ("my_gen_principle", [constr:(@CompDec)]);
 ("my_gen_principle", [constr:(Comparable)]);
 ("my_gen_principle", [constr:(Inhabited)]);
-("my_gen_principle", [constr:(OrderedType.Compare)])].
+("my_gen_principle", [constr:(OrderedType.Compare)]);
+("my_add_compdec", [constr:(FArray.farray)]);
+("my_add_compdec", [constr:(Z)]);
+("my_add_compdec", [constr:(nat)]);
+("my_add_compdec", [constr:(positive)]);
+("my_add_compdec", [constr:(bool)])
+].
 
 Ltac my_get_def t := get_def t.
 
@@ -154,6 +157,8 @@ Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 Ltac my_polymorphism_elpi := elimination_polymorphism.
 Ltac my_polymorphism := inst.
 
+Ltac my_add_compdec t := add_compdecs_term t.
+
 Ltac2 trigger_generation_principle := TOneTime.
 
 Ltac2 trigger_anonymous_funs := TOneTime.
@@ -174,7 +179,8 @@ Ltac2 scope () := orchestrator 5
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle) ;
-("my_polymorphism_elpi", trigger_polymorphism ()) ] }
+("my_polymorphism_elpi", trigger_polymorphism ()) ;
+("my_add_compdec", trigger_add_compdecs ())] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
 Ltac2 scope2 () := orchestrator 5
@@ -188,7 +194,8 @@ Ltac2 scope2 () := orchestrator 5
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
 ("my_gen_principle_temporary", trigger_generation_principle);
-("my_polymorphism", trigger_polymorphism ()) ] }
+("my_polymorphism", trigger_polymorphism ()); 
+("my_add_compdec", trigger_add_compdecs ()) ] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
 Tactic Notation "scope" := ltac2:(scope ()).
@@ -244,7 +251,7 @@ intros f g l ; induction l; time (scope; verit).
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; time (scope; verit).
+induction l; time (scope; verit_no_check).
 Qed.
 
 
@@ -257,7 +264,7 @@ Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
 Proof.
 (* Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *)
 Undo. *)
-Time scope; verit. 
+Time scope; verit_no_check. 
 Qed.
 
 Section Generic.
@@ -266,7 +273,7 @@ Section Generic.
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-  Time scope; verit. (* Finished transaction in 0.549 secs (0.516u,0.s) (successful) *)
+  Time scope; verit_no_check. (* Finished transaction in 0.549 secs (0.516u,0.s) (successful) *)
 (* Undo.
   Time snipe. (* Finished transaction in 3.028 secs (2.64u,0.015s) (successful) *) *)
   Qed.

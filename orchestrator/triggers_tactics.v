@@ -7,8 +7,83 @@ Import ListNotations.
 Require Import Printer.
 Require Import Triggers.
 
-Ltac myapply2 A B := split ; [apply A | apply B].
-Ltac myexact t := exact t.
+From Sniper Require Import utilities.
+
+From SMTCoq Require SMT_classes Conversion Tactics Trace State QInst.
+
+Declare ML Module "coq-smtcoq.smtcoq".
+
+(** Add compdecs is an atomic transformation not related to Trakt *)
+
+Ltac add_compdecs_terms t :=
+  let t' := get_head t in
+  match goal with
+      (* If it is already in the local context, do nothing *)
+    | _ : SMT_classes.CompDec t |- _ => idtac
+    (* Otherwise, add it in the local context *)
+    | _ =>
+      let p := fresh "p" in
+        assert (p:SMT_classes.CompDec t);
+        [ try (exact _)       (* Use the typeclass machinery *)
+        | .. ]
+  end.
+
+(** Remove add compdecs from SMTCoq's preprocess1 *)
+
+Ltac preprocess1 Hs :=
+    Conversion.remove_compdec_hyps_option Hs;
+    let cpds := Conversion.collect_compdecs in
+    let rels := Conversion.generate_rels cpds in
+    Conversion.trakt1 rels Hs.
+
+Tactic Notation "verit_bool_no_check_base_auto" constr(h) := verit_bool_no_check_base h; try (exact _).
+
+Tactic Notation "verit_bool_no_check" constr(h) :=
+  let tac :=
+  ltac2:(h |- Tactics.get_hyps_cont_ltac1 (ltac1:(h hs |-
+  match hs with
+  | Some ?hs => verit_bool_no_check_base_auto (Some (h, hs))
+  | None => verit_bool_no_check_base_auto (Some h)
+  end;
+  QInst.vauto) h)) in tac h.
+
+Tactic Notation "verit_bool_no_check" :=
+  ltac2:(Tactics.get_hyps_cont_ltac1 ltac1:(hs |- verit_bool_no_check_base_auto hs; QInst.vauto)).
+
+Tactic Notation "verit_no_check" constr(global) :=
+  let tac :=
+  ltac2:(h |- intros; unfold is_true in *; Tactics.get_hyps_cont_ltac1 (ltac1:(h local |-
+  let Hsglob := Conversion.pose_hyps h (@None unit) in
+  let Hs :=
+      lazymatch local with
+      | Some ?local' => Conversion.pose_hyps local' Hsglob
+      | None => constr:(Hsglob)
+      end
+  in
+  preprocess1 Hs;
+  [ .. |
+    let Hs' := Conversion.intros_names in
+    Conversion.preprocess2 Hs';
+    verit_bool_no_check_base_auto Hs';
+    QInst.vauto
+  ]) h)) in tac global.
+
+Tactic Notation "verit_no_check"           :=
+  ltac2:(intros; unfold is_true in *; Tactics.get_hyps_cont_ltac1 ltac1:(local |-
+  let Hs :=
+      lazymatch local with
+      | Some ?local' => Conversion.pose_hyps local' (@None unit)
+      | None => constr:(@None unit)
+      end
+  in
+  preprocess1 Hs;
+  [ .. |
+    let Hs' := Conversion.intros_names in
+    Conversion.preprocess2 Hs';
+    verit_bool_no_check_base_auto Hs';
+    QInst.vauto
+  ])).
+
 
 
 (** We need to use a trick here: there
@@ -19,7 +94,8 @@ throws an uncatchable exception whenever the path is not the good one.
 Consequently, all the Orchestrator's tactics should be in one file, or the user has to 
 provide the absolute path herself, which is not convenient at all.
 Using elpi avoid these difficulties, even if the user needs
-to create its own copy of all the tactic which take arguments *)
+to create its own copy of all the tactic which take arguments 
+TODO : a PR in Coq to avoid this problem *)
 
 From elpi Require Import elpi.
 
@@ -44,6 +120,10 @@ Ltac1.apply ltac1val:(fun s l =>
   let id := s in elpi apply_ltac1 ltac_string:(id) ltac_term_list:(l)) [id; l] run.
 
 Section tests.
+
+(** For tests *)
+Ltac myapply2 A B := split ; [apply A | apply B].
+Ltac myexact t := exact t.
 
 Goal (True /\ True) /\ (True -> True -> True /\ True).
 Proof.
@@ -129,12 +209,16 @@ Ltac2 trigger_anonymous_funs () :=
   (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
   (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
 
+Ltac2 trigger_add_compdecs () :=
+  triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg. 
+
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool () :=
   TMetaLetIn (TIs (TSomeHyp, (Arg Constr.type)) (TType 'Prop NotArg)) ["H"]
   (TNot (TIs (TNamed "H", NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
-
-(* Ltac2 trigger_trakt_Z_bool := *)
+(* 
+Ltac2 trigger_trakt_Z_bool :=
+  TOneTime. *)
 
 
 
