@@ -11,6 +11,36 @@ From Sniper Require Import utilities.
 
 From SMTCoq Require SMT_classes Conversion Tactics Trace State QInst.
 
+From Trakt Require Import Trakt.
+
+Ltac trakt_bool_hyp H :=
+  let T := type of H in 
+  let H' := fresh H in 
+  assert (H' : T) by exact H ;
+  revert H' ; trakt bool ; 
+  intro H'; trakt Prop ; clear H.
+
+Ltac trakt_bool_goal := trakt bool.
+
+Section test_trakt_bool_hyp. 
+
+Lemma toto : (forall (H: True), False).
+ltac1:(intros H ; trakt_bool_hyp H).
+Abort.
+
+(* Trakt Add Relation 2 (@eq nat) (@SMT_classes.eqb_of_compdec nat SMT_classes_instances.Nat_compdec)
+(@SMT_classes.compdec_eq_eqb nat SMT_classes_instances.Nat_compdec). *)
+
+(* Variable (H : forall (n : nat), n =  n).
+
+Lemma tutu : False.
+ltac1:(trakt_bool_hyp H).
+Abort. *)
+
+End test_trakt_bool_hyp.
+
+
+
 Declare ML Module "coq-smtcoq.smtcoq".
 
 (** Add compdecs is an atomic transformation not related to Trakt *)
@@ -219,9 +249,11 @@ Ltac2 trigger_add_compdecs () :=
   (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)). 
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
-Ltac2 trigger_trakt_bool () :=
-  TMetaLetIn (TIs (TSomeHyp, (Arg Constr.type)) (TType 'Prop NotArg)) ["H"]
-  (TNot (TIs (TNamed "H", NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
+Ltac2 trigger_trakt_bool_hyp () :=
+  (TNot (TIs (TSomeHypProp, Arg id) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
+
+Ltac2 trigger_trakt_bool_goal () :=
+  (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
 (* 
 Ltac2 trigger_trakt_Z_bool :=
   TOneTime. *)
