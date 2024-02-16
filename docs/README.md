@@ -23,8 +23,8 @@ crucial transformation but external to this repository is given by the
 
 ## Installation and use
 
-This part describes the steps required to try the `snipe` tactic.
-
+This part describes the steps required to try the `snipe` tactic. It can
+be used with Coq-8.17.
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
@@ -52,7 +52,7 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 
 Then simply install this version of `Sniper`:
 ```
-opam install coq-sniper
+opam install -y .
 ```
 
 ### Installation of the automatic prover and use
@@ -98,7 +98,6 @@ as SMTCoq: CeCILL-C. See the file LICENSE for details.
 
 * [CPP' 23](https://arxiv.org/pdf/2204.02643.pdf)
 * [PXTP' 21](https://hal.science/hal-03328935/document)
-
 
 ## Authors
 See the file [AUTHORS](https://github.com/smtcoq/sniper/blob/master/AUTHORS).
