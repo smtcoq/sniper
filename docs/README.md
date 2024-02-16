@@ -74,14 +74,27 @@ cd ..
 
 Commented examples are available at ``examples.v``.
 
+The documentation about each transformation is available here:
+
+* [Definitions](definitions.md)
+* [Higher Order Equalities](hoeq.md)
+* [Elimination of Anonymous Fixpoints](fix.md)
+* [Pattern Matching](pm.md)
+* [No Confusion Principle](noconf.md)
+* [Generation Principle](gen.md)
+* [Monomorphization](mono.md)
+* [Prenex Higher Order](ho.md)
+* [Inductive Relations in Prop](indrelprop.md)
+* [Decision of Inductive Relations](decide.md)
+
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
 as SMTCoq: CeCILL-C. See the file LICENSE for details.
 
 ## Papers about Sniper
 
-[CPP' 23](https://arxiv.org/pdf/2204.02643.pdf)
-[PXTP' 21](https://hal.science/hal-03328935/document)
+* [CPP' 23](https://arxiv.org/pdf/2204.02643.pdf)
+* [PXTP' 21](https://hal.science/hal-03328935/document)
 
 
 ## Authors
