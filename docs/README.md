@@ -70,9 +70,11 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-## Examples, tests and benchmarks
+## Examples
 
 Commented examples are available at ``examples.v``.
+
+## Transformations
 
 The documentation about each transformation is available here:
 
