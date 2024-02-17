@@ -23,7 +23,7 @@ Goal (forall (length_def :length =
                 match l with
                 | [] => 0
                 | _ :: l' => S (length l')
-                end)) -> False).
+                end)) -> False). intros.
 
 1 goal
 length_def : length =
