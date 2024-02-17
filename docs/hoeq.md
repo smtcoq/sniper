@@ -47,7 +47,7 @@ length_def : length =
                 | _ :: l' => S (length l')
                 end)
 H : forall (A : Type) (l : list A),
-    #|l| =
+    length l =
     (fix length (l0 : list A) : nat :=
        match l0 with
        | [] => 0
