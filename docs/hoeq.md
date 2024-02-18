@@ -6,13 +6,16 @@ This transformation `expand_hyp`, takes as an argument a hypothesis `H` of
 type `f = g`, where `f` or `g` are functions taking `k` arguments. 
 Suppose that `T1 ... Tk` are the types of these arguments.
 
-The tactic `expand_hyp` creates a new hypothesis `H'` starting from `H` : 
+The tactic `expand_hyp` creates a new hypothesis `H'` starting from `H`: 
 ```
 H': forall (x1: T1) ... (xk: Tk), f x1 ... xk = g x1 ... xk
 ```
 
 There is a version `expand_hyp_cont` taking an additional argument: a `Ltac` continuation, 
 which can bind the produced hypothesis `H'`
+
+This transformation is written using `Ltac` and the [MetaCoq plugin](https://github.com/MetaCoq/metacoq).
+In particular, it uses `template-coq`, which is the metaprogramming tool for Coq written in Coq.
 
 ## An example
 
