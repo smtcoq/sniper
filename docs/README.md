@@ -13,7 +13,8 @@ before calling SMTCoq.
 The translation is implemented through a combination of modular, small
 transformations that independently eliminate specific aspects of Coq
 logic towards first-order logic. These small transformations are safe,
-either generating proof terms on the fly (*certifying* transformations). 
+generating proof terms on the fly (*certifying* transformations). 
+They could have been *certified* and we plan to also write or use transformations proven once and for all in `Sniper`, as both methods are compatible with the plugin.
 
 A
 crucial transformation but external to this repository is given by the
