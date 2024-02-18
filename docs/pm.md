@@ -4,7 +4,8 @@
 
 This transformation `eliminate_dependent_pattern_matching`, takes as argument a hypothesis `H` whose type
 is of the form :
-```forall (x1: A1) ... (xn: An), 
+```Coq
+forall (x1: A1) ... (xn: An), 
 C[match f xi1 ... xin with 
 | c1 y11 ... y1j => g1 y11 ... y1j
 ... 
