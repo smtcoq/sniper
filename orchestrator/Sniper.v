@@ -171,6 +171,38 @@ Ltac2 scope () := orchestrator 5
 ("my_add_compdec", trigger_add_compdecs ())] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
+Ltac2 scope_info () := orchestrator 5
+{ all_tacs := 
+[
+("my_anonymous_functions", trigger_anonymous_funs) ;
+("my_higher_order", trigger_higher_order) ; 
+("my_reflexivity", trigger_reflexivity ());
+("my_unfold_refl", trigger_unfold_reflexivity ()) ;
+("my_higher_order_equalities", trigger_higher_order_equalities); 
+("my_fixpoints", trigger_fixpoints);
+("my_pattern_matching", trigger_pattern_matching);
+("my_algebraic_types", trigger_algebraic_types);
+("my_gen_principle_temporary", trigger_generation_principle) ;
+("my_polymorphism_elpi", trigger_polymorphism ()) ;
+("my_add_compdec", trigger_add_compdecs ())] }
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Info.
+
+Ltac2 scope_full () := orchestrator 5
+{ all_tacs := 
+[
+("my_anonymous_functions", trigger_anonymous_funs) ;
+("my_higher_order", trigger_higher_order) ; 
+("my_reflexivity", trigger_reflexivity ());
+("my_unfold_refl", trigger_unfold_reflexivity ()) ;
+("my_higher_order_equalities", trigger_higher_order_equalities); 
+("my_fixpoints", trigger_fixpoints);
+("my_pattern_matching", trigger_pattern_matching);
+("my_algebraic_types", trigger_algebraic_types);
+("my_gen_principle_temporary", trigger_generation_principle) ;
+("my_polymorphism_elpi", trigger_polymorphism ()) ;
+("my_add_compdec", trigger_add_compdecs ())] }
+{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Full.
+
 Ltac2 scope2 () := orchestrator 5
 { all_tacs := 
 [
@@ -187,18 +219,18 @@ Ltac2 scope2 () := orchestrator 5
 ("my_add_compdec", trigger_add_compdecs ())] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
-Tactic Notation "scope" := ltac2:(Control.enter (fun () => scope ())).
+Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
 
-Tactic Notation "scope2" := ltac2:(Control.enter (fun () => scope2 ())).
+Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
 Tactic Notation "snipe_no_check" := 
-  ltac2:(Control.enter (fun () => scope (); ltac1:(verit_no_check_orch))).
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_no_check_orch))).
 
 Tactic Notation "snipe2_no_check" := 
-  ltac2:(Control.enter (fun () => scope2 (); ltac1:(verit_no_check_orch))).
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_orch))).
 
 Tactic Notation "snipe" :=
-  ltac2:(Control.enter (fun () => scope (); ltac1:(verit))).
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit))).
 
 Tactic Notation "snipe2" :=
-  ltac2:(Control.enter (fun () => scope2 (); ltac1:(verit))).
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit))).

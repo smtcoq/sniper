@@ -30,7 +30,7 @@ Local Open Scope Z_scope.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
-Proof. snipe. Qed.
+Proof. snipe_no_check. Qed.
 
 (* The `snipe` and `snipe_no_check` tactics requires instances of equality to be decidable.
    It is in particular visible with type variables. *)
@@ -39,7 +39,7 @@ Section Generic.
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-    scope. 5:verit_no_check.
+    scope. 4:verit_no_check.
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -49,7 +49,7 @@ Section Generic.
   (* On abstract type, it has to be assumed. *)
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
-  Proof. snipe. Qed.
+  Proof. snipe_no_check. Qed.
 
 End Generic.
 
@@ -62,7 +62,7 @@ Section Timeout.
   Variable A : Type.
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
-  Proof. (* snipe_timeout 10. *) snipe. Qed.
+  Proof. (* snipe_timeout 10. *) snipe_no_check. Qed.
 
 End Timeout.
 
@@ -92,10 +92,10 @@ Section destruct_auto.
     apply app_cons_not_nil in H1 as [].
   Qed.
 
-(* Theorem app_eq_unit_auto :
+Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
-  Proof. scope. Qed.  TODO *)
+  Proof. snipe_no_check. Qed.
 
 
 End destruct_auto.
@@ -118,7 +118,7 @@ Proof.
     + rewrite IH. reflexivity.
 Qed.
 
-(* TODO (* The proof of this lemma, except induction, can be automatized *)
+(* The proof of this lemma, except induction, can be automatized *)
 Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe_no_check. Qed. *)
@@ -193,7 +193,8 @@ Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
 - pose proof app_nil_r; snipe.
-(* - pose proof app_ass ; pose proof app_nil_r; snipe.  TODO *)
+- pose proof app_ass ; pose proof app_nil_r; scope.
+(* generalize dependent app. generalize dependent rev_elements_aux. intros.  verit. TODO *)
 Admitted.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
