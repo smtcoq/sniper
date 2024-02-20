@@ -81,7 +81,7 @@ Tactic Notation "verit_bool_no_check" constr(h) :=
 Tactic Notation "verit_bool_no_check" :=
   ltac2:(Tactics.get_hyps_cont_ltac1 ltac1:(hs |- verit_bool_no_check_base_auto hs; QInst.vauto)).
 
-Tactic Notation "verit_no_check" constr(global) :=
+Tactic Notation "verit_no_check_orch" constr(global) :=
   let tac :=
   ltac2:(h |- intros; unfold is_true in *; Tactics.get_hyps_cont_ltac1 (ltac1:(h local |-
   let Hsglob := Conversion.pose_hyps h (@None unit) in
@@ -99,7 +99,7 @@ Tactic Notation "verit_no_check" constr(global) :=
     QInst.vauto
   ]) h)) in tac global.
 
-Tactic Notation "verit_no_check"           :=
+Tactic Notation "verit_no_check_orch"           :=
   ltac2:(intros; unfold is_true in *; Tactics.get_hyps_cont_ltac1 ltac1:(local |-
   let Hs :=
       lazymatch local with

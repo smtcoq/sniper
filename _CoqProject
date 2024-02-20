@@ -7,7 +7,7 @@ orchestrator/triggers.v
 orchestrator/triggers_tactics.v
 orchestrator/printer.v
 orchestrator/orchestrator.v
-orchestrator/scope.v
+orchestrator/Sniper.v
 
 
 theories/utilities.v
@@ -27,7 +27,7 @@ theories/clearbodies.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
 theories/tree.v
-theories/Sniper.v
+theories/Transfos.v
 
 theories/deciderel/add_hypothesis_on_parameters.v
 theories/deciderel/compdec_plugin.v
