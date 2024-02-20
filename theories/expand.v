@@ -11,7 +11,8 @@
 
 Require Import MetaCoq.Template.All.
 Require Import utilities.
-Require Import definitions.
+Require Import reflexivity.
+Require Import unfold_reflexivity.
 Require Import List.
 Import ListNotations.
 Require Import String.
@@ -110,13 +111,16 @@ end.
 Ltac expand_hyp H := expand_hyp_cont H ltac:(fun _ => idtac).
 
 Ltac expand_fun f :=
-let H:= get_def_cont f in expand_hyp H ; clear H.
+  let f_def := eval unfold f in f in
+  let H := fresh in assert (H : f = f_def) by reflexivity ;
+  expand_hyp H ; clear H. 
 
 Section tests.
 
 Goal False.
-get_def length.
-expand_hyp length_def.
+assert_refl length.
+unfold_refl H.
+expand_hyp H.
 assert (forall x : string, length x = match x with 
 | ""%string => 0
 | String _ s' => S (length s') 
@@ -125,13 +129,7 @@ Abort.
 
 Goal False.
 expand_fun Datatypes.length.
-get_def length.
-expand_hyp length_def.
 expand_fun hd.
-Abort.
-
-Goal forall (A: Type) (l : list A) (a : A), hd a l = a -> tl l = [].
-get_definitions_theories unit ltac:(fun H => expand_hyp_cont H ltac:(fun H' => idtac)).
 Abort.
 
 End tests.

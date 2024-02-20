@@ -13,7 +13,6 @@
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
-Require Import definitions.
 Require Import elimination_fixpoints.
 Require Import expand.
 Require Import List.
