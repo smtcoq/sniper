@@ -100,18 +100,23 @@ Theorem app_eq_unit_auto :
 
 End destruct_auto.
 
+Section search.
+
+Variable (A: Type).
+Variable (H : CompDec A).
+
 
 (* Example of searching an element in a list *)
-Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
+Fixpoint search (x : A) l :=
   match l with
   | [] => false
   | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
-Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
+Lemma search_app : forall (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof.
-  intros A H x l1 l2. induction l1 as [ | x0 l0 IH].
+  intros x l1 l2. induction l1 as [ | x0 l0 IH].
   - reflexivity.
   - simpl. destruct (eqb_of_compdec H x x0).
     + reflexivity.
@@ -119,16 +124,16 @@ Proof.
 Qed.
 
 (* The proof of this lemma, except induction, can be automatized *)
-Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
-    search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe_no_check. Qed. *)
+Lemma search_app_snipe : forall (x: A) (l1 l2: list A),
+    @search x (l1 ++ l2) = ((@search x l1) || (@search x l2))%bool.
+Proof. intros x l1 l2. induction l1 as [ | x0 l0 IH]; snipe_no_check. Qed. 
 
 
 (* Manually using this lemma *)
-Lemma search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
+Lemma search_lemma : forall (x: A) (l1 l2 l3: list A),
     search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof.
-  intros A H x l1 l2 l3. rewrite !search_app.
+  intros x l1 l2 l3. rewrite !search_app.
   rewrite orb_comm with (b1 := search x l3).
   rewrite orb_comm  with (b1 := search x l2) (b2 := search x l1 ).
   rewrite orb_assoc.
@@ -136,20 +141,22 @@ Proof.
 Qed.
 
 (* It can be fully automatized *)
-Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
+Lemma snipe_search_lemma : forall (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. intros A H. pose proof search_app. snipe. Qed.
+Proof. pose proof search_app. snipe_no_check. Qed.
 
 
-(* Another example with search *)
-Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
-    search b (a :: l) -> eqb_of_compdec HA a b \/ search b l.
-Proof. intros A HA. snipe. Qed.
+(* TODO (* Another example with search *)
+Lemma in_inv : forall (a b:A) (l:list A),
+    search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
+Proof. intros. snipe_no_check. Qed. *)
 
 
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros A H; induction l; snipe. Qed.
+Proof. intros ; induction l; snipe_no_check. Qed.
+
+End search.
 
 Section higher_order.
 
@@ -165,10 +172,11 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, [] => []
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
-(*  TODO
+
+(* TODO : elimination polymorphism
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope. Qed.
+Proof. Time intros f g l ; induction l; scope2. Qed.
  *)
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 
@@ -192,8 +200,8 @@ Proof. intros t a t' b; snipe. Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- pose proof app_nil_r; snipe.
-- pose proof app_ass ; pose proof app_nil_r; scope.
+(* - pose proof app_nil_r; snipe_no_check.
+- pose proof app_ass ; pose proof app_nil_r; scope. *)
 (* generalize dependent app. generalize dependent rev_elements_aux. intros.  verit. TODO *)
 Admitted.
 

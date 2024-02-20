@@ -13,12 +13,11 @@ From SMTCoq Require SMT_classes Conversion Tactics Trace State QInst.
 
 From Trakt Require Import Trakt.
 
-Ltac trakt_bool_hyp H :=
-  let T := type of H in 
-  let H' := fresh H in 
-  assert (H' : T) by exact H ;
-  revert H' ; trakt bool ; 
-  intro H'; trakt Prop ; clear H.
+Inductive dumb_ind :=.
+
+Ltac trakt_bool_hyp H :=  
+  let H' := fresh H in
+  trakt_pose dumb_ind bool : H as H' ; clearbody H'.
 
 Ltac trakt_bool_goal := trakt bool.
 
@@ -43,6 +42,93 @@ End test_trakt_bool_hyp.
 
 Declare ML Module "coq-smtcoq.smtcoq".
 
+Require Import ZArith.
+
+Ltac trakt_rels rels :=
+  lazymatch rels with
+  | Some ?rels' => first [trakt Z bool with rel rels' | trakt bool with rel rels']
+  | None => first [trakt Z bool | trakt bool]
+  end.
+
+Ltac revert_and_trakt Hs rels :=
+  lazymatch Hs with
+  | (?Hs, ?H) =>
+    revert H;
+    revert_and_trakt Hs rels
+    (* intro H *)
+  | ?H =>
+    revert H;
+    trakt_rels rels
+    (* intro H *)
+  end.
+
+
+Definition sep := True.
+
+Ltac get_hyps_upto_sep :=
+  lazymatch goal with
+  | H' : ?P |- _ =>
+    lazymatch P with
+    | sep => constr:(@None unit)
+    | _ =>
+      let T := type of P in
+      lazymatch T with
+      | Prop =>
+        let _ := match goal with _ => revert H' end in
+        let acc := get_hyps_upto_sep in
+        let _ := match goal with _ => intro H' end in
+        lazymatch acc with
+        | Some ?acc' => constr:(Some (acc', H'))
+        | None => constr:(Some H')
+        end
+      | _ =>
+        let _ := match goal with _ => revert H' end in
+        let acc := get_hyps_upto_sep in
+        let _ := match goal with _ => intro H' end in
+        acc
+      end
+    end
+  end.
+
+
+(* Goal False -> 1 = 1 -> unit -> false = true -> True. *)
+(* Proof. *)
+(*   intros H1 H2. *)
+(*   assert (H : sep) by exact I. *)
+(*   intros H3 H4. *)
+(*   let Hs := get_hyps_upto_sep in idtac Hs. *)
+(* Abort. *)
+
+
+Ltac intros_names :=
+  let H := fresh in
+  let _ := match goal with _ => assert (H : sep) by exact I; intros end in
+  let Hs := get_hyps_upto_sep in
+  let _ := match goal with _ => clear H end in
+  Hs.
+
+
+(* Goal False -> 1 = 1 -> unit -> false = true -> True. *)
+(* Proof. *)
+(*   intros H1 H2. *)
+(*   let Hs := intros_names in idtac Hs. *)
+(* Abort. *)
+
+
+Ltac post_trakt Hs :=
+  lazymatch Hs with
+  | (?Hs1, ?Hs2) =>
+    post_trakt Hs1;
+    post_trakt Hs2
+  | ?H => try (revert H; trakt_reorder_quantifiers; trakt_boolify_arrows; intro H)
+  end.
+
+Ltac trakt1 rels Hs :=
+  lazymatch Hs with
+  | Some ?Hs => revert_and_trakt Hs rels
+  | None => trakt_rels rels
+  end.
+
 (** Add compdecs is an atomic transformation not related to Trakt *)
 
 Ltac add_compdecs_terms t :=
@@ -65,7 +151,7 @@ Ltac preprocess1 Hs :=
     Conversion.remove_compdec_hyps_option Hs;
     let cpds := Conversion.collect_compdecs in
     let rels := Conversion.generate_rels cpds in
-    Conversion.trakt1 rels Hs.
+    trakt1 rels Hs.
 
 Tactic Notation "verit_bool_no_check_base_auto" constr(h) := verit_bool_no_check_base h; try (exact _).
 
