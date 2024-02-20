@@ -31,7 +31,6 @@ From Ltac2 Require Import Printf.
 Ltac2 scope_triggers () := 
   [
 TIs (TGoal, NotArg) tDiscard;
-trigger_trakt_bool ();
    trigger_definitions (); 
    trigger_higher_order_equalities;
    trigger_fixpoints;
@@ -206,7 +205,7 @@ Tactic Notation "scope2" := ltac2:(Control.enter (fun () => scope2 ())).
 
 Local Open Scope Z_scope.
 
-Require Import List.
+Require Import List Bool.
 Import ListNotations.
 
 
@@ -226,6 +225,28 @@ Variable (HA: CompDec A).
   Qed.
 
 End Debug.  *)
+
+(* Example of searching an element in a list *)
+Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
+  match l with
+  | [] => false
+  | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
+  end.
+
+(* The proof of this lemma, except induction, can be automatized *)
+Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
+    search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
+Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; scope.
+2: { 
+assert (new_hyp : forall (x : elpi_ctx_entry_90_) (x0 : list elpi_ctx_entry_90_), [] = x :: x0 -> False).
+admit.
+assert (
+toto : forall (x x0 : elpi_ctx_entry_90_) (x1 x2 : list elpi_ctx_entry_90_),
+                     x :: x1 = x0 :: x2 -> x = x0 /\ x1 = x2).
+admit. verit_no_check.
+
+
+idtac. Qed.
 
 Section higher_order.
 
