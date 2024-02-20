@@ -13,3 +13,5 @@ Require Export interpretation_algebraic_types.
 Require Export clearbodies.
 Require Export case_analysis.
 Require Export case_analysis_existentials.
+Require Export higher_order.
+Require Export anonymous_functions.

@@ -6,18 +6,7 @@ Require Import NArith.BinNatDef.
 
 From SMTCoq Require Import SMT_classes SMT_classes_instances BVList FArray.
 
-From Trakt Require Import Trakt.
-
 From Sniper Require Import Sniper.
-(* From Sniper Require Import expand.
-From Sniper Require Import elimination_fixpoints.
-From Sniper Require Import elimination_pattern_matching.
-From Sniper Require Import interpretation_algebraic_types.
-From Sniper Require Import case_analysis.
-From Sniper Require Import higher_order.
-From Sniper Require Import anonymous_functions.
-From Sniper Require Import instantiate.
-From Sniper Require Import Sniper. *)
 
 Require Import triggers_tactics.
 Require Import triggers.
@@ -28,84 +17,71 @@ Set Default Proof Mode "Classic".
 
 From Ltac2 Require Import Printf.
 
-Ltac2 scope_triggers () := 
-  [
-TIs (TGoal, NotArg) tDiscard;
-trigger_trakt_bool_hyp ();
-   trigger_definitions (); 
-   trigger_higher_order_equalities;
-   trigger_fixpoints;
-   trigger_pattern_matching;
-   trigger_higher_order;
-   trigger_anonymous_funs ();
-   trigger_algebraic_types;
-   trigger_generation_principle ();
-   trigger_polymorphism ()].
-
 Ltac2 init_triggered ():=
-[("", [constr:(Z.add)]);
-("", [constr:(Z.sub)]);
-("", [constr:(Z.mul)]);
-("", [constr:(Z.eqb)]);
-("", [constr:(Z.ltb)]);
-("", [constr:(Z.leb)]);
-("", [constr:(Z.geb)]);
-("", [constr:(Z.gtb)]);
-("", [constr:(Z.lt)]);
-("", [constr:(Z.le)]);
-("", [constr:(Z.ge)]);
-("", [constr:(Z.gt)]);
-("", [constr:(Pos.lt)]);
-("", [constr:(Pos.le)]);
-("", [constr:(Pos.ge)]);
-("", [constr:(Pos.gt)]);
-("", [constr:(Z.to_nat)]);
-("", [constr:(Pos.mul)]);
-("", [constr:(Pos.add)]);
-("", [constr:(Pos.sub)]);
-("", [constr:(Init.Nat.add)]);
-("", [constr:(Init.Nat.mul)]);
-("", [constr:(Nat.eqb)]);
-("", [constr:(Nat.leb)]);
-("", [constr:(Nat.ltb)]);
-("", [constr:(Peano.lt)]);
-("", [constr:(ge)]); 
-("", [constr:(gt)]);
-("", [constr:(N.add)]);
-("", [constr:(N.mul)]);
-("", [constr:(N.eqb)]);
-("", [constr:(N.leb)]);
-("", [constr:(N.ltb)]);
-("", [constr:(Peano.lt)]);
-("", [constr:(ge)]); ("", [constr:(gt)]);
-("", [constr:(negb)]);
-("", [constr:(not)]);
-("", [constr:(andb)]);
-("", [constr:(orb)]);
-("", [constr:(implb)]);
-("", [constr:(xorb)]);
-("", [constr:(Bool.eqb)]);
-("", [constr:(iff)]);
-("", [constr:(BITVECTOR_LIST.bv_eq)]);
-("", [constr:(BITVECTOR_LIST.bv_and)]);
-("", [constr:(BITVECTOR_LIST.bv_or)]);
-("", [constr:(BITVECTOR_LIST.bv_xor)]);
-("", [constr:(BITVECTOR_LIST.bv_add)]);
-("", [constr:(BITVECTOR_LIST.bv_mult)]);
-("", [constr:(BITVECTOR_LIST.bv_ult)]);
-("", [constr:(BITVECTOR_LIST.bv_slt)]);
-("", [constr:(BITVECTOR_LIST.bv_concat)]);
-("", [constr:(BITVECTOR_LIST.bv_shl)]);
-("", [constr:(BITVECTOR_LIST.bv_shr)]);
-("", [constr:(@FArray.select)]);
-("", [constr:(@FArray.diff)]);
-("", [constr:(is_true)]);
-("", [constr:(@eqb_of_compdec)]);
-("", [constr:(CompDec)]);
-("", [constr:(Nat_compdec)]);
-("", [constr:(list_compdec)]);
-("", [constr:(prod_compdec)]);
-("", [constr:(Z_compdec)]);
+[("my_reflexivity", [constr:(Z.add)]);
+("my_reflexivity", [constr:(Z.sub)]);
+("my_reflexivity", [constr:(Z.mul)]);
+("my_reflexivity", [constr:(Z.eqb)]);
+("my_reflexivity", [constr:(Z.ltb)]);
+("my_reflexivity", [constr:(Z.leb)]);
+("my_reflexivity", [constr:(Z.geb)]);
+("my_reflexivity", [constr:(Z.gtb)]);
+("my_reflexivity", [constr:(Z.lt)]);
+("my_reflexivity", [constr:(Z.le)]);
+("my_reflexivity", [constr:(Z.ge)]);
+("my_reflexivity", [constr:(Z.gt)]);
+("my_reflexivity", [constr:(Pos.lt)]);
+("my_reflexivity", [constr:(Pos.le)]);
+("my_reflexivity", [constr:(Pos.ge)]);
+("my_reflexivity", [constr:(Pos.gt)]);
+("my_reflexivity", [constr:(Z.to_nat)]);
+("my_reflexivity", [constr:(Pos.mul)]);
+("my_reflexivity", [constr:(Pos.add)]);
+("my_reflexivity", [constr:(Pos.sub)]);
+("my_reflexivity", [constr:(Init.Nat.add)]);
+("my_reflexivity", [constr:(Init.Nat.mul)]);
+("my_reflexivity", [constr:(Nat.eqb)]);
+("my_reflexivity", [constr:(Nat.leb)]);
+("my_reflexivity", [constr:(Nat.ltb)]);
+("my_reflexivity", [constr:(Peano.lt)]);
+("my_reflexivity", [constr:(ge)]); 
+("my_reflexivity", [constr:(gt)]);
+("my_reflexivity", [constr:(N.add)]);
+("my_reflexivity", [constr:(N.mul)]);
+("my_reflexivity", [constr:(N.eqb)]);
+("my_reflexivity", [constr:(N.leb)]);
+("my_reflexivity", [constr:(N.ltb)]);
+("my_reflexivity", [constr:(Peano.lt)]);
+("my_reflexivity", [constr:(ge)]); 
+("my_reflexivity", [constr:(gt)]);
+("my_reflexivity", [constr:(negb)]);
+("my_reflexivity", [constr:(not)]);
+("my_reflexivity", [constr:(andb)]);
+("my_reflexivity", [constr:(orb)]);
+("my_reflexivity", [constr:(implb)]);
+("my_reflexivity", [constr:(xorb)]);
+("my_reflexivity", [constr:(Bool.eqb)]);
+("my_reflexivity", [constr:(iff)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_eq)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_and)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_or)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_xor)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_add)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_mult)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_ult)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_slt)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_concat)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_shl)]);
+("my_reflexivity", [constr:(BITVECTOR_LIST.bv_shr)]);
+("my_reflexivity", [constr:(@FArray.select)]);
+("my_reflexivity", [constr:(@FArray.diff)]);
+("my_reflexivity", [constr:(is_true)]);
+("my_reflexivity", [constr:(@eqb_of_compdec)]);
+("my_reflexivity", [constr:(CompDec)]);
+("my_reflexivity", [constr:(Nat_compdec)]);
+("my_reflexivity", [constr:(list_compdec)]);
+("my_reflexivity", [constr:(prod_compdec)]);
+("my_reflexivity", [constr:(Z_compdec)]);
 ("my_algebraic_types", [constr:(Z)]);
 ("my_algebraic_types", [constr:(bool)]);
 ("my_algebraic_types", [constr:(positive)]);
@@ -133,9 +109,11 @@ Ltac2 init_triggered ():=
 ("my_add_compdec", [constr:(bool)])
 ].
 
-Ltac my_refl t := assert_refl t.
+Ltac my_reflexivity t := assert_refl t.
 
-(* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  TODO : CompDecs  !! *)
+Ltac my_unfold_refl H := unfold_refl H.
+
+(* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  *)
 
 Ltac my_higher_order_equalities H := expand_hyp H ; clear H.
 
@@ -152,9 +130,13 @@ Ltac my_algebraic_types t := try (interp_alg_types t).
 Ltac my_gen_principle t := 
  pose_gen_statement t.
 
+Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
+@CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
+
 Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 
 Ltac my_polymorphism_elpi := elimination_polymorphism.
+
 Ltac my_polymorphism := inst.
 
 Ltac my_add_compdec t := add_compdecs_terms t.
@@ -173,7 +155,8 @@ Ltac2 scope () := orchestrator 5
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
 ("my_higher_order", trigger_higher_order) ; 
-("", trigger_definitions ());
+("my_reflexivity", trigger_reflexivity ());
+("my_unfold_refl", trigger_unfold_reflexivity ()) ;
 ("my_higher_order_equalities", trigger_higher_order_equalities); 
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
@@ -187,15 +170,16 @@ Ltac2 scope2 () := orchestrator 5
 { all_tacs := 
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
-("my_higher_order", trigger_higher_order) ;
-("", trigger_definitions ());
-("my_higher_order_equalities", trigger_higher_order_equalities);
+("my_higher_order", trigger_higher_order) ; 
+("my_reflexivity", trigger_reflexivity ());
+("my_unfold_refl", trigger_unfold_reflexivity ()) ;
+("my_higher_order_equalities", trigger_higher_order_equalities); 
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
 ("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle);
-("my_polymorphism", trigger_polymorphism ()); 
-("my_add_compdec", trigger_add_compdecs ()) ] }
+("my_gen_principle_temporary", trigger_generation_principle) ;
+("my_polymorphism", trigger_polymorphism ()) ;
+("my_add_compdec", trigger_add_compdecs ())] }
 { triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
 
 Tactic Notation "scope" := ltac2:(scope ()).
@@ -250,7 +234,7 @@ intros f g l ; induction l; time (scope; verit).
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; time scope; verit_no_check.
+induction l; time scope. verit_no_check. verit.
 Qed.
 
 
@@ -260,8 +244,8 @@ End higher_order.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
-Proof.
-(* Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *)
+(* Proof.
+(* Time snipe. (* Finished transaction in 2.783 secs (2.428u,0.007s) (successful) *) *)
 Undo. *)
 Time scope; verit_no_check. 
 Qed.
@@ -307,14 +291,15 @@ Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
   | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
-Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
+(* Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof. intros A H x l1 l2.
-Time induction l1 as [ | x0 l0 IH]; simpl; ltac2:(Control.enter (fun () => scope ())) ; verit_no_check.
+Time induction l1 as [ | x0 l0 IH]; ltac2:(Control.enter (fun () => scope ())). 
+- generalize  dependent search. verit.
 (* Finished transaction in 1.518 secs (1.456u,0.019s) (successful) *)
 (* Time induction l1 as [ | x0 l0 IH]; simpl; snipe Finished transaction in 9.089 secs (7.921u,0.005s) (successful). *)
 
-Qed.
+Qed. *)
 
 Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
@@ -386,7 +371,7 @@ Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
 - (* snipe app_nil_r. Undo.  *)pose proof List.app_nil_r. scope; verit_no_check.
-- pose proof List.app_ass. pose proof List.app_nil_r. scope; verit_no_check.
+- pose proof List.app_ass. pose proof List.app_nil_r. scope. verit_no_check.
 Qed.
 
 

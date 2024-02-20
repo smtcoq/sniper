@@ -189,11 +189,19 @@ in aux t.
 (** Triggers for Sniper tactics *)
 
 
-Ltac2 trigger_definitions () :=
+Ltac2 trigger_reflexivity () :=
   TDisj (TMetaLetIn (TContains (TGoal, NotArg) (TConstant None (Arg id))) ["def"]
          (TPred (TNamed "def", Arg id) not_higher_order))
         (TMetaLetIn (TContains (TSomeHyp, NotArg) (TConstant None (Arg id))) ["def"]
          (TPred (TNamed "def", Arg id) not_higher_order)).
+
+(* warning: overspecification : TODO *)
+
+Ltac2 trigger_unfold_reflexivity () :=
+ TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg).
+
+(* Ltac2 trigger_unfold_in () :=
+ TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg)  TODO *)
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).
@@ -254,6 +262,8 @@ Ltac2 trigger_trakt_bool_hyp () :=
 
 Ltac2 trigger_trakt_bool_goal () :=
   (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
+
+
 (* 
 Ltac2 trigger_trakt_Z_bool :=
   TOneTime. *)
