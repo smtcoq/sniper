@@ -1,4 +1,4 @@
-From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Ltac2 Init.
 
 (** A filter is useful to block the application of a transformation
 even if the transformation is triggered *)
@@ -27,4 +27,3 @@ Ltac2 pass_the_filter
       | FConstrList l' => if List.equal Constr.equal l l' then false else true
       | FPredList p => if p l then false else true
     end.
-        

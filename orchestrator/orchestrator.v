@@ -6,14 +6,14 @@ Require Import List.
 Import ListNotations.
 Require Import printer.
 Require Import triggers.
+Require Import filters.
 Require Import triggers_tactics.
 
 Ltac2 Type cgstate := 
   { mutable cgstate : ((ident * constr option * constr) list)*(constr option) }.
 
 Ltac2 Type all_tacs :=
-  { mutable all_tacs : (string * trigger) list }.
-
+  { mutable all_tacs : (string * trigger * filter) list }.
 
 Ltac2 Type triggered_tacs :=
   { mutable triggered_tacs : (string * constr list) list }.
@@ -116,6 +116,12 @@ if leq_verb v Nothing then () else
 (printf "Automatically applied %s with the following args" s ;
 List.iter (fun x => printf "%t" x) l).
 
+
+Ltac2 fst (p:'a * 'b * 'c ) : 'a := let (x,_, _) := p in x.
+Ltac2 snd (p:'a * 'b * 'c) : 'b := let (_,y, _) := p in y.
+Ltac2 thrd (p:'a * 'b * 'c) : 'c := let (_, _, z) := p in z.
+     
+
 (** The Orchestrator uses four states: 
   - the hypotheses and the goal changed by the application of a previous tactic (or the initial goal)
   - the local triggers variables 
@@ -137,32 +143,35 @@ Ltac2 rec orchestrator_aux
   scg (* Subterms already computed in the proof state *)
   trigs (* Triggers *)
   (tacs : string list) (* Tactics, should have same length as triggers) *)
-  trigtacs (* Triggered tactics, pair between a string and a list of arguments *) 
+  (fis : filter list) (* filters, should have same lenght as tactics *)
+  (trigtacs : triggered_tacs) (* Triggered tactics, pair between a string and a list of arguments *) 
   (v: verbosity) : (* number of information required *) unit := 
   print_state_verb v cg ;
-  match trigs, tacs with
-    | [], _ :: _ => fail "you forgot have more tactics than triggers"
-    | _ :: _, [] => fail "you have more triggers than tactics"
-    | [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old v
-    | trig :: trigs', name :: tacs' => 
+  match trigs, tacs, fis with
+    | [], _ :: _, _ => fail "you forgot have more tactics than triggers"
+    | _ :: _, [], _ => fail "you have more triggers than tactics"
+    | [], _, _ :: _ => fail "you have more filters than tactics"
+    | _::__, _, [] => fail "you have triggers than filters"
+    | [], [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old v
+    | trig :: trigs', name :: tacs', fi :: fis' => 
          let env_args := get_args_used name trigtacs in
          let it := interpret_trigger (cg.(cgstate)) env env_args env_old scg global_flag flag_old_type name trig in
          match it with
           | None =>
              print_tactic_not_triggered v name ;
-             orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
+             orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
           | Some l =>
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
             if Bool.and (Bool.and (Bool.equal ((flag_old_type).(flag_old_type)) true) lnotempty) 
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
               print_tactic_already_applied v name l ;
-              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
             else if Bool.and (is_tonetime trig) (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then
                print_tactic_already_applied_once v name ;
-               orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v
+               orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
             else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then
               print_tactic_global_in_local v name ;
-              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' trigtacs v                
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v                
             else 
               (run name l;
               print_applied_tac v name l ;
@@ -180,7 +189,7 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs trigtacs v))
+              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs fis  trigtacs v))
         end
   end
  with orchestrator n alltacs trigtacs env_old v :=
@@ -191,10 +200,10 @@ Ltac2 rec orchestrator_aux
   let env := { env_triggers := [] } in
   let scg := { subterms_coq_goal := ([], None) } in
   let alltacs' := alltacs.(all_tacs) in
-  let alltacs'' := List.split alltacs' in
-  let tacs := fst alltacs'' in
-  let trigs := snd alltacs'' in
-  let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs trigtacs v in
+  let tacs := List.map fst alltacs' in
+  let trigs := List.map snd alltacs' in
+  let filt := List.map thrd alltacs' in
+  let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs filt trigtacs v in
   Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old v).
 
 (** 
