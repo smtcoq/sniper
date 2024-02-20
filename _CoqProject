@@ -27,6 +27,7 @@ theories/clearbodies.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
 theories/tree.v
+theories/Sniper.v
 
 theories/deciderel/add_hypothesis_on_parameters.v
 theories/deciderel/compdec_plugin.v

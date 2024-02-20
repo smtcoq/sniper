@@ -13,6 +13,8 @@
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import utilities.
+Require Import reflexivity.
+Require Import unfold_reflexivity.
 Require Import elimination_fixpoints.
 Require Import expand.
 Require Import List.
@@ -229,10 +231,12 @@ Module Tests.
 Definition dumb_def (n m : nat) := match Nat.eqb n m with true => true | false => false end.
 
 Goal (forall n m : nat, dumb_def n m = false)-> False.
- intros. get_def dumb_def. expand_hyp dumb_def_def.
-eliminate_dependent_pattern_matching H0.
-get_def length. expand_hyp length_def.
-eliminate_fix_hyp H0. eliminate_dependent_pattern_matching H0.
+ intros. assert_refl dumb_def.
+unfold_refl H0.
+expand_hyp H0.
+eliminate_dependent_pattern_matching H1.
+assert_refl length. unfold_refl H1. expand_hyp H1.
+eliminate_fix_hyp H2. eliminate_dependent_pattern_matching H2.
 Abort.
 
 
@@ -293,14 +297,13 @@ fun ω a D => match D with
 end.
 
 
-Goal True.
-get_def length. expand_hyp length_def. eliminate_fix_hyp H.  
-get_def Nat.add. expand_hyp add_def. eliminate_fix_hyp H0.
+Goal True. 
+assert_refl Nat.add. unfold_refl H. expand_hyp H. eliminate_fix_hyp H0.
 eliminate_dependent_pattern_matching H0.
-eliminate_dependent_pattern_matching H.
-get_def dep_match. expand_hyp dep_match_def.
-eliminate_fix_hyp H.
-clear - H. eliminate_dependent_pattern_matching H.
+assert_refl dep_match.
+unfold_refl H0.
+expand_hyp H0.
+clear - H1. eliminate_dependent_pattern_matching H1.
 Abort. 
 
 Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
@@ -312,11 +315,13 @@ Fixpoint nth {A : Type} (n:nat) (l:list A) (default:A) {struct l} : A :=
     end.
 
 Goal False.
-get_def @nth. expand_hyp nth_def. 
-eliminate_fix_hyp H.  
-eliminate_dependent_pattern_matching H.
-get_def @nth_default. expand_hyp nth_default_def.
-eliminate_dependent_pattern_matching H.
+assert_refl @nth. unfold_refl H.
+expand_hyp H. 
+eliminate_fix_hyp H0.  
+eliminate_dependent_pattern_matching H0.
+assert_refl @nth_default. unfold_refl H0.
+expand_hyp H0. 
+eliminate_dependent_pattern_matching H1.
 Abort.
 
 End Tests.

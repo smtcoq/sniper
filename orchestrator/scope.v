@@ -8,8 +8,8 @@ From SMTCoq Require Import SMT_classes SMT_classes_instances BVList FArray.
 
 From Trakt Require Import Trakt.
 
-From Sniper Require Import definitions.
-From Sniper Require Import expand.
+From Sniper Require Import Sniper.
+(* From Sniper Require Import expand.
 From Sniper Require Import elimination_fixpoints.
 From Sniper Require Import elimination_pattern_matching.
 From Sniper Require Import interpretation_algebraic_types.
@@ -17,7 +17,7 @@ From Sniper Require Import case_analysis.
 From Sniper Require Import higher_order.
 From Sniper Require Import anonymous_functions.
 From Sniper Require Import instantiate.
-From Sniper Require Import Sniper.
+From Sniper Require Import Sniper. *)
 
 Require Import triggers_tactics.
 Require Import triggers.
@@ -31,7 +31,7 @@ From Ltac2 Require Import Printf.
 Ltac2 scope_triggers () := 
   [
 TIs (TGoal, NotArg) tDiscard;
-trigger_trakt_bool ();
+trigger_trakt_bool_hyp ();
    trigger_definitions (); 
    trigger_higher_order_equalities;
    trigger_fixpoints;
@@ -43,69 +43,69 @@ trigger_trakt_bool ();
    trigger_polymorphism ()].
 
 Ltac2 init_triggered ():=
-[("my_get_def", [constr:(Z.add)]);
-("my_get_def", [constr:(Z.sub)]);
-("my_get_def", [constr:(Z.mul)]);
-("my_get_def", [constr:(Z.eqb)]);
-("my_get_def", [constr:(Z.ltb)]);
-("my_get_def", [constr:(Z.leb)]);
-("my_get_def", [constr:(Z.geb)]);
-("my_get_def", [constr:(Z.gtb)]);
-("my_get_def", [constr:(Z.lt)]);
-("my_get_def", [constr:(Z.le)]);
-("my_get_def", [constr:(Z.ge)]);
-("my_get_def", [constr:(Z.gt)]);
-("my_get_def", [constr:(Pos.lt)]);
-("my_get_def", [constr:(Pos.le)]);
-("my_get_def", [constr:(Pos.ge)]);
-("my_get_def", [constr:(Pos.gt)]);
-("my_get_def", [constr:(Z.to_nat)]);
-("my_get_def", [constr:(Pos.mul)]);
-("my_get_def", [constr:(Pos.add)]);
-("my_get_def", [constr:(Pos.sub)]);
-("my_get_def", [constr:(Init.Nat.add)]);
-("my_get_def", [constr:(Init.Nat.mul)]);
-("my_get_def", [constr:(Nat.eqb)]);
-("my_get_def", [constr:(Nat.leb)]);
-("my_get_def", [constr:(Nat.ltb)]);
-("my_get_def", [constr:(Peano.lt)]);
-("my_get_def", [constr:(ge)]); 
-("my_get_def", [constr:(gt)]);
-("my_get_def", [constr:(N.add)]);
-("my_get_def", [constr:(N.mul)]);
-("my_get_def", [constr:(N.eqb)]);
-("my_get_def", [constr:(N.leb)]);
-("my_get_def", [constr:(N.ltb)]);
-("my_get_def", [constr:(Peano.lt)]);
-("my_get_def", [constr:(ge)]); ("my_get_def", [constr:(gt)]);
-("my_get_def", [constr:(negb)]);
-("my_get_def", [constr:(not)]);
-("my_get_def", [constr:(andb)]);
-("my_get_def", [constr:(orb)]);
-("my_get_def", [constr:(implb)]);
-("my_get_def", [constr:(xorb)]);
-("my_get_def", [constr:(Bool.eqb)]);
-("my_get_def", [constr:(iff)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_eq)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_and)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_or)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_xor)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_add)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_mult)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_ult)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_slt)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_concat)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_shl)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_shr)]);
-("my_get_def", [constr:(@FArray.select)]);
-("my_get_def", [constr:(@FArray.diff)]);
-("my_get_def", [constr:(is_true)]);
-("my_get_def", [constr:(@eqb_of_compdec)]);
-("my_get_def", [constr:(CompDec)]);
-("my_get_def", [constr:(Nat_compdec)]);
-("my_get_def", [constr:(list_compdec)]);
-("my_get_def", [constr:(prod_compdec)]);
-("my_get_def", [constr:(Z_compdec)]);
+[("", [constr:(Z.add)]);
+("", [constr:(Z.sub)]);
+("", [constr:(Z.mul)]);
+("", [constr:(Z.eqb)]);
+("", [constr:(Z.ltb)]);
+("", [constr:(Z.leb)]);
+("", [constr:(Z.geb)]);
+("", [constr:(Z.gtb)]);
+("", [constr:(Z.lt)]);
+("", [constr:(Z.le)]);
+("", [constr:(Z.ge)]);
+("", [constr:(Z.gt)]);
+("", [constr:(Pos.lt)]);
+("", [constr:(Pos.le)]);
+("", [constr:(Pos.ge)]);
+("", [constr:(Pos.gt)]);
+("", [constr:(Z.to_nat)]);
+("", [constr:(Pos.mul)]);
+("", [constr:(Pos.add)]);
+("", [constr:(Pos.sub)]);
+("", [constr:(Init.Nat.add)]);
+("", [constr:(Init.Nat.mul)]);
+("", [constr:(Nat.eqb)]);
+("", [constr:(Nat.leb)]);
+("", [constr:(Nat.ltb)]);
+("", [constr:(Peano.lt)]);
+("", [constr:(ge)]); 
+("", [constr:(gt)]);
+("", [constr:(N.add)]);
+("", [constr:(N.mul)]);
+("", [constr:(N.eqb)]);
+("", [constr:(N.leb)]);
+("", [constr:(N.ltb)]);
+("", [constr:(Peano.lt)]);
+("", [constr:(ge)]); ("", [constr:(gt)]);
+("", [constr:(negb)]);
+("", [constr:(not)]);
+("", [constr:(andb)]);
+("", [constr:(orb)]);
+("", [constr:(implb)]);
+("", [constr:(xorb)]);
+("", [constr:(Bool.eqb)]);
+("", [constr:(iff)]);
+("", [constr:(BITVECTOR_LIST.bv_eq)]);
+("", [constr:(BITVECTOR_LIST.bv_and)]);
+("", [constr:(BITVECTOR_LIST.bv_or)]);
+("", [constr:(BITVECTOR_LIST.bv_xor)]);
+("", [constr:(BITVECTOR_LIST.bv_add)]);
+("", [constr:(BITVECTOR_LIST.bv_mult)]);
+("", [constr:(BITVECTOR_LIST.bv_ult)]);
+("", [constr:(BITVECTOR_LIST.bv_slt)]);
+("", [constr:(BITVECTOR_LIST.bv_concat)]);
+("", [constr:(BITVECTOR_LIST.bv_shl)]);
+("", [constr:(BITVECTOR_LIST.bv_shr)]);
+("", [constr:(@FArray.select)]);
+("", [constr:(@FArray.diff)]);
+("", [constr:(is_true)]);
+("", [constr:(@eqb_of_compdec)]);
+("", [constr:(CompDec)]);
+("", [constr:(Nat_compdec)]);
+("", [constr:(list_compdec)]);
+("", [constr:(prod_compdec)]);
+("", [constr:(Z_compdec)]);
 ("my_algebraic_types", [constr:(Z)]);
 ("my_algebraic_types", [constr:(bool)]);
 ("my_algebraic_types", [constr:(positive)]);
@@ -133,7 +133,7 @@ Ltac2 init_triggered ():=
 ("my_add_compdec", [constr:(bool)])
 ].
 
-Ltac my_get_def t := get_def t.
+Ltac my_refl t := assert_refl t.
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  TODO : CompDecs  !! *)
 
@@ -173,7 +173,7 @@ Ltac2 scope () := orchestrator 5
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
 ("my_higher_order", trigger_higher_order) ; 
-("my_get_def", trigger_definitions ());
+("", trigger_definitions ());
 ("my_higher_order_equalities", trigger_higher_order_equalities); 
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
@@ -188,7 +188,7 @@ Ltac2 scope2 () := orchestrator 5
 [
 ("my_anonymous_functions", trigger_anonymous_funs) ;
 ("my_higher_order", trigger_higher_order) ;
-("my_get_def", trigger_definitions ());
+("", trigger_definitions ());
 ("my_higher_order_equalities", trigger_higher_order_equalities);
 ("my_fixpoints", trigger_fixpoints);
 ("my_pattern_matching", trigger_pattern_matching);
