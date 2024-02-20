@@ -116,6 +116,11 @@ if leq_verb v Nothing then () else
 (printf "Automatically applied %s with the following args" s ;
 List.iter (fun x => printf "%t" x) l).
 
+Ltac2 print_tactic_trigger_filtered (v : verbosity) (s : string) (l : constr list) :=
+if leq_verb v Debug then () else
+(printf "The tactic %s was filtered with the following args" s ;
+List.iter (fun x => printf "%t" x) l).
+
 
 Ltac2 fst (p:'a * 'b * 'c ) : 'a := let (x,_, _) := p in x.
 Ltac2 snd (p:'a * 'b * 'c) : 'b := let (_,y, _) := p in y.
@@ -172,7 +177,11 @@ Ltac2 rec orchestrator_aux
             else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then
               print_tactic_global_in_local v name ;
               orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v                
-            else 
+            else if
+                Bool.neg (pass_the_filter l fi)
+                then print_tactic_trigger_filtered v name l ;
+                orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
+              else
               (run name l;
               print_applied_tac v name l ;
               let _ := if Bool.or lnotempty (is_tonetime trig) then
