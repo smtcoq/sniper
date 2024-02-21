@@ -8,9 +8,10 @@ Ltac2 Type rec filter := [
   | FPred (constr -> bool)
   | FConstrList (constr list list)
   | FPredList (constr list -> bool) 
-  | FConj (filter, filter) ].
+  | FConj (filter, filter) 
+  | FTrivial ].
 
-Ltac2 trivial_filter := FConstrList [[]].
+Ltac2 trivial_filter := FTrivial.
 
 Ltac2 Type exn ::= [ WrongArgNumber(string) ].
 
@@ -29,4 +30,5 @@ Ltac2 rec pass_the_filter
       | FConstrList lc => if List.exist (List.equal Constr.equal l) lc then false else true
       | FPredList p => if p l then false else true
       | FConj f1 f2 => Bool.and (pass_the_filter l f1) (pass_the_filter l f2)
+      | FTrivial => true
     end.

@@ -23,6 +23,7 @@ Require Import triggers_tactics.
 Require Import triggers.
 Require Import printer.
 Require Import orchestrator.
+Require Import filters.
 
 Set Default Proof Mode "Classic".
 
@@ -30,7 +31,6 @@ From Ltac2 Require Import Printf.
 
 Ltac2 scope_triggers () := 
   [
-TIs (TGoal, NotArg) tDiscard;
    trigger_definitions (); 
    trigger_higher_order_equalities;
    trigger_fixpoints;
@@ -40,97 +40,6 @@ TIs (TGoal, NotArg) tDiscard;
    trigger_algebraic_types;
    trigger_generation_principle ();
    trigger_polymorphism ()].
-
-Ltac2 init_triggered ():=
-[("my_get_def", [constr:(Z.add)]);
-("my_get_def", [constr:(Z.sub)]);
-("my_get_def", [constr:(Z.mul)]);
-("my_get_def", [constr:(Z.eqb)]);
-("my_get_def", [constr:(Z.ltb)]);
-("my_get_def", [constr:(Z.leb)]);
-("my_get_def", [constr:(Z.geb)]);
-("my_get_def", [constr:(Z.gtb)]);
-("my_get_def", [constr:(Z.lt)]);
-("my_get_def", [constr:(Z.le)]);
-("my_get_def", [constr:(Z.ge)]);
-("my_get_def", [constr:(Z.gt)]);
-("my_get_def", [constr:(Pos.lt)]);
-("my_get_def", [constr:(Pos.le)]);
-("my_get_def", [constr:(Pos.ge)]);
-("my_get_def", [constr:(Pos.gt)]);
-("my_get_def", [constr:(Z.to_nat)]);
-("my_get_def", [constr:(Pos.mul)]);
-("my_get_def", [constr:(Pos.add)]);
-("my_get_def", [constr:(Pos.sub)]);
-("my_get_def", [constr:(Init.Nat.add)]);
-("my_get_def", [constr:(Init.Nat.mul)]);
-("my_get_def", [constr:(Nat.eqb)]);
-("my_get_def", [constr:(Nat.leb)]);
-("my_get_def", [constr:(Nat.ltb)]);
-("my_get_def", [constr:(Peano.lt)]);
-("my_get_def", [constr:(ge)]); 
-("my_get_def", [constr:(gt)]);
-("my_get_def", [constr:(N.add)]);
-("my_get_def", [constr:(N.mul)]);
-("my_get_def", [constr:(N.eqb)]);
-("my_get_def", [constr:(N.leb)]);
-("my_get_def", [constr:(N.ltb)]);
-("my_get_def", [constr:(Peano.lt)]);
-("my_get_def", [constr:(ge)]); ("my_get_def", [constr:(gt)]);
-("my_get_def", [constr:(negb)]);
-("my_get_def", [constr:(not)]);
-("my_get_def", [constr:(andb)]);
-("my_get_def", [constr:(orb)]);
-("my_get_def", [constr:(implb)]);
-("my_get_def", [constr:(xorb)]);
-("my_get_def", [constr:(Bool.eqb)]);
-("my_get_def", [constr:(iff)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_eq)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_and)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_or)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_xor)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_add)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_mult)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_ult)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_slt)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_concat)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_shl)]);
-("my_get_def", [constr:(BITVECTOR_LIST.bv_shr)]);
-("my_get_def", [constr:(@FArray.select)]);
-("my_get_def", [constr:(@FArray.diff)]);
-("my_get_def", [constr:(is_true)]);
-("my_get_def", [constr:(@eqb_of_compdec)]);
-("my_get_def", [constr:(CompDec)]);
-("my_get_def", [constr:(Nat_compdec)]);
-("my_get_def", [constr:(list_compdec)]);
-("my_get_def", [constr:(prod_compdec)]);
-("my_get_def", [constr:(Z_compdec)]);
-("my_algebraic_types", [constr:(Z)]);
-("my_algebraic_types", [constr:(bool)]);
-("my_algebraic_types", [constr:(positive)]);
-("my_algebraic_types", [constr:(N)]);
-("my_algebraic_types", [constr:(nat)]);
-("my_algebraic_types", [constr:(EqbType)]);
-("my_algebraic_types", [constr:(@CompDec)]);
-("my_algebraic_types", [constr:(Comparable)]);
-("my_algebraic_types", [constr:(Inhabited)]);
-("my_algebraic_types", [constr:(OrderedType.Compare)]);
-("my_gen_principle", [constr:(Z)]);
-("my_gen_principle", [constr:(bool)]);
-("my_gen_principle", [constr:(positive)]);
-("my_gen_principle", [constr:(N)]);
-("my_gen_principle", [constr:(nat)]);
-("my_gen_principle", [constr:(EqbType)]);
-("my_gen_principle", [constr:(@CompDec)]);
-("my_gen_principle", [constr:(Comparable)]);
-("my_gen_principle", [constr:(Inhabited)]);
-("my_gen_principle", [constr:(OrderedType.Compare)]);
-("my_add_compdec", [constr:(FArray.farray)]);
-("my_add_compdec", [constr:(Z)]);
-("my_add_compdec", [constr:(nat)]);
-("my_add_compdec", [constr:(positive)]);
-("my_add_compdec", [constr:(bool)])
-].
 
 Ltac my_get_def t := get_def t.
 
@@ -158,7 +67,7 @@ Ltac my_polymorphism := inst.
 
 Ltac my_add_compdec t := add_compdecs_terms t.
 
-Ltac2 trigger_generation_principle := TOneTime.
+(* Ltac2 trigger_generation_principle := TOneTime. *)
 
 Ltac2 trigger_anonymous_funs := TOneTime.
 
@@ -170,32 +79,47 @@ Ltac2 trigger_higher_order :=
 Ltac2 scope () := orchestrator 5
 { all_tacs := 
 [
-("my_anonymous_functions", trigger_anonymous_funs) ;
-("my_higher_order", trigger_higher_order) ; 
-("my_get_def", trigger_definitions ());
-("my_higher_order_equalities", trigger_higher_order_equalities); 
-("my_fixpoints", trigger_fixpoints);
-("my_pattern_matching", trigger_pattern_matching);
-("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle) ;
-("my_polymorphism_elpi", trigger_polymorphism ()) ;
-("my_add_compdec", trigger_add_compdecs ())] }
-{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
+("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
+("my_higher_order", trigger_higher_order, trivial_filter) ; 
+("my_get_def", trigger_definitions (), filter_definitions ());
+("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
+("my_fixpoints", trigger_fixpoints, trivial_filter);
+("my_pattern_matching", trigger_pattern_matching, trivial_filter);
+("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
+("my_gen_principle_temporary", trigger_generation_principle (), (* filter_generation_principle () *) trivial_filter) ;
+("my_polymorphism_elpi", trigger_polymorphism (), trivial_filter) ;
+("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
+{ triggered_tacs := [] } {old_types_and_defs  := [] } Nothing.
 
 Ltac2 scope2 () := orchestrator 5
 { all_tacs := 
 [
-("my_anonymous_functions", trigger_anonymous_funs) ;
-("my_higher_order", trigger_higher_order) ;
-("my_get_def", trigger_definitions ());
-("my_higher_order_equalities", trigger_higher_order_equalities);
-("my_fixpoints", trigger_fixpoints);
-("my_pattern_matching", trigger_pattern_matching);
-("my_algebraic_types", trigger_algebraic_types);
-("my_gen_principle_temporary", trigger_generation_principle);
-("my_polymorphism", trigger_polymorphism ()); 
-("my_add_compdec", trigger_add_compdecs ()) ] }
-{ triggered_tacs := (init_triggered ()) } {old_types_and_defs  := [] } Nothing.
+("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
+("my_higher_order", trigger_higher_order, trivial_filter) ; 
+("my_get_def", trigger_definitions (), filter_definitions ());
+("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
+("my_fixpoints", trigger_fixpoints, trivial_filter);
+("my_pattern_matching", trigger_pattern_matching, trivial_filter);
+("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
+("my_gen_principle_temporary", trigger_generation_principle (), (* filter_generation_principle () *) trivial_filter) ;
+("my_polymorphism", trigger_polymorphism (), trivial_filter) ;
+("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())]}
+{ triggered_tacs := [] } {old_types_and_defs  := [] } Nothing.
+
+Ltac2 scope3 () := orchestrator 5
+{ all_tacs := 
+[
+("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
+("my_higher_order", trigger_higher_order, trivial_filter) ; 
+("my_get_def", trigger_definitions (), filter_definitions ());
+("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
+("my_fixpoints", trigger_fixpoints, trivial_filter);
+("my_pattern_matching", trigger_pattern_matching, trivial_filter);
+("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
+("my_gen_principle_temporary", trigger_generation_principle (), (* filter_generation_principle () *) trivial_filter) ;
+("my_polymorphism", trigger_polymorphism (), trivial_filter) ;
+("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())]}
+{ triggered_tacs := [] } {old_types_and_defs  := [] } Full.
 
 Tactic Notation "scope" := ltac2:(scope ()).
 
@@ -233,21 +157,6 @@ Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
   | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
-(* The proof of this lemma, except induction, can be automatized *)
-Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
-    search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; scope.
-2: { 
-assert (new_hyp : forall (x : elpi_ctx_entry_90_) (x0 : list elpi_ctx_entry_90_), [] = x :: x0 -> False).
-admit.
-assert (
-toto : forall (x x0 : elpi_ctx_entry_90_) (x1 x2 : list elpi_ctx_entry_90_),
-                     x :: x1 = x0 :: x2 -> x = x0 /\ x1 = x2).
-admit. verit_no_check.
-
-
-idtac. Qed.
-
 Section higher_order.
 
 Variable A B C: Type.
@@ -271,7 +180,7 @@ intros f g l ; induction l; time (scope; verit).
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; time scope; verit_no_check.
+induction l. ltac2:(scope3 ()); verit_no_check. scope. verit_no_check.
 Qed.
 
 
