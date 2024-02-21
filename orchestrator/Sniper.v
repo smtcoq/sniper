@@ -73,7 +73,7 @@ Ltac2 scope () := orchestrator 5
 ("my_fixpoints", trigger_fixpoints, trivial_filter);
 ("my_pattern_matching", trigger_pattern_matching, trivial_filter);
 ("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
-("my_gen_principle_temporary", trigger_generation_principle, filter_generation_principle ()) ;
+("my_gen_principle_temporary", trigger_generation_principle, trivial_filter) ;
 ("my_polymorphism_elpi", trigger_polymorphism (), trivial_filter) ;
 ("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
 { triggered_tacs := [] } {old_types_and_defs  := [] } Nothing.
