@@ -7,6 +7,7 @@ Require Export unfold_reflexivity.
 Require Export unfold_in.
 Require Export expand.
 Require Export elimination_fixpoints.
+Require Export elimination_polymorphism.
 Require Export elimination_pattern_matching.
 Require Export instantiate.
 Require Export interpretation_algebraic_types.

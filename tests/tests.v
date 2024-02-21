@@ -82,8 +82,7 @@ Abort. *)
 Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
 Proof.
 intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
-scope.    
-verit.
+snipe.
 Qed.
 
 Lemma nth_default_eq :
@@ -142,7 +141,7 @@ Import ListNotations.
 Lemma search_append_neq : 
 forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
 Proof. 
-(* Time snipe2.  TODO *)
+Time snipe2.
 Undo. Time snipe. Qed.
 
 
@@ -158,15 +157,17 @@ Import ListNotations.
       | b :: m => orb (eqb_of_compdec HA a b) (Inb a m)
     end.
 
+
+(* 
   Theorem nil_cons : forall (x:A) (l:list A), [] <> x :: l.
   Proof.
-(*   Time snipe. *)
-  Abort.
+  Time snipe.
+  Abort. *)
 
-(*   Lemma hd_error_tl_repr : forall l (a:A) r,
+  Lemma hd_error_tl_repr : forall l (a:A) r,
     hd_error l = Some a /\ tl l = r <-> l = a :: r.
   Proof. Time snipe. 
- Qed. *)
+ Qed.
 
  Lemma hd_error_some_nil : forall l (a:A), hd_error l = Some a -> l <> nil.
   Proof. 
@@ -179,7 +180,7 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
   Qed. 
 
 
-(*   Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
+ (* TODO Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   Time snipe. 
   Qed. *)
@@ -200,10 +201,10 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
   Time snipe_no_check. 
   Qed.
 
-(*   Lemma in_inv : forall (a b:A) (l:list A), Inb b (a :: l) -> a = b \/ Inb b l.
+  Lemma in_inv : forall (a b:A) (l:list A), Inb b (a :: l) -> a = b \/ Inb b l.
   Proof.
   Time snipe. 
-  Qed. *)
+  Qed. 
 
   Theorem app_cons_not_nil : forall (x y:list A) (a:A), nil <> ((a :: y) ++ x).
   Proof.
@@ -278,10 +279,10 @@ Section Pairs.
   Definition fst (p:A * B) := match p with (x, y) => x end.
   Definition snd (p:A * B) := match p with (x, y) => y end.
 
-(* TODO
+(*
 Lemma surjective_pairing :
   forall (p:A * B), p = (fst p, snd p).
-Proof. Time scope. Undo. Time snipe2. Qed.
+Proof. Time snipe2. Qed.
  *)
 End Pairs.
 

@@ -139,7 +139,7 @@ instantiate_tuple_terms_tuple_hyp_no_ip_term t2 terms
   end
 end.
 
-Ltac elimination_polymorphism t0 := 
+Ltac elimination_polymorphism_exhaustive t0 := 
 let t := eval cbv in t0 in 
 let terms0 := return_tuple_subterms_of_type_type in 
 let terms := eval cbv in terms0 in 
@@ -165,13 +165,13 @@ instantiate_tuple_terms_tuple_hyp_no_ip_term t0 x.
 
 Goal (forall (A B C : Type), B = B -> C = C -> A = A) -> nat = nat -> bool = bool.
 intro.
-elimination_polymorphism (rev_involutive, default).
+elimination_polymorphism_exhaustive (rev_involutive, default).
 
 Abort.
 
 
-Tactic Notation "inst" := elimination_polymorphism unit.
-Tactic Notation "inst" constr(t) := elimination_polymorphism (t, default).
+Tactic Notation "inst" := elimination_polymorphism_exhaustive unit.
+Tactic Notation "inst" constr(t) := elimination_polymorphism_exhaustive (t, default).
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).

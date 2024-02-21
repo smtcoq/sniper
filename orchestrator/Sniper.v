@@ -51,7 +51,7 @@ Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
 
 Ltac my_polymorphism_elpi := elimination_polymorphism.
 
-Ltac my_polymorphism := inst.
+Ltac my_polymorphism := elimination_polymorphism_exhaustive unit. 
 
 Ltac my_add_compdec t := add_compdecs_terms t.
 
