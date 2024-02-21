@@ -10,7 +10,6 @@
 (**************************************************************************)
 
 Require Import utilities.
-Require Import definitions.
 From elpi Require Import elpi.
 Require Import List.
 Import ListNotations.

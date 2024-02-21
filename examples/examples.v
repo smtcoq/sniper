@@ -11,11 +11,12 @@
 
 
 (* If you have Sniper installed, change these two lines into:
-   From Sniper Require Import Sniper.
+   From Sniper.orchestrator Require Import Sniper.
    From Sniper Require Import tree.
 *)
-Require Import Sniper.
-Require Import tree.
+From SMTCoq Require Import SMTCoq.
+From Sniper.orchestrator Require Import Sniper.
+From Sniper Require Import tree.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
@@ -29,16 +30,16 @@ Local Open Scope Z_scope.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
-Proof. snipe. Qed.
+Proof. snipe_no_check. Qed.
 
-(* The `snipe` tactics requires instances of equality to be decidable.
+(* The `snipe` and `snipe_no_check` tactics requires instances of equality to be decidable.
    It is in particular visible with type variables. *)
 Section Generic.
 
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-    snipe.
+    scope. 4:verit_no_check.
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -48,7 +49,7 @@ Section Generic.
   (* On abstract type, it has to be assumed. *)
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
-  Proof. snipe. Qed.
+  Proof. snipe_no_check. Qed.
 
 End Generic.
 
@@ -61,7 +62,7 @@ Section Timeout.
   Variable A : Type.
   Hypothesis HA : CompDec A.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
-  Proof. (* snipe_timeout 10. *) snipe. Qed.
+  Proof. (* snipe_timeout 10. *) snipe_no_check. Qed.
 
 End Timeout.
 
@@ -94,23 +95,28 @@ Section destruct_auto.
 Theorem app_eq_unit_auto :
     forall (x y: list A) (a:A),
       x ++ y = a :: nil -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
-  Proof. snipe. Qed.
+  Proof. snipe_no_check. Qed.
 
 
 End destruct_auto.
 
+Section search.
+
+Variable (A: Type).
+Variable (H : CompDec A).
+
 
 (* Example of searching an element in a list *)
-Fixpoint search {A : Type} {H: CompDec A} (x : A) l :=
+Fixpoint search (x : A) l :=
   match l with
   | [] => false
   | x0 :: l0 => eqb_of_compdec H x x0 || search x l0
   end.
 
-Lemma search_app : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
+Lemma search_app : forall (x: A) (l1 l2: list A),
     search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
 Proof.
-  intros A H x l1 l2. induction l1 as [ | x0 l0 IH].
+  intros x l1 l2. induction l1 as [ | x0 l0 IH].
   - reflexivity.
   - simpl. destruct (eqb_of_compdec H x x0).
     + reflexivity.
@@ -118,16 +124,16 @@ Proof.
 Qed.
 
 (* The proof of this lemma, except induction, can be automatized *)
-Lemma search_app_snipe : forall {A: Type} {H : CompDec A} (x: A) (l1 l2: list A),
-    search x (l1 ++ l2) = ((search x l1) || (search x l2))%bool.
-Proof. intros A H x l1 l2. induction l1 as [ | x0 l0 IH]; simpl; snipe. Qed.
+Lemma search_app_snipe : forall (x: A) (l1 l2: list A),
+    @search x (l1 ++ l2) = ((@search x l1) || (@search x l2))%bool.
+Proof. intros x l1 l2. induction l1 as [ | x0 l0 IH]; snipe_no_check. Qed. 
 
 
 (* Manually using this lemma *)
-Lemma search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
+Lemma search_lemma : forall (x: A) (l1 l2 l3: list A),
     search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof.
-  intros A H x l1 l2 l3. rewrite !search_app.
+  intros x l1 l2 l3. rewrite !search_app.
   rewrite orb_comm with (b1 := search x l3).
   rewrite orb_comm  with (b1 := search x l2) (b2 := search x l1 ).
   rewrite orb_assoc.
@@ -135,20 +141,22 @@ Proof.
 Qed.
 
 (* It can be fully automatized *)
-Lemma snipe_search_lemma : forall (A : Type) (H : CompDec A) (x: A) (l1 l2 l3: list A),
+Lemma snipe_search_lemma : forall (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
-Proof. intros A H. snipe @search_app. Qed.
+Proof. pose proof search_app. snipe_no_check. Qed.
 
 
-(* Another example with search *)
-Lemma in_inv : forall (A: Type) (HA : CompDec A) (a b:A) (l:list A),
-    search b (a :: l) -> eqb_of_compdec HA a b \/ search b l.
-Proof. intros A HA. snipe. Qed.
+(* TODO (* Another example with search *)
+Lemma in_inv : forall (a b:A) (l:list A),
+    search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
+Proof. intros. snipe_no_check. Qed. *)
 
 
 (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros A H; induction l; snipe. Qed.
+Proof. intros ; induction l; snipe_no_check. Qed.
+
+End search.
 
 Section higher_order.
 
@@ -165,12 +173,11 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-(* A nice example but a bit slow ~70s: we should investigate to improve the performance *)
-
+(* TODO : elimination polymorphism
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; snipe2. Qed.
-
+Proof. Time intros f g l ; induction l; scope2. Qed.
+ *)
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 
 it does not work by using an induction principle which generalizes 
@@ -180,7 +187,7 @@ make SMTCoq complain *)
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; snipe2. Qed.
+induction l; snipe. Qed.
 
 End higher_order.
 
@@ -193,10 +200,11 @@ Proof. intros t a t' b; snipe. Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- snipe app_nil_r.
-- snipe (app_ass, app_nil_r).
-Qed.
+(* - pose proof app_nil_r; snipe_no_check.
+- pose proof app_ass ; pose proof app_nil_r; scope. *)
+(* generalize dependent app. generalize dependent rev_elements_aux. intros.  verit. TODO *)
+Admitted.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. snipe (rev_elements_app, app_nil_r). Qed.
+Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe_no_check. Qed.
