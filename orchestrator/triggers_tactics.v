@@ -2,14 +2,13 @@ From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Ltac1.
 From Ltac2 Require Import Constr.
 From Ltac2 Require Import String.
-Require Import List.
+Require Import List ZArith.
 Import ListNotations.
 Require Import printer.
 Require Import triggers.
+Require Import filters.
 
-From Sniper Require Import utilities.
-
-From SMTCoq Require SMT_classes Conversion Tactics Trace State QInst.
+From SMTCoq Require SMT_classes Conversion Tactics Trace State SMT_classes_instances QInst BVList FArray.
 
 From Trakt Require Import Trakt.
 
@@ -184,16 +183,56 @@ let rec aux t :=
   end
 in aux t.
 
+
+Ltac2 rec codomain_not_prop_aux (c: constr) :=
+  match Constr.Unsafe.kind c with
+  | Constr.Unsafe.Prod bi c' => codomain_not_prop_aux c'
+  | Constr.Unsafe.App x1 arr => codomain_not_prop_aux x1
+  | _ => if Constr.equal c 'Prop then false else true
+  end.
+
+Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
+
 (* Ltac2 Eval (not_higher_order '@map). *)
 
-(** Triggers for Sniper tactics *)
-
+(** Triggers and filters for Sniper tactics *)
 
 Ltac2 trigger_definitions () :=
   TDisj (TMetaLetIn (TContains (TGoal, NotArg) (TConstant None (Arg id))) ["def"]
          (TPred (TNamed "def", Arg id) not_higher_order))
         (TMetaLetIn (TContains (TSomeHyp, NotArg) (TConstant None (Arg id))) ["def"]
          (TPred (TNamed "def", Arg id) not_higher_order)).
+
+Ltac2 filter_definitions () :=
+  FConj 
+    (FConstr 
+      ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
+      'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
+      'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt; 
+      'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
+      'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq; 
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
+      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
+      '@FArray.select;
+      '@FArray.diff;
+      'is_true;
+      '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
+      'SMTCoq.classes.SMT_classes.CompDec;
+      'SMTCoq.classes.SMT_classes_instances.Nat_compdec;
+      'SMTCoq.classes.SMT_classes_instances.list_compdec;
+      'SMTCoq.classes.SMT_classes_instances.prod_compdec;
+      'SMTCoq.classes.SMT_classes_instances.option_compdec;
+      'SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
+      (FPred not_higher_order).
+
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).
@@ -216,20 +255,24 @@ Ltac2 trigger_higher_order :=
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
-Ltac2 rec codomain_not_prop_aux (c: constr) :=
-  match Constr.Unsafe.kind c with
-  | Constr.Unsafe.Prod bi c' => codomain_not_prop_aux c'
-  | Constr.Unsafe.App x1 arr => codomain_not_prop_aux x1
-  | _ => if Constr.equal c 'Prop then false else true
-  end.
-
-Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
+Ltac2 filter_algebraic_types () :=
+  FConj (FConstr 
+          ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
+          'SMTCoq.classes.SMT_classes.CompDec;
+          'SMTCoq.classes.SMT_classes.Comparable;
+          'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
+        (FPred codomain_not_prop).
 
 Ltac2 trigger_generation_principle () :=
-  TDisj (TMetaLetIn (TContains (TGoal, NotArg) (TInd None (Arg id))) ["Indu"]
-         (TPred (TNamed "Indu", Arg id) codomain_not_prop))
-        (TMetaLetIn (TContains (TSomeHyp, NotArg) (TInd None (Arg id))) ["Indu"] 
-        (TPred (TNamed "Indu", Arg id) codomain_not_prop)).
+  TIs (TSomeHyp, NotArg) (TInd None (Arg id)).
+
+Ltac2 filter_generation_principle () :=
+  FConj (FConstr 
+          ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
+          'SMTCoq.classes.SMT_classes.CompDec;
+          'SMTCoq.classes.SMT_classes.Comparable;
+          'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
+        (FPred codomain_not_prop).
 
 Ltac2 trigger_anonymous_funs () :=
   TDisj (
@@ -246,7 +289,11 @@ Ltac2 trigger_add_compdecs () :=
   (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg))
 (TDisj
   (triggered when (TGoal) contains TEq (TApp (TAny (Arg id)) tDiscard NotArg) tDiscard tDiscard NotArg)
-  (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)). 
+  (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)).
+
+Ltac2 filter_add_compdecs () :=
+(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray]).
+   
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool_hyp () :=
