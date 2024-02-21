@@ -259,13 +259,13 @@ Ltac2 is_prod (c: constr) :=
     | _ => false
   end.
 
-Ltac2 not_higher_order (c: constr) :=
+Ltac2 higher_order (c: constr) :=
 let t := Constr.type c in
 let rec aux t :=
   match Constr.Unsafe.kind t with
     | Constr.Unsafe.Prod bind t' => 
-        Bool.and (let ty := Constr.Binder.type bind in Bool.neg (is_prod ty)) (aux t')
-    | _ => true
+        Bool.or (let ty := Constr.Binder.type bind in (is_prod ty)) (aux t')
+    | _ => false
   end
 in aux t.
 
@@ -279,7 +279,9 @@ Ltac2 rec codomain_not_prop_aux (c: constr) :=
 
 Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
 
-(* Ltac2 Eval (not_higher_order '@map). *)
+Ltac2 codomain_prop (c: constr) := Bool.neg (codomain_not_prop c).
+
+(* Ltac2 Eval (higher_order '@nth). *) 
 
 (** Triggers and filters for Sniper tactics *)
 
@@ -315,7 +317,7 @@ Ltac2 filter_reflexivity () :=
       'SMTCoq.classes.SMT_classes_instances.prod_compdec;
       'SMTCoq.classes.SMT_classes_instances.option_compdec;
       'SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
-      (FPred not_higher_order).
+      (FPred higher_order).
 
 (* warning: overspecification : TODO *)
 
@@ -352,7 +354,7 @@ Ltac2 filter_algebraic_types () :=
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
           'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
-        (FPred codomain_not_prop).
+        (FPred codomain_prop).
 
 Ltac2 trigger_generation_principle () :=
   TIs (TSomeHyp, NotArg) (TInd None (Arg id)).
@@ -363,7 +365,7 @@ Ltac2 filter_generation_principle () :=
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
           'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
-        (FPred codomain_not_prop).
+        (FPred codomain_prop).
 
 Ltac2 trigger_anonymous_funs () :=
   TDisj (

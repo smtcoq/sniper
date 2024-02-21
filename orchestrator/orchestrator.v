@@ -180,7 +180,8 @@ Ltac2 rec orchestrator_aux
             else if
                 Bool.neg (pass_the_filter l fi)
                 then print_tactic_trigger_filtered v name l ;
-                orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
+                trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) ;
+                orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs fis  trigtacs v
               else
               (run name l;
               print_applied_tac v name l ;

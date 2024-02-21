@@ -30,7 +30,7 @@ Local Open Scope Z_scope.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
-Proof. snipe_no_check. Qed.
+Proof. scope. Qed.
 
 (* The `snipe` and `snipe_no_check` tactics requires instances of equality to be decidable.
    It is in particular visible with type variables. *)
