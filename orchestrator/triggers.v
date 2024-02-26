@@ -19,7 +19,7 @@ Ltac2 snd (x : 'a*'b) := let (_, y) := x in y.
 Ltac2 Type exn ::= [ NotClosed(string) ].
 
 Ltac2 Type flag :=
-  [ Arg (constr -> constr) | NotArg ]. (* TODO add int as position *)
+  [ Arg (constr -> constr) | NotArg ]. 
 
 (* goals, hypotheses, local definitions, hypotheses of type T : Prop, bound variables *)
 Ltac2 Type trigger_var := 
@@ -28,12 +28,12 @@ Ltac2 Type trigger_var :=
 (* environment for named triggers variables, associated to a constr *)
 
 Ltac2 Type env_triggers := 
-{ mutable env_triggers : (string*constr) list }.
+  { mutable env_triggers : (string*constr) list }.
 
-(* arguments on which the transformation was already applied *)
+(* pair between tactics and arguments and their type on which it was already triggered *)
 
-Ltac2 Type args_used :=
-{ mutable args_used : constr list list }.
+Ltac2 Type already_triggered :=
+  { mutable already_triggered : (string * ((constr * constr) list)) list }.
 
 Ltac2 Type trigger_sort :=
 [ TProp | TSet | TBigType].
@@ -123,18 +123,17 @@ Ltac2 filter_hyps_prop hyps :=
       | Some _ => false
       | None => equal (type c) 'Prop
     end) hyps.
-      
 
-Ltac2 interpret_trigger_var cg env (tv: trigger_var) :=
+Ltac2 interpret_trigger_var env cg (tv: trigger_var) :=
   let (hyps, g) := cg in
     match tv with
       | TSomeHyp => Hyps (filter_hyps hyps)
       | TSomeHypProp => Hyps (filter_hyps_prop hyps)
       | TSomeDef => LetIns (filter_defs hyps)
       | TGoal => Goal g
-      | TNamed s => Constr (List.assoc String.equal s (env.(env_triggers)))
-    end.
-
+      | TNamed s => Constr (List.assoc String.equal s env)
+    end. 
+ 
 Ltac2 interpret_trigger_var_with_constr cg env tv c :=
   let itv := interpret_trigger_var cg env tv in
     match itv with
@@ -564,7 +563,6 @@ Ltac2 rec subterms (c : constr) : constr list :=
 
 Ltac2 closed_subterms c := List.filter is_closed (subterms c).
 
-
 (* warning: no arguments for this tactic except the toplevel one *)
 Ltac2 interpret_trigger_pred cg env a fl (p : constr -> bool) :=
   let a' := interpret_trigger_var cg env a in
@@ -598,7 +596,19 @@ Ltac2 rec interpret_trigger_contains_aux cg env lc tf :=
         end
     end.
 
-Ltac2 Type subterms_coq_goal := { mutable subterms_coq_goal : (ident*constr list) list * (constr list) option }.
+Ltac2 Type interpretation_state  := 
+  (* type of the subterms already computed in the goal *)
+  { mutable subterms_coq_goal : (ident*constr list) list * (constr list) option ;
+    mutable local_env : (ident * constr option * constr) list * constr option ; 
+    mutable global_flag : bool ;
+    mutable name_of_tac : string }.
+
+Ltac2 interp_state ()  :=
+    { subterms_coq_goal := ([], None);
+      local_env := ([], None);
+      global_flag := false;
+      name_of_tac := "" 
+    }.
 
 Ltac2 look_for_subterms_hyps (id : ident) (s : (ident*constr list) list * (constr list) option) :=
   let (hyps, o) := s in
@@ -616,7 +626,7 @@ Ltac2 look_for_subterms_goal (s : (ident*constr list) list * (constr list) optio
       | Some lc => Some lc
     end.
 
-Ltac2 interpret_trigger_contains cg env (scg : subterms_coq_goal) tv tf : (constr * constr list list) list option:= 
+Ltac2 interpret_trigger_contains tv tf : (constr * constr list list) list option:= 
   let v := interpret_trigger_var cg env tv in
     match v with
       | Hyps hyps => 
@@ -872,8 +882,7 @@ in match interpret_trigger cg env env_args env_old scg false b flo nametac t wit
         end in aux l
   end.
 
-(* TODO : improve the selection of args by designating their order (an integer) and an Ltac2 function f: constr -> constr.
-eg : (1, id) (1, type) etc *)
+(* Return the list of list of args instead of only a list, because the orchestrator will need it *)
 
 (** Notations *)
 

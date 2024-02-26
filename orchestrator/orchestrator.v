@@ -153,10 +153,10 @@ Ltac2 rec orchestrator_aux
   (v: verbosity) : (* number of information required *) unit := 
   print_state_verb v cg ;
   match trigs, tacs, fis with
-    | [], _ :: _, _ => fail "you forgot have more tactics than triggers"
+    | [], _ :: _, _ => fail "you have more tactics than triggers"
     | _ :: _, [], _ => fail "you have more triggers than tactics"
     | [], _, _ :: _ => fail "you have more filters than tactics"
-    | _::__, _, [] => fail "you have triggers than filters"
+    | _::__, _, [] => fail "you have more triggers than filters"
     | [], [], [] => if global_flag then () else orchestrator (Int.sub fuel 1) alltacs trigtacs env_old v
     | trig :: trigs', name :: tacs', fi :: fis' => 
          let env_args := get_args_used name trigtacs in
@@ -167,7 +167,7 @@ Ltac2 rec orchestrator_aux
              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
           | Some l =>
             let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
-            if Bool.and (Bool.and (Bool.equal ((flag_old_type).(flag_old_type)) true) lnotempty) 
+            if Bool.and (Bool.and (* Bool.or *) ((flag_old_type).(flag_old_type)) lnotempty (* instead: istonetime trig *) )
               (List.mem already_triggered_equal (name, l) (trigtacs.(triggered_tacs))) then 
               print_tactic_already_applied v name l ;
               orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
@@ -176,14 +176,15 @@ Ltac2 rec orchestrator_aux
                orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v
             else if Bool.and (Bool.neg lnotempty) (Bool.neg global_flag) then
               print_tactic_global_in_local v name ;
-              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v                
+              orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs' tacs' fis' trigtacs v  
+(* should never happens because the interpret trigger should return none *)              
             else if
                 Bool.neg (pass_the_filter l fi)
                 then print_tactic_trigger_filtered v name l ;
                 trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) ;
-                orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs fis  trigtacs v
+                orchestrator_aux alltacs fuel cg global_flag flag_old_type env env_old scg trigs tacs fis trigtacs v
               else
-              (run name l;
+              (run name l; (* Control.hyps / Control.goal before the run to compute the diff *)
               print_applied_tac v name l ;
               let _ := if Bool.or lnotempty (is_tonetime trig) then
               trigtacs.(triggered_tacs) := (name, l) :: (trigtacs.(triggered_tacs)) 
@@ -199,7 +200,7 @@ Ltac2 rec orchestrator_aux
                 | Some g1' => if Constr.equal g1' g2 then None else Some g2 
               end in
               cg.(cgstate) := (diff_hyps hs1 hs2, g3) ;     
-              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs fis  trigtacs v))
+              orchestrator_aux alltacs fuel cg false flag_old_type env env_old scg trigs tacs fis trigtacs v))
         end
   end
  with orchestrator n alltacs trigtacs env_old v :=
@@ -215,6 +216,8 @@ Ltac2 rec orchestrator_aux
   let filt := List.map thrd alltacs' in
   let _ := orchestrator_aux alltacs n cg true { flag_old_type := true } env env_old scg trigs tacs filt trigtacs v in
   Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs env_old v).
+
+(* orchestrator / orchestrator_aux : redundant with global_flag *)
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
