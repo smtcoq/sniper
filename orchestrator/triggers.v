@@ -84,7 +84,7 @@ Ltac2 Type rec trigger := [
   | TMetaLetIn (trigger, string list, trigger) (* TMetaLetIn t1 s t2 binds all constrs produced by interpret_trigger t1
 and gives them the corresponding names in s, adds thems to the environment and interprets t2 that may contain some TNamed "foo" *)
   | TOneTime (* trigger one time the tactic, only if the state is global (all the hypotheses and the goal are considered) *)
-  ].
+  ]. 
 
 Ltac2 tTrivial := TIs (TGoal, NotArg) tDiscard.
 
@@ -124,7 +124,7 @@ Ltac2 filter_hyps_prop hyps :=
       | None => equal (type c) 'Prop
     end) hyps.
 
-Ltac2 interpret_trigger_var env cg (tv: trigger_var) :=
+Ltac2 interpret_trigger_var cg env (tv: trigger_var) :=
   let (hyps, g) := cg in
     match tv with
       | TSomeHyp => Hyps (filter_hyps hyps)
@@ -242,7 +242,8 @@ Ltac2 cons_option (c : constr option) (l : constr list) :=
   end.
 
 Ltac2 rec interpret_trigger_term_with_constr
- cg env (c : constr) (tte : trigger_term) : constr list option:=
+ (cg: (ident * constr option * constr) list * constr
+  option) env (c : constr) (tte : trigger_term) : constr list option:=
   match kind c, tte with
     | App _ _, TEq tte1 tte2 tte3 fl => 
         match destruct_eq c with
@@ -594,21 +595,17 @@ Ltac2 rec interpret_trigger_contains_aux cg env lc tf :=
                 | Some success' => Some (success::success')
               end
         end
-    end.
+    end. 
 
 Ltac2 Type interpretation_state  := 
-  (* type of the subterms already computed in the goal *)
+  (* subterms already computed in the goal *)
   { mutable subterms_coq_goal : (ident*constr list) list * (constr list) option ;
+  (* hypotheses or/and goal considered *)
     mutable local_env : (ident * constr option * constr) list * constr option ; 
+  (* are all the hypotheses considered ? *)
     mutable global_flag : bool ;
+  (* name of the tactic interpreted *)
     mutable name_of_tac : string }.
-
-Ltac2 interp_state ()  :=
-    { subterms_coq_goal := ([], None);
-      local_env := ([], None);
-      global_flag := false;
-      name_of_tac := "" 
-    }.
 
 Ltac2 look_for_subterms_hyps (id : ident) (s : (ident*constr list) list * (constr list) option) :=
   let (hyps, o) := s in
@@ -626,7 +623,11 @@ Ltac2 look_for_subterms_goal (s : (ident*constr list) list * (constr list) optio
       | Some lc => Some lc
     end.
 
-Ltac2 interpret_trigger_contains tv tf : (constr * constr list list) list option:= 
+Ltac2 interpret_trigger_contains 
+  (it : interpretation_state)  (envref: env_triggers) tv tf : (constr * constr list list) list option:= 
+  let scg := (it).(subterms_coq_goal) in
+  let cg := (it).(local_env) in
+  let env := (envref).(env_triggers) in
   let v := interpret_trigger_var cg env tv in
     match v with
       | Hyps hyps => 
@@ -634,11 +635,11 @@ Ltac2 interpret_trigger_contains tv tf : (constr * constr list list) list option
             match h with
               | [] => None
               | (x, y, z) :: xs => 
-                  match look_for_subterms_hyps x (scg.(subterms_coq_goal)) with
+                  match look_for_subterms_hyps x scg with
                     | None =>
                         let lc := subterms z in
-                        let (hyps, o) := scg.(subterms_coq_goal) in
-                        let _ := scg.(subterms_coq_goal) := ((x, lc)::hyps, o) in
+                        let (hyps, o) := scg in
+                        let _ := (it).(subterms_coq_goal) := ((x, lc)::hyps, o) in
                         let opt := interpret_trigger_contains_aux cg env lc b in 
                           match opt with
                             | None => aux cg xs b
@@ -667,11 +668,11 @@ Ltac2 interpret_trigger_contains tv tf : (constr * constr list list) list option
             match h with
               | [] => None
               | (x, y, z) :: xs => 
-                  match look_for_subterms_hyps x (scg.(subterms_coq_goal)) with
+                  match look_for_subterms_hyps x (it.(subterms_coq_goal)) with
                     | None =>
                         let lc := subterms y in
-                        let (hyps, o) := scg.(subterms_coq_goal) in
-                        let _ := scg.(subterms_coq_goal) := ((x, lc)::hyps, o) in
+                        let (hyps, o) := it.(subterms_coq_goal) in
+                        let _ := it.(subterms_coq_goal) := ((x, lc)::hyps, o) in
                         let opt := interpret_trigger_contains_aux cg env lc b in 
                           match opt with
                             | None => aux cg xs b
@@ -697,11 +698,11 @@ Ltac2 interpret_trigger_contains tv tf : (constr * constr list list) list option
              end in aux cg defs tf
       | Goal None => None
       | Goal (Some g) =>
-          match look_for_subterms_goal (scg.(subterms_coq_goal)) with
+          match look_for_subterms_goal (it.(subterms_coq_goal)) with
             | None =>
               let lc := subterms g in
-              let (hyps, o) := scg.(subterms_coq_goal) in
-              let _ := scg.(subterms_coq_goal) := (hyps, Some lc) in
+              let (hyps, o) := it.(subterms_coq_goal) in
+              let _ := it.(subterms_coq_goal) := (hyps, Some lc) in
               let opt := interpret_trigger_contains_aux cg env lc tf in 
                 match opt with
                   | None => None
@@ -731,155 +732,163 @@ Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
         let res := List.map (fun y => List.append x y) l2 in List.append res (cartesian_product xs l2) 
   end.
 
-(* registers old types 
-for arguments of tactics : we cannot use only their names, as a name can 
-denote an old tactic  *)
-Ltac2 Type old_types_and_defs := 
-{ mutable old_types_and_defs : (string*constr*constr) list }.
+(* returns the list of arguments and their type of a tactic named [nametac] *)
+Ltac2 find_args_of_tac alr_trig nametac : (string * (constr*constr) list) list :=
+  List.filter (fun (x, y) => String.equal x nametac) ((alr_trig).(already_triggered)).
 
-Ltac2 find_args_of_tac env_old nametac :=
-let res :=
-List.filter (fun (x, y, z) => String.equal x nametac) ((env_old).(old_types_and_defs))
-in List.map (fun (x, y, z) => (y, z)) res.
+(* remove the old types registered for the list of arguments given to a tactic when there was a change
+made by a side effect
+for instance, there was H: T in the context, but H was cleared by some tactic and 
+a new hypothesis H: T' was introduced *)
 
-Ltac2 remove_old_assoc env_old nametac trm :=
-let res :=
-List.filter (fun (x, y, z) => String.equal x nametac) ((env_old).(old_types_and_defs)) in
-let res' :=
-List.filter_out (fun (x, y, z) => equal y trm) res in
-let res'' := 
-List.filter_out (fun (x, y, z) => String.equal x nametac) ((env_old).(old_types_and_defs)) in
-List.append res' res''.
+Ltac2 remove_old_assoc alr_trig nametac trm :=
+  let res := find_args_of_tac alr_trig nametac in
+  let res' := List.filter_out (fun (_, l) => List.exist (fun (x, y) => equal y trm) l) res in
+  let res'' := List.filter_out (fun (x, y) => String.equal x nametac) ((alr_trig).(already_triggered)) in
+  List.append res' res''.
 
-Ltac2 same_type_as_before (x: constr) env_old nametac :=
-let t := type x in
-let res := find_args_of_tac env_old nametac in
-let told := List.assoc_opt equal x res in
-  match told with
-    | None => 
-        let _ := (env_old).(old_types_and_defs) := (nametac, x, t):: (env_old).(old_types_and_defs) in
-        false
-    | Some told' =>
-        if equal t told' then true else 
-        let _ := (env_old).(old_types_and_defs) := (nametac, x, t)::(remove_old_assoc env_old nametac x) in false
-  end.
-
-Ltac2 Type flag_same_old_type :=
-{ mutable flag_old_type : bool }.
-
-(* filters out the arguments of a tactic on which it has been already applied,
-but checks that all of them (if they are either hypotheses or definitions) are the same as before *)
-
-Ltac2 hyps_are_the_same flag_same_old_type (lc : constr list) env_old nametac :=
-let b := List.for_all (fun x => same_type_as_before x env_old nametac) lc
-in (flag_same_old_type).(flag_old_type) := b ; b.
-
-Ltac2 rec filter_out_list_of_args fl (llc : constr list list) env_args env_old nametac :=
+(* among a list of list of pair between terms and their types, finds the corresponding type of a given constr *)
+Ltac2 rec find_old_type 
+  (llc : (constr * constr) list list)
+  (c : constr) : constr option :=
   match llc with
-    | lc :: llcs => 
-        if List.mem (List.equal equal) lc (env_args.(args_used)) then 
-          if hyps_are_the_same fl lc env_old nametac then filter_out_list_of_args fl llcs env_args env_old nametac
-          else lc :: filter_out_list_of_args fl llcs env_args env_old nametac
-        else lc :: filter_out_list_of_args fl llcs env_args env_old nametac
-    | [] => []
+    | [] => None
+    | lc :: llc' => 
+        let told := List.assoc_opt equal c lc in
+        match told with
+          | None => find_old_type llc' c 
+          | Some told => Some told
+        end
   end.
 
-Ltac2 interpret_trigger cg env env_args env_old scg b flo nametac (t : trigger) : constr list option :=
-  let rec interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t := 
+(* returns true when all the arguments given to a tactic have the same type as before
+- if these arguments were never used returns false
+- if they were used but one of them with a type which is not the current one (changed by a side-effect such as hypotheses renamings) returns false *)
+(* 
+ 
+                    let _ := (alr_trig).(already_triggered) := (nametac, List.combine l (List.map type l))::(remove_old_assoc alr_trig nametac x) in *)
+
+Ltac2 same_types_as_before (l: constr list) alr_trig nametac :=
+  let res := List.map (fun (x, y) => y) (find_args_of_tac alr_trig nametac) in
+  let rec aux l' :=
+    match l' with 
+      | [] => true
+      | x :: xs => 
+          let t := type x in
+          let told := find_old_type res x in
+            match told with
+              | None => false
+              | Some told' => if equal t told' then aux xs else false
+            end
+      end in aux l.
+
+Ltac2 filter_out_same_types (llc : constr list list) alr_trig nametac :=
+List.filter_out (fun l => same_types_as_before l alr_trig nametac) llc.
+
+Ltac2 interpret_trigger
+  (it : interpretation_state)  
+  (env: env_triggers)
+  (alr_trig: already_triggered) 
+  (t : trigger) : (constr list) list option :=
+  let scg := (it).(subterms_coq_goal) in
+  let cg := (it).(local_env) in
+  let nametac := (it).(name_of_tac) in
+  let b := (it).(global_flag) in
+  let rec interpret_trigger cg (env : env_triggers) alr_trig scg flag_letin b nametac t := 
   match t with
     | TIs (a, fl) b =>
-        match interpret_trigger_is cg env a b with
+        match interpret_trigger_is cg ((env).(env_triggers)) a b with
           | Some l => 
               let res := (List.map (fun (x, l) => cons_option (interpret_flag x fl) l) l) in
               if flag_letin then Some res 
-              else let res' := filter_out_list_of_args flo res env_args env_old nametac in
+              else let res' := filter_out_same_types res alr_trig nametac in
               if Int.equal 0 (List.length res') then None else Some res'
           | None => None
         end
     | TPred (a, fl) p => 
-        match interpret_trigger_pred cg env a fl p with
+        match interpret_trigger_pred cg ((env).(env_triggers)) a fl p with
           | Some l => 
               if flag_letin then Some l 
-              else let res := filter_out_list_of_args flo l env_args env_old nametac in
+              else let res := filter_out_same_types l alr_trig nametac in
               if Int.equal 0 (List.length res) then None else Some res
           | None => None
         end
     | TContains (a, fl) b => 
-        match interpret_trigger_contains cg env scg a b with
+        match interpret_trigger_contains it env a b with
           | Some l => 
               let res := (List.flatten (List.map (fun (x, l1) => List.map (fun l2 => cons_option (interpret_flag x fl) l2) l1) l)) in 
               if flag_letin then Some res 
-              else let res' := filter_out_list_of_args flo res env_args env_old nametac in
+              else let res' := filter_out_same_types res alr_trig nametac in
               if Int.equal 0 (List.length res') then None else Some res'
           | None => None
         end
     | TConj t1 t2 => 
-      match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t1 with
+      match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with
         | Some res => 
-          match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t2 with
+          match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
             | Some res' => 
                 let l := cartesian_product res res' in
                 if flag_letin then Some l 
-                else let l' := filter_out_list_of_args flo l env_args env_old nametac in
+                else let l' := filter_out_same_types l alr_trig nametac in
                 if Int.equal 0 (List.length l') then None else Some l'
             | None => None
           end
         | None => None
       end              
     | TDisj t1 t2 => 
-      match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t1 with 
+      match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with 
         | Some res => 
-            match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t1 with
+            match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with
                | None => Some res
                | Some res' => Some (List.append res res')
             end 
         | None => 
-          match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t2 with
+          match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
             | Some res' => Some res'
             | None => None
           end
       end
 (* warning: "not" works only with no arguments *)
     | TNot t' => 
-        match interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t' with
+        match interpret_trigger cg env alr_trig scg flag_letin b nametac t' with
           | Some _ => None
           | None => Some [[]]
         end
     | TOneTime => interpret_trigger_onetime b
     | TMetaLetIn t1 ls t2 =>
-       let it1 := interpret_trigger cg env env_args env_old scg true b flo nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
+       let it1 := interpret_trigger cg env alr_trig scg true b nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
             | Some [] => None
             | Some (lc :: lcs) => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
                 let _ := bind_triggers env lc ls in
-                let it2 := interpret_trigger cg env env_args env_old scg flag_letin b flo nametac t2 in
+                let it2 := interpret_trigger cg env alr_trig scg flag_letin b nametac t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
                 match it2 with
                   | Some l => 
                       if flag_letin then Some l
-                      else let res := filter_out_list_of_args flo l env_args env_old nametac in
+                      else let res := filter_out_same_types l alr_trig nametac in
                       if Int.equal 0 (List.length res) then None else Some res
                   | None => 
                       match aux (Some lcs) cg env scg ls t2 with
                         | None => None
                         | Some l =>
                       if flag_letin then Some l
-                      else let res := filter_out_list_of_args flo l env_args env_old nametac in
+                      else let res := filter_out_same_types l alr_trig nametac in
                       if Int.equal 0 (List.length res) then None else Some res 
                       end
                 end
            | None => None
          end in aux it1 cg env scg ls t2
     end 
-in match interpret_trigger cg env env_args env_old scg false b flo nametac t with
+in match interpret_trigger cg env alr_trig scg true b nametac t with
     | None => None
     | Some l => 
-        let rec aux l := 
-        match l with
-          | l' :: ls => let l' := List.hd l in if List.for_all is_closed l' then Some l' else aux ls
-          | [] => None (* a transformation cannot have open terms as arguments so we remove the interpretation of triggers when it is the case *)
-        end in aux l
+        let res := List.filter (fun l' =>  List.for_all is_closed l') l in
+        match res with
+          | [] => None
+          | _ :: _ => Some res
+        end
   end.
 
 (* Return the list of list of args instead of only a list, because the orchestrator will need it *)
