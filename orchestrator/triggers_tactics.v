@@ -378,11 +378,13 @@ Ltac2 trigger_anonymous_funs () :=
 
 Ltac2 trigger_add_compdecs () :=
   TDisj
-  (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)
+  (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg) 
   (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg).
 
 Ltac2 filter_add_compdecs () :=
-(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray]).
+FConj
+(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray])
+(FPred is_prod).
    
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)

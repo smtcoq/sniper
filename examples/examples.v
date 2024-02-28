@@ -39,7 +39,7 @@ Section Generic.
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-    scope. 4:verit_no_check.
+    scope. 
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -147,7 +147,7 @@ Proof. pose proof search_app. snipe_no_check. Qed.
 
 Lemma in_inv : forall (a b:A) (l:list A),
     search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
-Proof. intros. snipe_no_check. Qed.
+Proof. intros. Fail snipe. Abort.
 
 
 (* Another example with an induction *)
@@ -185,7 +185,7 @@ make SMTCoq complain *)
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; snipe. Qed.
+induction l; scope. Abort.
 
 End higher_order.
 
@@ -198,7 +198,7 @@ Proof. intros t a t' b; snipe. Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- pose proof app_nil_r; snipe_no_check.
+- pose proof app_nil_r; scope.
 - pose proof app_ass ; pose proof app_nil_r; snipe_no_check. 
 Qed.
 
