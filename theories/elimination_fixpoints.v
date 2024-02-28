@@ -121,10 +121,21 @@ Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
   match Constr.Unsafe.kind t with
     | Constr.Unsafe.App t' a => 
       if Constr.equal t' '(@eq) then 
-      let cst := Array.get a 1 in 
-      let cst' := Ltac1.of_constr cst in
-      let h' := Ltac1.of_constr h in
-      ltac1:(x y |- let x' := get_head x in fold x' in y) cst' h'  
+      let c := Array.get a 1 in 
+      let rec aux c := 
+        match Constr.Unsafe.kind c with
+          | Constr.Unsafe.App u l => aux u
+          | Constr.Unsafe.Fix tab k bda cstr => 
+              let binder_fix := Array.get bda k in 
+              let name := Option.get (Constr.Binder.name binder_fix) in
+              let csts := Env.expand [name] in 
+              let constantref := List.hd csts in
+              let cst := Env.instantiate constantref in
+              let cst' := Ltac1.of_constr cst in 
+              let h' := Ltac1.of_constr h in
+              ltac1:(x y |- fold x in y) cst' h'        
+          | _ => ()
+        end in aux c
       else ()
     | _ => ()
   end. 
@@ -158,8 +169,8 @@ repeat match goal with
 | H1 : ?Ty1 |- _ =>
   constr_eq Ty Ty1 ;
   lazymatch goal with
-    | H2 : ?T |- _ => first [first [setoid_rewrite H2 in H1 at 2 ; clear H2
-| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 ; try (fold_in_eq H1)] | setoid_rewrite_at2 H1 H2 ]
+    | H2 : ?T |- _ => first [first [first [setoid_rewrite H2 in H1 at 2 ; clear H2
+| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 | setoid_rewrite_at2 H1 H2 ]] | fold_in_eq H2; clear H1 ]
     end
 end.
 
@@ -218,7 +229,7 @@ Elpi Accumulate lp:{{
     std.rev Ctx Ctx',
     std.map Glob0 (x\ add_pos_ctx Ctx' x) Glob',
     coq.typecheck H TyH ok,
-    subterms_fix TyH L, !, 
+    subterms_fix TyH L, !,
     std.map L (x\ add_pos_ctx Ctx' x) L',
     gen_eqs Ctx L' Glob' R,
     add_pos_ctx Ctx' TyH TyH',
@@ -236,6 +247,29 @@ Ltac eliminate_fix_hyp H := eliminate_fix_hyp' H.
 Ltac eliminate_fix_cont H k :=
 eliminate_fix_hyp H ; k H.
 
+Section test_search.
+
+Variable (A: Type).
+Variable (CompDec : Type -> Type).
+Variable (H : CompDec A).
+Variable (eqb_of_compdec : forall (A : Type), CompDec A -> A -> A -> bool).
+
+Fixpoint search (x : A) l :=
+  match l with
+  | [] => false
+  | x0 :: l0 => orb (eqb_of_compdec A H x x0) (search x l0)
+  end.
+
+Goal forall (H0 : (search =
+         (fix search (x : A) (l : list A) {struct l} : bool :=
+            match l with
+            | [] => false
+            | x0 :: l0 => orb (eqb_of_compdec A H x x0) (search x l0)
+            end))), False.
+intros. eliminate_fix_hyp H0. Abort. 
+
+End test_search.
+
 Section test.
 
 (* test bound variables in the context *)
@@ -245,7 +279,7 @@ assert (H : forall l, (length l) = (fix length (l : list C) : nat :=
   match l with
   | [] => 0
   | _ :: l' => S (length l')
-  end) l) by reflexivity. eliminate_fix_hyp H. 
+  end) l) by reflexivity. eliminate_fix_hyp H.
 Abort.
 
 Goal (forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 

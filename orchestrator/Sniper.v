@@ -16,8 +16,6 @@ Require Import printer.
 Require Import orchestrator.
 Require Import filters.
 
-Set Default Proof Mode "Classic".
-
 Ltac revert_all :=
 repeat match goal with
 | H : _ |- _ => try revert H
@@ -62,79 +60,49 @@ Ltac2 trigger_anonymous_funs := TOneTime.
 Ltac2 trigger_higher_order :=
   TOneTime.
 
-Ltac2 scope () := orchestrator 5
-{ all_tacs := 
-[
-("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
-("my_higher_order", trigger_higher_order, trivial_filter) ; 
-("my_reflexivity", trigger_reflexivity (), filter_reflexivity ());
-("my_unfold_refl", trigger_unfold_reflexivity (), trivial_filter);
-("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
-("my_fixpoints", trigger_fixpoints, trivial_filter);
-("my_pattern_matching", trigger_pattern_matching, trivial_filter);
-("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
-("my_gen_principle_temporary", trigger_generation_principle, trivial_filter) ;
-("my_polymorphism_elpi", trigger_polymorphism (), trivial_filter) ;
-("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
-{ triggered_tacs := [] } {old_types_and_defs  := [] } Nothing.
+Ltac2 scope_verbos v := orchestrator 5
+[(trigger_anonymous_funs, "my_anonymous_functions", trivial_filter) ;
+(trigger_higher_order, "my_higher_order", trivial_filter) ; 
+(trigger_reflexivity (), "my_reflexivity", filter_reflexivity ());
+(trigger_unfold_reflexivity (), "my_unfold_refl", trivial_filter) ;
+(trigger_higher_order_equalities, "my_higher_order_equalities", trivial_filter); 
+(trigger_fixpoints, "my_fixpoints", trivial_filter);
+(trigger_pattern_matching, "my_pattern_matching",  trivial_filter);
+(trigger_algebraic_types, "my_algebraic_types", filter_algebraic_types ());
+(trigger_generation_principle, "my_gen_principle_temporary", trivial_filter) ;
+(trigger_polymorphism (), "my_polymorphism_elpi", trivial_filter) ;
+(trigger_add_compdecs (), "my_add_compdec",  filter_add_compdecs ())]
+{ already_triggered := [] } v.
 
-Ltac2 scope_debug () := orchestrator 5
-{ all_tacs := 
-[
-("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
-("my_higher_order", trigger_higher_order, trivial_filter) ; 
-("my_reflexivity", trigger_reflexivity (), filter_reflexivity ());
-("my_unfold_refl", trigger_unfold_reflexivity (), trivial_filter);
-("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
-("my_fixpoints", trigger_fixpoints, trivial_filter);
-("my_pattern_matching", trigger_pattern_matching, trivial_filter);
-("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
-("my_gen_principle_temporary", trigger_generation_principle, (* filter_generation_principle () *) trivial_filter) ;
-("my_polymorphism_elpi", trigger_polymorphism (), trivial_filter) ;
-("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
-{ triggered_tacs := [] } {old_types_and_defs  := [] } Debug.
+Ltac2 scope () := scope_verbos Nothing.
 
-Ltac2 scope_full () := orchestrator 5
-{ all_tacs := 
-[
-("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
-("my_higher_order", trigger_higher_order, trivial_filter) ; 
-("my_reflexivity", trigger_reflexivity (), filter_reflexivity ());
-("my_unfold_refl", trigger_unfold_reflexivity (), trivial_filter);
-("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
-("my_fixpoints", trigger_fixpoints, trivial_filter);
-("my_pattern_matching", trigger_pattern_matching, trivial_filter);
-("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
-("my_gen_principle_temporary", trigger_generation_principle, (* filter_generation_principle () *) trivial_filter) ;
-("my_polymorphism_elpi", trigger_polymorphism (), trivial_filter) ;
-("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
-{ triggered_tacs := [] } {old_types_and_defs  := [] } Full.
+Ltac2 scope_info () := scope_verbos Info.
 
-Ltac2 scope2 () := orchestrator 5
-{ all_tacs := 
-[
-("my_anonymous_functions", trigger_anonymous_funs, trivial_filter) ;
-("my_higher_order", trigger_higher_order, trivial_filter) ; 
-("my_reflexivity", trigger_reflexivity (), filter_reflexivity ());
-("my_unfold_refl", trigger_unfold_reflexivity (), trivial_filter);
-("my_higher_order_equalities", trigger_higher_order_equalities, trivial_filter); 
-("my_fixpoints", trigger_fixpoints, trivial_filter);
-("my_pattern_matching", trigger_pattern_matching, trivial_filter);
-("my_algebraic_types", trigger_algebraic_types, filter_algebraic_types ());
-("my_gen_principle_temporary", trigger_generation_principle, (* filter_generation_principle () *) trivial_filter) ;
-("my_polymorphism", trigger_polymorphism (), trivial_filter) ;
-("my_add_compdec", trigger_add_compdecs (), filter_add_compdecs ())] }
-{ triggered_tacs := [] } { old_types_and_defs  := [] } Nothing.
+Ltac2 scope_debug () := scope_verbos Debug.
 
-Tactic Notation "scope" := ltac2:(scope ()).
+Ltac2 scope_full () := scope_verbos Full.
 
-Tactic Notation "scope_debug" := ltac2:(scope_debug ()).
+Ltac2 scope2_verbos v := orchestrator 5
+[(trigger_anonymous_funs, "my_anonymous_functions", trivial_filter) ;
+(trigger_higher_order, "my_higher_order", trivial_filter) ; 
+(trigger_reflexivity (), "my_reflexivity", filter_reflexivity ());
+(trigger_unfold_reflexivity (), "my_unfold_refl", trivial_filter);
+(trigger_higher_order_equalities, "my_higher_order_equalities", trivial_filter); 
+(trigger_fixpoints, "my_fixpoints", trivial_filter);
+(trigger_pattern_matching, "my_pattern_matching",  trivial_filter);
+(trigger_algebraic_types, "my_algebraic_types", filter_algebraic_types ());
+(trigger_generation_principle, "my_gen_principle_temporary", trivial_filter) ;
+(trigger_polymorphism (), "my_polymorphism_elpi", trivial_filter) ;
+(trigger_add_compdecs (), "my_add_compdec",  filter_add_compdecs ())]
+{ already_triggered := [] } v.
 
-Tactic Notation "scope_full" := ltac2:(scope_full ()).
+Ltac2 scope2 () := scope_verbos Nothing.
 
-Tactic Notation "scope" := ltac2:(Control.enter (fun () => scope ())).
+Ltac2 scope2_info () := scope_verbos Info.
 
-Tactic Notation "scope2" := ltac2:(Control.enter (fun () => scope2 ())).
+Ltac2 scope2_debug () := scope_verbos Debug.
+
+Ltac2 scope2_full () := scope_verbos Full.
 
 Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
 

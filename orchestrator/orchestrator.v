@@ -12,15 +12,6 @@ Require Import triggers_tactics.
 Ltac2 Type all_tacs :=
   { mutable all_tacs : (string * trigger * filter) list }.
 
-(* 
-
-Reminder in triggers.v file : 
-
-pair between tactics and arguments and their type on which it was already triggered 
-
-Ltac2 Type already_triggered :=
-  { mutable already_triggered : (string * ((constr * constr) list)) list }. *)
-
 Ltac2 rec list_pair_equal (eq : 'a -> 'a -> bool) l1 l2  :=
   match l1, l2 with
     | [], [] => true
@@ -178,15 +169,16 @@ Ltac2 rec orchestrator_aux
                       trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                     aux ll'
                     else
-                      (run name l; (* Control.hyps / Control.goal before the run to compute the diff *)
+                      (
+                      let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
                       print_applied_tac v name l ;
+                      run name l; (* Control.hyps / Control.goal before the run to compute the diff *)
+                      Control.enter (fun () =>
                       let _ := 
                       if Bool.or lnotempty (is_tonetime trig) then
-                        let ltysargs := List.map (fun x => type x) l in
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) 
                       else () in
-                      Control.enter (fun () =>
                       let cg' := (it).(local_env) in
                       let (hs1, g1) := cg' in
                       let hs2 := Control.hyps () in
@@ -206,10 +198,8 @@ Ltac2 rec orchestrator_aux
   let hyps := Control.hyps () in 
   let env := { env_triggers := [] } in
   let it := { subterms_coq_goal := ([], None) ; local_env := (hyps, Some g); global_flag := true ; name_of_tac := ""} in
-  let _ := orchestrator_aux alltacs n it env alltacs trigtacs v in
+  let _ := Control.enter (fun () => orchestrator_aux alltacs n it env alltacs trigtacs v) in
   Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs v).
-
-(* orchestrator / orchestrator_aux : redundant with global_flag *)
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)

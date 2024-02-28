@@ -377,12 +377,9 @@ Ltac2 trigger_anonymous_funs () :=
   (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
 
 Ltac2 trigger_add_compdecs () :=
-  TDisj (TDisj
-  (triggered when (AnyHyp) contains TEq (TApp (TAny (Arg id)) tDiscard NotArg) tDiscard tDiscard NotArg)
-  (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg))
-(TDisj
-  (triggered when (TGoal) contains TEq (TApp (TAny (Arg id)) tDiscard NotArg) tDiscard tDiscard NotArg)
-  (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)).
+  TDisj
+  (triggered when (AnyHyp) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg)
+  (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg).
 
 Ltac2 filter_add_compdecs () :=
 (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray]).
