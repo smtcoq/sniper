@@ -147,7 +147,7 @@ Proof. pose proof search_app. snipe_no_check. Qed.
 
 Lemma in_inv : forall (a b:A) (l:list A),
     search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
-Proof. intros. Fail snipe. Abort.
+Proof. intros; snipe. Abort.
 
 
 (* Another example with an induction *)
@@ -182,10 +182,12 @@ it does not work by using an induction principle which generalizes
 on f and g, so f and g have to be introduced before l 
 It also work only with snipe2 because the arrow type instances will 
 make SMTCoq complain *) 
+
+(* From Sniper Require Import Transfos.
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; scope. Abort.
+induction l; scope. verit. *)
 
 End higher_order.
 
@@ -198,8 +200,8 @@ Proof. intros t a t' b; snipe. Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- pose proof app_nil_r; scope.
-- pose proof app_ass ; pose proof app_nil_r; snipe_no_check. 
+- pose proof List.app_nil_r; snipe2.
+- pose proof app_ass ; pose proof List.app_nil_r; snipe. 
 Qed.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :

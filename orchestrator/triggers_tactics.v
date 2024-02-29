@@ -286,8 +286,8 @@ Ltac2 codomain_prop (c: constr) := Bool.neg (codomain_not_prop c).
 (** Triggers and filters for Sniper tactics *)
 
 Ltac2 trigger_reflexivity () :=
-  TDisj (TContains (TGoal, NotArg) (TConstant None (Arg id)))
-        (TContains (TSomeHyp, NotArg) (TConstant None (Arg id))).
+  TDisj (TContains (TSomeHyp, NotArg) (TConstant None (Arg id)))
+        (TContains (TGoal, NotArg) (TConstant None (Arg id))).
 
 Ltac2 filter_reflexivity () :=
   FConj 

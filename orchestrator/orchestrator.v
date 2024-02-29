@@ -146,7 +146,7 @@ Ltac2 rec orchestrator_aux
           | None =>
              print_tactic_not_triggered v name ;
              orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v
-          | Some ll =>
+          | Some ll => (* if String.equal name "my_reflexivity" then print_interp_trigger ll else () ; DEBUG *)
             let rec aux ll :=
               match ll with
                 | [] => orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v
@@ -159,7 +159,7 @@ Ltac2 rec orchestrator_aux
                     else if Bool.and (is_tonetime trig) ((already_triggered ((trigtacs).(already_triggered)) (name, l))) then
                       print_tactic_already_applied_once v name ;
                       aux ll'
-                    else if Bool.and (Bool.neg lnotempty) (Bool.neg ((it).(global_flag))) then
+                    else if Bool.and (is_tonetime trig) (Bool.neg ((it).(global_flag))) then
                       print_tactic_global_in_local v name ;
                       orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v               
                     else if Bool.neg (pass_the_filter l fi) then
@@ -187,7 +187,8 @@ Ltac2 rec orchestrator_aux
                         match g1 with
                         | None => None
                         | Some g1' => if Constr.equal g1' g2 then None else Some g2 
-                      end in it.(local_env) := (diff_hyps hs1 hs2, g3) ;     
+                      end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                      it.(global_flag) := false ;    
                       orchestrator_aux alltacs fuel it env trigstacsfis trigtacs v))
               end in aux ll
         end

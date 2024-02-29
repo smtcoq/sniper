@@ -42,10 +42,8 @@ Ltac my_algebraic_types t := try (interp_alg_types t).
 Ltac my_gen_principle t := 
  pose_gen_statement t.
 
-Definition prod_types := (Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
-@CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare).
-
-Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables 'prod_types).
+Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
+@CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare)).
 
 Ltac my_polymorphism_elpi := elimination_polymorphism.
 
@@ -92,17 +90,17 @@ Ltac2 scope2_verbos v := orchestrator 5
 (trigger_pattern_matching, "my_pattern_matching",  trivial_filter);
 (trigger_algebraic_types, "my_algebraic_types", filter_algebraic_types ());
 (trigger_generation_principle, "my_gen_principle_temporary", trivial_filter) ;
-(trigger_polymorphism (), "my_polymorphism_elpi", trivial_filter) ;
+(trigger_polymorphism (), "my_polymorphism", trivial_filter) ;
 (trigger_add_compdecs (), "my_add_compdec",  filter_add_compdecs ())]
 { already_triggered := [] } v.
 
-Ltac2 scope2 () := scope_verbos Nothing.
+Ltac2 scope2 () := scope2_verbos Nothing.
 
-Ltac2 scope2_info () := scope_verbos Info.
+Ltac2 scope2_info () := scope2_verbos Info.
 
-Ltac2 scope2_debug () := scope_verbos Debug.
+Ltac2 scope2_debug () := scope2_verbos Debug.
 
-Ltac2 scope2_full () := scope_verbos Full.
+Ltac2 scope2_full () := scope2_verbos Full.
 
 Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
 
@@ -119,3 +117,4 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit))).
+

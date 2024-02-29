@@ -4,9 +4,15 @@ From Ltac2 Require Import Constr.
 From Ltac2 Require Import Std.
 From Ltac2 Require Import Env.
 From Ltac2 Require Import Message.
+From Ltac2 Require Import Printf.
 Import Unsafe.
 Set Default Proof Mode "Classic".
 
+Ltac2 rec print_interp_trigger (ll : constr list list) := 
+  match ll with
+    | [] => printf "no more triggers to print" 
+    | l :: ll' => printf "trigger interpreted:" ; List.iter (fun x => printf "%t" x) l ; print_interp_trigger ll'
+  end.
 
 Ltac2 fail s := Control.backtrack_tactic_failure s.
 
@@ -837,8 +843,8 @@ Ltac2 interpret_trigger
       end              
     | TDisj t1 t2 => 
       match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with 
-        | Some res => 
-            match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with
+        | Some res =>
+            match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
                | None => Some res
                | Some res' => Some (List.append res res')
             end 

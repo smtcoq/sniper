@@ -9,6 +9,12 @@ Ltac2 print_case (c: constr) :=
     | _ => ()
   end.
 
+Ltac2 rec print_interp_trigger (ll : constr list list) := 
+  match ll with
+    | [] => printf "no more triggers to print" 
+    | l :: ll' => printf "trigger interpreted:" ; List.iter (fun x => printf "%t" x) l ; print_interp_trigger ll'
+  end.
+
 (* Ltac2 Eval (print_case '(match 1 as t return 
 match t with | 0 => Type | S _ => nat end with | 0 => Prop | S x => x end)). *)
 
