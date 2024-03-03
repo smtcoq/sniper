@@ -13,6 +13,7 @@ Require Import MetaCoq.Template.All.
 Require Import utilities.
 Require Import reflexivity.
 Require Import unfold_reflexivity.
+Require Import unfold_in.
 Require Import List.
 Import ListNotations.
 Require Import String.
@@ -130,6 +131,18 @@ Abort.
 Goal False.
 expand_fun Datatypes.length.
 expand_fun hd.
+Abort.
+
+Variable (A B: Type).
+Variable (f: A -> B).
+
+Goal False.
+pose (map' := List.map f).
+assert_refl map'.
+unfold_refl H.
+expand_hyp H.
+unfold_refl H0.
+unfold_in H0 map.
 Abort.
 
 End tests.

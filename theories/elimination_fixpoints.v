@@ -11,6 +11,10 @@
 
 Require Import utilities.
 From elpi Require Import elpi.
+Require Import reflexivity.
+Require Import unfold_reflexivity.
+Require Import unfold_in.
+Require Import expand.
 Require Import List.
 Import ListNotations.
 From Ltac2 Require Import Ltac2.
@@ -269,6 +273,24 @@ Goal forall (H0 : (search =
 intros. eliminate_fix_hyp H0. Abort. 
 
 End test_search.
+
+Section test_ho.
+
+
+Variable (A B: Type).
+Variable (f: A -> B).
+
+Goal False.
+pose (map' := List.map f).
+assert_refl map'.
+unfold_refl H.
+expand_hyp H.
+unfold_refl H0.
+unfold_in H0 map.
+eliminate_fix_hyp H0.
+Abort.
+
+End test_ho.
 
 Section test.
 

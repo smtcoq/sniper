@@ -171,10 +171,10 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-(* TODO : elimination polymorphism
+
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope2. Qed.
+Proof. Time intros f g l ; induction l; scope. Qed.
  *)
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 
@@ -183,8 +183,7 @@ on f and g, so f and g have to be introduced before l
 It also work only with snipe2 because the arrow type instances will 
 make SMTCoq complain *) 
 
-(* From Sniper Require Import Transfos.
-Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+(* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
 induction l; scope. verit. *)
