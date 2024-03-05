@@ -158,7 +158,7 @@ Ltac2 interpret_trigger_var_with_constr cg env tv c :=
             end
       | Goal (Some g) => if equal g c then Some g else None
       | Goal None => None
-      | Constr c => Some c
+      | Constr c' => if equal c c' then Some c else None
 
     end.
 
@@ -848,7 +848,7 @@ Ltac2 interpret_trigger
         end
     | TConj t1 t2 => 
       match interpret_trigger cg env alr_trig scg flag_letin nametac t1 with
-        | Some res => 
+        | Some res =>
           match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
             | Some res' => 
                 let l := cartesian_product res res' in
