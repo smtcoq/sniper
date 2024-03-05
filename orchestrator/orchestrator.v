@@ -10,7 +10,15 @@ Require Import filters.
 Require Import triggers_tactics.
 
 Ltac2 Type all_tacs :=
-  { mutable all_tacs : (string * trigger * filter) list }.
+  { mutable all_tacs : ((trigger * bool) * string * filter) list }.
+
+Ltac2 rec remove_tac (na : string) (all_tacs : ((trigger * bool) * string * filter) list ) :=
+  match all_tacs with 
+    | [] => []
+    | (tr, na' , f) :: xs => 
+        if String.equal na na' then xs
+        else (tr, na', f) :: remove_tac na xs
+  end.
 
 Ltac2 rec list_pair_equal (eq : 'a -> 'a -> bool) l1 l2  :=
   match l1, l2 with
@@ -115,76 +123,90 @@ if leq_verb v Debug then () else
 (printf "The tactic %s was filtered with the following args" s ;
 List.iter (fun x => printf "%t" x) l).
 
+Ltac2 rec remove_dups (ll : constr list list) := 
+  match ll with
+    | [] => []
+    | l :: ll' => if List.mem (List.equal Constr.equal) l ll' then remove_dups ll' else l :: remove_dups ll'
+  end.
 
 Ltac2 rec orchestrator_aux
   alltacs (* the mutable field of all tactics *)
+  init_fuel
   fuel
   it (* the interpretation state (see [triggers.v]) *)
   env (* local triggers variables *)
   (trigstacsfis : ((trigger * bool)*string* filter) list) 
   (trigtacs : already_triggered) (* Triggered tactics, pair between a string and a list of arguments and their types *) 
-  (v: verbosity) : (* number of information required *) unit := 
-  print_state_verb v it ;
-  match trigstacsfis with
-    | [] => 
-        if (it).(global_flag) then () 
-        else orchestrator fuel alltacs trigtacs v
-    | ((trig, multipletimes), name, fi) :: trigstacsfis' => 
-         (it).(name_of_tac) := "name" ;
-         let interp := interpret_trigger it env trigtacs trig in
-         match interp with
-          | None =>
-             print_tactic_not_triggered v name ;
-             orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v
-          | Some ll => (* if String.equal name "my_reflexivity" then print_interp_trigger ll else () ; DEBUG *)
-            let rec aux ll :=
-              match ll with
-                | [] => orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v
-                | l :: ll' =>
-                    if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
-                      print_tactic_global_in_local v name ;
-                      orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v 
-                    else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
-                        print_tactic_already_applied v name l ;
-                        aux ll'        
-                    else if Bool.neg (pass_the_filter l fi) then
-                      print_tactic_trigger_filtered v name l ;
-                      let ltysargs := List.map (fun x => type x) l in
-                      let argstac := List.combine l ltysargs in
-                      trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
-                      aux ll'   
-                    else
-                      (
-                      let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
-                      print_applied_tac v name l ;
-                      run name l; (* Control.hyps / Control.goal before the run to compute the diff *)
-                      Control.enter (fun () =>
+  (v: verbosity) : (* number of information required *) unit :=
+    if Int.le fuel 0 then  (* a problematic tactic used all the fuel *)
+      match trigstacsfis with
+        | [] => ()
+        | (_, name, _) :: trs => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
+            Control.enter (fun () => orchestrator init_fuel alltacs trigtacs v)
+      end 
+    else
+    print_state_verb v it ;
+    match trigstacsfis with
+      | [] => 
+          if (it).(global_flag) then () 
+          else Control.enter (fun () => orchestrator fuel alltacs trigtacs v)
+      | ((trig, multipletimes), name, fi) :: trigstacsfis' => 
+          (it).(name_of_tac) := name ; 
+          Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
+          match interp with
+            | None =>
+              print_tactic_not_triggered v name ;
+              orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
+            | Some ll =>
+              let rec aux ll :=  (* if String.equal name "my_add_compdec" then print_interp_trigger ll else () ; DEBUG *)
+                match ll with
+                  | [] => orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
+                  | l :: ll' =>
+                      if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
+                        print_tactic_global_in_local v name ;
+                        orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v 
+                      else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
+                          print_tactic_already_applied v name l ;
+                          aux ll'        
+                      else if Bool.neg (pass_the_filter l fi) then
+                        print_tactic_trigger_filtered v name l ;
+                        let ltysargs := List.map (fun x => type x) l in
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
-                        let cg' := (it).(local_env) in
-                        let (hs1, g1) := cg' in
-                        let hs2 := Control.hyps () in
-                        let g2 := Control.goal () in
-                        let g3 :=
-                          match g1 with
-                          | None => None
-                          | Some g1' => if Constr.equal g1' g2 then None else Some g2 
-                        end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
-                        it.(global_flag) := false ;
-                        let fuel :=
-                          if multipletimes then 
-                          Int.sub 1 fuel else fuel in 
-                        orchestrator_aux alltacs fuel it env trigstacsfis trigtacs v))
-                end in aux ll
-          end
-    end
+                        aux ll'   
+                      else
+                        (
+                        let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
+                        print_applied_tac v name l ;
+                        run name l; 
+    (* Control.hyps / Control.goal before the run to compute the diff *)
+                        Control.enter (fun () => 
+                          let argstac := List.combine l ltysargs in
+                          trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
+                          let cg' := (it).(local_env) in
+                          let (hs1, g1) := cg' in
+                          let hs2 := Control.hyps () in
+                          let g2 := Control.goal () in
+                          let g3 :=
+                            match g1 with
+                            | None => None
+                            | Some g1' => if Constr.equal g1' g2 then None else Some g2 
+                          end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                          it.(global_flag) := false ;
+                          let fuel' :=
+                            if multipletimes then
+                            Int.sub fuel 1 else fuel in
+                            orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v))
+                  end in aux (remove_dups ll)
+          end)
+    end 
  with orchestrator n alltacs trigtacs v :=
-  if Int.equal n 0 then () else
+  if Int.le n 0 then () else
   let g := Control.goal () in
   let hyps := Control.hyps () in 
   let env := { env_triggers := [] } in
   let it := { subterms_coq_goal := ([], None) ; local_env := (hyps, Some g); global_flag := true ; name_of_tac := ""} in
-  Control.enter (fun () => orchestrator_aux alltacs n it env alltacs trigtacs v).
+  orchestrator_aux alltacs n n it env ((alltacs).(all_tacs)) trigtacs v.
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)

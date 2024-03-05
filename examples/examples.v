@@ -17,6 +17,7 @@
 From SMTCoq Require Import SMTCoq.
 From Sniper.orchestrator Require Import Sniper.
 From Sniper Require Import tree.
+From Sniper Require Import Transfos.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
@@ -39,7 +40,7 @@ Section Generic.
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-    scope. 
+   scope. 
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -147,12 +148,12 @@ Proof. pose proof search_app. snipe_no_check. Qed.
 
 Lemma in_inv : forall (a b:A) (l:list A),
     search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
-Proof. intros; snipe. Abort.
+Proof. intros; scope. Abort.
 
 
-(* Another example with an induction *)
+(* (* Another example with an induction *)
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
-Proof. intros ; induction l; snipe_no_check. Qed.
+Proof. intros ; induction l; scope. Qed. *)
 
 End search.
 
@@ -183,10 +184,10 @@ on f and g, so f and g have to be introduced before l
 It also work only with snipe2 because the arrow type instances will 
 make SMTCoq complain *) 
 
-(* Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; scope. verit. *)
+induction l; scope_info. fold_local_def elpi_ctx_entry_48_.  verit. *)
 
 End higher_order.
 
@@ -196,12 +197,12 @@ Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. intros t a t' b; snipe. Qed.
 
-Lemma rev_elements_app :
+(* Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
 - pose proof List.app_nil_r; snipe2.
 - pose proof app_ass ; pose proof List.app_nil_r; snipe. 
-Qed.
+Qed. *)
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.

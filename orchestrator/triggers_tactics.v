@@ -387,8 +387,10 @@ FConj
 (FPred is_prod).
    
 Ltac2 trigger_fold_local_def () :=
-  tlet def := (triggered when (TSomeDef) is (tArg) on (NotArg)) in
-  triggered when (TSomeHypProp) contains (TTrigVar (TNamed "def") (Arg id)) on (NotArg). 
+  tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
+  TConj (triggered when (TSomeHypProp) contains (TTrigVar (TNamed "def_unfold") (NotArg)) on (NotArg))
+        (triggered when (TNamed "def") is (TTrigVar (TNamed "def") (NotArg)) on (Arg id)) 
+(* trick to get as argument the definition not unfolded*). 
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool_hyp () :=

@@ -51,6 +51,8 @@ Ltac my_polymorphism := elimination_polymorphism_exhaustive unit.
 
 Ltac my_add_compdec t := add_compdecs_terms t.
 
+Ltac my_fold_local_def t := fold_local_def t.
+
 Ltac2 trigger_generation_principle := TAlways.
 
 Ltac2 trigger_anonymous_funs := TAlways.
@@ -59,7 +61,7 @@ Ltac2 trigger_higher_order :=
   TAlways.
 
 Ltac2 scope_verbos v := orchestrator 5
-[((trigger_anonymous_funs, false), "my_anonymous_functions", trivial_filter) ;
+{ all_tacs := [((trigger_anonymous_funs, false), "my_anonymous_functions", trivial_filter) ;
 ((trigger_higher_order, false), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false), "my_unfold_refl", trivial_filter);
@@ -68,8 +70,9 @@ Ltac2 scope_verbos v := orchestrator 5
 ((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
-((trigger_polymorphism (), false), "my_polymorphism_elpi", trivial_filter) ;
-((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())]
+((trigger_fold_local_def (), true), "my_fold_local_def", trivial_filter);
+((trigger_polymorphism (), true), "my_polymorphism_elpi", trivial_filter) ;
+((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] }
 { already_triggered := [] } v.
 
 Ltac2 scope () := scope_verbos Nothing.
@@ -81,6 +84,7 @@ Ltac2 scope_debug () := scope_verbos Debug.
 Ltac2 scope_full () := scope_verbos Full.
 
 Ltac2 scope2_verbos v := orchestrator 5
+{ all_tacs := 
 [((trigger_anonymous_funs, false), "my_anonymous_functions", trivial_filter) ;
 ((trigger_higher_order, false), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false), "my_reflexivity", filter_reflexivity ());
@@ -91,7 +95,7 @@ Ltac2 scope2_verbos v := orchestrator 5
 ((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
 ((trigger_polymorphism (), false), "my_polymorphism", trivial_filter) ]
-(* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] *)
+(* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] *) }
 { already_triggered := [] } v.
 
 Ltac2 scope2 () := scope2_verbos Nothing.
@@ -103,6 +107,8 @@ Ltac2 scope2_debug () := scope2_verbos Debug.
 Ltac2 scope2_full () := scope2_verbos Full.
 
 Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
+
+Tactic Notation "scope_info" := ltac2:(Control.enter (fun () => intros; scope_info ())).
 
 Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
@@ -117,4 +123,5 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit))).
+
 
