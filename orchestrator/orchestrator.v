@@ -60,16 +60,6 @@ Ltac2 rec diff_hyps hs1 hs2 :=
     | x :: xs, [] => [] (* we do not consider removed hypotheses *)
   end.
 
-Ltac2 is_tonetime t :=
-  match t with
-  | TOneTime => true
-  | _ => false
-  end.
-
-Ltac2 filter_onetime lt :=
-  List.filter_out is_tonetime lt. 
- 
-
 Ltac2 Type verbosity :=
 [ Nothing | Info | Debug | Full ].
 
@@ -131,15 +121,15 @@ Ltac2 rec orchestrator_aux
   fuel
   it (* the interpretation state (see [triggers.v]) *)
   env (* local triggers variables *)
-  (trigstacsfis : (trigger*string* filter) list) 
+  (trigstacsfis : ((trigger * bool)*string* filter) list) 
   (trigtacs : already_triggered) (* Triggered tactics, pair between a string and a list of arguments and their types *) 
   (v: verbosity) : (* number of information required *) unit := 
   print_state_verb v it ;
   match trigstacsfis with
     | [] => 
         if (it).(global_flag) then () 
-        else orchestrator (Int.sub fuel 1) alltacs trigtacs v
-    | (trig, name, fi) :: trigstacsfis' => 
+        else orchestrator fuel alltacs trigtacs v
+    | ((trig, multipletimes), name, fi) :: trigstacsfis' => 
          (it).(name_of_tac) := "name" ;
          let interp := interpret_trigger it env trigtacs trig in
          match interp with
@@ -151,56 +141,50 @@ Ltac2 rec orchestrator_aux
               match ll with
                 | [] => orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v
                 | l :: ll' =>
-                    let lnotempty := Bool.neg (Int.equal (List.length l) 0) in
-                    if Bool.and lnotempty (* instead: istonetime trig *)
-                      ((already_triggered ((trigtacs).(already_triggered)) (name, l))) then 
-                      print_tactic_already_applied v name l ;
-                      aux ll'
-                    else if Bool.and (is_tonetime trig) ((already_triggered ((trigtacs).(already_triggered)) (name, l))) then
-                      print_tactic_already_applied_once v name ;
-                      aux ll'
-                    else if Bool.and (is_tonetime trig) (Bool.neg ((it).(global_flag))) then
+                    if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
                       print_tactic_global_in_local v name ;
-                      orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v               
+                      orchestrator_aux alltacs fuel it env trigstacsfis' trigtacs v 
+                    else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
+                        print_tactic_already_applied v name l ;
+                        aux ll'        
                     else if Bool.neg (pass_the_filter l fi) then
                       print_tactic_trigger_filtered v name l ;
                       let ltysargs := List.map (fun x => type x) l in
                       let argstac := List.combine l ltysargs in
                       trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
-                    aux ll'
+                      aux ll'   
                     else
                       (
                       let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
                       print_applied_tac v name l ;
                       run name l; (* Control.hyps / Control.goal before the run to compute the diff *)
                       Control.enter (fun () =>
-                      let _ := 
-                      if Bool.or lnotempty (is_tonetime trig) then
                         let argstac := List.combine l ltysargs in
-                        trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) 
-                      else () in
-                      let cg' := (it).(local_env) in
-                      let (hs1, g1) := cg' in
-                      let hs2 := Control.hyps () in
-                      let g2 := Control.goal () in
-                      let g3 :=
-                        match g1 with
-                        | None => None
-                        | Some g1' => if Constr.equal g1' g2 then None else Some g2 
-                      end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
-                      it.(global_flag) := false ;    
-                      orchestrator_aux alltacs fuel it env trigstacsfis trigtacs v))
-              end in aux ll
-        end
-  end
+                        trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
+                        let cg' := (it).(local_env) in
+                        let (hs1, g1) := cg' in
+                        let hs2 := Control.hyps () in
+                        let g2 := Control.goal () in
+                        let g3 :=
+                          match g1 with
+                          | None => None
+                          | Some g1' => if Constr.equal g1' g2 then None else Some g2 
+                        end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                        it.(global_flag) := false ;
+                        let fuel :=
+                          if multipletimes then 
+                          Int.sub 1 fuel else fuel in 
+                        orchestrator_aux alltacs fuel it env trigstacsfis trigtacs v))
+                end in aux ll
+          end
+    end
  with orchestrator n alltacs trigtacs v :=
   if Int.equal n 0 then () else
   let g := Control.goal () in
   let hyps := Control.hyps () in 
   let env := { env_triggers := [] } in
   let it := { subterms_coq_goal := ([], None) ; local_env := (hyps, Some g); global_flag := true ; name_of_tac := ""} in
-  let _ := Control.enter (fun () => orchestrator_aux alltacs n it env alltacs trigtacs v) in
-  Control.enter (fun () => orchestrator (Int.sub n 1) alltacs trigtacs v).
+  Control.enter (fun () => orchestrator_aux alltacs n it env alltacs trigtacs v).
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)

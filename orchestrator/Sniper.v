@@ -51,25 +51,25 @@ Ltac my_polymorphism := elimination_polymorphism_exhaustive unit.
 
 Ltac my_add_compdec t := add_compdecs_terms t.
 
-Ltac2 trigger_generation_principle := TOneTime.
+Ltac2 trigger_generation_principle := TAlways.
 
-Ltac2 trigger_anonymous_funs := TOneTime.
+Ltac2 trigger_anonymous_funs := TAlways.
 
 Ltac2 trigger_higher_order :=
-  TOneTime.
+  TAlways.
 
 Ltac2 scope_verbos v := orchestrator 5
-[(trigger_anonymous_funs, "my_anonymous_functions", trivial_filter) ;
-(trigger_higher_order, "my_higher_order", trivial_filter) ; 
-(trigger_reflexivity (), "my_reflexivity", filter_reflexivity ());
-(trigger_unfold_reflexivity (), "my_unfold_refl", trivial_filter) ;
-(trigger_higher_order_equalities, "my_higher_order_equalities", trivial_filter); 
-(trigger_fixpoints, "my_fixpoints", trivial_filter);
-(trigger_pattern_matching, "my_pattern_matching",  trivial_filter);
-(trigger_algebraic_types, "my_algebraic_types", filter_algebraic_types ());
-(trigger_generation_principle, "my_gen_principle_temporary", trivial_filter) ;
-(trigger_polymorphism (), "my_polymorphism_elpi", trivial_filter) ;
-(trigger_add_compdecs (), "my_add_compdec",  filter_add_compdecs ())]
+[((trigger_anonymous_funs, false), "my_anonymous_functions", trivial_filter) ;
+((trigger_higher_order, false), "my_higher_order", trivial_filter) ; 
+((trigger_reflexivity (), false), "my_reflexivity", filter_reflexivity ());
+((trigger_unfold_reflexivity (), false), "my_unfold_refl", trivial_filter);
+((trigger_higher_order_equalities, false), "my_higher_order_equalities", trivial_filter); 
+((trigger_fixpoints, false), "my_fixpoints", trivial_filter);
+((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
+((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
+((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
+((trigger_polymorphism (), false), "my_polymorphism_elpi", trivial_filter) ;
+((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())]
 { already_triggered := [] } v.
 
 Ltac2 scope () := scope_verbos Nothing.
@@ -81,17 +81,17 @@ Ltac2 scope_debug () := scope_verbos Debug.
 Ltac2 scope_full () := scope_verbos Full.
 
 Ltac2 scope2_verbos v := orchestrator 5
-[(trigger_anonymous_funs, "my_anonymous_functions", trivial_filter) ;
-(trigger_higher_order, "my_higher_order", trivial_filter) ; 
-(trigger_reflexivity (), "my_reflexivity", filter_reflexivity ());
-(trigger_unfold_reflexivity (), "my_unfold_refl", trivial_filter);
-(trigger_higher_order_equalities, "my_higher_order_equalities", trivial_filter); 
-(trigger_fixpoints, "my_fixpoints", trivial_filter);
-(trigger_pattern_matching, "my_pattern_matching",  trivial_filter);
-(trigger_algebraic_types, "my_algebraic_types", filter_algebraic_types ());
-(trigger_generation_principle, "my_gen_principle_temporary", trivial_filter) ;
-(trigger_polymorphism (), "my_polymorphism", trivial_filter) ;
-(trigger_add_compdecs (), "my_add_compdec",  filter_add_compdecs ())]
+[((trigger_anonymous_funs, false), "my_anonymous_functions", trivial_filter) ;
+((trigger_higher_order, false), "my_higher_order", trivial_filter) ; 
+((trigger_reflexivity (), false), "my_reflexivity", filter_reflexivity ());
+((trigger_unfold_reflexivity (), false), "my_unfold_refl", trivial_filter);
+((trigger_higher_order_equalities, false), "my_higher_order_equalities", trivial_filter); 
+((trigger_fixpoints, false), "my_fixpoints", trivial_filter);
+((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
+((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
+((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
+((trigger_polymorphism (), false), "my_polymorphism", trivial_filter) ]
+(* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] *)
 { already_triggered := [] } v.
 
 Ltac2 scope2 () := scope2_verbos Nothing.

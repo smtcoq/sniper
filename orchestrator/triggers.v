@@ -89,7 +89,8 @@ Ltac2 Type rec trigger := [
   | TNot (trigger) (* negation of a trigger *)
   | TMetaLetIn (trigger, string list, trigger) (* TMetaLetIn t1 s t2 binds all constrs produced by interpret_trigger t1
 and gives them the corresponding names in s, adds thems to the environment and interprets t2 that may contain some TNamed "foo" *)
-  | TOneTime (* trigger one time the tactic, only if the state is global (all the hypotheses and the goal are considered) *)
+  | TAlways (* always triggers the tactic *)
+  | TNever (* never triggers the tactic *)
   ]. 
 
 Ltac2 tTrivial := TIs (TGoal, NotArg) tDiscard.
@@ -729,7 +730,9 @@ Ltac2 interpret_trigger_contains
             end
     end.
 
-Ltac2 interpret_trigger_onetime b := if b then Some [[]] else None.
+Ltac2 interpret_trigger_always () := Some [[]].
+
+Ltac2 interpret_trigger_never () := None.
 
 Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
   match l1 with
@@ -789,7 +792,7 @@ Ltac2 same_types_as_before (l: constr list) alr_trig nametac :=
       end in aux l.
 
 Ltac2 filter_out_same_types (llc : constr list list) alr_trig nametac :=
-List.filter_out (fun l => same_types_as_before l alr_trig nametac) llc.
+List.filter_out (fun l => same_types_as_before l alr_trig nametac) llc. 
 
 Ltac2 interpret_trigger
   (it : interpretation_state)  
@@ -799,8 +802,7 @@ Ltac2 interpret_trigger
   let scg := (it).(subterms_coq_goal) in
   let cg := (it).(local_env) in
   let nametac := (it).(name_of_tac) in
-  let b := (it).(global_flag) in
-  let rec interpret_trigger cg (env : env_triggers) alr_trig scg flag_letin b nametac t := 
+  let rec interpret_trigger cg (env : env_triggers) alr_trig scg flag_letin nametac t := 
   match t with
     | TIs (a, fl) b =>
         match interpret_trigger_is cg ((env).(env_triggers)) a b with
@@ -829,9 +831,9 @@ Ltac2 interpret_trigger
           | None => None
         end
     | TConj t1 t2 => 
-      match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with
+      match interpret_trigger cg env alr_trig scg flag_letin nametac t1 with
         | Some res => 
-          match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
+          match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
             | Some res' => 
                 let l := cartesian_product res res' in
                 if flag_letin then Some l 
@@ -842,33 +844,34 @@ Ltac2 interpret_trigger
         | None => None
       end              
     | TDisj t1 t2 => 
-      match interpret_trigger cg env alr_trig scg flag_letin b nametac t1 with 
+      match interpret_trigger cg env alr_trig scg flag_letin nametac t1 with 
         | Some res =>
-            match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
+            match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
                | None => Some res
                | Some res' => Some (List.append res res')
             end 
         | None => 
-          match interpret_trigger cg env alr_trig scg flag_letin b nametac t2 with
+          match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
             | Some res' => Some res'
             | None => None
           end
       end
 (* warning: "not" works only with no arguments *)
     | TNot t' => 
-        match interpret_trigger cg env alr_trig scg flag_letin b nametac t' with
+        match interpret_trigger cg env alr_trig scg flag_letin nametac t' with
           | Some _ => None
           | None => Some [[]]
         end
-    | TOneTime => interpret_trigger_onetime b
+    | TAlways => interpret_trigger_always ()
+    | TNever => interpret_trigger_never ()
     | TMetaLetIn t1 ls t2 =>
-       let it1 := interpret_trigger cg env alr_trig scg true b nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
+       let it1 := interpret_trigger cg env alr_trig scg true nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
             | Some [] => None
             | Some (lc :: lcs) => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
                 let _ := bind_triggers env lc ls in
-                let it2 := interpret_trigger cg env alr_trig scg flag_letin b nametac t2 in
+                let it2 := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
                 match it2 with
                   | Some l => 
@@ -887,7 +890,7 @@ Ltac2 interpret_trigger
            | None => None
          end in aux it1 cg env scg ls t2
     end 
-in match interpret_trigger cg env alr_trig scg true b nametac t with
+in match interpret_trigger cg env alr_trig scg true nametac t with
     | None => None
     | Some l => 
         let res := List.filter (fun l' =>  List.for_all is_closed l') l in
