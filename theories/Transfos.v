@@ -15,4 +15,5 @@ Require Export clearbodies.
 Require Export case_analysis.
 Require Export case_analysis_existentials.
 Require Export higher_order.
+Require Export fold_local_def.
 Require Export anonymous_functions.

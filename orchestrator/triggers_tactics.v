@@ -386,6 +386,9 @@ FConj
 (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray])
 (FPred is_prod).
    
+Ltac2 trigger_fold_local_def () :=
+  tlet def := (triggered when (TSomeDef) is (tArg) on (NotArg)) in
+  triggered when (TSomeHypProp) contains (TTrigVar (TNamed "def") (Arg id)) on (NotArg). 
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool_hyp () :=
@@ -393,11 +396,6 @@ Ltac2 trigger_trakt_bool_hyp () :=
 
 Ltac2 trigger_trakt_bool_goal () :=
   (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
-
-
-(* 
-Ltac2 trigger_trakt_Z_bool :=
-  TOneTime. *)
 
 
 
