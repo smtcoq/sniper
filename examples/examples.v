@@ -40,7 +40,7 @@ Section Generic.
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-   scope. 
+   scope. 4: verit. 
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -146,9 +146,9 @@ Lemma snipe_search_lemma : forall (x: A) (l1 l2 l3: list A),
 search x (l1 ++ l2 ++ l3) = search x (l3 ++ l2 ++ l1).
 Proof. pose proof search_app. snipe_no_check. Qed.
 
-Lemma in_inv : forall (a b:A) (l:list A),
-    search b (a :: l) -> eqb_of_compdec H a b \/ search b l.
-Proof. intros; scope. Abort.
+(* Lemma in_inv : forall (a b:A) (l:list A),
+    search b (a :: l) -> orb (eqb_of_compdec H a b) (search b l).
+Proof. intros; scope; verit. Abort. *)
 
 
 (* (* Another example with an induction *)
@@ -187,7 +187,8 @@ make SMTCoq complain *)
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-induction l; scope_info. fold_local_def elpi_ctx_entry_48_.  verit. *)
+induction l. 
+- scope_info. fold_local_def elpi_ctx_entry_48_.  verit. *)
 
 End higher_order.
 

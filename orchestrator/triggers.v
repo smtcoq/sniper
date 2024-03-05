@@ -165,7 +165,7 @@ Ltac2 interpret_trigger_var_with_constr cg env tv c :=
 Ltac2 destruct_eq (c : constr) :=
   match kind c with
     | App c' ca => 
-        if equal c' '(@eq) then 
+        if Bool.and (equal c' '(@eq)) (Int.equal (Array.length ca) 3)  then 
           let ty := Array.get ca 0 in
           let c1 := Array.get ca 1 in
           let c2 := Array.get ca 2 in
@@ -177,7 +177,7 @@ Ltac2 destruct_eq (c : constr) :=
 Ltac2 destruct_and (c : constr) :=
   match kind c with
     | App c' ca => 
-        if equal c' 'and then 
+        if Bool.and (equal c' 'and) (Int.equal (Array.length ca) 2) then 
           let c1 := Array.get ca 0 in
           let c2 := Array.get ca 1 in
           Some (c1, c2)
@@ -188,7 +188,7 @@ Ltac2 destruct_and (c : constr) :=
 Ltac2 destruct_or (c : constr) :=
   match kind c with
     | App c' ca => 
-        if equal c' 'or then 
+        if Bool.and (equal c' 'or) (Int.equal (Array.length ca) 2) then 
           let c1 := Array.get ca 0 in
           let c2 := Array.get ca 1 in
           Some (c1, c2)
@@ -252,7 +252,8 @@ Ltac2 rec interpret_trigger_term_with_constr
  (cg: (ident * constr option * constr) list * constr
   option) env (c : constr) (tte : trigger_term) : constr list option:=
   match kind c, tte with
-    | App _ _, TEq tte1 tte2 tte3 fl => 
+    | App _ arr, TEq tte1 tte2 tte3 fl => 
+        if Int.equal (Array.length arr) 3 then
         match destruct_eq c with
           | Some (c1, c2, c3) => 
               match interpret_trigger_term_with_constr cg env c1 tte1 with
@@ -268,8 +269,9 @@ Ltac2 rec interpret_trigger_term_with_constr
                 | None => None
               end
           | None => None
-        end
-    | App _ _, TAnd tte1 tte2 fl => 
+        end else None
+    | App _ arr, TAnd tte1 tte2 fl =>
+        if Int.equal (Array.length arr) 2 then 
         match destruct_and c with
           | Some (c1, c2) =>
               match interpret_trigger_term_with_constr cg env c1 tte1 with
@@ -281,8 +283,9 @@ Ltac2 rec interpret_trigger_term_with_constr
                 | None => None
               end
           | None => None
-        end
-    | App _ _, TOr tte1 tte2 fl => 
+        end else None
+    | App _ arr, TOr tte1 tte2 fl =>
+        if Int.equal (Array.length arr) 2 then 
         match destruct_or c with
           | Some (c1, c2) =>
               match interpret_trigger_term_with_constr cg env c1 tte1 with
@@ -294,7 +297,7 @@ Ltac2 rec interpret_trigger_term_with_constr
                 | None => None
               end
           | None => None
-        end
+        end else None
 (* De Brujin indexes: cannot be given as arguments to the tactic triggered. Otherwise 
 the variable would escape its scope. *)
     | Rel n1, TRel n2 fl => if Int.equal n1 n2 then Some (cons_option (interpret_flag c fl) []) else None 
@@ -513,6 +516,19 @@ Ltac2 interpret_trigger_is cg env a b :=
             end
     end.
 
+Ltac2 rec build_arrays_aux (l : constr list) :=
+  match l with
+    | [] => []
+    | [x] => [Array.of_list [x]]
+    | x :: xs => 
+        let xs' := List.removelast xs in
+        Array.of_list (x :: xs) :: build_arrays_aux (x :: xs') 
+  end.
+
+Ltac2 all_partial_apps (c : constr) (l : constr list) :=
+  let arrs := build_arrays_aux l in
+  List.append [c] (List.map (fun ar => make (App c ar)) arrs).
+
 Ltac2 rec subterms (c : constr) : constr list :=
   match kind c with
     | Rel _ => [c]
@@ -534,7 +550,7 @@ Ltac2 rec subterms (c : constr) : constr list :=
         let l := Array.to_list ca in
         let res := List.map subterms l in
         let res' := List.flatten res in 
-        List.append [c] (List.append (subterms c1) res')
+        List.append (all_partial_apps c1 l) (List.append (subterms c1) res')
     | Constant _ _ => [c]
     | Ind _ _ => [c]
     | Constructor _ _ => [c]

@@ -51,7 +51,7 @@ Ltac my_polymorphism := elimination_polymorphism_exhaustive unit.
 
 Ltac my_add_compdec t := add_compdecs_terms t.
 
-Ltac my_fold_local_def t := fold_local_def t.
+Ltac my_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
 
 Ltac2 trigger_generation_principle := TAlways.
 
@@ -70,7 +70,7 @@ Ltac2 scope_verbos v := orchestrator 5
 ((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
-((trigger_fold_local_def (), true), "my_fold_local_def", trivial_filter);
+((trigger_fold_local_def_in_hyp (), false), "my_fold_local_def_in_hyp_goal", trivial_filter);
 ((trigger_polymorphism (), true), "my_polymorphism_elpi", trivial_filter) ;
 ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] }
 { already_triggered := [] } v.
@@ -94,6 +94,7 @@ Ltac2 scope2_verbos v := orchestrator 5
 ((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
+((trigger_fold_local_def_in_hyp (), false), "my_fold_local_def_in_hyp_goal", trivial_filter);
 ((trigger_polymorphism (), false), "my_polymorphism", trivial_filter) ]
 (* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] *) }
 { already_triggered := [] } v.
