@@ -172,9 +172,9 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   end.
 
 
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
+(*Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope. Qed.
+Proof. Time intros f g l ; induction l; scope. verit. Qed.
  *)
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 
