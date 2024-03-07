@@ -510,6 +510,13 @@ intros.
 inversion_principle_all_subterms default.
 Abort.
 
+
+Lemma Add_in (A : Type) (a : A) l l' : Add a l l' ->
+   forall x, In x l' <-> In x (a::l).
+Proof.
+intros. inversion_principle_all_subterms default.
+Abort.
+
 Ltac inv_principle_all := inversion_principle_all_subterms 
 (False, True).
 

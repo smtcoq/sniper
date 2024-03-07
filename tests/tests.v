@@ -58,13 +58,6 @@ eliminate_dependent_pattern_matching H.
 exact I.
 Qed.
 
-(* Test for inversion principle TODO scope intuitionnistic*)
-
-Lemma Add_in (A : Type) (a : A) l l' : Add a l l' ->
-   forall x, In x l' <-> In x (a::l).
-Proof.
-Abort.
-
 Definition true_hidden := true.
 Definition definition_no_variables := if true_hidden then 1=1 else 2=2.
 
@@ -74,16 +67,10 @@ unfold definition_no_variables in H.
 eliminate_dependent_pattern_matching H.
 Abort.
 
-(* Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
+Lemma if_var_in_context x y : (if Nat.eqb x y then x = x else y = y) -> True.
 intros H.
 scope.
-Abort. *)
-
-Goal forall (l : list Z) (x : Z) (a: bool),  hd_error l = Some x -> (l <> []).
-Proof.
-intros ; let p:= eval unfold prod_types in prod_types in interp_alg_types_context_goal p. 
-snipe.
-Qed.
+Abort. 
 
 Lemma nth_default_eq :
     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
@@ -104,26 +91,13 @@ Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B),
 intro H. elimination_polymorphism. split. assumption. split. assumption. assumption.
 Qed. 
 
-(* Test projs, two versions *)
+(* Test projs  *)
 Variable A : Type.
 Variable a : A.
 
 Goal forall (n : nat) (l : list A)(x : A) (xs: list A), l = nil \/ l = cons x xs.
 Proof. 
 get_projs_in_goal.
-Abort.
-
-Goal
-  forall s1 s2 : string, s1 = s2.
-Proof.
-get_projs_in_goal.
-clear. intros s1 s2.
-ltac2:(get_projs_in_variables 'prod_types).
-Abort.
-
-
-Goal forall (n : nat) (l : list A)(x : A) (xs: list A), True -> (l = nil \/ l = cons x xs \/ n = 0).
-intros. ltac2:(get_projs_in_variables 'prod_types). 
 Abort.
 
 Variable HA : CompDec A.
@@ -180,7 +154,7 @@ Theorem hd_error_nil : hd_error (@nil A) = None.
   Qed. 
 
 
- (* TODO Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
+ (* Theorem in_eq  : forall (a:A) (l:list A), Inb a (a :: l) = true.
   Proof.
   Time snipe. 
   Qed. *)
@@ -279,11 +253,10 @@ Section Pairs.
   Definition fst (p:A * B) := match p with (x, y) => x end.
   Definition snd (p:A * B) := match p with (x, y) => y end.
 
-(*
 Lemma surjective_pairing :
   forall (p:A * B), p = (fst p, snd p).
-Proof. Time snipe2. Qed.
- *)
+Proof. Time snipe_no_check. Qed.
+
 End Pairs.
 
 
