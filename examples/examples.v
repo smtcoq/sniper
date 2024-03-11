@@ -201,7 +201,7 @@ Proof. intros t a t' b; snipe. Qed.
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s.
-- pose proof List.app_nil_r; snipe2.
+- pose proof List.app_nil_r; snipe.
 - pose proof app_ass ; pose proof List.app_nil_r; snipe. 
 Qed.
 

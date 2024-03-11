@@ -115,8 +115,7 @@ Import ListNotations.
 Lemma search_append_neq : 
 forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
 Proof. 
-Time snipe2.
-Undo. Time snipe. Qed.
+Time snipe. Qed.
 
 
 Open Scope list_scope.
