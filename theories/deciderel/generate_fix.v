@@ -18,7 +18,7 @@ Unset MetaCoq Strict Unquote Universe Mode.
 
 Definition all_type_to_fresh := fun t =>
 match t with
-| tSort s => if negb (Universe.is_prop s) then tSort fresh_universe else t
+| tSort s => if negb (is_prop s) then tSort (sType fresh_universe) else t
 | _ => t
 end.
 

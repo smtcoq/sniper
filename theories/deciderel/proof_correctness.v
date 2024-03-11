@@ -34,7 +34,7 @@ Fixpoint get_list_of_args (t : term) :=
 match t with
 | tProd na Ty t' => match Ty with
                   | tSort s => let p := get_list_of_args t' in
-((na, tSort fresh_universe) :: (mknAnon, tApp <% CompDec %> [tRel 0]) :: (List.map (fun x => (x.1, lift 1 0 x.2)) p.1), (na, Ty) :: p.2)
+((na, tSort (sType fresh_universe)) :: (mknAnon, tApp <% CompDec %> [tRel 0]) :: (List.map (fun x => (x.1, lift 1 0 x.2)) p.1), (na, Ty) :: p.2)
                   | _ =>  let p := get_list_of_args t' in
                         ((na, Ty) :: p.1, (na, Ty) :: p.2)
                  end
