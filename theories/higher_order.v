@@ -7,9 +7,18 @@ Require Import instantiate.
 
 From elpi Require Import elpi.
 
-Ltac mypos t := 
+Ltac mypose t := 
 tryif (is_local_def t) then idtac else
-let Na := fresh "f" in pose t as Na.
+let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order 
+to avoid unification failures with the fixpoint transformation *)
+  match t with
+  | ?u ?v => 
+        match goal with
+        | x := v |- _ => fold x in Na
+        | _ => idtac
+        end
+  | _ => idtac 
+  end.
 
 Elpi Tactic prenex_higher_order.
 

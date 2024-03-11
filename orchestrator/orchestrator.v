@@ -115,8 +115,8 @@ print_state (it.(local_env)).
 
 Ltac2 print_applied_tac (v : verbosity) (s : string) (l : constr list) :=
 if leq_verb v Nothing then () else
-(printf "Automatically applied %s with the following args" s ;
-List.iter (fun x => printf "%t" x) l).
+(printf "Applied %s with the following args" s ;
+List.iter (fun x => printf "%t: %t" x (Constr.type x)) l).
 
 Ltac2 print_tactic_trigger_filtered (v : verbosity) (s : string) (l : constr list) :=
 if leq_verb v Debug then () else
@@ -178,20 +178,17 @@ Ltac2 rec orchestrator_aux
                         (
                         let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
                         print_applied_tac v name l ;
+                        let hs1 := Control.hyps () in
+                        let g1 := Control.goal () in
                         run name l; 
-    (* Control.hyps / Control.goal before the run to compute the diff *)
                         Control.enter (fun () => 
                           let argstac := List.combine l ltysargs in
                           trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                           let cg' := (it).(local_env) in
-                          let (hs1, g1) := cg' in
                           let hs2 := Control.hyps () in
                           let g2 := Control.goal () in
-                          let g3 :=
-                            match g1 with
-                            | None => None
-                            | Some g1' => if Constr.equal g1' g2 then None else Some g2 
-                          end in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                          let g3 := if Constr.equal g1 g2 then None else Some g2 
+                          in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
                           it.(global_flag) := false ;
                           let fuel' :=
                             if multipletimes then

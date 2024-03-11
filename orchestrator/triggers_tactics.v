@@ -320,10 +320,17 @@ Ltac2 filter_reflexivity () :=
       'SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
       (FPred higher_order).
 
-(* warning: overspecification : TODO *)
-
 Ltac2 trigger_unfold_reflexivity () :=
  TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg).
+
+Ltac2 filter_unfold_reflexivity () :=
+ FPred (fun x => (Bool.neg 
+  (
+  let ty := Constr.type x in 
+    match! ty with
+    | @eq ?a ?t ?u => Constr.equal t u
+    | _ => false
+    end))).
 
 Ltac2 trigger_unfold_in () :=
  TDisj (TMetaLetIn (TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard (TAny (Arg id)) NotArg)) ["H"; "eq"]
@@ -332,6 +339,9 @@ Ltac2 trigger_unfold_in () :=
       (TMetaLetIn (TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard (Arg id))) ["H"; "eq"]
       (TConj (TIs (TNamed "H", Arg id) tDiscard)
       (TContains (TNamed "eq", NotArg) (TVar TLocalDef (Arg id))))).
+
+Ltac2 filter_unfold_in () :=
+  FPredList (fun l => match l with | [x; y] => Bool.neg (higher_order y) | _ => true end).
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).
@@ -399,10 +409,14 @@ FConj
 (* trick to get as argument the definition not unfolded*).  *)
 
  Ltac2 trigger_fold_local_def_in_hyp () :=
-  tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
+TDisj 
+  (tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
   TConj (triggered when (TSomeHypProp) contains (TTrigVar (TNamed "def_unfold") (NotArg)) on (Arg id))
-        (triggered when (TNamed "def") is (TTrigVar (TNamed "def") (NotArg)) on (Arg id)) 
-(* trick to get as argument the definition not unfolded*).
+        (triggered when (TNamed "def") is (TTrigVar (TNamed "def") (NotArg)) on (Arg id)))
+  (tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
+  TConj (triggered when (TSomeDef) contains (TTrigVar (TNamed "def_unfold") (NotArg)) on (Arg id))
+        (triggered when (TNamed "def") is (TTrigVar (TNamed "def") (NotArg)) on (Arg id))).
+(* trick to get as argument the definition not unfolded*)
 
 (** warning A TNot is not interesting whenever all hypotheses are not considered !!! *)
 Ltac2 trigger_trakt_bool_hyp () :=
