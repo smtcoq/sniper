@@ -74,15 +74,14 @@ MetaCoq Quote Definition Z_reif := Z.
 MetaCoq Quote Definition nat_reif := nat.
 
 Inductive default :=.
-Definition default_reif := <% default %>.
+Definition default_reif := <% default %>. 
 
 Definition default_body :=
 {|
                ind_name := "default"%bs;
                ind_indices := [];
-               ind_sort := Universe.of_levels (inl PropLevel.lProp);
-               ind_type :=
-                 tSort (Universe.of_levels (inl PropLevel.lProp));
+               ind_sort := sProp ;
+               ind_type := tSort sProp;
                ind_kelim := IntoAny;
                ind_ctors := [];
                ind_projs := [];
@@ -292,7 +291,7 @@ end.
 
 (* Check is a MetaCoq term is a sort which is not Prop *)
 Definition is_type (t : term) := match t with
-                                 | tSort s => negb (Universe.is_prop s)
+                                 | tSort sProp => true
                                  |_ => false
                                   end.
 

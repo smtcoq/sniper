@@ -97,7 +97,7 @@ match fuel with
 match l with
 | [] => ([], n)
 | x :: xs => match x.(decl_type) with
-    | tSort s => if negb (Universe.is_prop s) then
+    | tSort s => if negb (is_prop s) then
 let res := aux (List.map (fun x => let ty' := lift 1 0 x.(decl_type) in
 {| decl_name := x.(decl_name) ; decl_body := x.(decl_body); decl_type := ty' |}) xs) (S n) trm fuel' in
 let new_name := trm_aname trm x.(decl_name) in
@@ -187,7 +187,7 @@ Program Fixpoint gen_compdec_statement_aux (t : term) (l: list term) {measure (l
 match l with
 | [] => t
 | x :: xs =>
-tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tSort fresh_universe) 
+tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tSort (sType fresh_universe))
 (tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tApp CompDec_reif [tRel 0]) 
  (gen_compdec_statement_aux (lift 1 0 t) (List.map (lift 1 0) xs) ))
 end.
@@ -221,7 +221,7 @@ match fuel with
 match l with
 | [] => t
 | x :: xs =>
-tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tSort fresh_universe) 
+tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tSort (sType fresh_universe)) 
 (tProd {| binder_name := nAnon ; binder_relevance := Relevant |} (tApp CompDec_reif [tRel 0]) 
  (gen_compdec_statement_aux2 t (List.map (lift 1 0) xs) fuel' ))
 end
@@ -260,7 +260,7 @@ Definition contains_prenex_poly (l : list context_decl) :=
 match l with
 | [] => false
 | x :: xs => match x.(decl_type) with
-    | tSort s => if negb (Universe.is_prop s) then true else false
+    | tSort s => if negb (is_prop s) then true else false
     | _ => false
     end
 end. 
