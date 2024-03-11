@@ -25,11 +25,13 @@ Ltac my_reflexivity t := assert_refl t.
 
 Ltac my_unfold_refl H := unfold_refl H.
 
+Ltac my_unfold_in H t := unfold_in H t.
+
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  *)
 
 Ltac my_higher_order_equalities H := expand_hyp H ; clear H.
 
-Ltac my_higher_order := prenex_higher_order_with_equations.
+Ltac my_higher_order := prenex_higher_order.
 
 Ltac my_fixpoints H := eliminate_fix_hyp H.
 
@@ -65,14 +67,15 @@ Ltac2 scope_verbos v := orchestrator 5
 ((trigger_higher_order, false), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false), "my_unfold_refl", trivial_filter);
+((trigger_unfold_in (), false), "my_unfold_in", trivial_filter);
 ((trigger_higher_order_equalities, false), "my_higher_order_equalities", trivial_filter); 
 ((trigger_fixpoints, false), "my_fixpoints", trivial_filter);
 ((trigger_pattern_matching, false), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false), "my_gen_principle_temporary", trivial_filter) ;
-((trigger_fold_local_def_in_hyp (), false), "my_fold_local_def_in_hyp_goal", trivial_filter);
-((trigger_polymorphism (), true), "my_polymorphism_elpi", trivial_filter) ;
-((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] }
+((trigger_fold_local_def_in_hyp (), false), "my_fold_local_def_in_hyp_goal", trivial_filter)
+(* ((trigger_polymorphism (), true), "my_polymorphism_elpi", trivial_filter) ; *)
+(* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())]  *) ] }
 { already_triggered := [] } v.
 
 Ltac2 scope () := scope_verbos Nothing.
@@ -124,5 +127,19 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit))).
+
+Set Default Proof Mode "Classic".
+
+Section test.
+
+Variable (A B C : Type).
+
+Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
+map g (map f l) = map (fun x => g (f x)) l.
+Proof.
+Time induction l.
+- ltac2:(scope_info ()). unfold_in H f1.
+ Focus 2. fold elpi_ctx_entry_31_.
+fold elpi_ctx_entry_30_.   Qed.
 
 

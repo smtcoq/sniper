@@ -188,7 +188,7 @@ make SMTCoq complain *)
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-Time induction l; snipe_no_check. Qed.
+Time induction l; scope. Qed.
 
 End higher_order.
 

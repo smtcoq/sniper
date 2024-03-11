@@ -44,6 +44,11 @@ Ltac2 Type already_triggered :=
 Ltac2 Type trigger_sort :=
 [ TProp | TSet | TBigType].
 
+
+(* allows to specify the type of local variable considered *)
+Ltac2 Type trigger_local_var :=
+[ TAnyLocalVar | TLocalDef | TLocalHyp | TLocalNamed (string) ].
+
 (* warning:
 does not handle universe hierarchy, native arrays, integers, 
 projections or floats *)
@@ -51,7 +56,7 @@ Ltac2 Type rec trigger_term := [
 
 (* follows the constr type *)
 | TRel (int, flag)
-| TVar (string option, flag) (* local variable or section variable *)
+| TVar (trigger_local_var, flag) (* local variable or section variable *)
 | TSort (trigger_sort, flag) (* simplification of universes *)
 | TProd (trigger_term, trigger_term, flag)
 | TLambda (trigger_term, trigger_term, flag)
@@ -248,6 +253,28 @@ Ltac2 cons_option (c : constr option) (l : constr list) :=
     | None => l
   end.
 
+Ltac2 is_some (a : 'a option) :=
+  match a with
+    | None => false
+    | Some _ => true
+  end.
+
+Ltac2 is_local_def (c : constr) :=
+  match kind c with
+    | Var id => 
+        let hs := Control.hyps () in 
+        List.exist (fun (x, y, z) => Bool.and (Ident.equal x id) (is_some y)) hs
+    | _ => false
+  end.
+
+Ltac2 is_local_hyp (c : constr) :=
+  match kind c with
+    | Var id => 
+        let hs := Control.hyps () in 
+        List.exist (fun (x, y, z) => Bool.and (Ident.equal x id) (Bool.neg (is_some y))) hs
+    | _ => false
+  end.
+
 Ltac2 rec interpret_trigger_term_with_constr
  (cg: (ident * constr option * constr) list * constr
   option) env (c : constr) (tte : trigger_term) : constr list option:=
@@ -302,16 +329,18 @@ Ltac2 rec interpret_trigger_term_with_constr
 the variable would escape its scope. *)
     | Rel n1, TRel n2 fl => if Int.equal n1 n2 then Some (cons_option (interpret_flag c fl) []) else None 
 (* Local (or section) variables *)
-    | Var id, TVar o fl => 
-        match o with
-          | Some s =>
+    | Var id, TVar tlv fl => 
+        match tlv with
+          | TLocalNamed s =>
               match Ident.of_string s with
                 | Some id' =>
                     if Ident.equal id id' then Some (cons_option (interpret_flag c fl) [])
                     else None
                 | None => None
               end
-          | None => Some (cons_option (interpret_flag c fl) [])
+          | TAnyLocalVar => Some (cons_option (interpret_flag c fl) [])
+          | TLocalDef => if is_local_def c then  Some (cons_option (interpret_flag c fl) []) else None
+          | TLocalHyp => if is_local_hyp c then  Some (cons_option (interpret_flag c fl) []) else None
           end
 (* Sorts: we do not want to deal with universes, as we are afraid 
 this may introduce difficulties which are unrelated to our main goal, 

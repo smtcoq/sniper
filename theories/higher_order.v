@@ -7,14 +7,9 @@ Require Import instantiate.
 
 From elpi Require Import elpi.
 
-(* TODO : use orchestrator instead of coding a small snipe in Ltac2 *)
-
-Ltac mypose_and_reify_def_unfold t := 
+Ltac mypos t := 
 tryif (is_local_def t) then idtac else
-let Na := fresh "f" in pose t as Na; fold Na ;
-let tupl := hyps in fold_tuple Na tupl ;
-let H := fresh "H" in assert (H : Na = t) by reflexivity ; let hd := get_head t in 
-unfold hd in H.
+let Na := fresh "f" in pose t as Na.
 
 Elpi Tactic prenex_higher_order.
 
@@ -31,7 +26,7 @@ Elpi Accumulate lp:{{
   mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- 
     std.rev Ctx Ctx',
     std.map L (elim_pos_ctx Ctx') L',
-    coq.ltac.call "mypose_and_reify_def_unfold" [trm (app [X | L'])] G [G'], 
+    coq.ltac.call "mypose" [trm (app [X | L'])] G [G'], 
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
@@ -66,37 +61,6 @@ But this should be improved by creating a special predicate for matches.  *)
 Tactic Notation "prenex_higher_order" :=
   elpi prenex_higher_order.
 
-From Ltac2 Require Import Ltac2.
-
-Ltac2 prenex_higher_order_with_equations (u : unit) :=
-let h := Control.hyps () in 
-let () := ltac1:(prenex_higher_order) in
-let h' := Control.hyps () in 
-let h0 := new_hypothesis h h' in 
-let rec aux h0 :=
-  match h0 with
-  | [] => ()
-  | x :: xs => match x with
-            | (id, opt, cstr) =>
-              let hltac2 := Control.hyp id in
-              let hltac1 := Ltac1.of_constr hltac2 in 
-              ltac1:(H |- 
-                let T := type of H in 
-                let U := type of T in
-                  tryif (constr_eq U Prop) then 
-                  try (expand_hyp_cont H ltac:(fun H' => 
-                    eliminate_fix_cont H' ltac:(fun H'' => 
-                      try (eliminate_dependent_pattern_matching H''))); clear H) else idtac) hltac1 ; 
-               aux xs
-            end
-end 
-in aux h0.
-
-
-Tactic Notation "prenex_higher_order_with_equations" :=
-ltac2:(Control.enter prenex_higher_order_with_equations).
-
-
 Import ListNotations.
 
 Section Tests.
@@ -104,7 +68,8 @@ Section Tests.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-induction l; Control.enter anonymous_funs_with_equations; Control.enter prenex_higher_order_with_equations.
+induction l.
+- anonymous_funs. prenex_higher_order.
 Abort.
 
 Goal (
@@ -118,6 +83,6 @@ let f0 := fun x : A => g (f x) in
 (forall (x : Type) (x0 : x) (x1 : list x),
      [] = x0 :: x1) ->
 map g (map f []) = map f0 [])).
-Proof. intros. ltac1:(prenex_higher_order_with_equations). Abort.
+Proof. intros. prenex_higher_order. Abort.
 
 End Tests.

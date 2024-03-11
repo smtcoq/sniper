@@ -286,8 +286,9 @@ Ltac2 codomain_prop (c: constr) := Bool.neg (codomain_not_prop c).
 (** Triggers and filters for Sniper tactics *)
 
 Ltac2 trigger_reflexivity () :=
-  TDisj (TContains (TSomeHyp, NotArg) (TConstant None (Arg id)))
-        (TContains (TGoal, NotArg) (TConstant None (Arg id))).
+  TDisj (TIs (TSomeDef, (Arg id)) (TAny NotArg))
+        (TDisj (TContains (TSomeHyp, NotArg) (TConstant None (Arg id)))
+        (TContains (TGoal, NotArg) (TConstant None (Arg id)))).
 
 Ltac2 filter_reflexivity () :=
   FConj 
@@ -324,8 +325,13 @@ Ltac2 filter_reflexivity () :=
 Ltac2 trigger_unfold_reflexivity () :=
  TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg).
 
-(* Ltac2 trigger_unfold_in () :=
- TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg)  TODO *)
+Ltac2 trigger_unfold_in () :=
+ TDisj (TMetaLetIn (TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard (TAny (Arg id)) NotArg)) ["H"; "eq"]
+      (TConj (TIs (TNamed "H", Arg id) tDiscard)
+      (TContains (TNamed "eq", NotArg) (TConstant None (Arg id)))))
+      (TMetaLetIn (TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard (Arg id))) ["H"; "eq"]
+      (TConj (TIs (TNamed "H", Arg id) tDiscard)
+      (TContains (TNamed "eq", NotArg) (TVar TLocalDef (Arg id))))).
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).

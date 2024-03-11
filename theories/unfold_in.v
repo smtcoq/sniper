@@ -1,7 +1,7 @@
 Require List.
 
 Ltac unfold_in H t :=
-  unfold t in H.
+  try unfold t in H at 2.
 
 Section Tests.
 Variable (A B : Type).
