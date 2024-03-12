@@ -10,12 +10,12 @@ Require Import filters.
 Require Import triggers_tactics.
 
 Ltac2 Type all_tacs :=
-  { mutable all_tacs : ((trigger * bool) * string * filter) list }.
+  { mutable all_tacs : ((trigger * bool * (int * int) option) * string * filter) list }.
 
-Ltac2 rec remove_tac (na : string) (all_tacs : ((trigger * bool) * string * filter) list ) :=
+Ltac2 rec remove_tac (na : string) (all_tacs : ((trigger * bool * (int * int) option) * string * filter) list ) :=
   match all_tacs with 
     | [] => []
-    | (tr, na' , f) :: xs => 
+    | (tr, na', f) :: xs => 
         if String.equal na na' then xs
         else (tr, na', f) :: remove_tac na xs
   end.
@@ -129,13 +129,21 @@ Ltac2 rec remove_dups (ll : constr list list) :=
     | l :: ll' => if List.mem (List.equal Constr.equal) l ll' then remove_dups ll' else l :: remove_dups ll'
   end.
 
+Ltac2 Type count := { mutable count : int }.
+
+Ltac2 numgoals () := 
+let c := { count := 0 } in
+     Control.enter (fun _ =>
+                      c.(count) := Int.add 1 (c.(count))
+       ); (c).(count).
+
 Ltac2 rec orchestrator_aux
   alltacs (* the mutable field of all tactics *)
   init_fuel
   fuel
   it (* the interpretation state (see [triggers.v]) *)
   env (* local triggers variables *)
-  (trigstacsfis : ((trigger * bool)*string* filter) list) 
+  (trigstacsfis : ((trigger * bool * (int * int) option) * string * filter) list) 
   (trigtacs : already_triggered) (* Triggered tactics, pair between a string and a list of arguments and their types *) 
   (v: verbosity) : (* number of information required *) unit :=
     if Int.le fuel 0 then  (* a problematic tactic used all the fuel *)
@@ -150,7 +158,7 @@ Ltac2 rec orchestrator_aux
       | [] => 
           if (it).(global_flag) then () 
           else Control.enter (fun () => orchestrator fuel alltacs trigtacs v)
-      | ((trig, multipletimes), name, fi) :: trigstacsfis' => 
+      | ((trig, multipletimes, opt), name, fi) :: trigstacsfis' => 
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with
@@ -175,25 +183,51 @@ Ltac2 rec orchestrator_aux
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                         aux ll'   
                       else
-                        (
                         let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
                         print_applied_tac v name l ;
                         let hs1 := Control.hyps () in
                         let g1 := Control.goal () in
                         run name l; 
-                        Control.enter (fun () => 
-                          let argstac := List.combine l ltysargs in
-                          trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
-                          let cg' := (it).(local_env) in
-                          let hs2 := Control.hyps () in
-                          let g2 := Control.goal () in
-                          let g3 := if Constr.equal g1 g2 then None else Some g2 
-                          in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
-                          it.(global_flag) := false ;
-                          let fuel' :=
-                            if multipletimes then
-                            Int.sub fuel 1 else fuel in
-                            orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v))
+                        let argstac := List.combine l ltysargs in
+                        trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
+                        match opt with
+                          | None =>
+                              Control.enter (fun () => 
+                                let cg' := (it).(local_env) in
+                                let hs2 := Control.hyps () in
+                                let g2 := Control.goal () in
+                                let g3 := if Constr.equal g1 g2 then None else Some g2 
+                                in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                                it.(global_flag) := false ;
+                                let fuel' :=
+                                  if multipletimes then
+                                  Int.sub fuel 1 else fuel in
+                                orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v)
+                           | Some (nbg1, nbg2) => 
+                                let nb := numgoals () in if Int.lt nb nbg2 then
+                                  Control.enter (fun () => 
+                                    let cg' := (it).(local_env) in
+                                    let hs2 := Control.hyps () in
+                                    let g2 := Control.goal () in
+                                    let g3 := if Constr.equal g1 g2 then None else Some g2 
+                                    in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                                    it.(global_flag) := false ;
+                                      let fuel' :=
+                                      if multipletimes then
+                                      Int.sub fuel 1 else fuel in
+                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v) else
+                                  Control.focus nbg1 nbg2 (fun () => 
+                                    let cg' := (it).(local_env) in
+                                    let hs2 := Control.hyps () in
+                                    let g2 := Control.goal () in
+                                    let g3 := if Constr.equal g1 g2 then None else Some g2 
+                                    in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                                      it.(global_flag) := false ;
+                                    let fuel' :=
+                                      if multipletimes then
+                                      Int.sub fuel 1 else fuel in
+                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v)
+                          end
                   end in aux (remove_dups ll)
           end)
     end 

@@ -8,10 +8,10 @@ From elpi Require Import elpi.
 
 Ltac mypose t := 
 tryif (is_local_def t) then idtac else
-let Na := fresh "f" in pose t as Na(* ; 
+let Na := fresh "f" in pose t as Na; try fold Na. (* ; 
 fold Na ;
 let tupl := hyps in fold_tuple Na tupl ;
-let H := fresh "H" in assert (H : Na = t) by reflexivity *).
+let H := fresh "H" in assert (H : Na = t) by reflexivity *)
 
 
 Elpi Tactic anonymous_funs.

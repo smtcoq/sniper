@@ -20,6 +20,8 @@ Require Import interpretation_algebraic_types.
 Require Import case_analysis.
 Unset MetaCoq Strict Unquote Universe Mode.
 
+Local Open Scope bs_scope.
+
 (** Generates the generation statement in a non-constructive way:
 the projection functions are replaced by existentials : 
 see the example st_list *)

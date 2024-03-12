@@ -7,14 +7,24 @@ Require Import instantiate.
 
 From elpi Require Import elpi.
 
-Ltac mypose t := 
+Ltac mypose_elpi t := 
 tryif (is_local_def t) then idtac else
+let t' := 
+  match t with
+  | ?u ?v =>
+        match goal with
+        | x := v |- _ => constr:(u x)
+        | _ => t
+        end
+  | _ => t
+  end in
+tryif (is_local_def t') then idtac else
 let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order 
 to avoid unification failures with the fixpoint transformation *)
   match t with
-  | ?u ?v => 
+  | ?u ?v =>
         match goal with
-        | x := v |- _ => fold x in Na
+        | x := v |- _ => try (fold x in Na)
         | _ => idtac
         end
   | _ => idtac 
@@ -35,7 +45,7 @@ Elpi Accumulate lp:{{
   mypose_list [pr X L |XS] (goal Ctx _ _ _ _ as G) GL :- 
     std.rev Ctx Ctx',
     std.map L (elim_pos_ctx Ctx') L',
-    coq.ltac.call "mypose" [trm (app [X | L'])] G [G'], 
+    coq.ltac.call "mypose_elpi" [trm (app [X | L'])] G [G'], 
     coq.ltac.open (mypose_list XS) G' GL.
   mypose_list [] _ _.
 
@@ -77,9 +87,15 @@ Section Tests.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-induction l.
-- anonymous_funs. prenex_higher_order.
+anonymous_funs. prenex_higher_order.
 Abort.
+
+Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
+map g (map f l) = map (fun x => g (f x)) l.
+intros. 
+assert (IHl : map g (map f l) = map (fun x : A => g (f x)) l) by admit.
+anonymous_funs. prenex_higher_order. (* remove duplicates *)
+Abort. 
 
 Goal (
 forall (A B C : Type)

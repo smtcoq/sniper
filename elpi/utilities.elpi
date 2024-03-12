@@ -19,8 +19,9 @@ pred var_pos_ctx i: prop, i: int, o: term, o: term.
     var_pos_ctx (def X _ _ _) I X (pos_ctx I).
 
 pred add_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
-    add_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, (copy T1 T2 :- !) => (I' is I + 1, add_pos_ctx_aux XS I' A B).
-    add_pos_ctx_aux [] _ A B :- copy A B.
+    add_pos_ctx_aux [X | XS] I A B :- !, var_pos_ctx X I T1 T2,
+    (copy T1 T2 :- !) => (I' is I + 1, !, add_pos_ctx_aux XS I' A B).
+    add_pos_ctx_aux [] _ A B :- !, copy A B.
 
 pred add_pos_ctx i: goal-ctx, i: term, o: term. 
     add_pos_ctx L T1 T2 :- add_pos_ctx_aux L 0 T1 T2.

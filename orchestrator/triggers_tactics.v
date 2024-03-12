@@ -144,6 +144,9 @@ Ltac add_compdecs_terms t :=
         | .. ]
   end | idtac].
 
+Goal (forall (A: Type) (l : list A), False).
+intros. ltac1:(add_compdecs_terms A). Abort.
+
 (** Remove add compdecs from SMTCoq's preprocess1 *)
 
 Ltac preprocess1 Hs :=
@@ -341,7 +344,12 @@ Ltac2 trigger_unfold_in () :=
       (TContains (TNamed "eq", NotArg) (TVar TLocalDef (Arg id))))).
 
 Ltac2 filter_unfold_in () :=
-  FPredList (fun l => match l with | [x; y] => Bool.neg (higher_order y) | _ => true end).
+  FPredList (fun l => match l with | [x; y] => 
+    Bool.or
+    (let t := type x in 
+      match! t with
+        | @eq ?a ?u ?v => Bool.neg (Constr.is_var u)
+      end) (Bool.neg (higher_order y)) | _ => true end).
 
 Ltac2 trigger_higher_order_equalities :=
   TIs (TSomeHyp, Arg id) (TEq (TProd tDiscard tDiscard NotArg) tDiscard tDiscard NotArg).

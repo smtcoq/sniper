@@ -22,7 +22,7 @@ Elpi Accumulate lp:{{
 
   pred clearbody_metacoq i: list term, i: goal, o: list (sealed-goal).
     clearbody_metacoq [Str | Strs] ((goal Ctx _ _ _ _) as G) GL :- coq.term->string Str SQ,  rex.split "\"" SQ [S], 
-    (std.mem Ctx (def X N _ _), coq.name->id N S), coq.ltac.call "myclearbody" [trm X] G [G'|_GL1], 
+    (std.mem Ctx (def X N _ _), coq.name->id N S), coq.say S, coq.ltac.call "myclearbody" [trm X] G [G'|_GL1], 
     coq.ltac.open (clearbody_metacoq Strs) G' GL.
     clearbody_metacoq [] _G _GL.
   

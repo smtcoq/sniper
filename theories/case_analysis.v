@@ -12,13 +12,14 @@
 
 Require Import utilities. 
 Require Import elimination_polymorphism.
-Require Export clearbodies.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.
 Require Import ZArith.
 Require Import interpretation_algebraic_types. 
 Require Import SMTCoq.SMTCoq.
+From Ltac2 Require Import Ltac2.
+Set Default Proof Mode "Classic".
 
 (*********************)
 (** General specification **)
@@ -388,7 +389,7 @@ let fix aux lprojs i  acc :=
   | (ctor :: tlc , projs :: tl_proj, db :: tlN ) => aux tlc tl_proj tlN  ((get_eq_x_ctor_projs p ctor projs db) :: acc)
   | _ => [] (* this cases does not happen *)
  end in let lN := rev_acc_add (List.rev ln)    
- in tProd (mkNamed "x") (tApp I (Rel_list p N)) (mkOr_n (List.rev (aux lc list_proj lN []))) .
+ in tProd (mkNamed "x"%bs) (tApp I (Rel_list p N)) (mkOr_n (List.rev (aux lc list_proj lN []))) .
 
 
 
@@ -415,10 +416,21 @@ intro x ; destruct x; repeat first [first [reflexivity | right ; reflexivity] | 
 | S ?m => let y := fresh in intro y ; prove_by_destruct_varn m 
 end.
 
+Ltac2 rec clearbody_list_tVar (c : Ltac1.t) :=
+  let c' := Option.get (Ltac1.to_constr c) in
+  let rec aux c :=
+  match! c with
+    | @nil term => ()
+    | @cons _ ?x ?xs => 
+        ltac1:(x |- 
+          run_template_program (tmUnquote x) 
+            ltac:(fun deppair => let x := eval unfold my_projT2 in (my_projT2 deppair) in clearbody x)) (Ltac1.of_constr x) ; aux xs
+  end in aux c'.
+
 Ltac clearbody_list_of_list l :=
 match l with
 | @nil (list term) => idtac
-| cons ?x ?xs => clearbody_list_tVar x ; clearbody_list_of_list xs
+| cons ?x ?xs => let tac := ltac2:(x |- clearbody_list_tVar x) in tac x ; clearbody_list_of_list xs
 end.
 
 Ltac gen_statement t := 
@@ -445,7 +457,7 @@ Ltac gen_statement t :=
         let llprojs := fresh "llprojs" in 
          pose (llprojs  := res3) ; 
         let ltypes_forall := constr:(bind_def_val_in_gen llAu ln) in 
-        let ggd := constr:(mkProd_rec_n "A" lP_rev (mkProd_rec_n "d" ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
+        let ggd := constr:(mkProd_rec_n "A"%bs lP_rev (mkProd_rec_n "d"%bs ltypes_forall (get_generation_disjunction  p t_reif N  lc  llprojs  ln))) in 
           let gent := fresh "gen_stat" t in pose_unquote_term_hnf ggd gent  ; let N' := eval compute in (p + N) in assert (Helim : gent) by prove_by_destruct_varn N' ; 
         unfold gent in Helim ; let llprojs2 := eval unfold llprojs in llprojs in 
        clearbody_list_of_list llprojs2; (* unfold gent in Helim ; *) clear gent indmind llprojs
@@ -607,8 +619,6 @@ match goal with
           elims_on_list l t
 end.
 
-From Ltac2 Require Import Ltac2.
-
 (* Checks if a given term is a variable of type which is not Prop *)
 Ltac2 is_var (v : constr) :=
 let k := Constr.Unsafe.kind v in
@@ -699,16 +709,16 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. get_projs_in_variables 'bool.
+Proof. intros. ltac2:(get_projs_in_variables 'bool).
 Abort.
 
 Variable A : Type.
 Variable HA : CompDec A.
 
 Goal (forall (A : Type) (HA : CompDec A) (l : list A), False -> False).
-Proof. intros. get_projs_in_variables 'bool. Abort.
+Proof. intros. ltac2:(get_projs_in_variables 'bool). Abort.
 
 Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
-  Proof. get_projs_in_variables 'unit. Abort. 
+  Proof. ltac2:(get_projs_in_variables 'unit). Abort. 
 
 End tests.

@@ -40,7 +40,7 @@ Section Generic.
   Variable A : Type.
   Goal forall (l : list A) (x : A),  hd_error l = Some x -> (l <> nil).
   Proof.
-   scope. 4: verit. 
+   scope. 3: verit. 
     (* New goals are open that require instances of equality to be
        decidable. On usual types such as `Z` in the previous example,
        these goals are automatically discharged. On other concrete
@@ -172,7 +172,8 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-(* TODO
+
+(* TODO : work on this 
 
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
@@ -188,7 +189,7 @@ make SMTCoq complain *)
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
 Proof.
-Time induction l; scope. Qed.
+Time induction l; snipe_no_check. Qed.
 
 End higher_order.
 
