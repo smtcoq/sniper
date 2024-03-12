@@ -25,7 +25,6 @@ theories/higher_order.v
 theories/elimination_polymorphism.v
 theories/instantiate.v
 theories/interpretation_algebraic_types.v
-theories/clearbodies.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
 theories/tree.v
