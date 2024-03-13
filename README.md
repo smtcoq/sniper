@@ -16,7 +16,7 @@ or being proved once and for all in Coq (*certified* transformations). A
 crucial transformation is given by the
 [Trakt](https://github.com/ecranceMERCE/trakt) plugin.
 
-[Documentation:](https://smtcoq.github.io/sniper)
+[Documentation](https://smtcoq.github.io/sniper) available.
 
 ## Installation and use
 
