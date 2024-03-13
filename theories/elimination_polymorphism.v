@@ -55,11 +55,12 @@ instantiate_tuple_terms H' t2 t2 ) ; try (instantiate_tuple_terms H t1' t2)
             end
 end.
 
-(* Finds subterms of type Type *)
 
 (* Reifies a term and calls is_type *)
-Ltac is_type_quote t := let t' := eval hnf in t in let T :=
-metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
+Ltac is_type_quote t := idtac t ;
+let t' := eval hnf in t in 
+let T := metacoq_get_value (tmQuote t') in 
+if_else_ltac idtac fail ltac:(idtac T ; eval compute in (is_type T)).
 
 
 Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
@@ -91,7 +92,7 @@ match constr:(l) with
   let y := metacoq_get_value (tmUnquote x) in 
   let u := constr:(y.(my_projT2)) in 
   let w := eval hnf in u in
-  let T := type of w in 
+  let T := type of w in
   let b0 := ltac:(is_type_quote_bool T) in 
   let b := eval hnf in b0 in
     match b with 

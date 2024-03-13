@@ -74,15 +74,14 @@ MetaCoq Quote Definition Z_reif := Z.
 MetaCoq Quote Definition nat_reif := nat.
 
 Inductive default :=.
-Definition default_reif := <% default %>.
+Definition default_reif := <% default %>. 
 
 Definition default_body :=
 {|
                ind_name := "default"%bs;
                ind_indices := [];
-               ind_sort := Universe.of_levels (inl PropLevel.lProp);
-               ind_type :=
-                 tSort (Universe.of_levels (inl PropLevel.lProp));
+               ind_sort := sProp ;
+               ind_type := tSort sProp;
                ind_kelim := IntoAny;
                ind_ctors := [];
                ind_projs := [];
@@ -292,7 +291,8 @@ end.
 
 (* Check is a MetaCoq term is a sort which is not Prop *)
 Definition is_type (t : term) := match t with
-                                 | tSort s => negb (Universe.is_prop s)
+                                 | tSort sProp => false
+                                 | tSort (sType _ ) => true
                                  |_ => false
                                   end.
 
@@ -520,13 +520,6 @@ Definition Rel_list (n l : nat) :=
    | S n => aux n (S k) ((tRel k)::acc)
    end
    in aux n l [].
-
-(* Reifies a term and calls is_type *)
-Ltac is_type_quote t := let t' := eval hnf in t in let T :=
-metacoq_get_value (tmQuote t') in if_else_ltac idtac fail ltac:(eval compute in (is_type T)).
-
-Ltac is_type_quote_bool t := let t' := eval hnf in t in let T :=
-metacoq_get_value (tmQuote t') in constr:(is_type T).
 
 Ltac fold_tuple Na p := 
 lazymatch constr:(p) with

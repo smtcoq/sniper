@@ -69,10 +69,16 @@ match na.(binder_name) with
 end in
 {| binder_name := new_name; binder_relevance := na.(binder_relevance) |}.
 
+Definition is_prop (s: sort) :=
+  match s with
+    | sProp => true
+    | _ => false
+  end.
+
 Fixpoint add_trm_for_each_poly_var (t: term) (acc: list term) (fuel : nat) : term :=
 match t with
 | tProd Na u v => match u with
-      | tSort s => if negb (Universe.is_prop s) then 
+      | tSort s => if negb (is_prop s) then 
                    let acc' := (List.map (lift 1 0) acc) ++ [tRel 0] in
                    tProd Na (tSort s) (mkProdName (find_name_trm) (P_app) (add_trm_for_each_poly_var v acc' fuel))
 else let len := Datatypes.length acc in (add_trm_parameter_aux t len acc fuel)
