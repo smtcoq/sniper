@@ -3,26 +3,28 @@
 `Sniper` is a Coq plugin that provides a new Coq tactic, `snipe`, that
 provides general proof automation.
 
-This plugin is an extension of [SMTCoq](https://smtcoq.github.io), a
-plugin to safely call external SMT solvers from Coq. `Sniper` extends
+This plugin can be seen as an extension of [SMTCoq](https://smtcoq.github.io), a
+plugin to safely call external SMT solvers from Coq. 
+
+`Sniper` extends
 SMTCoq by translating (a subset) of Coq goals into first-order logic
 before calling SMTCoq.
 
 The translation is implemented through a combination of modular, small
 transformations that independently eliminate specific aspects of Coq
 logic towards first-order logic. These small transformations are safe,
-either generating proof terms on the fly (*certifying* transformations)
-or being proved once and for all in Coq (*certified* transformations). A
-crucial transformation is given by the
-[Trakt](https://github.com/ecranceMERCE/trakt) plugin.
+generating proof terms on the fly (*certifying* transformations). 
+They could have been *certified* and we plan to also write or use transformations proven once and for all in `Sniper`, as both methods are compatible with the plugin.
 
-This version is an experimental version using the Trakt plugin.
+A
+crucial transformation but external to this repository is given by the
+[Trakt](https://ecrancemerce.github.io/trakt/#/) plugin.
 
 
 ## Installation and use
 
-This part describes the steps required to try the `snipe` tactic. It can
-be used with Coq-8.17.
+This part describes the steps required to try the `snipe` tactic.
+
 
 You will need the following packages. The names are those for debian, please adapt as required for your distribution.
 - opam: for installing coqide, metacoq and smtcoq
@@ -50,7 +52,7 @@ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 
 Then simply install this version of `Sniper`:
 ```
-opam install -y .
+opam install coq-sniper
 ```
 
 ### Installation of the automatic prover and use
@@ -69,13 +71,33 @@ export PATH="$PATH:$(pwd)"
 cd ..
 ```
 
-## Examples, tests and benchmarks
+## Examples
 
 Commented examples are available at ``examples.v``.
+
+## Transformations
+
+The documentation about each transformation is available here:
+
+* [Definitions](definitions.md)
+* [Higher Order Equalities](hoeq.md)
+* [Elimination of Anonymous Fixpoints](fix.md)
+* [Pattern Matching](pm.md)
+* [No Confusion Principle](noconf.md)
+* [Generation Principle](gen.md)
+* [Monomorphization](mono.md)
+* [Prenex Higher Order](ho.md)
+* [Inductive Relations in Prop](indrelprop.md)
+* [Decision of Inductive Relations](decide.md)
 
 ## License
 As an extension of SMTCoq, `Sniper` is released under the same license
 as SMTCoq: CeCILL-C. See the file LICENSE for details.
+
+## Papers about Sniper
+
+* [CPP' 23](https://arxiv.org/pdf/2204.02643.pdf)
+* [PXTP' 21](https://hal.science/hal-03328935/document)
 
 
 ## Authors

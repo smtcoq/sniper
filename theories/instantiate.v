@@ -25,7 +25,7 @@ Elpi Accumulate lp:{{
       pos_ctx_to_var_in_term Ctx' Inst Inst',
       snd P HPoly,
       instances_param_indu_strategy_aux HPoly Inst' [{{unit}}] LInst, !,
-      std.map LInst (add_pos_ctx Ctx') LInst',
+      std.map LInst (add_pos_ctx Ctx') LInst', 
       % unit is a dumb default case to eliminate useless polymorphic premise
       std.ignore-failure! (construct_cuts LInst' P G [G'|_]),
       if (coq.ltac.open (instances_param_indu_strategy_list XS Inst) G' GS) true (instances_param_indu_strategy_list XS Inst G GS).
@@ -192,9 +192,15 @@ f3 [] = [] ->
 f1 [] = @zip B C (f2 []) (f3 [])).
 Proof. intros. elimination_polymorphism. Abort.
 
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C) (l : list A),
+let f0 := fun x : A => (f x, g x) in
+(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
+ map H10 (h :: l0) = H10 h :: map H10 l0) ->
+map f0 l = zip (map f l) (map g l)).
+Proof. intros.
+elimination_polymorphism.
+Abort.
+
 End Tests.
-
-
-
-
-
