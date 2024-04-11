@@ -150,40 +150,6 @@ Proof. intros A HA. snipe. Qed.
 Lemma app_nil_r : forall (A: Type) (H: CompDec A) (l:list A), (l ++ [])%list = l.
 Proof. intros A H; induction l; snipe. Qed.
 
-Section higher_order.
-
-
-Variable A B C: Type.
-Variable HA : CompDec A.
-Variable HB : CompDec B.
-Variable HC : CompDec C.
-
-Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
-  match l, l' with
-  | [], _ => []
-  | x :: xs, [] => []
-  | x :: xs, y :: ys => (x, y) :: zip xs ys 
-  end.
-
-(* TODO
-
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; snipe2. Qed. *)
-
-(* An example with higher order and anonymous functions 
-Note that as map should be instantiated by f and g, 
-it does not work by using an induction principle which generalizes 
-on f and g, so f and g have to be introduced before l 
-It also work only with snipe2 because the arrow type instances will 
-make SMTCoq complain *) 
-Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
-map g (map f l) = map (fun x => g (f x)) l.
-Proof.
-induction l; snipe2. Qed.
-
-End higher_order.
-
 (** Examples on trees *)
 
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
