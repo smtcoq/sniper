@@ -1,5 +1,7 @@
 # Elimination of pattern matching
 
+This transformation is available in the file `theories/elimination_pattern_matching.v`.
+
 ## What does this transformation do?
 
 This transformation `eliminate_dependent_pattern_matching`, takes as argument a hypothesis `H` whose type
