@@ -1,5 +1,7 @@
 # Elimination of anonymous fixpoints
 
+This transformation is defined in the file `theories/elimination_fixpoints.v`.
+
 ## What does this transformation do?
 
 This transformation `eliminate_fix_hyp`, takes as an argument a hypothesis `H` whose type

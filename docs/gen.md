@@ -3,9 +3,9 @@
 This transformation is available in two different versions, 
 in two separated files:
 
-* The file `case_analysis_existentials.v` for the version with *existentials*
+* The file `theories/case_analysis_existentials.v` for the version with *existentials*
 quantifiers
-* The file `case_analysis.v` for the version with the 
+* The file `theories/case_analysis.v` for the version with the 
 *projection functions*
 
 ## What does this transformation do?
