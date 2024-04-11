@@ -30,3 +30,22 @@ There is a version of the transformation `elim_match_with_no_forall` which works
 `match` construction is not under any universal quantification. 
 
 ## An example
+
+```
+H : forall (A : Type) (l : list A),
+    length l =
+       match l with
+       | [] => 0
+       | _ :: l' => S (length l')
+       end
+______________________________________(1/1)
+False
+
+eliminate_dependent_pattern_matching H.
+
+H1 : forall (A : Type), length [] = []
+H2 : forall (A : Type) (x : A) (xs : list A),
+    length (x::xs) = S (length xs)
+______________________________________(1/1)
+False
+```
