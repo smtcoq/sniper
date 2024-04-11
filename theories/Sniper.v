@@ -22,11 +22,11 @@ Require Export anonymous_functions.
 Require Export elimination_fixpoints.
 Require Export expand.
 Require Export elimination_pattern_matching. 
-Require Export elimination_polymorphism.
+Require Export instantiate_type.
 Require Export case_analysis.
 Require Export case_analysis_existentials.
 Require Export interpretation_algebraic_types.
-Require Export instantiate.
+Require Export instantiate_inductive_pars.
 Require Export indrel.
 Require Export add_hypothesis_on_parameters.
 Require Export compdec_plugin.

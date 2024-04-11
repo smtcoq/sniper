@@ -11,7 +11,7 @@
 
 
 Require Import utilities. 
-Require Import elimination_polymorphism.
+Require Import instantiate_type.
 Require Import MetaCoq.Template.All.
 Require Import String.
 Require Import List.

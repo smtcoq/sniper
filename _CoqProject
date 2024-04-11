@@ -9,8 +9,8 @@ theories/elimination_fixpoints.v
 theories/elimination_pattern_matching.v
 theories/anonymous_functions.v
 theories/higher_order.v
-theories/elimination_polymorphism.v
-theories/instantiate.v
+theories/instantiate_type.v
+theories/instantiate_inductive_pars.v
 theories/interpretation_algebraic_types.v
 theories/clearbodies.v
 theories/case_analysis.v
