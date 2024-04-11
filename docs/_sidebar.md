@@ -3,7 +3,7 @@
 * [Higher Order Equalities](hoeq.md)
 * [Elimination of Anonymous Fixpoints](fix.md)
 * [Pattern Matching](pm.md)
-* [No Confusion Principle](noconf.md)
+* [Algebraic Datatypes](alg.md)
 * [Generation Principle](gen.md)
 * [Monomorphization](mono.md)
 * [Prenex Higher Order](ho.md)
