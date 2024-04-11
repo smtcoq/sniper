@@ -86,6 +86,7 @@ The documentation about each transformation is available here:
 * [Algebraic Datatypes](alg.md)
 * [Generation Principle](gen.md)
 * [Monomorphization](mono.md)
+* [Anonymous Functions](anon.md)
 * [Prenex Higher Order](ho.md)
 * [Inductive Relations in Prop](indrelprop.md)
 * [Decision of Inductive Relations](decide.md)
