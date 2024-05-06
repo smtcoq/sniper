@@ -315,12 +315,12 @@ Ltac2 filter_reflexivity () :=
       '@FArray.diff;
       'is_true;
       '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
-      'SMTCoq.classes.SMT_classes.CompDec;
-      'SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-      'SMTCoq.classes.SMT_classes_instances.list_compdec;
-      'SMTCoq.classes.SMT_classes_instances.prod_compdec;
-      'SMTCoq.classes.SMT_classes_instances.option_compdec;
-      'SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
+      '@SMTCoq.classes.SMT_classes.CompDec;
+      '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
+      '@SMTCoq.classes.SMT_classes_instances.list_compdec;
+      '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
+      '@SMTCoq.classes.SMT_classes_instances.option_compdec;
+      '@SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
       (FPred higher_order).
 
 Ltac2 trigger_unfold_reflexivity () :=
