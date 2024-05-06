@@ -26,9 +26,11 @@ Ltac2 rec pass_the_filter
   (l : constr list)
   (f : filter) : bool :=
     match f with
-      | FConstr lc => 
-          if Int.equal (List.length l) 1 then if List.exist (Constr.equal (List.hd l)) lc then false else true
-          else Control.throw (WrongArgNumber "this filter is valid only for transformations taking one argument")
+      | FConstr lc =>
+            match l with 
+              | [] => true
+              | x :: xs => if List.exist (Constr.equal x) lc then false else pass_the_filter xs f
+            end
       | FConstrList lc => if List.exist (List.equal Constr.equal l) lc then false else true
       | FPredList p => if p l then false else true
       | FConj f1 f2 => Bool.and (pass_the_filter l f1) (pass_the_filter l f2)
