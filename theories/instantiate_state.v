@@ -1,6 +1,12 @@
 From Ltac2 Require Import Ltac2.
-From Ltac2 Require Import Constr.
+From Ltac2 Require Import Constr Printf.
 Import Unsafe.
+
+Ltac2 rec print_constr_list (l : constr list) :=
+  match l with
+    | [] => ()
+    | x :: xs => printf "%t \n" x ; print_constr_list xs
+  end.
 
 Ltac2 Type 'a ref := 'a Init.ref.
 
@@ -35,6 +41,8 @@ Ltac2 Type instantiation_state :=
     hyps_inst : (constr*constr) list }.
 
 Definition wildcard := true.
+
+Definition type_variable := true.
 
 Ltac2 Type refs ::= [ ISR (instantiation_state ref) ].
 
@@ -117,22 +125,38 @@ Ltac2 is_inductive_codomain_not_prop_applied (c: constr) :=
     | _ => false
   end.
 
+(* 
+Not possible to quote ill-typed terms, but possible to build them:
+Ltac2 Eval (let c := make (App 'nat (Array.of_list ['nat])) in equal c 'nat). *)
+
 (* Ltac2 Eval is_inductive_codomain_not_prop_applied '(list nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied '(eq nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
 
-Ltac2 transform_into_contexts (c: constr) := ().
+Ltac2 Type exn ::= [ Wrong_context ].
+
+(* if c is not closed we change it into a hole *)
+
+Ltac2 change_into_wildcards (c: constr) :=
+if is_closed c then c else 'wildcard.
+
+Ltac2 transform_into_context (c: constr) :=
+  match kind c with
+    | App c ca => make (App c (Array.map change_into_wildcards ca))
+    | _ => Control.throw Wrong_context
+  end.
  
 Ltac2 find_context_hyp_aux (c: constr) :=
-  let subs := subterms_nary_app c in
+  let c' := substnl ['type_variable] 0 c in
+  let subs := subterms_nary_app c' in
   let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
   let subsindurel := 
     List.filter (fun x => 
       match kind x with
-        | App c' ca => Array.mem equal (make (Rel 1)) ca
+        | App c' ca => Array.mem equal 'type_variable ca
         | _ => false
       end) subsindu in
-  List.map transform_into_contexts subsindurel.
+  List.map transform_into_context subsindurel.
 
 
 (* We suppose that h : forall (A: Type), P A 
@@ -146,10 +170,21 @@ Ltac2 find_context_hyp (h: constr) :=
   match kind (type h) with
     | Prod bd c2 =>
         let c1 := Binder.type bd in 
-        if is_type_or_set c1 then find_context_hyp_aux c2
-        else []
-    | _ => []
+        if is_type_or_set c1 then 
+        (h, List.nodup equal (find_context_hyp_aux c2))
+        else (h, [])
+    | _ => (h, [])
   end.
+
+(* 
+Tests : 
+Require Import List. 
+
+Axiom toto : forall (A: Type) (l : list (list A)) (x : prod A nat), l = l /\ x = x.
+
+Ltac2 Eval find_context_hyp 'toto.
+Ltac2 Eval find_context_hyp 'app_nil_r.
+Ltac2 Eval find_context_hyp 'surjective_pairing. *)
         
   
 
