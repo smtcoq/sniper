@@ -38,8 +38,9 @@ the second field contains a list of pairs between a hypothesis and
 a context for the first type variable used in the hypothesis *)
 
 Ltac2 Type instantiation_state :=
-  { types_inst : (constr*constr) list;
-    hyps_inst : (constr*constr) list }.
+  { hyps_inst : (constr*constr) list;
+    types_inst : (constr*constr) list
+     }.
 
 Definition wildcard := true.
 
@@ -136,6 +137,8 @@ Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
 
 Ltac2 Type exn ::= [ Wrong_context ].
 
+Ltac2 Type exn ::= [ Wrong_reference ].
+
 (* if c is not closed we change it into a hole *)
 
 Ltac2 change_into_wildcards (c: constr) :=
@@ -221,6 +224,52 @@ Axiom tutu : forall (A: Type) (l : list (list nat)) (x : prod A nat), l = l /\ x
 Ltac2 Eval find_context_types 'toto.
 Ltac2 Eval find_context_types 'tutu.
 Ltac2 Eval find_context_types 'surjective_pairing. *)
+
+Ltac2 pose_proof_return_term (h: constr) :=
+  let fresh_id := Fresh.in_goal ident:(H_inst) in
+  pose ($fresh_id := $h) ;
+  ltac1:(H_inst |- clearbody H_inst) (Ltac1.of_ident fresh_id) ; Control.hyp fresh_id. 
+
+(* Goal ((forall (x : nat), x = x) -> False).
+intros H_inst.
+let x := pose_proof 'H_inst in printf "%t" x. Abort. *)
+
+Ltac2 specialize_hyp
+  (h : constr)
+  (ty : constr) :=
+    match! type h with
+      | forall (A: Type), _ => 
+          let h' := pose_proof_return_term h in
+          specialize ($h' $ty)
+      | _ => ()
+    end. 
+  
+
+Ltac2 rec might_specialize_hyp 
+  (h : constr) (* the hypothesis that might be specialized *)
+  (ctx_h : constr) (* the context in which its type variable lies *)
+  (ty_ctx_l : (constr*constr) list) (* the pairs between the types and its context *) :=
+    match ty_ctx_l with 
+      | [] => ()
+      | (ty, ctx_ty) :: ty_ctx_l' =>
+          if equal ctx_h ctx_ty then specialize_hyp h ty ; 
+            might_specialize_hyp h ctx_h ty_ctx_l'
+          else might_specialize_hyp h ctx_h ty_ctx_l'
+    end.
+  
+
+Ltac2 instantiate_state isr :=
+  match isr with
+    | ISR is => 
+        let state := get is in
+        let hyp_ctx_l := state.(hyps_inst) in
+        let ty_ctx_l := state.(types_inst) in
+        List.map (fun (x, y) => might_specialize_hyp x y ty_ctx_l) hyp_ctx_l
+    | _ => Control.throw Wrong_reference
+  end.
+     
+
+
 
 
 
