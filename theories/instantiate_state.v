@@ -31,9 +31,10 @@ Ltac2 Eval is_type_or_set 'nat.
 Ltac2 Eval is_type_or_set 'Prop.
 Ltac2 Eval is_type_or_set 'SProp. *)
 
-(* A state is a two-fields record in which the first field 
-contains pairs between a type and a context for this type, 
-the second field contains pairs between a hypothesis and 
+(* For this transformation, 
+a state is a two-fields record in which the first field 
+contains a list of pairs between a type and a context for this type, 
+the second field contains a list of pairs between a hypothesis and 
 a context for the first type variable used in the hypothesis *)
 
 Ltac2 Type instantiation_state :=
@@ -46,8 +47,8 @@ Definition type_variable := true.
 
 Ltac2 Type refs ::= [ ISR (instantiation_state ref) ].
 
-(* subterms_nary_app of c, but if a subterm is
-of the form f a1 ... ak, the only subterms_nary_app considered are the subterms_nary_app 
+(* subterms of c, but if a subterm is
+of the form f a1 ... ak, the only subterms considered are the subterms
 of f and of each of the ais, but not the partial 
 applications (f a1), (f a1 a2) etc. *)
 Ltac2 rec subterms_nary_app (c : constr) : constr list :=
@@ -160,10 +161,10 @@ Ltac2 find_context_hyp_aux (c: constr) :=
 
 
 (* We suppose that h : forall (A: Type), P A 
-- Look at all the subterms_nary_app of h containing A
+- Look at all the subterms of h containing A
 - Filter the inductives applied 
 - return the list of contexts (parameters replaced by either wildcards 
-or lambda-abstraction on A)
+or a term called type_variable which represents A)
 *)
 
 Ltac2 find_context_hyp (h: constr) :=
@@ -176,8 +177,8 @@ Ltac2 find_context_hyp (h: constr) :=
     | _ => (h, [])
   end.
 
-(* 
-Tests : 
+
+(*Tests : 
 Require Import List. 
 
 Axiom toto : forall (A: Type) (l : list (list A)) (x : prod A nat), l = l /\ x = x.
@@ -185,10 +186,41 @@ Axiom toto : forall (A: Type) (l : list (list A)) (x : prod A nat), l = l /\ x =
 Ltac2 Eval find_context_hyp 'toto.
 Ltac2 Eval find_context_hyp 'app_nil_r.
 Ltac2 Eval find_context_hyp 'surjective_pairing. *)
-        
-  
 
+Ltac2 list_context_types (c : constr) :=
+  match kind c with
+    | App c0 ca => 
+        let ca' := (Array.map change_into_wildcards ca) in
+        Array.to_list (Array.mapi 
+                        (fun i x => 
+                            let ca'' := Array.copy ca' in 
+                            Array.set ca'' i 'type_variable ;
+                          (x, make (App c0 ca''))) ca')
+    | _ => Control.throw Wrong_context
+  end.
 
+Ltac2 find_context_types (h : constr) :=
+  let c := type h in
+  let subs := subterms_nary_app c in
+  let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
+  let res := 
+  List.nodup 
+    (fun a b => 
+      let (a1, a2) := a in
+      let (b1, b2) := b in
+      Bool.and (equal a1 b1) (equal a2 b2))
+    (List.flatten (List.map list_context_types subsindu)) in
+  List.filter (fun (x, y) => Bool.neg (equal x 'wildcard)) res.
+
+(*Tests : 
+Require Import List. 
+
+Axiom toto : forall (l : list (list nat)) (x : prod bool nat), l = l /\ x = x.
+Axiom tutu : forall (A: Type) (l : list (list nat)) (x : prod A nat), l = l /\ x = x.
+
+Ltac2 Eval find_context_types 'toto.
+Ltac2 Eval find_context_types 'tutu.
+Ltac2 Eval find_context_types 'surjective_pairing. *)
 
 
 
