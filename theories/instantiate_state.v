@@ -17,6 +17,11 @@ Ltac2 setref (r : 'a ref) (v : 'a) : unit := r.(contents) := v.
 Ltac2 update (r : 'a ref) (f : 'a -> 'a) : unit :=
   r.(contents) := f (r.(contents)).
 
+
+Ltac2 Type exn ::= [ Wrong_context ].
+
+Ltac2 Type exn ::= [ Wrong_reference ].
+
 Ltac2 Type refs := [ .. ].
 
 Ltac2 is_type_or_set (c: constr) :=
@@ -42,11 +47,29 @@ Ltac2 Type instantiation_state :=
     types_inst : (constr * constr list) list
      }.
 
-Definition wildcard := true.
+Definition wildcard := nat.
 
-Definition type_variable := true.
+Definition type_variable := nat.
 
 Ltac2 Type refs ::= [ ISR (instantiation_state ref) ].
+
+Ltac2 inst_state_printer is :=
+  let hi := is.(hyps_inst) in
+  let ti := is.(types_inst) in
+  printf "hyps inst:";
+  List.iter (fun (x, y) => printf "hypothesis: %t" x ;
+    List.iter (fun z => printf "context: %t" z) y) hi ;
+  printf "types inst:" ;
+  List.iter (fun (x, y) => printf "type: %t" x ;
+    List.iter (fun z => printf "context: %t" z) y) ti.
+
+
+Ltac2 isr_printer isr :=
+  match isr with
+    | ISR is =>
+        inst_state_printer (is.(contents))
+    | _ => Control.throw Wrong_reference
+  end.
 
 (* subterms of c, but if a subterm is
 of the form f a1 ... ak, the only subterms considered are the subterms
@@ -134,10 +157,6 @@ Ltac2 Eval (let c := make (App 'nat (Array.of_list ['nat])) in equal c 'nat). *)
 (* Ltac2 Eval is_inductive_codomain_not_prop_applied '(list nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied '(eq nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
-
-Ltac2 Type exn ::= [ Wrong_context ].
-
-Ltac2 Type exn ::= [ Wrong_reference ].
 
 (* if c is not closed we change it into a hole *)
 
@@ -272,12 +291,29 @@ specialize_hyp 'H_inst 'unit.
 specialize_hyp 'H_inst1 'nat.
 Abort. *)
 
+Ltac2 rec context_equal c1 c2 :=
+  if equal c1 'wildcard then true
+    else if equal c2 'wildcard then true
+      else if
+        match kind c1, kind c2 with
+          | App c3 ca, App c4 cb =>
+              let la := Array.to_list ca in
+              let lb := Array.to_list cb in
+              Bool.and (equal c3 c4) (List.equal context_equal la lb)
+          | _ => false
+        end then true
+  else equal c1 c2.
+
+(* Tests *)
+
+Ltac2 Eval context_equal '(type_variable * wildcard)%type '(type_variable * nat)%type.
+
 Ltac2 might_specialize_hyp 
   (h : constr) (* the hypothesis that might be specialized *)
   (ctx_h : constr) (* the context in which its type variable lies *)
   (ty : constr) (* the type *)
   (ctx_ty : constr) (* the context in which the type lies *)
-    := if equal ctx_h ctx_ty then specialize_hyp h ty else ().
+    := if context_equal ctx_h ctx_ty then specialize_hyp h ty else ().
 
 (* (constr * constr list) list *)
 
@@ -302,31 +338,41 @@ Ltac2 instantiate_state isr :=
         let state := get is in
         let hyp_ctx_l := state.(hyps_inst) in
         let ty_ctx_l := state.(types_inst) in
-        List.map (fun (x, y) => might_specialize_hyp_list_list x y ty_ctx_l) hyp_ctx_l
+        List.iter (fun (x, y) => might_specialize_hyp_list_list x y ty_ctx_l) hyp_ctx_l
     | _ => Control.throw Wrong_reference
   end.
 
-Ltac2 rec hyps_of_type_prop_as_terms (hs: (ident*(constr option)*constr) list) :=
+Ltac2 is_polymorphic (c: constr) :=
+  match kind c with
+    | Prod bd _ => let ty := Binder.type bd in is_type_or_set ty
+    | _ => false
+  end.
+
+Ltac2 rec poly_hyps_of_type_prop_as_terms (hs: (ident*(constr option)*constr) list) :=
   match hs with
     | (id, opt, ty) :: hs' => 
         match opt with
-          | Some _ => hyps_of_type_prop_as_terms hs'
+          | Some _ => poly_hyps_of_type_prop_as_terms hs'
           | None => 
-              if equal (type ty) 'Prop then 
-                Control.hyp id :: hyps_of_type_prop_as_terms hs'
-              else hyps_of_type_prop_as_terms hs'
+              if Bool.and (equal (type ty) 'Prop) (is_polymorphic ty) then 
+                Control.hyp id :: poly_hyps_of_type_prop_as_terms hs'
+              else poly_hyps_of_type_prop_as_terms hs'
         end
     | [] => []
   end.
 
+Ltac2 rec hyps_as_terms (hs: (ident*(constr option)*constr) list) :=
+  List.map (fun (x, y, z) => Control.hyp x) hs.
+
 Ltac2 compute_init_state () :=
   let hyps := Control.hyps () in
   let g := Control.goal () in
-  let hyps_constr := hyps_of_type_prop_as_terms hyps in
+  let hyps_constr := poly_hyps_of_type_prop_as_terms hyps in
+  let hyps_constr' := hyps_as_terms hyps in
   let context_hyps := List.map (fun x => find_context_hyp x) hyps_constr in
   let context_types := 
     List.append 
-      (List.fold_left (fun acc x => List.append (find_context_types (type x)) acc) hyps_constr [])
+      (List.fold_left (fun acc x => List.append (find_context_types (type x)) acc) hyps_constr' [])
       (find_context_types g) in
   {
    hyps_inst := context_hyps;
@@ -337,9 +383,29 @@ Ltac2 init_state (isr : refs) :=
 let s := compute_init_state () in 
   match isr with
     | ISR is =>
-        setref is s  
+        setref is s
     | _ => Control.throw Wrong_reference
   end.
+
+Section tests.
+
+Goal (forall (A: Type) (x: list A), x = x) -> (forall (x: list nat), x = x).
+intros H.
+let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+Abort.
+
+Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
+(p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
+-> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
+p' = p'.
+intros.
+let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+Abort.
+
+
+
+
 
 
 

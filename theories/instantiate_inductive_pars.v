@@ -132,7 +132,7 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 (p : C * D) (p' : D*E), l = l -> l' = l' -> p = p -> (forall (A : Type) (x : A), x= x)
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
-intros. (* elimination_polymorphism. *) reflexivity. Abort. 
+intros. elimination_polymorphism. reflexivity. Abort. 
 
 Goal False.
 pose (x := fun (A : Type) (x : A) => x).
