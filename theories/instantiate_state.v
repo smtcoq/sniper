@@ -131,6 +131,17 @@ Ltac2 rec subterms_nary_app (c : constr) : constr list :=
         List.append [c] (List.append (List.append (subterms_nary_app c1) (subterms_nary_app c2)) res')
   end.
 
+(* 
+replaces a constructor c t1 ... tk with  
+I t1 ... tl with l is the nb of parameters of I and 
+I is the inductive whose constructor is c *)
+
+Ltac2 replace_by_inductive (c : constr) :=
+  match kind c with
+    | App c' ca => if is_constructor c' then type c else c
+    | _ => c
+  end.
+
 (* Ltac2 Eval subterms_nary_app '(forall (A: Type) (x: A), @eq A x x). *)
 
 (* TODO factorize because defined in triggers_tactics.v *)
@@ -171,7 +182,7 @@ Ltac2 transform_into_context (c: constr) :=
  
 Ltac2 find_context_hyp_aux (c: constr) :=
   let c' := substnl ['type_variable] 0 c in
-  let subs := subterms_nary_app c' in
+  let subs := List.map replace_by_inductive (subterms_nary_app c') in
   let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
   let subsindurel := 
     List.filter (fun x => 
@@ -281,7 +292,32 @@ Ltac2 rec hyp_is_dup_aux (id : ident) (ty : constr) hs :=
 Ltac2 hyp_is_dup (id : ident) (h : constr) :=
   hyp_is_dup_aux id (type h) (Control.hyps ()).
 
-Ltac2 specialize_hyp
+Ltac2 rec hyp_is_dup_aux2 (ty : constr) hs :=
+  match hs with
+    | (id', _, ty') :: xs => Bool.or (equal ty ty') (hyp_is_dup_aux2 ty xs)
+    | _ => false
+  end.
+
+Ltac2 hyp_is_dup2 (ty : constr) :=
+  hyp_is_dup_aux2 ty (Control.hyps ()).
+
+Ltac2 specialize_hyp 
+  (h : constr) 
+  (tyi : constr) :=
+    let ty_h := type h in
+    match kind ty_h with
+      | Prod bd a => 
+          let ty := Binder.type bd in 
+          if is_type_or_set ty then
+            if hyp_is_dup2 (substnl [tyi] 0 a) then () 
+            else let h' := pose_proof_return_term h in 
+          specialize ($h' $tyi)
+          else ()
+      | _ => ()
+    end.
+     
+
+(* Ltac2 specialize_hyp
   (h : constr)
   (ty : constr) :=
     match! type h with
@@ -292,8 +328,8 @@ Ltac2 specialize_hyp
               | Var id => if (hyp_is_dup id h') then clear $id else ()
               | _ => ()
             end
-      | _ => ()
-    end. 
+      | _ => () 
+    end. *)
 
 (* 
 Goal ((forall (B : Type), B = B) -> False).
@@ -418,11 +454,12 @@ let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
 let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
 Abort.
 
-(*
 Goal (forall (A: Type), list A -> False).
 intros. assert (H1: forall A, List.nth_error (@nil A) 0 = None) by auto.
 let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
-assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort.  TODO : constructors *)
+assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort. 
+
+End tests.
 
 
 
