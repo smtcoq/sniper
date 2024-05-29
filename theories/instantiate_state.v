@@ -272,13 +272,26 @@ Ltac2 pose_proof_return_term (h: constr) :=
 intros H_inst.
 let x := pose_proof 'H_inst in printf "%t" x. Abort. *)
 
+Ltac2 rec hyp_is_dup_aux (id : ident) (ty : constr) hs :=
+  match hs with
+    | (id', _, ty') :: xs => Bool.or (Bool.and (equal ty ty') (Bool.neg (Ident.equal id id'))) (hyp_is_dup_aux id ty xs)
+    | _ => false
+  end.
+
+Ltac2 hyp_is_dup (id : ident) (h : constr) :=
+  hyp_is_dup_aux id (type h) (Control.hyps ()).
+
 Ltac2 specialize_hyp
   (h : constr)
   (ty : constr) :=
     match! type h with
       | forall (A: Type), _ => 
           let h' := pose_proof_return_term h in
-          specialize ($h' $ty)
+          specialize ($h' $ty) ;
+            match kind h' with
+              | Var id => if (hyp_is_dup id h') then clear $id else ()
+              | _ => ()
+            end
       | _ => ()
     end. 
 
@@ -387,6 +400,8 @@ let s := compute_init_state () in
     | _ => Control.throw Wrong_reference
   end.
 
+Require Import List.
+
 Section tests.
 
 Goal (forall (A: Type) (x: list A), x = x) -> (forall (x: list nat), x = x).
@@ -403,7 +418,11 @@ let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
 let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
 Abort.
 
-
+(*
+Goal (forall (A: Type), list A -> False).
+intros. assert (H1: forall A, List.nth_error (@nil A) 0 = None) by auto.
+let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort.  TODO : constructors *)
 
 
 
