@@ -1,11 +1,53 @@
+Require Import utilities.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf.
 Import Unsafe.
+From MetaCoq.Template Require Import All.
+From MetaCoq.Common Require Import config.
+
+(* Number of parameters of the inductive corresponding to a
+given constructor *) 
+Print term.
+Ltac npars c :=
+  let c_quoted := metacoq_get_value (tmQuoteRec c) in
+  let c_term := eval cbv in c_quoted.2 in
+    match c_term with
+      | tConstruct ?ind _  ?inst => 
+        let info := eval cbv in (info_nonmutual_inductive c_quoted.1 (tInd ind inst)) in 
+          match info with
+            | (?n, _) => pose n
+            | _ => fail ind
+          end
+      | _ => fail "not a constructor"
+     end.
+
+Ltac2 rec nat_to_int (n : constr) :=
+  match! n with
+    | 0 => 0
+    | S ?x => Int.add 1 (nat_to_int x)
+  end.
+
+Ltac2 npars_of_constructor c :=
+  let c := Ltac1.of_constr c in
+  ltac1:(c |- npars c) c ;
+  let hs := Control.hyps () in 
+  let (id, n_def, ty) := List.last hs in
+    match n_def with
+      | None => Control.throw (Invalid_argument None)
+      | Some n => clear $id ; nat_to_int n
+    end.
+
+(*
+Goal False.
+let x := npars '(@nil) in printf "%i" x.
+let x := npars '(@pair) in printf "%i" x.
+let x := npars 'List.Add_head in printf "%i" x.
+Abort. *)
 
 Ltac2 rec print_constr_list (l : constr list) :=
   match l with
     | [] => ()
-    | x :: xs => printf "%t \n" x ; print_constr_list xs
+    | x :: xs => print_constr_list xs
   end.
 
 Ltac2 Type 'a ref := 'a Init.ref.
@@ -56,7 +98,6 @@ Ltac2 Type refs ::= [ ISR (instantiation_state ref) ].
 Ltac2 inst_state_printer is :=
   let hi := is.(hyps_inst) in
   let ti := is.(types_inst) in
-  printf "hyps inst:";
   List.iter (fun (x, y) => printf "hypothesis: %t" x ;
     List.iter (fun z => printf "context: %t" z) y) hi ;
   printf "types inst:" ;
@@ -131,6 +172,16 @@ Ltac2 rec subterms_nary_app (c : constr) : constr list :=
         List.append [c] (List.append (List.append (subterms_nary_app c1) (subterms_nary_app c2)) res')
   end.
 
+(* if c is not closed we change it into a hole *)
+
+Ltac2 change_into_wildcards (c: constr) :=
+if is_closed c then c else 'wildcard.
+
+Ltac2 transform_into_context (c: constr) :=
+  match kind c with
+    | App c ca => Unsafe.make (App c (Array.map change_into_wildcards ca))
+    | _ => Control.throw Wrong_context
+  end.
 (* 
 replaces a constructor c t1 ... tk with  
 I t1 ... tl with l is the nb of parameters of I and 
@@ -138,7 +189,13 @@ I is the inductive whose constructor is c *)
 
 Ltac2 replace_by_inductive (c : constr) :=
   match kind c with
-    | App c' ca => if is_constructor c' then type c else c
+    | App c' ca => 
+        if is_constructor c' then
+          let la := Array.to_list ca in
+          let la' := List.firstn (npars_of_constructor c') la in
+          let ca' := Array.of_list la' in
+          type (transform_into_context (make (App c' ca')))
+        else c
     | _ => c
   end.
 
@@ -168,21 +225,11 @@ Ltac2 Eval (let c := make (App 'nat (Array.of_list ['nat])) in equal c 'nat). *)
 (* Ltac2 Eval is_inductive_codomain_not_prop_applied '(list nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied '(eq nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
-
-(* if c is not closed we change it into a hole *)
-
-Ltac2 change_into_wildcards (c: constr) :=
-if is_closed c then c else 'wildcard.
-
-Ltac2 transform_into_context (c: constr) :=
-  match kind c with
-    | App c ca => make (App c (Array.map change_into_wildcards ca))
-    | _ => Control.throw Wrong_context
-  end.
  
 Ltac2 find_context_hyp_aux (c: constr) :=
   let c' := substnl ['type_variable] 0 c in
-  let subs := List.map replace_by_inductive (subterms_nary_app c') in
+  let subsnary := subterms_nary_app c' in
+  let subs := List.map replace_by_inductive subsnary in 
   let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
   let subsindurel := 
     List.filter (fun x => 
@@ -228,7 +275,7 @@ Ltac2 list_context_types (c : constr) :=
                         (fun i x => 
                             let ca'' := Array.copy ca' in 
                             Array.set ca'' i 'type_variable ;
-                          (x, make (App c0 ca''))) ca')
+                          (x, Unsafe.make (App c0 ca''))) ca')
     | _ => Control.throw Wrong_context
   end.
 
@@ -306,11 +353,11 @@ Ltac2 specialize_hyp
   (tyi : constr) :=
     let ty_h := type h in
     match kind ty_h with
-      | Prod bd a => 
-          let ty := Binder.type bd in 
+      | Prod bd a =>
+          let ty := Binder.type bd in
           if is_type_or_set ty then
             if hyp_is_dup2 (substnl [tyi] 0 a) then () 
-            else let h' := pose_proof_return_term h in 
+            else let h' := pose_proof_return_term h in
           specialize ($h' $tyi)
           else ()
       | _ => ()
@@ -362,7 +409,8 @@ Ltac2 might_specialize_hyp
   (ctx_h : constr) (* the context in which its type variable lies *)
   (ty : constr) (* the type *)
   (ctx_ty : constr) (* the context in which the type lies *)
-    := if context_equal ctx_h ctx_ty then specialize_hyp h ty else ().
+    := if context_equal ctx_h ctx_ty then specialize_hyp h ty else
+    ().
 
 (* (constr * constr list) list *)
 
@@ -386,7 +434,7 @@ Ltac2 instantiate_state isr :=
     | ISR is => 
         let state := get is in
         let hyp_ctx_l := state.(hyps_inst) in
-        let ty_ctx_l := state.(types_inst) in
+        let ty_ctx_l := state.(types_inst) in 
         List.iter (fun (x, y) => might_specialize_hyp_list_list x y ty_ctx_l) hyp_ctx_l
     | _ => Control.throw Wrong_reference
   end.
@@ -417,7 +465,7 @@ Ltac2 compute_init_state () :=
   let hyps := Control.hyps () in
   let g := Control.goal () in
   let hyps_constr := poly_hyps_of_type_prop_as_terms hyps in
-  let hyps_constr' := hyps_as_terms hyps in
+  let hyps_constr' := hyps_as_terms hyps in 
   let context_hyps := List.map (fun x => find_context_hyp x) hyps_constr in
   let context_types := 
     List.append 
@@ -435,14 +483,36 @@ let s := compute_init_state () in
         setref is s
     | _ => Control.throw Wrong_reference
   end.
+(* 
+(* Specific instantiation considering only the new hypothesis
+containing a concrete type of type Type or Set *)
+Ltac2 new_hyp_concrete_type 
+  (isr : refs) 
+  (h : constr) :=
+  let tyi := find_context_types (type h) in 
+    match isr with
+      | ISR is =>
+          let res := get is in 
+          setref is { hyps_inst := res.(hyps_inst) ; types_inst := List.append (res.(types_inst)) tyi }
+          might_instantiate_type tyi res.(hyps_inst)
+      | _ => Control.throw Wrong_reference
+    end.  *)
+
+Ltac2 elimination_polymorphism () :=
+  let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+
+Tactic Notation "elimination_polymorphism" := 
+  repeat ltac2:(elimination_polymorphism ()).
 
 Require Import List.
+Import ListNotations.
 
 Section tests.
+Set Default Proof Mode "Classic".
 
 Goal (forall (A: Type) (x: list A), x = x) -> (forall (x: list nat), x = x).
 intros H.
-let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+elimination_polymorphism.
 Abort.
 
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
@@ -450,14 +520,73 @@ Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list 
 -> (forall (A : Type) (l : list A), l = l) -> (forall (A B : Type) (p : A *B), p =p ) ->
 p' = p'.
 intros.
-let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
-let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
+elimination_polymorphism.
 Abort.
 
 Goal (forall (A: Type), list A -> False).
 intros. assert (H1: forall A, List.nth_error (@nil A) 0 = None) by auto.
-let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
-assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort. 
+elimination_polymorphism.
+assert (H2: @nth_error A (@nil A) 0 = @None A) by assumption. Abort.
+
+Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) -> ((forall (x1 x2 : bool) (y1 y2 : nat), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : nat) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2)) /\ (forall (x1 x2 : bool) (y1 y2 : bool), 
+(x1, y1) = (x2, y2) -> (x1 = x2 /\ y1 = y2))).
+intro H. elimination_polymorphism. split. assumption.
+split. assumption. assumption. Qed.
+
+Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
+  match l, l' with
+  | [], _ => []
+  | x :: xs, [] => []
+  | x :: xs, y :: ys => (x, y) :: zip xs ys 
+  end.
+
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C) (l : list A),
+let f0 := fun x : A => (f x, g x) in
+(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
+ map H10 (h :: l0) = H10 h :: map H10 l0) ->
+map f0 l = zip (map f l) (map g l)).
+Proof. intros. 
+elimination_polymorphism.
+Abort.
+
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C),
+let f0 := fun x : A => (f x, g x) in
+let f1 := @map A (B * C) f0 in
+let f2 := @map A B f in
+let f3 := @map A C g in
+(forall (H5 H7 : Type) (l' : list H7), @zip H5 H7 [] l' = []) ->
+(forall (H7 H9 : Type) (H10 : H7) (H11 : list H7), @zip H7 H9 (H10 :: H11) [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7) (H11 : list H7) (h : H9) (l : list H9),
+ @zip H7 H9 (H10 :: H11) (h :: l) = (H10, h) :: @zip H7 H9 H11 l) ->
+f1 [] = [] ->
+(forall (a : A) (l : list A), f1 (a :: l) = f0 a :: f1 l) ->
+f2 [] = [] ->
+(forall (a : A) (l : list A), f2 (a :: l) = f a :: f2 l) ->
+f3 [] = [] ->
+(forall (a : A) (l : list A), f3 (a :: l) = g a :: f3 l) ->
+(forall (x : Type) (x0 x1 : x) (x2 x3 : list x), x0 :: x2 = x1 :: x3 -> x0 = x1 /\ x2 = x3) ->
+(forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
+(forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) ->
+f1 [] = @zip B C (f2 []) (f3 [])).
+Proof. intros. elimination_polymorphism. Abort.
+
+Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C) (l : list A),
+let f0 := fun x : A => (f x, g x) in
+(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
+ map H10 (h :: l0) = H10 h :: map H10 l0) ->
+map f0 l = zip (map f l) (map g l)).
+Proof. intros.
+elimination_polymorphism.
+Abort.
+ 
 
 End tests.
 
