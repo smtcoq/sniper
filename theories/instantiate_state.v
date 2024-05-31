@@ -655,7 +655,53 @@ Proof. intros. elimination_polymorphism. assumption. Abort.
 
 End tests.
 
+Section big_test.
 
+Variable (A B C : Type).
+Variable (CompDec : Type -> Type).
+Variable (HA : CompDec A).
+Variable (HB : CompDec B).
+Variable (HC : CompDec C).
+
+Goal (forall (f : A -> B) (g : B -> C) (a: A) (l : list A),
+(map g (map f l) = map (fun x : A => g (f x)) l) ->
+let f0 := (fun x : A => g (f x)) in
+(forall x : A, f0 x = g (f x)) ->
+let f1 := map g in
+let f2 := map f in
+let f3 := map f0 in
+let f4 := map f0 in 
+f1 nil = nil -> 
+forall (b : B) (l : list B), f1 (b :: l) = g b :: map g l ->
+f2 nil = nil ->
+forall (a : A) (l : list A), f2 (a :: l) = f a :: map f l ->
+f3 nil = nil ->
+f4 nil = nil -> 
+(forall (a : A) (l : list A), f3 (a :: l) = f0 a :: map f0 l) ->  
+(forall (x : Type) (x0 x1 : x) (x2 x3 : list x),
+         x0 :: x2 = x1 :: x3 -> x0 = x1 /\ x2 = x3) ->  
+(forall (x : Type) (x0 : x) (x1 : list x), nil = x0 :: x1 -> False) ->
+let proj_list := (fun (A : Type) (x x0 : list A) =>
+                match x0 with
+                | nil => x
+                | _ :: x2 => x2
+                end) in 
+let proj_list0 := (fun (A : Type) (x : A) (x0 : list A) =>
+                 match x0 with
+                 | nil => x
+                 | x1 :: _ => x1
+                 end) in
+(forall x : list A,
+                x = nil \/ x = proj_list0 A a x :: proj_list A l x) ->
+(forall (H13 : Type) (H15 : list H13), proj_list H13 H15 nil = H15) ->
+(forall (H13 : Type) (H15 : list H13) (h : H13) (l : list H13),
+          proj_list H13 H15 (h :: l) = l) ->
+(forall (H15 : Type) (H17 : H15), proj_list0 H15 H17 nil = H17)   ->
+(forall (H15 : Type) (H17 h : H15) (l : list H15),
+          proj_list0 H15 H17 (h :: l) = h) -> map g (map f (a :: l)) = map f0 (a :: l)).
+intros. elimination_polymorphism. Abort.
+
+End big_test.
 
 
 

@@ -24,6 +24,7 @@ theories/anonymous_functions.v
 theories/higher_order.v
 theories/instantiate_type.v
 theories/instantiate_inductive_pars.v
+theories/instantiate_state.v
 theories/interpretation_algebraic_types.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
