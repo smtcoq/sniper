@@ -7,7 +7,7 @@ From MetaCoq.Common Require Import config.
 
 (* Number of parameters of the inductive corresponding to a
 given constructor *) 
-Print term.
+
 Ltac npars c :=
   let c_quoted := metacoq_get_value (tmQuoteRec c) in
   let c_term := eval cbv in c_quoted.2 in
@@ -46,8 +46,8 @@ Abort. *)
 
 Ltac2 rec print_constr_list (l : constr list) :=
   match l with
-    | [] => ()
-    | x :: xs => print_constr_list xs
+    | [] => printf "empty list"
+    | x :: xs => printf "%t" x ; print_constr_list xs
   end.
 
 Ltac2 Type 'a ref := 'a Init.ref.
@@ -94,6 +94,10 @@ Definition wildcard := nat.
 Definition type_variable := nat.
 
 Ltac2 Type refs ::= [ ISR (instantiation_state ref) ].
+
+Ltac2 contexts_printer c := 
+  List.iter (fun (x, y) => printf "term: %t" x ;
+  List.iter (fun z => printf "context: %t" z) y) c.
 
 Ltac2 inst_state_printer is :=
   let hi := is.(hyps_inst) in
@@ -179,7 +183,9 @@ if is_closed c then c else 'wildcard.
 
 Ltac2 transform_into_context (c: constr) :=
   match kind c with
-    | App c ca => Unsafe.make (App c (Array.map change_into_wildcards ca))
+    | App c ca => let x := 
+          Unsafe.make (App c (Array.map change_into_wildcards ca)) in 
+           x
     | _ => Control.throw Wrong_context
   end.
 (* 
@@ -187,15 +193,16 @@ replaces a constructor c t1 ... tk with
 I t1 ... tl with l is the nb of parameters of I and 
 I is the inductive whose constructor is c *)
 
-Ltac2 replace_by_inductive (c : constr) :=
+Ltac2 replace_by_inductive (c : constr) := 
   match kind c with
     | App c' ca => 
-        if is_constructor c' then
+        if is_constructor c' then 
           let la := Array.to_list ca in
           let la' := List.firstn (npars_of_constructor c') la in
           let ca' := Array.of_list la' in
-          type (transform_into_context (make (App c' ca')))
-        else c
+          let res := transform_into_context (make (App c' ca')) in
+          type res
+        else c 
     | _ => c
   end.
 
@@ -203,7 +210,7 @@ Ltac2 replace_by_inductive (c : constr) :=
 
 (* TODO factorize because defined in triggers_tactics.v *)
 
-Ltac2 rec codomain_not_prop_aux (c: constr) :=
+Ltac2 rec codomain_not_prop_aux (c: constr) := 
   match kind c with
   | Prod bi c' => codomain_not_prop_aux c'
   | App x1 arr => codomain_not_prop_aux x1
@@ -214,7 +221,11 @@ Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (type c).
 
 Ltac2 is_inductive_codomain_not_prop_applied (c: constr) :=
   match kind c with
-    | App c' ca => Bool.and (is_ind c') (codomain_not_prop c')
+    | App c' ca => 
+          match kind c' with
+            | Rel _ => false
+            | _ => Bool.and (is_ind c') (codomain_not_prop c')
+          end
     | _ => false
   end.
 
@@ -229,10 +240,10 @@ Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
 Ltac2 find_context_hyp_aux (c: constr) :=
   let c' := substnl ['type_variable] 0 c in
   let subsnary := subterms_nary_app c' in
-  let subs := List.map replace_by_inductive subsnary in 
+  let subs := List.map replace_by_inductive subsnary in
   let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
   let subsindurel := 
-    List.filter (fun x => 
+    List.filter (fun x =>
       match kind x with
         | App c' ca => Array.mem equal 'type_variable ca
         | _ => false
@@ -402,7 +413,7 @@ Ltac2 rec context_equal c1 c2 :=
 
 (* Tests *)
 
-Ltac2 Eval context_equal '(type_variable * wildcard)%type '(type_variable * nat)%type.
+(* Ltac2 Eval context_equal '(type_variable * wildcard)%type '(type_variable * nat)%type. *)
 
 Ltac2 might_specialize_hyp 
   (h : constr) (* the hypothesis that might be specialized *)
@@ -555,6 +566,17 @@ elimination_polymorphism.
 Abort.
 
 Goal (forall A B C : Type,
+forall (f : A -> B) (g : A -> C) (l : list A),
+let f0 := fun x : A => (f x, g x) in
+(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
+(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
+ map H10 (h :: l0) = H10 h :: map H10 l0) ->
+map f0 l = zip (map f l) (map g l)).
+Proof. intros.
+elimination_polymorphism.
+Abort.
+
+Goal (forall A B C : Type,
 forall (f : A -> B) (g : A -> C),
 let f0 := fun x : A => (f x, g x) in
 let f1 := @map A (B * C) f0 in
@@ -574,18 +596,7 @@ f3 [] = [] ->
 (forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
 (forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) ->
 f1 [] = @zip B C (f2 []) (f3 [])).
-Proof. intros. elimination_polymorphism. Abort.
-
-Goal (forall A B C : Type,
-forall (f : A -> B) (g : A -> C) (l : list A),
-let f0 := fun x : A => (f x, g x) in
-(forall (H7 H9 : Type) (H10 : H7 -> H9), map H10 [] = []) ->
-(forall (H7 H9 : Type) (H10 : H7 -> H9) (h : H7) (l0 : list H7),
- map H10 (h :: l0) = H10 h :: map H10 l0) ->
-map f0 l = zip (map f l) (map g l)).
-Proof. intros.
-elimination_polymorphism.
-Abort.
+Proof. intros. ltac2:(elimination_polymorphism ()). Abort.
  
 
 End tests.
