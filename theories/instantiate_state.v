@@ -438,15 +438,22 @@ Ltac2 might_specialize_hyp_list_list
   (ctxs_h : constr list) (* the contexts in which its type variable lies *)
   (ctxs_ty : (constr * constr list) list ) (* the type * the contexts in which the type lies *)
     := List.iter (fun (x, y) => List.iter (fun ctx_h => might_specialize_hyp_list h ctx_h x y) ctxs_h) ctxs_ty.
+
+Ltac2 is_empty l :=
+  match l with
+   | [] => true
+   | _ => false
+  end.
  
 
 Ltac2 instantiate_state isr :=
   match isr with
     | ISR is => 
         let state := get is in
-        let hyp_ctx_l := state.(hyps_inst) in
-        let ty_ctx_l := state.(types_inst) in 
-        List.iter (fun (x, y) => might_specialize_hyp_list_list x y ty_ctx_l) hyp_ctx_l
+        let hyp_ctx_l := state.(hyps_inst) in 
+        if is_empty hyp_ctx_l then () else
+          let ty_ctx_l := state.(types_inst) in 
+          List.iter (fun (x, y) => might_specialize_hyp_list_list x y ty_ctx_l) hyp_ctx_l
     | _ => Control.throw Wrong_reference
   end.
 
@@ -494,7 +501,8 @@ let s := compute_init_state () in
         setref is s
     | _ => Control.throw Wrong_reference
   end.
-(* 
+
+(* TODO
 (* Specific instantiation considering only the new hypothesis
 containing a concrete type of type Type or Set *)
 Ltac2 new_hyp_concrete_type 
@@ -509,11 +517,57 @@ Ltac2 new_hyp_concrete_type
       | _ => Control.throw Wrong_reference
     end.  *)
 
+(** Temporary hack before adding a state: we apply the transformation
+ as much as the maximum number of prenex quantifiers over Type of an hypothesis **)
+
+Ltac2 max_quantifiers () : int :=
+  let hs := Control.hyps () in
+  let rec aux hs max :=
+    match hs with
+      | [] => max
+      | (id, opt, ty) :: hs' => 
+          match opt with
+            | Some _ => aux hs' max
+            | None => 
+                let res := 
+                let rec aux2 ty nb :=
+                  match kind ty with
+                    | Prod bd ty' => 
+                        let typb := Binder.type bd in 
+                        if is_type_or_set typb then aux2 ty' (Int.add nb 1)
+                        else nb
+                    | _ => nb
+                end in aux2 ty 0 in
+                  if Int.le res max then aux hs' max else aux hs' res
+          end
+    end
+  in aux hs 0.
+
+(* Tests *)
+
+(* Goal ((forall (A B C D E: Type), A) -> (forall (B : Type), B) -> False).
+Proof. intros. let x := max_quantifiers () in printf "%i" x. Abort. *)
+
+
+(* Result printer *)
+Ltac2 elimination_polymorphism_printer () :=
+  let ref := ISR (ref (compute_init_state ())) in isr_printer ref.
+
 Ltac2 elimination_polymorphism () :=
   let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
 
+Ltac clear_prenex_poly_hyps_in_context := repeat match goal with 
+| H : forall (A : ?T), _ |- _ => first [ constr_eq T Set | constr_eq T Type] ; 
+let T := type of H in let U := type of T in tryif (constr_eq U Prop) then try (clear H)
+else fail
+end.
+
 Tactic Notation "elimination_polymorphism" := 
-  repeat ltac2:(elimination_polymorphism ()).
+  ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
+  clear_prenex_poly_hyps_in_context.
+
+Tactic Notation "elimination_polymorphism_printer" :=
+    ltac2:(Notations.do0 max_quantifiers elimination_polymorphism_printer).
 
 Require Import List.
 Import ListNotations.
@@ -523,7 +577,7 @@ Set Default Proof Mode "Classic".
 
 Goal (forall (A: Type) (x: list A), x = x) -> (forall (x: list nat), x = x).
 intros H.
-elimination_polymorphism.
+elimination_polymorphism. assumption.
 Abort.
 
 Lemma test_clever_instances : forall (A B C D E : Type) (l : list A) (l' : list B)
@@ -594,9 +648,9 @@ f3 [] = [] ->
 (forall (a : A) (l : list A), f3 (a :: l) = g a :: f3 l) ->
 (forall (x : Type) (x0 x1 : x) (x2 x3 : list x), x0 :: x2 = x1 :: x3 -> x0 = x1 /\ x2 = x3) ->
 (forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
-(forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) ->
+(forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) -> 
 f1 [] = @zip B C (f2 []) (f3 [])).
-Proof. intros. ltac2:(elimination_polymorphism ()). Abort.
+Proof. intros. elimination_polymorphism. assumption. Abort.
  
 
 End tests.
