@@ -172,12 +172,11 @@ Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
   | x :: xs, y :: ys => (x, y) :: zip xs ys 
   end.
 
-
-(* TODO : work on this 
-
+(* works but very slow
 Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
 map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope. verit. Qed.
+Proof. Time intros f g l ; induction l; scope_info. verit.
+verit. Qed. 
  *)
 (* An example with higher order and anonymous functions 
 Note that as map should be instantiated by f and g, 
@@ -201,9 +200,9 @@ Proof. intros t a t' b; snipe. Qed.
 
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
-Proof. intros A H s ; induction s.
-- pose proof List.app_nil_r; snipe.
-- pose proof app_ass ; pose proof List.app_nil_r; snipe. 
+Proof. intros A H s ; induction s. 
+- pose proof List.app_nil_r; snipe2.
+- pose proof app_ass ; pose proof List.app_nil_r; snipe2. 
 Qed.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :

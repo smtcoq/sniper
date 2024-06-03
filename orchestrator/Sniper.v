@@ -49,7 +49,10 @@ Ltac my_gen_principle t :=
 Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
 @CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare)).
 
-Ltac my_polymorphism_elpi := elimination_polymorphism.
+Ltac my_polymorphism_state := 
+  ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
+    clear_prenex_poly_hyps_in_context.
+
 
 Ltac my_polymorphism := elimination_polymorphism_exhaustive unit. 
 
@@ -75,7 +78,7 @@ Ltac2 scope_verbos v := orchestrator 5
 ((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ()) ;
 ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter) ; 
-((trigger_polymorphism (), true, None), "my_polymorphism_elpi", trivial_filter) ;
+((trigger_polymorphism (), true, None), "my_polymorphism_state", trivial_filter) ;
 ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
 ((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ()) ]}
 { already_triggered := [] } v.
