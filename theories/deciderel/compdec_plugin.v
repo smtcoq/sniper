@@ -23,35 +23,39 @@ MetaCoq Quote Definition Prop_reif := Prop.
 Section utilities.
 
 Fixpoint Inb_term (x : term) (l : list term) :=
-match l with
-| [] => false
-| y :: ys => if eqb_term x y then true else Inb_term x ys
-end.
+  match l with
+    | [] => false
+    | y :: ys => if eqb_term x y then true else Inb_term x ys
+  end.
 
 Definition get_list_of_rel (n : nat) := 
 (* generates the list [tRel 2*n; tRel 2*n-2; ... ; tRel 0] *)
-let fix aux n n' acc :=
-match n with
-| 0 => acc
-| S n => aux n (n'-2) ((tRel n') :: acc)
-end in aux n (2*n-1)%nat [].
+  let fix aux n n' acc :=
+  match n with
+    | 0 => acc
+    | S n => aux n (n'-2) ((tRel n') :: acc)
+  end in aux n (2*n-1)%nat [].
 
 Fixpoint append_nodup_term (l1 l2 : list term) :=
-match l1 with
-| [] => l2
-| x :: xs => if Inb_term x l2 then append_nodup_term xs l2 else
-      x :: append_nodup_term xs l2
+  match l1 with
+    | [] => l2
+    | x :: xs => 
+        if Inb_term x l2 then append_nodup_term xs l2 
+        else x :: append_nodup_term xs l2
 end.
 
 (* append of a list of pair of a term and a list of term with no duplicates
 for the first argument
-this means that the parameters for the first argument could not be instantiated differently *)
+In our case, this means that the parameters for 
+the first argument could not be instantiated differently *)
+
 Fixpoint append_nodup_term_list_term  (l1 l2 : list (term*(list term))) :=
-match l1 with
-| [] => l2
-| x :: xs => if Inb_term  x.1 (split l2).1 then append_nodup_term_list_term xs l2 else
-      x :: append_nodup_term_list_term xs l2
-end.
+  match l1 with
+    | [] => l2
+    | x :: xs => 
+        if Inb_term  x.1 (split l2).1 then append_nodup_term_list_term xs l2 
+        else x :: append_nodup_term_list_term xs l2
+  end.
 
 End utilities.
 
@@ -59,80 +63,112 @@ Section trm.
 Variable trm : term.
 
 Definition ctors_names_compdec (l : list constructor_body) := 
-List.map (fun x => x.(cstr_name)^(find_name_trm trm)) l.
+  List.map (fun x => x.(cstr_name)^(find_name_trm trm)) l.
 
 End trm.
 
 Definition dest_app (t : term) : term*list term :=
-match t with
-| tApp u v => (u, v)
-| _ => (t, [])
-end.
+  match t with
+    | tApp u v => (u, v)
+    | _ => (t, [])
+  end.
 
 
 (* We look at the terms under a product and we keep the inductives, 
-and the context variables *)
+and the named variables *)
 Definition find_list_var_and_terms (t : term) : list (term*(list term)) :=
-let fix aux acc t :=
-match t with
-| tProd _ Ty u => let p := dest_app Ty in
+  let fix aux acc t :=
+  match t with
+    | tProd _ Ty u => let p := dest_app Ty in
         match p.1 with
-        | tInd _ _ => aux (p :: acc) u
-        | tVar _ => aux (p :: acc) u
-        | tConst _ _ => aux acc u
-        | _ => aux acc u
+          | tInd _ _ => aux (p :: acc) u
+          | tVar _ => aux (p :: acc) u
+          | tConst _ _ => aux acc u
+          | _ => aux acc u
         end
-| _ => acc
-end
-in aux [] t.
+    | _ => acc
+  end
+  in aux [] t.
 
 (* This function compute the new parameters of a new inductive declaration. 
 To a parameter A of type Type (and not Prop) will be added a new parameter HA of type
 trm A *)
 Definition add_trm_params_list_aux (fuel : nat) (l : list context_decl) trm : (list context_decl) * nat := 
-let fix aux l n trm fuel :=
-match fuel with
-| 0 => ([], n)
-| S fuel' =>
-match l with
-| [] => ([], n)
-| x :: xs => match x.(decl_type) with
-    | tSort s => if negb (is_prop s) then
-let res := aux (List.map (fun x => let ty' := lift 1 0 x.(decl_type) in
-{| decl_name := x.(decl_name) ; decl_body := x.(decl_body); decl_type := ty' |}) xs) (S n) trm fuel' in
-let new_name := trm_aname trm x.(decl_name) in
-      (x :: (({| decl_name := new_name ; decl_body := None ; decl_type := P_app trm |})) ::  res.1, res.2)
-else let res := aux xs n trm fuel' in (x :: res.1, res.2)
-  | _ => let res := aux xs n trm fuel' in (x :: res.1, res.2)
-  end
-end
-end
+  let fix aux l n trm fuel :=
+    match fuel with
+      | 0 => ([], n)
+      | S fuel' =>
+          match l with
+            | [] => ([], n)
+            | x :: xs => 
+                match x.(decl_type) with
+                  | tSort s => 
+                      if negb (is_prop s) then
+                        let res := aux (List.map (fun x => let ty' := lift 1 0 x.(decl_type) in
+                          {| decl_name := x.(decl_name) ; decl_body := x.(decl_body); decl_type := ty' |}) xs) (S n) trm fuel' in
+                        let new_name := trm_aname trm x.(decl_name) in
+                          (x :: (({| decl_name := new_name ; decl_body := None ; decl_type := P_app trm |})) :: res.1, res.2)
+                      else 
+                        let res := aux xs n trm fuel' in (x :: res.1, res.2)
+                  | _ => let res := aux xs n trm fuel' in (x :: res.1, res.2)
+                end
+          end
+    end
 in aux l 0 trm fuel.
 
+(* Same function with some fuel computed *)
+
 Definition add_trm_params_list (l : list context_decl) trm := 
-let p := add_trm_params_list_aux (S (Datatypes.length l)) (rev l) trm
-in (rev p.1, p.2).
+  let p := add_trm_params_list_aux (S (Datatypes.length l)) (rev l) trm in
+  (rev p.1, p.2).
 
 Fixpoint skipn_forall (t : term) (n : nat) : term := 
-match t, n with
-| tProd Na u v, S n => skipn_forall v n 
-| _, _ => t
-end.
+  match t, n with
+    | tProd Na u v, S n => skipn_forall v n 
+    | _, _ => t
+  end.
 
 Definition find_arity (t : term) (n : nat) trm : term :=
 skipn_forall (add_trm_parameter trm t) n. 
 
-Definition ctors_types_compdecs   (l : list constructor_body) n trm lpars := 
-(List.map (fun x =>
-match lpars with
-| x' :: xs => subst lpars 1 x.(cstr_type)
-| [] => let ty:= x.(cstr_type) in skipn_forall (add_trm_parameter trm ty) n 
-end) l,
-match lpars with
-| x' :: xs => List.fold_left (fun x y => let ty:= (subst lpars 0 (skipn_forall (y.(cstr_type)) (Datatypes.length lpars))) in append_nodup_term_list_term   (find_list_var_and_terms ty) x)
-| [] => 
-List.fold_left (fun x y => let ty:= y.(cstr_type) in append_nodup_term_list_term   (find_list_var_and_terms ty) x)
-end l []).
+(* Analyses the types of the constructors of an inductive in order to find
+whose types should verify the property CompDec *)
+
+Definition ctors_types_compdecs (l : list constructor_body) n trm lpars := 
+  (List.map (fun x =>
+    match lpars with
+      | x' :: xs => subst lpars 1 x.(cstr_type)
+      | [] => let ty:= x.(cstr_type) in skipn_forall (add_trm_parameter trm ty) n 
+    end) l,
+    match lpars with
+      | x' :: xs => 
+          List.fold_left (fun x y => let ty:= (subst lpars 0 (skipn_forall (y.(cstr_type)) (Datatypes.length lpars))) in 
+          append_nodup_term_list_term (find_list_var_and_terms ty) x)
+      | [] => 
+          List.fold_left (fun x y => let ty:= y.(cstr_type) in append_nodup_term_list_term (find_list_var_and_terms ty) x)
+    end l []).
+
+(* Definition mk_oind_entry_compdec 
+  (oind : one_inductive_body) 
+  (n : nat)
+  (trm : term)
+  (idt : string) 
+  (lpars : list term) : 
+  one_inductive_entry * (list (term*(list term))):=
+    let res := ctors_types_compdecs oind.(ind_ctors) n trm [] in
+    let new_type := 
+        match lpars with
+          | [] => (* if l is empty then the inductive is applied to no parameters *)
+              add_trm_parameter trm oind.(ind_type)
+          | _ :: _ => 
+              tApp (add_trm_parameter trm oind.(ind_type)) lpars
+        end in
+    let arity := find_arity oind.(ind_type) n trm in
+      ({| mind_entry_typename := (oind.(ind_name)^"CompDec"^idt);
+          mind_entry_arity := arity;
+          mind_entry_consnames := ctors_names_compdec trm oind.(ind_ctors);
+          mind_entry_lc := res.1
+           |}, res.2). *)
 
 Definition mk_oind_entry_compdec   (oind : one_inductive_body) n (trm : term)  (idt : string) (lpars : list term)  : 
 one_inductive_entry * (list (term* (list term))):=
@@ -157,13 +193,18 @@ let arity := find_arity oind.(ind_type) n trm in
 |}, res.2)
 end. 
 
-Definition mk_oind_entry_compdec_list (loind: list one_inductive_body) n trm (idt : string) (lpars : list term) : (list one_inductive_entry)*(list (term*(list term))) :=
-let fix aux loind acc1 acc2 n :=
-match loind with
-| x :: xs => let res := mk_oind_entry_compdec x n trm idt lpars in 
+Definition mk_oind_entry_compdec_list 
+  (loind: list one_inductive_body) 
+  n 
+  trm 
+  (idt : string) 
+  (lpars : list term) : (list one_inductive_entry)*(list (term*(list term))) :=
+    let fix aux loind acc1 acc2 n :=
+    match loind with
+      | x :: xs => let res := mk_oind_entry_compdec x n trm idt lpars in 
          aux xs (res.1 :: acc1) (append_nodup_term_list_term   res.2 acc2) n
-| [] => (acc1, acc2)
-end in aux loind [] [] n.
+      | [] => (acc1, acc2)
+    end in aux loind [] [] n.
 
 Definition mk_mind_entry_compdec (mind : mutual_inductive_body) trm (idt : string) (lpars : list term)
 : mutual_inductive_entry*(list (term*(list term))) := 
@@ -286,6 +327,7 @@ Section commands.
      | _ => tmPrint p.2 ;; tmFail " is not an inductive"
      end.
  *)
+
 (* Takes a list l of reified terms and for each t in l asserts and 
 tries to prove CompDec (unquote t), this can be left as a goal to the user *) 
 Fixpoint find_compdecs (l : list (term*(list term))) (acc: list (term*term*nat)) :=
@@ -364,7 +406,8 @@ tmPrint res.
 
 End commands.
 
-(* Require Import ZArith.
+(*
+Require Import ZArith.
 Section tests.
 
 Inductive elt_list :=
@@ -379,7 +422,7 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
 
 MetaCoq Run (test_compdec (Inv_elt_list)). 
 
-MetaCoq Run (test_compdec (@Add Z)).
+MetaCoq Run (test_compdec (@Add Z)). 
 MetaCoq Run (test_compdec Add). 
 MetaCoq Run (test_compdec nat).
 MetaCoq Run (test_compdec prod).
@@ -388,7 +431,7 @@ Inductive Ind_test (A B : Type) : A*B -> Prop :=
 | Ind1 : forall (x : A*B), Ind_test A B x.
 
 MetaCoq Run (test_compdec Ind_test).
-MetaCoq Run (tmQuote (@Add nat) >>= monadic_compdec_inductive).
+MetaCoq Run (tmQuote (@Add nat) >>= monadic_compdec_inductive). 
 
 End tests.
  *)
