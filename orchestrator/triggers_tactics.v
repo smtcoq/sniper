@@ -408,7 +408,8 @@ Ltac2 trigger_add_compdecs () :=
 Ltac2 filter_add_compdecs () :=
 FConj
 (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray])
-(FPred is_prod).
+(FPred (fun x => Bool.or (is_prod x)
+    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u ca => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
    
 (* Ltac2 trigger_fold_local_def () :=
   tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
