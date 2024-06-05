@@ -391,14 +391,15 @@ Ltac2 filter_generation_principle () :=
           'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
         (FPred codomain_prop).
 
-Ltac2 trigger_anonymous_funs () :=
+Ltac2 trigger_anonymous_fun () :=
   TDisj (
   TMetaLetIn (TContains (TSomeHyp, Arg Constr.type) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
-  (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))))
+    (TConj (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
+    (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))
+            (TIs (TNamed "f", Arg id) tDiscard)))
   (TMetaLetIn (TContains (TGoal, Arg id) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
-  (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))).
+  (TConj (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
+  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))) (TIs (TNamed "f", Arg id) tDiscard))).
 
 Ltac2 trigger_add_compdecs () :=
   TDisj
