@@ -913,13 +913,13 @@ Ltac2 Notation "tlet" ids(list1(ident, ";")) ":=" "(" t1(tactic) ")" "in" t2(tac
   let ids := List.map Ident.to_string ids in
   TMetaLetIn t1 ids t2.
 
-Ltac2 Eval (triggered when (TSomeHyp) is tDiscard).
+(* Ltac2 Eval (triggered when (TSomeHyp) is tDiscard).
 
 Ltac2 Eval (triggered when (TSomeHyp) is (tDiscard) on NotArg).
 
 Ltac2 Eval (triggered when (AnyHypProp) contains TTerm 'Set NotArg).
 
-Ltac2 Eval (triggered when (AnyHypProp) contains (TTerm 'Set NotArg) on (Arg type)).
+Ltac2 Eval (triggered when (AnyHypProp) contains (TTerm 'Set NotArg) on (Arg type)). *)
 
 Ltac2 toto () :=
 (tlet H := (triggered when (TSomeHyp) is (tDiscard) on (Arg (fun x => type x))) in 

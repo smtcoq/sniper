@@ -162,10 +162,10 @@ Ltac2 rec orchestrator_aux
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with
-            | None =>
+            | [] =>
               print_tactic_not_triggered v name ;
               orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
-            | Some ll =>
+            | ll =>
               let rec aux ll :=  (* if String.equal name "my_fold_local_def_in_hyp_goal" then print_interp_trigger ll else () ;  DEBUG *)
                 match ll with
                   | [] => orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
