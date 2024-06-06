@@ -15,7 +15,7 @@ Ltac2 init_already_triggered () :=
 
 Ltac2 init_interpretation_state () := 
   (* subterms already computed in the goal *)
-  { subterms_coq_goal := ([], Some []);
+  { subterms_coq_goal := ([], None);
   (* hypotheses or/and goal considered *)
     local_env := (Control.hyps (), Some (Control.goal ())) ; 
   (* are all the hypotheses considered ? *)
@@ -29,9 +29,8 @@ Ltac2 test_trigger (t: trigger) :=
   let init := init_interpretation_state () in 
   let res := interpret_trigger init env alr_triggered t in
     match res with
-      | Some x =>
-          List.iter (fun x => print_interpreted_trigger (Some x)) x
-      | None => printf "None" 
+      | _ :: _ => print_interp_trigger res
+      | [] => printf "Not triggered" 
     end.
  
 Ltac2 test_anon () :=
@@ -60,7 +59,8 @@ intros H. test_trigger (test_anon ()). Abort.
 Goal forall (n: nat), (fun x => x) n = n.
 intros n.
 test_trigger (TContains (TGoal , NotArg)  (TRel 1 NotArg)). 
-test_trigger (TContains (TGoal, NotArg) (TLambda (TTerm 'nat (Arg id)) tDiscard NotArg)).
+pose (H := fun (x : nat) => x).
+test_trigger (TContains (TSomeDef, NotArg) (TLambda (TTerm 'nat (Arg id)) tDiscard NotArg)).
 test_trigger (TContains (TGoal, NotArg) (TLambda tDiscard (TRel 1 NotArg) NotArg)). (* warning: as in 
 the kernel, De Brujin indexes start with 1 *)
 test_trigger (TIs (TGoal, NotArg) (TEq (TTerm 'nat (Arg id)) tDiscard tDiscard (Arg id))).
