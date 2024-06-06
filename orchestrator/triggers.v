@@ -12,7 +12,10 @@ Ltac2 rec print_interp_trigger (ll : constr list list) :=
   match ll with
     | [] => printf "no more triggers to print" 
     | l :: ll' => printf "trigger interpreted:" ; List.iter (fun x => printf "%t" x) l ; print_interp_trigger ll'
-  end.
+  end. 
+
+(* The default fail of Ltac2 is of type unit -> unit 
+so use this version with a message *)
 
 Ltac2 fail s := Control.backtrack_tactic_failure s.
 
@@ -23,6 +26,10 @@ Ltac2 fst (x : 'a*'b) := let (y, _) := x in y.
 Ltac2 snd (x : 'a*'b) := let (_, y) := x in y.
 
 Ltac2 Type exn ::= [ NotClosed(string) ].
+
+(* Marks some parameter of the trigger as arguments for the tactic triggered 
+or not 
+(Arg f) t returns f t as argument *)  
 
 Ltac2 Type flag :=
   [ Arg (constr -> constr) | NotArg ]. 
@@ -43,7 +50,6 @@ Ltac2 Type already_triggered :=
 
 Ltac2 Type trigger_sort :=
 [ TProp | TSet | TBigType].
-
 
 (* allows to specify the type of local variable considered *)
 Ltac2 Type trigger_local_var :=
@@ -98,8 +104,13 @@ and gives them the corresponding names in s, adds thems to the environment and i
   | TNever (* never triggers the tactic *)
   ]. 
 
+(* Notations *)
+
 Ltac2 tTrivial := TIs (TGoal, NotArg) tDiscard.
 
+Ltac2 tGetArg (s: string) := TIs (TNamed s, Arg id) tDiscard.
+
+(* Associates a name of ls to a constr *)
 Ltac2 rec bind_triggers env (lc : constr list) (ls : string list) :=
   match lc, ls with
     | [], [] => ()
@@ -110,10 +121,12 @@ Ltac2 rec bind_triggers env (lc : constr list) (ls : string list) :=
 
 Ltac2 Type hyps_or_letins_or_goal_or_constr := [
   | Hyps ((ident*constr option*constr) list) 
-  | LetIns ((ident*constr *constr) list)
+  | LetIns ((ident*constr*constr) list)
   | Goal (constr option)
   | Constr (constr) ].
 
+(* Filter "real" hypotheses 
+(in the sense that we filter out local definitions) *)
 Ltac2 filter_hyps hyps :=
   List.filter (fun (h, opt, c) => 
     match opt with
@@ -228,7 +241,9 @@ Ltac2 ref_equal_upto_univs (r1 : reference) (r2 : reference) :=
     | _ => false
   end.
 
-Ltac2 matching_ref (o : string option) (r : reference) :=
+(* Does it exist a matching reference whose name is an expansion
+of the optional string given as first argument *)
+Ltac2 matching_ref (o : string option) (r : reference) : bool :=
   match o with
     | Some s =>
         let o' := Ident.of_string s in
@@ -274,6 +289,9 @@ Ltac2 is_local_hyp (c : constr) :=
         List.exist (fun (x, y, z) => Bool.and (Ident.equal x id) (Bool.neg (is_some y))) hs
     | _ => false
   end.
+
+(* Matches a trigger against a constr and returns the potential arguments 
+of the tactic *)
 
 Ltac2 rec interpret_trigger_term_with_constr
  (cg: (ident * constr option * constr) list * constr
@@ -495,55 +513,50 @@ the interpretation of our triggers *)
     | _, _ => None
   end.
 
-Ltac2 interpret_trigger_is cg env a b :=
+(* Intermediate interpretation whose return type is the pair 
+between the hypothesis, the goal or the constr interpreted with 
+the trigger and the result of the interpretation of this term with the trigger *)
+Ltac2 interpret_trigger_is cg env a b : (constr * constr list) list  :=
   let a' := interpret_trigger_var cg env a in
     match a' with
       | Hyps hyps =>
           let rec aux cg h b := 
             match h with
-              | [] => None
+              | [] => []
               | (x, y, z) :: xs => 
                   let opt := interpret_trigger_term_with_constr cg env z b in 
                     match opt with
                       | None => aux cg xs b
                       | Some l => 
-                          let res := aux cg xs b in 
-                            match res with
-                              | None => Some [(Control.hyp x, l)]
-                              | Some res' => Some ((Control.hyp x, l)::res')
-                            end
+                          let res := aux cg xs b in (Control.hyp x, l) :: res
                     end
             end in aux cg hyps b
-      | Goal None => None
+      | Goal None => []
       | LetIns defs => 
           let rec aux cg h b := 
             match h with
-              | [] => None
+              | [] => []
               | (x, y, z) :: xs => 
                   let opt := interpret_trigger_term_with_constr cg env y b in 
                     match opt with
                       | None => aux cg xs b
                       | Some l => 
-                          let res := aux cg xs b in 
-                            match res with
-                              | None => Some [(Control.hyp x, l)]
-                              | Some res' => Some ((Control.hyp x, l)::res')
-                            end
+                          let res := aux cg xs b in (Control.hyp x, l)::res
                     end
             end in aux cg defs b
       | Goal (Some x) => 
           let opt := interpret_trigger_term_with_constr cg env x b in 
             match opt with
-              | None => None
-              | Some y => Some [(x, y)]
+              | None => []
+              | Some y => [(x, y)]
             end
       | Constr c => 
           let opt := interpret_trigger_term_with_constr cg env c b in 
             match opt with
-              | None => None
-              | Some y => Some [(c, y)]
+              | None => []
+              | Some y => [(c, y)]
             end
-    end.
+    end. 
 
 Ltac2 rec build_arrays_aux (l : constr list) :=
   match l with
@@ -616,36 +629,35 @@ Ltac2 rec subterms (c : constr) : constr list :=
 
 Ltac2 closed_subterms c := List.filter is_closed (subterms c).
 
-(* warning: no arguments for this tactic except the toplevel one *)
+(* warning: no arguments returned for the interpretation of this trigger 
+except the toplevel one *)
 Ltac2 interpret_trigger_pred cg env a fl (p : constr -> bool) :=
   let a' := interpret_trigger_var cg env a in
     match a' with
       | Hyps hyps => 
           match List.find_all (fun (x, y, z) => p z) hyps with 
-            | [] => None
-            | l => Some (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
+            | [] => []
+            | l => (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
           end 
       | LetIns defs =>
           match List.find_all (fun (x, y, z) => p y) defs with 
-            | [] => None
-            | l => Some (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
+            | [] => []
+            | l => (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
           end 
-      | Goal None => None
-      | Goal (Some x) => if p x then Some [(cons_option (interpret_flag x fl) [])] else None
-      | Constr c => if p c then Some [(cons_option (interpret_flag c fl) [])] else None
+      | Goal None => []
+      | Goal (Some x) => if p x then [(cons_option (interpret_flag x fl) [])] else []
+      | Constr c => if p c then [(cons_option (interpret_flag c fl) [])] else []
     end.
 
 Ltac2 rec interpret_trigger_contains_aux cg env lc tf :=
     match lc with 
-      | [] => None
+      | [] => []
       | x :: xs => 
         match interpret_trigger_term_with_constr cg env x tf with
           | None => interpret_trigger_contains_aux cg env xs tf
-          | Some success =>  
-              match interpret_trigger_contains_aux cg env xs tf with
-                | None => Some [success]
-                | Some success' => Some (success::success')
-              end
+          | Some success => 
+              let res := interpret_trigger_contains_aux cg env xs tf in
+              success :: res
         end
     end. 
 
@@ -676,7 +688,7 @@ Ltac2 look_for_subterms_goal (s : (ident*constr list) list * (constr list) optio
     end.
 
 Ltac2 interpret_trigger_contains 
-  (it : interpretation_state)  (envref: env_triggers) tv tf : (constr * constr list list) list option:= 
+  (it : interpretation_state)  (envref: env_triggers) tv tf : (constr * constr list list) list := 
   let scg := (it).(subterms_coq_goal) in
   let cg := (it).(local_env) in
   let env := (envref).(env_triggers) in
@@ -685,99 +697,67 @@ Ltac2 interpret_trigger_contains
       | Hyps hyps => 
           let rec aux cg h b := 
             match h with
-              | [] => None
+              | [] => []
               | (x, y, z) :: xs => 
                   match look_for_subterms_hyps x scg with
                     | None =>
                         let lc := subterms z in
                         let (hyps, o) := scg in
                         let _ := (it).(subterms_coq_goal) := ((x, lc)::hyps, o) in
-                        let opt := interpret_trigger_contains_aux cg env lc b in 
-                          match opt with
-                            | None => aux cg xs b
-                            | Some l => 
-                                let res := aux cg xs b in
-                                  match res with
-                                    | Some res' => Some ((Control.hyp x, l):: res')
-                                    | None => Some [(Control.hyp x, l)]
-                                  end
-                          end
+                        let l := interpret_trigger_contains_aux cg env lc b in 
+                        let res := aux cg xs b in (Control.hyp x, l):: res
                     | Some lc => 
-                        let opt := interpret_trigger_contains_aux cg env lc b in 
-                          match opt with
-                            | None => aux cg xs b
-                            | Some l =>
-                                let res := aux cg xs b in
-                                  match res with
-                                    | Some res' => Some ((Control.hyp x, l):: res')
-                                    | None => Some [(Control.hyp x, l)]
-                                  end
-                        end
+                        let l := interpret_trigger_contains_aux cg env lc b in 
+                        let res := aux cg xs b in (Control.hyp x, l):: res
                     end
              end in aux cg hyps tf
       | LetIns defs => 
           let rec aux cg h b := 
             match h with
-              | [] => None
+              | [] => []
               | (x, y, z) :: xs => 
                   match look_for_subterms_hyps x (it.(subterms_coq_goal)) with
                     | None =>
                         let lc := subterms y in
                         let (hyps, o) := it.(subterms_coq_goal) in
                         let _ := it.(subterms_coq_goal) := ((x, lc)::hyps, o) in
-                        let opt := interpret_trigger_contains_aux cg env lc b in 
-                          match opt with
-                            | None => aux cg xs b
-                            | Some l => 
-                                let res := aux cg xs b in
-                                  match res with
-                                    | Some res' => Some ((Control.hyp x, l):: res')
-                                    | None => Some [(Control.hyp x, l)]
-                                  end
-                          end
+                        let l := interpret_trigger_contains_aux cg env lc b in 
+                        let res := aux cg xs b in (Control.hyp x, l):: res
                     | Some lc => 
-                        let opt := interpret_trigger_contains_aux cg env lc b in 
-                          match opt with
-                            | None => aux cg xs b
-                            | Some l =>
-                                let res := aux cg xs b in
-                                  match res with
-                                    | Some res' => Some ((Control.hyp x, l):: res')
-                                    | None => Some [(Control.hyp x, l)]
-                                  end
-                        end
+                        let l := interpret_trigger_contains_aux cg env lc b in 
+                        let res := aux cg xs b in (Control.hyp x, l):: res
                     end
              end in aux cg defs tf
-      | Goal None => None
+      | Goal None => []
       | Goal (Some g) =>
           match look_for_subterms_goal (it.(subterms_coq_goal)) with
             | None =>
               let lc := subterms g in
               let (hyps, o) := it.(subterms_coq_goal) in
               let _ := it.(subterms_coq_goal) := (hyps, Some lc) in
-              let opt := interpret_trigger_contains_aux cg env lc tf in 
-                match opt with
-                  | None => None
-                  | Some l => Some [(g, l)]
+              let l := interpret_trigger_contains_aux cg env lc tf in 
+                match l with
+                  | [] => []
+                  | x :: xs => [(g, l)]
                 end
             | Some lc =>
                 match interpret_trigger_contains_aux cg env lc tf with
-                  | None => None
-                  | Some res => Some [(g, res)]
+                  | [] => []
+                  | res => [(g, res)]
                 end
           end
       | Constr c => 
           let lc := subterms c in
-          let opt := interpret_trigger_contains_aux cg env lc tf in 
-            match opt with
-              | None => None
-              | Some l => Some [(c, l)]
+          let l := interpret_trigger_contains_aux cg env lc tf in 
+            match l with
+              | [] => []
+              | _ => [(c, l)]
             end
     end.
 
-Ltac2 interpret_trigger_always () := Some [[]].
+Ltac2 interpret_trigger_always () := [[]].
 
-Ltac2 interpret_trigger_never () := None.
+Ltac2 interpret_trigger_never () := [].
 
 Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
   match l1 with
@@ -785,6 +765,9 @@ Ltac2 rec cartesian_product (l1 : 'a list list) (l2 : 'a list list) :=
     | x :: xs => 
         let res := List.map (fun y => List.append x y) l2 in List.append res (cartesian_product xs l2) 
   end.
+
+(* Ltac2 Eval cartesian_product [] [[1; 2]; [3; 4]].
+Ltac2 Eval cartesian_product [[1; 2]; [3; 4]] []. *)
 
 (* returns the list of arguments and their type of a tactic named [nametac] *)
 Ltac2 find_args_of_tac alr_trig nametac : (string * (constr*constr) list) list :=
@@ -843,69 +826,41 @@ Ltac2 interpret_trigger
   (it : interpretation_state)  
   (env: env_triggers)
   (alr_trig: already_triggered) 
-  (t : trigger) : (constr list) list option :=
+  (t : trigger) : (constr list) list :=
   let scg := (it).(subterms_coq_goal) in
   let cg := (it).(local_env) in
   let nametac := (it).(name_of_tac) in
   let rec interpret_trigger cg (env : env_triggers) alr_trig scg flag_letin nametac t := 
   match t with
     | TIs (a, fl) b =>
-        match interpret_trigger_is cg ((env).(env_triggers)) a b with
-          | Some l => 
-              let res := (List.map (fun (x, l) => cons_option (interpret_flag x fl) l) l) in
-              if flag_letin then Some res 
-              else let res' := filter_out_same_types res alr_trig nametac in
-              if Int.equal 0 (List.length res') then None else Some res'
-          | None => None
-        end
+        let l := interpret_trigger_is cg ((env).(env_triggers)) a b in
+        let res := (List.map (fun (x, l) => cons_option (interpret_flag x fl) l) l) in
+        if flag_letin then res 
+        else filter_out_same_types res alr_trig nametac
     | TPred (a, fl) p => 
-        match interpret_trigger_pred cg ((env).(env_triggers)) a fl p with
-          | Some l => 
-              if flag_letin then Some l 
-              else let res := filter_out_same_types l alr_trig nametac in
-              if Int.equal 0 (List.length res) then None else Some res
-          | None => None
-        end
+        let l := interpret_trigger_pred cg ((env).(env_triggers)) a fl p in
+        if flag_letin then l 
+        else filter_out_same_types l alr_trig nametac
     | TContains (a, fl) b => 
-        match interpret_trigger_contains it env a b with
-          | Some l => 
-              let res := (List.flatten (List.map (fun (x, l1) => List.map (fun l2 => cons_option (interpret_flag x fl) l2) l1) l)) in 
-              if flag_letin then Some res 
-              else let res' := filter_out_same_types res alr_trig nametac in
-              if Int.equal 0 (List.length res') then None else Some res'
-          | None => None
-        end
+        let l := interpret_trigger_contains it env a b in
+        let res := (List.flatten (List.map (fun (x, l1) => List.map (fun l2 => cons_option (interpret_flag x fl) l2) l1) l)) in 
+        if flag_letin then res 
+        else filter_out_same_types res alr_trig nametac
     | TConj t1 t2 => 
-      match interpret_trigger cg env alr_trig scg flag_letin nametac t1 with
-        | Some res =>
-          match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
-            | Some res' => 
-                let l := cartesian_product res res' in
-                if flag_letin then Some l 
-                else let l' := filter_out_same_types l alr_trig nametac in
-                if Int.equal 0 (List.length l') then None else Some l'
-            | None => None
-          end
-        | None => None
-      end              
+        let res := interpret_trigger cg env alr_trig scg flag_letin nametac t1 in
+        let res' := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
+        let l := cartesian_product res res' in
+        if flag_letin then l 
+        else filter_out_same_types l alr_trig nametac           
     | TDisj t1 t2 => 
-      match interpret_trigger cg env alr_trig scg flag_letin nametac t1 with 
-        | Some res =>
-            match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
-               | None => Some res
-               | Some res' => Some (List.append res res')
-            end 
-        | None => 
-          match interpret_trigger cg env alr_trig scg flag_letin nametac t2 with
-            | Some res' => Some res'
-            | None => None
-          end
-      end
-(* warning: "not" works only with no arguments *)
+        let res := interpret_trigger cg env alr_trig scg flag_letin nametac t1 in
+        let res' := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
+        List.append res res'
+(* warning: "not" is not involutive (intuitionnistic not) *)
     | TNot t' => 
         match interpret_trigger cg env alr_trig scg flag_letin nametac t' with
-          | Some _ => None
-          | None => Some [[]]
+          | x :: xs => []
+          | [] => [[]]
         end
     | TAlways => interpret_trigger_always ()
     | TNever => interpret_trigger_never ()
@@ -913,37 +868,26 @@ Ltac2 interpret_trigger
        let it1 := interpret_trigger cg env alr_trig scg true nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
-            | Some [] => None
-            | Some (lc :: lcs) => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
+            | [] => []
+            | lc :: lcs => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
                 let _ := bind_triggers env lc ls in
                 let it2 := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
                 match it2 with
-                  | Some l => 
-                      if flag_letin then Some l
-                      else let res := filter_out_same_types l alr_trig nametac in
-                      if Int.equal 0 (List.length res) then None else Some res
-                  | None => 
-                      match aux (Some lcs) cg env scg ls t2 with
-                        | None => None
-                        | Some l =>
-                      if flag_letin then Some l
-                      else let res := filter_out_same_types l alr_trig nametac in
-                      if Int.equal 0 (List.length res) then None else Some res 
+                  | _ :: _ => 
+                      if flag_letin then it2
+                      else filter_out_same_types it2 alr_trig nametac
+                  | [] => 
+                      match aux lcs cg env scg ls t2 with
+                        | [] => []
+                        | l =>
+                      if flag_letin then l
+                      else filter_out_same_types l alr_trig nametac
                       end
                 end
-           | None => None
          end in aux it1 cg env scg ls t2
     end 
-in match interpret_trigger cg env alr_trig scg true nametac t with
-    | None => None
-    | Some l => 
-        let res := List.filter (fun l' =>  List.for_all is_closed l') l in
-        match res with
-          | [] => None
-          | _ :: _ => Some res
-        end
-  end.
+in List.filter (List.for_all is_closed) (interpret_trigger cg env alr_trig scg true nametac t).
 
 (* Return the list of list of args instead of only a list, because the orchestrator will need it *)
 
