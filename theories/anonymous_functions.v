@@ -63,5 +63,5 @@ Tactic Notation "anonymous_funs" :=
   elpi anonymous_funs.
 
 Ltac anonymous_fun f_body := 
-  let f' := fresh "f" in pose (f' := f_body).
+  let f' := fresh "f" in pose (f' := f_body); try fold f'.
 
