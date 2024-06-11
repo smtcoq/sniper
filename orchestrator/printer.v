@@ -42,13 +42,6 @@ print
 Ltac2 print_hyps hyps :=
 List.iter print_hyp hyps.
 
-Ltac2 print_interpreted_trigger int_tr :=
-  match int_tr with
-    | None => print (of_string "None")
-    | Some x => let mes := List.map of_constr x in
-print (concat_list ((of_string "Some") :: mes))
-  end.
-
 Ltac2 print_env env :=
 List.iter (fun (x, y) => print (concat_list [of_string x; of_string "is"; of_constr y])) env.
 

@@ -15,6 +15,7 @@ Require Import triggers.
 Require Import printer.
 Require Import orchestrator.
 Require Import filters.
+Require Import verit.
 
 Local Open Scope bs_scope.
 
@@ -39,7 +40,7 @@ Ltac my_fixpoints H := eliminate_fix_hyp H.
 
 Ltac my_pattern_matching H := try (eliminate_dependent_pattern_matching H).
 
-Ltac my_anonymous_functions := anonymous_funs.
+Ltac my_anonymous_function f := anonymous_fun f.
 
 Ltac my_algebraic_types t := try (interp_alg_types t).
 
@@ -62,13 +63,13 @@ Ltac my_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
 
 Ltac2 trigger_generation_principle := TAlways.
 
-Ltac2 trigger_anonymous_funs := TAlways.
+(* Ltac2 trigger_anonymous_funs := TAlways. *)
 
 Ltac2 trigger_higher_order :=
   TAlways.
 
 Ltac2 scope_verbos v := orchestrator 5
-{ all_tacs := [((trigger_anonymous_funs, false, None), "my_anonymous_functions", trivial_filter);
+{ all_tacs := [((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
 ((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
@@ -93,7 +94,7 @@ Ltac2 scope_full () := scope_verbos Full.
 
 Ltac2 scope2_verbos v := orchestrator 5
 { all_tacs := 
-[((trigger_anonymous_funs, false, None), "my_anonymous_functions", trivial_filter) ;
+[((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
 ((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl", trivial_filter);

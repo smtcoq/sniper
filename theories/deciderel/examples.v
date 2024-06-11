@@ -1,13 +1,14 @@
 From MetaCoq.Template Require Import All.
 Unset MetaCoq Strict Unquote Universe Mode.
 From SMTCoq Require Import SMTCoq.
-Require Import Sniper.
+From Sniper.orchestrator Require Import Sniper.
 Import MCMonadNotation.
 Require Import List.
 Import ListNotations.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
+Require Import proof_correctness.
 Import Decide. (* We import the module containing the main command *) 
 
 
@@ -70,15 +71,17 @@ of the predicate *)
 
 Trakt Add Relation 2 (mem) (mem_linear_decidable) (decidable_lemma).
 
+Require Import elimination_pattern_matching.
+
 Lemma mem_imp_not_nil : (forall (n : Z) (l : list Z), 
 mem n l -> l <> []).
-Proof. snipe. Qed.
+Proof. trakt bool; snipe_no_check. Qed.
 
 (* We do the same for smaller_than_all *)
 Trakt Add Relation 2 (smaller_than_all) (smaller_than_all_decidable) (decidable_lemma0).
 
 Lemma smaller_than_all_nil : (forall (z: Z), smaller_than_all z nil).
-Proof. snipe. Qed.
+Proof. trakt bool; snipe_no_check. Qed.
 
 (* An example with an inductive type which takes a parameter: 
 all the elements of the list are smaller than the one given as parameters *)
@@ -116,7 +119,7 @@ Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
 MetaCoq Run (decide (@smaller_list nat) []).
 Next Obligation.
 split.
-- revert_all ; ltac2:(completeness_auto_npars 'smaller_decidable 0).
+- revert_all ; ltac2:(completeness_auto_npars 'smaller_list_decidable 0).
 - revert_all. induction H. constructor. destruct H0 eqn:E; intro H1; inversion H1.
 constructor. apply IHlist. assumption. Qed.
 

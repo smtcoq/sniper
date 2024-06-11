@@ -1,38 +1,47 @@
-Require Import Triggers.
-Require Import Printer.
+Require Import orchestrator.triggers.
+Require Import orchestrator.printer.
 Require Import List.
-From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Ltac2 Printf.
 From Ltac2 Require Import Constr.
 Import Unsafe.
 From Ltac2 Require Import Message.
 Import ListNotations.
 
-Ltac2 initial_state () :=
-  let hyps := Control.hyps () in
-  let g := Control.goal () in
-  (hyps, Some g).
-
-Ltac2 initial_computed_subterms () :=
-  { subterms_coq_goal := ([], None)}.
-
 Ltac2 env_triggers () :=
   { env_triggers := [] }.
 
-Ltac2 args_used () :=
-  { args_used := [['unit]] }. (* arbitrary "already used argument" for tests only *)
+Ltac2 init_already_triggered () :=
+  { already_triggered := [] }.
+
+Ltac2 init_interpretation_state () := 
+  (* subterms already computed in the goal *)
+  { subterms_coq_goal := ([], None);
+  (* hypotheses or/and goal considered *)
+    local_env := (Control.hyps (), Some (Control.goal ())) ; 
+  (* are all the hypotheses considered ? *)
+    global_flag := true;
+  (* name of the tactic interpreted *)
+    name_of_tac := "toto" }.
 
 Ltac2 test_trigger (t: trigger) :=
-  let init := initial_state () in
   let env := env_triggers () in
-  let initcomp := initial_computed_subterms () in
-  let args := args_used () in
-  let res := interpret_trigger init env args initcomp true t in
-  print_interpreted_trigger res.
+  let alr_triggered :=  init_already_triggered () in
+  let init := init_interpretation_state () in 
+  let res := interpret_trigger init env alr_triggered t in
+    match res with
+      | _ :: _ => print_interp_trigger res
+      | [] => printf "Not triggered" 
+    end.
  
 Ltac2 test_anon () :=
+  TDisj (
   TMetaLetIn (TContains (TSomeHyp, Arg Constr.type) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
-  (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
-  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))).
+    (TConj (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
+    (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg))))
+            (TIs (TNamed "f", Arg id) tDiscard)))
+  (TMetaLetIn (TContains (TGoal, Arg id) (TLambda tDiscard tDiscard (Arg id))) ["H"; "f"]
+  (TConj (TNot (TMetaLetIn (TContains (TNamed "H", NotArg) (TCase tDiscard tDiscard None (Arg id))) ["c"]
+  (TContains (TNamed "c", NotArg) (TTrigVar (TNamed "f") NotArg)))) (TIs (TNamed "f", Arg id) tDiscard))).
 
 (* anonymous funs that are not branches of match *)
 
@@ -50,7 +59,8 @@ intros H. test_trigger (test_anon ()). Abort.
 Goal forall (n: nat), (fun x => x) n = n.
 intros n.
 test_trigger (TContains (TGoal , NotArg)  (TRel 1 NotArg)). 
-test_trigger (TContains (TGoal, NotArg) (TLambda (TTerm 'nat (Arg id)) tDiscard NotArg)).
+pose (H := fun (x : nat) => x).
+test_trigger (TContains (TSomeDef, NotArg) (TLambda (TTerm 'nat (Arg id)) tDiscard NotArg)).
 test_trigger (TContains (TGoal, NotArg) (TLambda tDiscard (TRel 1 NotArg) NotArg)). (* warning: as in 
 the kernel, De Brujin indexes start with 1 *)
 test_trigger (TIs (TGoal, NotArg) (TEq (TTerm 'nat (Arg id)) tDiscard tDiscard (Arg id))).
@@ -77,7 +87,7 @@ fix length (l : list A) : nat := match l with
                                  | [] => 0
                                  | _ :: l' => S (length l')
                                  end).
-Fail test_trigger (TContains (TGoal, NotArg) (TFix (TAny (Arg id)) tDiscard NotArg)).
+test_trigger (TContains (TGoal, NotArg) (TFix (TAny (Arg id)) tDiscard NotArg)).
 test_trigger (TContains (TGoal, NotArg) (TFix tDiscard tDiscard NotArg)).
 Abort.
 

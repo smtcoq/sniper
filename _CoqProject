@@ -10,7 +10,6 @@ orchestrator/printer.v
 orchestrator/orchestrator.v
 orchestrator/Sniper.v
 
-
 theories/utilities.v
 theories/indrel.v
 theories/reflexivity.v
@@ -29,6 +28,8 @@ theories/interpretation_algebraic_types.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
 theories/tree.v
+theories/add_compdecs.v
+theories/verit.v
 theories/Transfos.v
 
 theories/deciderel/add_hypothesis_on_parameters.v
@@ -36,4 +37,3 @@ theories/deciderel/compdec_plugin.v
 theories/deciderel/linearize_plugin.v
 theories/deciderel/generate_fix.v
 theories/deciderel/proof_correctness.v
-#theories/deciderel/Deciderel.v

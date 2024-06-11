@@ -13,57 +13,81 @@ Unset MetaCoq Strict Unquote Universe Mode.
 
 (** Replacement of variables **) 
 
+
+(* Measure of the function replace occurences (for computing enough fuel) *)
+
 Fixpoint measure_replace_occurences (t : term) : nat :=
-match t with
-| tApp u l => (Datatypes.length l)*(List.fold_left (fun x y => x + measure_replace_occurences y) l 0)
-| tProd _ u v => S (measure_replace_occurences u + measure_replace_occurences v)
-| _ => 1
-end.
+  match t with
+    | tApp u l => (Datatypes.length l)*(List.fold_left (fun x y => x + measure_replace_occurences y) l 0)
+    | tProd _ u v => S (measure_replace_occurences u + measure_replace_occurences v)
+    | _ => 1
+  end.
 
 (* In a term t made of products, variables and applications only, we replace the nth occurence of the variable i 
-by the i-th term of the list l *)
-Fixpoint replace_occurences_aux (i: nat) (l : list term) (t : term) (fuel : nat) (nb_lift : nat) (npars : nat) : term*(list term) :=
-match fuel with
-  | 0 => (default_reif, [])
-  | S n => 
-    match t with
-    | tApp u l0 => replace_occurences_ignore_params i u l0 l n nb_lift npars
-    | tRel j => if i =? j then (hd default_reif l, tl l)
-      else ((lift (2*nb_lift) i (tRel j)), l)
-    | tProd Na Ty u => let Ty' := (lift (2*nb_lift) i Ty)in 
-        let u' := (replace_occurences_aux (i+1) (List.map (lift 1 0) l) u n nb_lift npars).1 in
-        (tProd Na Ty' u', l)
-    | _ => (t, l)
-    end
-end
+by the i-th term of the list l 
+Returns this new term and the list l unchanged *)
+Fixpoint replace_occurences_aux 
+  (i: nat) 
+  (l : list term) 
+  (t : term) 
+  (fuel : nat) 
+  (nb_lift : nat) 
+  (npars : nat) : term*(list term) :=
+  match fuel with
+    | 0 => (tVar "not_enough_fuel"%bs, [])
+    | S n => 
+      match t with
+        | tApp u l0 => replace_occurences_ignore_params i u l0 l n nb_lift npars
+        | tRel j => if i =? j then (hd default_reif l, tl l)
+                    else ((lift (2*nb_lift) i (tRel j)), l)
+        | tProd Na Ty u => let Ty' := (lift (2*nb_lift) i Ty) in 
+            let u' := (replace_occurences_aux (i+1) (List.map (lift 1 0) l) u n nb_lift npars).1 in
+            (tProd Na Ty' u', l)
+        | _ => (t, l)
+      end
+  end
 with
-replace_occurences_list (i: nat) (l : list term) (l' : list term) (fuel : nat) (nb_lift: nat) (npars : nat) : (list term)*(list term) :=
- match fuel with
-    | 0 => ([], [])
-    | S n =>
-        match l' with
-        | [] => ([], l)
-        | x' :: xs' => 
-          let p := replace_occurences_aux i l x' n nb_lift npars in
-          let p' := replace_occurences_list i p.2 xs' n nb_lift npars in
-          ((p.1 :: p'.1), p'.2)
-        end
-end
-with replace_occurences_ignore_params 
-(i: nat) (u : term) (l : list term) (l' : list term) (fuel : nat) (nb_lift: nat) (npars : nat) : term*(list term) :=
-match fuel with
-| 0 => (default_reif, [])
-| S fuel =>
-match u with
-| tRel j => let u' := (lift (2*nb_lift) i (tRel j)) in
-let lpars := List.firstn npars l in
-let lpars_lifted :=  List.map (fun x => (lift (2*nb_lift) 0 x)) lpars in
-let largs := List.skipn npars l in
-let result := replace_occurences_list i l' largs fuel nb_lift npars in
-(tApp u' (lpars_lifted ++ result.1), result.2)
-| _ => let u' := (lift (2*nb_lift) i u) in let p := replace_occurences_list i l' l fuel nb_lift npars in (tApp u' p.1, p.2)
-end
-end.
+replace_occurences_list 
+  (i: nat) 
+  (l : list term) 
+  (l' : list term) 
+  (fuel : nat) (nb_lift: nat) (npars : nat) : (list term)*(list term) :=
+  match fuel with
+        | 0 => ([], [])
+        | S n =>
+          match l' with
+          | [] => ([], l)
+          | x' :: xs' => 
+            let p := replace_occurences_aux i l x' n nb_lift npars in
+            let p' := replace_occurences_list i p.2 xs' n nb_lift npars in
+            ((p.1 :: p'.1), p'.2)
+          end
+  end
+with 
+replace_occurences_ignore_params 
+  (i: nat) 
+  (u : term) 
+  (l : list term) 
+  (l' : list term) 
+  (fuel : nat) 
+  (nb_lift: nat) 
+  (npars : nat) : term*(list term) :=
+  match fuel with
+    | 0 => (default_reif, [])
+    | S fuel =>
+    match u with
+      | tRel j => let u' := (lift (2*nb_lift) i (tRel j)) in
+         let lpars := List.firstn npars l in
+         let lpars_lifted :=  List.map (fun x => (lift (2*nb_lift) 0 x)) lpars in
+         let largs := List.skipn npars l in
+         let result := replace_occurences_list i l' largs fuel nb_lift npars in
+      (tApp u' (lpars_lifted ++ result.1), result.2)
+      | _ => 
+        let u' := (lift (2*nb_lift) i u) in 
+        let p := replace_occurences_list i l' l fuel nb_lift npars in 
+        (tApp u' p.1, p.2)
+  end
+    end.
 
 Definition replace_occurences i l t npars := 
 let nb_lift := (Datatypes.length l -1) in
