@@ -16,3 +16,4 @@ Require Export case_analysis_existentials.
 Require Export higher_order.
 Require Export fold_local_def.
 Require Export anonymous_functions.
+Require Export add_compdecs.

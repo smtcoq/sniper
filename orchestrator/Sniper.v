@@ -15,6 +15,7 @@ Require Import triggers.
 Require Import printer.
 Require Import orchestrator.
 Require Import filters.
+Require Import verit.
 
 Local Open Scope bs_scope.
 

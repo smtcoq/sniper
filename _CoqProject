@@ -27,6 +27,8 @@ theories/interpretation_algebraic_types.v
 theories/case_analysis.v
 theories/case_analysis_existentials.v
 theories/tree.v
+theories/add_compdecs.v
+theories/verit.v
 theories/Transfos.v
 
 theories/deciderel/add_hypothesis_on_parameters.v
