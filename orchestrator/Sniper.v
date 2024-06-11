@@ -126,10 +126,10 @@ Tactic Notation "snipe2_no_check" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_orch))).
 
 Tactic Notation "snipe" :=
-  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit))).
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_orch))).
 
 Tactic Notation "snipe2" :=
-  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit))).
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
 
 
 
