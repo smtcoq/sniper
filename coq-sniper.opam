@@ -16,17 +16,17 @@ install: [
   [make "install"]
 ]
 depends: [
-  "coq" {>= "8.18" & < "8.19~"}
-  "coq-metacoq-utils" {= "1.3.1+8.18"}
-  "coq-metacoq-template" {= "1.3.1+8.18"}
+  "coq" {>= "8.19" & < "8.20~"}
+  "coq-metacoq-utils" {= "1.3.1+8.19"}
+  "coq-metacoq-template" {= "1.3.1+8.19"}
   "elpi"
   "coq-trakt"
   "coq-elpi"
   "coq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-8.18" ]
-  [ "coq-trakt.1.2" "git+https://github.com/ecranceMERCE/trakt.git#1.2" ]
+  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-8.19" ]
+  [ "coq-trakt.1.2c" "git+https://github.com/ecranceMERCE/trakt.git#1.2c" ]
 ]
 tags: [
   "category:Computer Science/Decision Procedures and Certified Algorithms/Decision procedures"
@@ -44,5 +44,5 @@ This plugin is an extension of SMTCoq, a plugin to safely call external SMT solv
 The translation is implemented through a combination of modular, small transformations that independently eliminate specific aspects of Coq logic towards first-order logic. These small transformations are safe, either generating proof terms on the fly (certifying transformations) or being proved once and for all in Coq (certified transformations).
 """
 url {
-  src: "git+https://github.com/smtcoq/sniper.git#coq-8.18-with-trakt"
+  src: "git+https://github.com/smtcoq/sniper.git#coq-8.19-with-trakt"
 }
