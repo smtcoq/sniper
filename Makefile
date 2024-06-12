@@ -7,7 +7,7 @@
 ##         #     GNU Lesser General Public License Version 2.1          ##
 ##         #     (see LICENSE file for the text of the license)         ##
 ##########################################################################
-## GNUMakefile for Coq 8.18.0
+## GNUMakefile for Coq 8.19.1
 
 # For debugging purposes (must stay here, don't move below)
 INITIAL_VARS := $(.VARIABLES)
@@ -278,7 +278,7 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 # The version of Coq being run and the version of coq_makefile that
 # generated this makefile
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
-COQMAKEFILE_VERSION:=8.18.0
+COQMAKEFILE_VERSION:=8.19.1
 
 # COQ_SRC_SUBDIRS is for user-overriding, usually to add
 # `user-contrib/Foo` to the includes, we keep COQCORE_SRC_SUBDIRS for
@@ -305,6 +305,14 @@ ifneq (,$(TIMING))
   TIMING_ARG=-time-file $<.$(TIMING_EXT)
 else
   TIMING_ARG=
+endif
+
+ifneq (,$(PROFILING))
+  PROFILE_ARG=-profile $<.prof.json
+  PROFILE_ZIP=gzip $<.prof.json
+else
+  PROFILE_ARG=
+  PROFILE_ZIP=true
 endif
 
 # Files #######################################################################
@@ -808,12 +816,13 @@ ifneq (,$(filter grouped-target,$(.FEATURES)))
 define globvorule=
 
 # take care to $$ variables using $< etc
-  $(1).vo $(1).glob &: $(1).v | $(VDFILE)
-	$(SHOW)COQC $(1).v
-	$(HIDE)$$(TIMER) $(COQC) $(COQDEBUG) $$(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $(1).v
+  $(1).vo $(1).glob &: $(1).v | $$(VDFILE)
+	$$(SHOW)COQC $(1).v
+	$$(HIDE)$$(TIMER) $$(COQC) $$(COQDEBUG) $$(TIMING_ARG) $$(PROFILE_ARG) $$(COQFLAGS) $$(COQLIBS) $(1).v
+	$$(HIDE)$$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
-	$(SHOW)COQNATIVE $(1).vo
-	$(HIDE)$(call TIMER,$(1).vo.native) $(COQNATIVE) $(COQLIBS) $(1).vo
+	$$(SHOW)COQNATIVE $(1).vo
+	$$(HIDE)$$(call TIMER,$(1).vo.native) $$(COQNATIVE) $$(COQLIBS) $(1).vo
 endif
 
 endef
@@ -821,7 +830,8 @@ else
 
 $(VOFILES): %.vo: %.v | $(VDFILE)
 	$(SHOW)COQC $<
-	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(PROFILE_ARG) $(COQFLAGS) $(COQLIBS) $<
+	$(HIDE)$(PROFILE_ZIP)
 ifeq ($(COQDONATIVE), "yes")
 	$(SHOW)COQNATIVE $@
 	$(HIDE)$(call TIMER,$@.native) $(COQNATIVE) $(COQLIBS) $@
