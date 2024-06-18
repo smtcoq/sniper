@@ -36,9 +36,9 @@ If opam was not installed on your machine you have to initialize it (all the fil
 opam init --bare --no-setup
 ```
 
-It requires OCaml between 4.09 and 4.10:
+It requires OCaml between 4.13.1 and 4.14:
 ```
-opam switch create 4.09.1
+opam switch create 4.13.1
 eval $(opam env)
 ```
 

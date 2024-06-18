@@ -5,7 +5,7 @@ Require Import Ltac2.Message.
 
 Ltac2 print_case (c: constr) :=
   match Constr.Unsafe.kind c with
-    | Constr.Unsafe.Case _ c1 _ c2 ca =>  printf "%t" c1 ; printf "%t" c2 ; Array.iter (fun x => printf "%t" x) ca
+    | Constr.Unsafe.Case _ (c1, _) _ c2 ca =>  printf "%t" c1 ; printf "%t" c2 ; Array.iter (fun x => printf "%t" x) ca
     | _ => ()
   end.
 
