@@ -53,11 +53,6 @@ pred type_global i: term, o: term.
   type_global (global (indt I)) Ty :- coq.env.indt I _ _ _ Ty _ _.
   type_global (global (indc C)) Ty :- coq.env.indc C _ _ _ Ty.
 
-pred ctx_to_tys i: goal-ctx, o: list term.
-    ctx_to_tys [(decl _ _ Ty)|XS] [Ty|R] :- ctx_to_tys XS R.
-    ctx_to_tys [(def _ _ _ Bo)|XS] [Bo|R] :- ctx_to_tys XS R.
-    ctx_to_tys [] [].
-
 pred ctx_to_trms i: goal-ctx, o: list term.     
     ctx_to_trms [(decl X _ _)|XS] [X|R] :- ctx_to_trms XS R.
     ctx_to_trms [(def X _ _ _)|XS] [X|R] :- ctx_to_trms XS R.

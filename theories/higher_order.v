@@ -64,18 +64,7 @@ Require Import List.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 List.map g (List.map f l) = map (fun x => g (f x)) l.
 intros.
-elpi anonymous_funs.
 elpi prenex_higher_order. Abort.
-
-Goal ((forall (x : nat) (a : nat) (l : list nat), 
-@hd nat x (@cons nat a l) = match (@cons nat a l) with
-| nil => x
-| y :: xs => y
-end)). elpi anonymous_funs. Abort. 
-(* Bug fix : each branch of a match is a function so the function looking 
-for anonymous functions were returning the branches and we do not want that.
-So we stopped the recursive search when meeting a match.
-But this should be improved by creating a special predicate for matches.  *)
 
 Tactic Notation "prenex_higher_order" :=
   elpi prenex_higher_order.
@@ -87,14 +76,14 @@ Section Tests.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-anonymous_funs. prenex_higher_order.
+prenex_higher_order.
 Abort.
 
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros. 
 assert (IHl : map g (map f l) = map (fun x : A => g (f x)) l) by admit.
-anonymous_funs. prenex_higher_order. (* remove duplicates *)
+ prenex_higher_order. (* remove duplicates *)
 Abort. 
 
 Goal (
