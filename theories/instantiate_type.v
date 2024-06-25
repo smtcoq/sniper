@@ -176,7 +176,7 @@ Tactic Notation "inst" constr(t) := elimination_polymorphism_exhaustive (t, defa
 
 
 Goal (forall (A : Type) (a : A), a = a) -> (forall (x : nat), x = x).
-Proof. intros H. inst app_length.
+Proof. intros H. inst length_app.
 Abort.
 
 Section test.
@@ -188,7 +188,7 @@ Variable A : Type.
   Qed.
 
 Goal False -> forall (x : nat) (y : bool), x=x /\ y= y.
-inst (pair_equal_spec, app_length, nil_cons, app_comm_cons).
+inst (pair_equal_spec, length_app, nil_cons, app_comm_cons).
 Abort.
 
 
