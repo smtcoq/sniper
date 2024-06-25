@@ -620,6 +620,7 @@ Ltac2 rec subterms (c : constr) : constr list :=
     | Proj _ c1 => List.append [c] (subterms c1)
     | Uint63 _ => [c]
     | Float _ => [c]
+    | String _ => [c]
     | Array _ ca c1 c2 => 
         let l := Array.to_list ca in
         let res := List.map subterms l in

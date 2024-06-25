@@ -109,7 +109,7 @@ intros A B C l f g. elimination_polymorphism. Abort. (* bug fix : the function n
 does not work when there are local functionnal variables *)
 
 Goal forall (l : list nat) (p: bool * nat), l = l.
-Proof. intros. elpi elimination_polymorphism (app_length) (pair_equal_spec) (app_cons_not_nil). 
+Proof. intros. elpi elimination_polymorphism (length_app) (pair_equal_spec) (app_cons_not_nil). 
 intros. elpi elimination_polymorphism (pair_equal_spec).
 Abort.
 

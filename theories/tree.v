@@ -47,7 +47,7 @@ Fixpoint cardinal (s : tree) : nat :=
 Fixpoint maxdepth s :=
  match s with
  | Leaf => 0
- | Node l _ r => S (max (maxdepth l) (maxdepth r))
+ | Node l _ r => S (Nat.max (maxdepth l) (maxdepth r))
  end.
 
 
