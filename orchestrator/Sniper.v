@@ -17,6 +17,8 @@ Require Import orchestrator.
 Require Import filters.
 Require Import verit.
 
+Require Import tree.
+
 Local Open Scope bs_scope.
 
 Ltac revert_all :=
@@ -104,8 +106,8 @@ Ltac2 scope2_verbos v := orchestrator 5
 ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter) ;
 ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-((trigger_polymorphism (), false, Some (2, 2)), "my_polymorphism", trivial_filter) ]
-(* ((trigger_add_compdecs (), false), "my_add_compdec",  filter_add_compdecs ())] *) }
+((trigger_polymorphism (), false, Some (2, 2)), "my_polymorphism", trivial_filter);
+((trigger_add_compdecs (), false, None), "my_add_compdec",  filter_add_compdecs ()) ] }
 { already_triggered := [] } v.
 
 Ltac2 scope2 () := scope2_verbos Nothing.
@@ -133,6 +135,14 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
+
+Set Default Proof Mode "Classic".
+Require Import tree.
+
+Lemma rev_elements_app :
+ forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
+Proof.
+pose proof List.app_nil_r ; scope_info.
 
 
 

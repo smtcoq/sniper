@@ -238,7 +238,7 @@ Ltac2 Eval is_inductive_codomain_not_prop_applied '(eq nat).
 Ltac2 Eval is_inductive_codomain_not_prop_applied 'bool. *)
  
 Ltac2 find_context_hyp_aux (c: constr) :=
-  let c' := substnl ['type_variable] 0 c in
+  let c' := substnl ['type_variable] 0 c in 
   let subsnary := subterms_nary_app c' in
   let subs := List.map replace_by_inductive subsnary in
   let subsindu := List.filter is_inductive_codomain_not_prop_applied subs in
@@ -249,6 +249,15 @@ Ltac2 find_context_hyp_aux (c: constr) :=
         | _ => false
       end) subsindu in
   List.map transform_into_context subsindurel.
+
+(* Ltac2 rec number_of_prenex_poly (c : constr) :=
+  match kind c with
+    | Prod bd c2 =>
+        let c1 := Binder.type bd in 
+        if is_type_or_set c1 then Int.add 1 (number_of_prenex_poly c2)
+        else 0
+    | _ => 0
+  end. *)
 
 
 (* We suppose that h : forall (A: Type), P A 
@@ -262,7 +271,7 @@ Ltac2 find_context_hyp (h: constr) :=
   match kind (type h) with
     | Prod bd c2 =>
         let c1 := Binder.type bd in 
-        if is_type_or_set c1 then 
+        if is_type_or_set c1 then
         (h, List.nodup equal (find_context_hyp_aux c2))
         else (h, [])
     | _ => (h, [])
@@ -489,9 +498,12 @@ Ltac2 compute_init_state () :=
     List.append 
       (List.fold_left (fun acc x => List.append (find_context_types (type x)) acc) hyps_constr' [])
       (find_context_types g) in
+  let context_types' :=
+            List.nodup (fun (x, y) (x', y') => Bool.and (equal x x') (List.equal equal y y'))
+            context_types in
   {
    hyps_inst := context_hyps;
-   types_inst := context_types 
+   types_inst := context_types' 
   }.
 
 Ltac2 init_state (isr : refs) :=
@@ -551,7 +563,7 @@ Proof. intros. let x := max_quantifiers () in printf "%i" x. Abort. *)
 
 (* Result printer *)
 Ltac2 elimination_polymorphism_printer () :=
-  let ref := ISR (ref (compute_init_state ())) in isr_printer ref.
+  let ref := ISR (ref (compute_init_state ())) in isr_printer ref; instantiate_state ref.
 
 Ltac2 elimination_polymorphism () :=
   let ref := ISR (ref (compute_init_state ())) in instantiate_state ref.
@@ -650,7 +662,8 @@ f3 [] = [] ->
 (forall (x : Type) (x0 : x) (x1 : list x), [] = x0 :: x1 -> False) ->
 (forall (x x0 : Type) (x1 x2 : x) (x3 x4 : x0), (x1, x3) = (x2, x4) -> x1 = x2 /\ x3 = x4) -> 
 f1 [] = @zip B C (f2 []) (f3 [])).
-Proof. intros. elimination_polymorphism. assumption. Abort.
+Proof. intros. elimination_polymorphism.
+ assumption. Abort.
  
 
 End tests.
