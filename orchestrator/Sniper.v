@@ -136,14 +136,5 @@ Tactic Notation "snipe" :=
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
 
-Set Default Proof Mode "Classic".
-Require Import tree.
-
-Lemma rev_elements_app :
- forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
-Proof.
-pose proof List.app_nil_r ; scope_info.
-
-
 
 

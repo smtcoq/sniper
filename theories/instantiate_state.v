@@ -2,24 +2,28 @@ Require Import utilities.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf.
 Import Unsafe.
-From MetaCoq.Template Require Import All.
-From MetaCoq.Common Require Import config.
+From elpi Require Import elpi.
 
 (* Number of parameters of the inductive corresponding to a
 given constructor *) 
 
-Ltac npars c :=
-  let c_quoted := metacoq_get_value (tmQuoteRec c) in
-  let c_term := eval cbv in c_quoted.2 in
-    match c_term with
-      | tConstruct ?ind _  ?inst => 
-        let info := eval cbv in (info_nonmutual_inductive c_quoted.1 (tInd ind inst)) in 
-          match info with
-            | (?n, _) => pose n
-            | _ => fail ind
-          end
-      | _ => fail "not a constructor"
-     end.
+Ltac mypose n := pose n.
+
+Elpi Tactic npars.
+Elpi Accumulate lp:{{
+
+  pred int_to_constr i: int, o: term.
+    int_to_constr 0 {{ 0 }}.
+    int_to_constr N {{ S lp:M }} :- N' is N - 1, int_to_constr N' M.
+
+  solve (goal _ _ _ _ [trm (global (indc C))] as G) GL :- 
+     std.do! [ coq.env.indc->indt C Indu _,
+     coq.env.indt Indu _ Npars _ _ _ _, int_to_constr Npars Npars',
+     coq.ltac.call "mypose" [trm Npars'] G GL].
+
+}}.
+
+Tactic Notation "npars" constr(c) := elpi npars (c).
 
 Ltac2 rec nat_to_int (n : constr) :=
   match! n with
@@ -39,9 +43,9 @@ Ltac2 npars_of_constructor c :=
 
 (*
 Goal False.
-let x := npars '(@nil) in printf "%i" x.
-let x := npars '(@pair) in printf "%i" x.
-let x := npars 'List.Add_head in printf "%i" x.
+let x := npars_of_constructor '(@nil) in printf "%i" x.
+let x := npars_of_constructor '(@pair) in printf "%i" x.
+let x := npars_of_constructor 'List.Add_head in printf "%i" x.
 Abort. *)
 
 Ltac2 rec print_constr_list (l : constr list) :=

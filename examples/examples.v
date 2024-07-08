@@ -127,7 +127,7 @@ Qed.
 (* The proof of this lemma, except induction, can be automatized *)
 Lemma search_app_snipe : forall (x: A) (l1 l2: list A),
     @search x (l1 ++ l2) = ((@search x l1) || (@search x l2))%bool.
-Proof. intros x l1 l2. induction l1 as [ | x0 l0 IH]; snipe_no_check. Qed. 
+Proof. induction l1 ; snipe_no_check. Qed. 
 
 
 (* Manually using this lemma *)
@@ -182,14 +182,15 @@ Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. snipe. Qed.
 
+From MetaCoq.Template Require Import All.
 
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s. 
-- pose proof List.app_nil_r; scope_info. snipe.
-- pose proof app_ass ; pose proof List.app_nil_r; snipe2. 
-Qed. *)
+- pose proof List.app_nil_r; snipe.
+- pose proof app_ass ; pose proof List.app_nil_r; snipe. 
+Qed.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe2. Qed.
+Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe. Qed.
