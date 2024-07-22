@@ -1,0 +1,53 @@
+name: MetaCoq CI
+
+on:
+  schedule:
+    # Every day at midnight
+    - cron: '0 0 * * *'
+  # Enables manually running the workflow
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Metacoq Repository
+        uses: actions/checkout@v3
+        with:
+          repository: metacoq/metacoq
+          ref: main
+          path: metacoq
+
+      - name: Get Date of Last Commit
+        id: get_last_commit_date
+        run: |
+          last_commit_date=$(cd metacoq && git log -1 --format=%cd --date=iso)
+          echo "last_commit_date=$last_commit_date" >> $GITHUB_ENV
+
+      - name: Check if Last Commit was Within Last Week
+        id: check_commit_date
+        run: |
+          LAST_COMMIT_DATE=$(date -d "${{ env.last_commit_date }}" +%s)
+          ONE_WEEK_AGO=$(date -d "1 month ago" +%s)
+          if [ $LAST_COMMIT_DATE -gt $ONE_WEEK_AGO ]; then
+            echo "recent_commit=true" >> $GITHUB_ENV
+          else
+            echo "recent_commit=false" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout Sniper master
+        if: env.recent_commit == 'true'
+        uses: actions/checkout@v3
+        with:
+          ref: coq-master
+
+      - name: Build Sniper
+        if: env.recent_commit == 'true'
+        uses: coq-community/docker-coq-action@v1
+        with:
+          coq_version: dev
+          opam_file: 'coq-sniper.opam'
