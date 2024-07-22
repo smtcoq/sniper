@@ -17,16 +17,16 @@ install: [
 ]
 depends: [
   "coq" {>= "8.19"}
-  "coq-metacoq-utils" {= "1.3.1+8.19"}
-  "coq-metacoq-template" {= "1.3.1+8.19"}
+  "coq-metacoq-utils"
+  "coq-metacoq-template"
   "elpi"
   "coq-trakt"
   "coq-elpi"
   "coq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-8.17" ]
-  [ "coq-trakt.1.2" "git+https://github.com/ecranceMERCE/trakt.git#1.2" ]
+  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-master" ]
+  [ "coq-trakt.1.2c" "git+https://github.com/ecranceMERCE/trakt.git#1.2c" ]
 ]
 tags: [
   "category:Computer Science/Decision Procedures and Certified Algorithms/Decision procedures"
