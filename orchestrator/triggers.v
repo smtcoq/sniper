@@ -441,7 +441,7 @@ the interpretation of our triggers *)
     | Constructor cstr _, TConstructor o fl =>
         if matching_ref o (ConstructRef cstr) then Some (cons_option (interpret_flag c fl) [])
         else None
-    | Case _ ty _ t ca, TCase tte1 tte2 o fl =>
+    | Case _ (ty, _) _ t ca, TCase tte1 tte2 o fl =>
        let res := interpret_trigger_term_with_constr cg env ty tte1 in
         match res with
           | Some l => 
@@ -596,7 +596,7 @@ Ltac2 rec subterms (c : constr) : constr list :=
     | Constant _ _ => [c]
     | Ind _ _ => [c]
     | Constructor _ _ => [c]
-    | Case _ c1 _ c2 ca => 
+    | Case _ (c1, _) _ c2 ca => 
         let l := Array.to_list ca in
         let res := List.map subterms l in
         let res' := List.flatten res in 
@@ -617,7 +617,7 @@ Ltac2 rec subterms (c : constr) : constr list :=
         let res1 := List.map (fun x => subterms (Binder.type x)) l' in
         let res1' := List.flatten res1 in
         List.append [c] (List.append res' res1')
-    | Proj _ c1 => List.append [c] (subterms c1)
+    | Proj _ _ c1 => List.append [c] (subterms c1)
     | Uint63 _ => [c]
     | Float _ => [c]
     | String _ => [c]
