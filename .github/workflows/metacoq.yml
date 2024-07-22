@@ -1,0 +1,51 @@
+name: MetaCoq CI
+
+on:
+  schedule:
+    # Every monday at 00h00
+    - cron: '*/8 * * * *'
+  # Enables manually running the workflow
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout foo Repository
+        uses: actions/checkout@v3
+        with:
+          repository: metacoq/metacoq
+          ref: main
+          path: metacoq
+
+      - name: Get Date of Last Commit
+        id: get_last_commit_date
+        run: |
+          last_commit_date=$(cd foo && git log -1 --format=%cd --date=iso)
+          echo "last_commit_date=$last_commit_date" >> $GITHUB_ENV
+
+      - name: Check if Last Commit was Within Last Week
+        id: check_commit_date
+        run: |
+          LAST_COMMIT_DATE=$(date -d "${{ env.last_commit_date }}" +%s)
+          ONE_WEEK_AGO=$(date -d "1 month ago" +%s)
+          if [ $LAST_COMMIT_DATE -gt $ONE_WEEK_AGO ]; then
+            echo "recent_commit=true" >> $GITHUB_ENV
+          else
+            echo "recent_commit=false" >> $GITHUB_ENV
+          fi
+
+      - name: Checkout repo
+        if: env.recent_commit == 'true'
+        uses: actions/checkout@v3
+
+      - name: Run tests
+        if: env.recent_commit == 'true'
+        run: |
+          opam install . --deps-only
+          make
+          make test
