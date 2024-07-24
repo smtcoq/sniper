@@ -182,8 +182,6 @@ Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
 Proof. snipe. Qed.
 
-From MetaCoq.Template Require Import All.
-
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
 Proof. intros A H s ; induction s. 
@@ -194,3 +192,5 @@ Qed.
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
 Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe. Qed.
+
+End Tree.

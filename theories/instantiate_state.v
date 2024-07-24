@@ -190,7 +190,7 @@ Ltac2 transform_into_context (c: constr) :=
     | App c ca => let x := 
           Unsafe.make (App c (Array.map change_into_wildcards ca)) in 
            x
-    | _ => Control.throw Wrong_context
+    | _ => c
   end.
 (* 
 replaces a constructor c t1 ... tk with  
@@ -300,7 +300,7 @@ Ltac2 list_context_types (c : constr) :=
                             let ca'' := Array.copy ca' in 
                             Array.set ca'' i 'type_variable ;
                           (x, Unsafe.make (App c0 ca''))) ca')
-    | _ => Control.throw Wrong_context
+    | _ => printf "[list_context_types] %t is a wrong context" c ; Control.throw Wrong_context
   end.
 
 Ltac2 find_context_types_aux (c : constr) :=
