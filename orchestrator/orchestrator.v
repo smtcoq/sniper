@@ -8,6 +8,7 @@ Require Import printer.
 Require Import triggers.
 Require Import filters.
 Require Import triggers_tactics.
+Require Import run_tactic.
 
 Ltac2 Type all_tacs :=
   { mutable all_tacs : ((trigger * bool * (int * int) option) * string * filter) list }.
