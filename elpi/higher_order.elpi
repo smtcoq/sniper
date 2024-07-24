@@ -1,31 +1,3 @@
-pred get_anonymous_funs_trm i: term, o: list term.
-    get_anonymous_funs_trm (fun N Ty F) R :- std.mem! R (fun N Ty F), !, pi x\ decl x N Ty => 
-        get_anonymous_funs_trm (F x) R.
-    get_anonymous_funs_trm (fun N Ty F) [fun N Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
-    get_anonymous_funs_trm (prod N Ty F) R :- pi x\ decl x N Ty => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R.
-    get_anonymous_funs_trm (app [{{@eq}}, (fun N Ty F), U]) R :- get_anonymous_funs_trm U R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
-        std.append R1 R2 R. %T or U is not anonymous if it is defined by an equality
-    get_anonymous_funs_trm (app [{{@eq}}, T, (fun N Ty F)]) R :- get_anonymous_funs_trm T R1, pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R2, 
-        std.append R1 R2 R. 
-    get_anonymous_funs_trm (app L) R :- !, std.map L get_anonymous_funs_trm R', std.flatten R' R.
-    get_anonymous_funs_trm (let N Ty V F) R :- !,
-    get_anonymous_funs_trm Ty R1, get_anonymous_funs_trm V R2, pi x\ def x N Ty V => not (std.exists R (occurs x)), get_anonymous_funs_trm (F x) R3,
-    append_nodup R1 R2 R12,
-    append_nodup R12 R3 R.
-    get_anonymous_funs_trm (match _T _U _L) [] :- !. % TODO improve : but the pb is that each branch of a match is a function 
-    %get_anonymous_funs_trm T R1, get_anonymous_funs_trm U R2, append_nodup R1 R2 R12,
-    %std.map L get_anonymous_funs_trm R3, 
-    %std.flatten R3 R',
-    %append_nodup R12 R' R.
-    get_anonymous_funs_trm ((fix N _Nb Ty F) as Fix) R :- std.mem! R Fix, !, pi x\ decl x N Ty => 
-        get_anonymous_funs_trm (F x) R.
-    get_anonymous_funs_trm (fix N Nb Ty F) [fix N Nb Ty F|R] :- pi x\ decl x N Ty => get_anonymous_funs_trm (F x) R.
-    get_anonymous_funs_trm _ [].
-
-pred get_anonymous_funs_list i: list term, o: list term.
-    get_anonymous_funs_list [X|XS] R :- get_anonymous_funs_trm X R1, get_anonymous_funs_list XS R2, append_nodup R1 R2 R.
-    get_anonymous_funs_list [] [].
-
 pred is_prod i: term.
     is_prod (prod _ _ _).
     is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.

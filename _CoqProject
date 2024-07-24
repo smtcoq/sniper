@@ -6,6 +6,7 @@
 orchestrator/triggers.v
 orchestrator/filters.v
 orchestrator/triggers_tactics.v
+orchestrator/run_tactic.v
 orchestrator/printer.v
 orchestrator/orchestrator.v
 orchestrator/Sniper.v

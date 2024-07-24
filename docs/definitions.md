@@ -1,5 +1,7 @@
 # Definitions
 
+This transformation is available in the file `theories/definitions.v`.
+
 ## What does this transformation do?
 
 This transformation, at an atomic level, is called `get_def` and takes as an argument a Coq constant `c`. 

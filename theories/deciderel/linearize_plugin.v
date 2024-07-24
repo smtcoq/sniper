@@ -100,20 +100,9 @@ let fuel := measure_replace_occurences t in
 (replace_occurences_aux i l t fuel nb_lift npars).1.
 
 (* In a term of the form P1 -> ... -> Pn, with all of the Pi made of constants, variables and applications only,
-we compute the maximum number of occurences of the variable n in each of the Pi *)
-Definition compute_occurences_max (n : nat) (t : term) : nat := 
-let fix aux n t occurs := 
-match t with
-| tProd _ Ty u => (aux (n+1) u 0)
-(* We lift the variable n each time we compute under a forall, we do not consider the negative occurences: we 
-want to linearize only the conclusion of the term *)
-| tApp u l => List.fold_left (fun acc x => acc + aux n x 0) l occurs
-(* We suppose that the application is flattened and that our variable is not a function, so it does not occurs in u *)
-| tRel i => if i =? n then 1 else 0
-| _ => 0 (* To simplify, we do not consider other kind of terms *)
-end in aux n t 0.
+we compute the maximum number of occurences of the variable n in each of the Pi
+We ignore the parameters in the application case *)
 
-(* The same function but we ignore the parameters in the application *)
 Definition compute_occurences_max_parameters (n npars : nat) (t : term) : nat := 
 let fuel := size t in
 let fix aux n npars t occurs fuel :=
@@ -122,16 +111,20 @@ match fuel with
 | S fuel' => 
 match t with
 | tProd _ Ty u => aux (n+1) npars u 0 fuel'
+(* We lift the variable n each time we compute under a forall, we do not consider the negative occurences: we 
+want to linearize only the conclusion of the term *)
 | tApp u l => 
     match u with
     | tRel _ => let l' :=  (List.skipn npars l) in List.fold_left (fun acc x => acc + aux n npars x 0 fuel') l' occurs
     | _ => List.fold_left (fun acc x => acc + aux n npars x 0 fuel') l occurs
     end 
+    (* We suppose that the application is flattened and that our variable is not a function, so it does not occurs in u 
+    Limitation: If [u] is a tRel, we suppose that it is the inductive relation
+    of interest that we want to skip the parameters *)
 | tRel i => if i =? n then 1 else 0
-| _ => 0 
+| _ => 0 (* To simplify, we do not consider other kind of terms *)
 end 
 end in aux n npars t 0 fuel.
-
 
 (** 2: Generation of equalities **) 
 
@@ -157,7 +150,10 @@ match t with
 end.
 
 Fixpoint search_list_of_compdecs_fuel
-(l : list term) (lc : list (term*term)) (n : nat) {struct n} :=
+ (l : list term) 
+ (lc : list (term*term)) 
+ (n : nat) (* fuel *) 
+  {struct n} :=
 match n with
 | 0 => []
 | S n' =>
@@ -173,7 +169,7 @@ match n with
 | S n' =>
 match l with
 | [] => match Ty with
-      | tRel n => tRel (n-1)
+      | tRel n => tRel (n - 1) (* don't know why this is - 1 here *)
       | _ => tVar "the type is not a variable"%bs 
       end
 | x :: xs => if eqb_term Ty x.2 then x.1 
@@ -185,7 +181,7 @@ if eqb_term u x.2 then match x.1 with
 end else
 search_compdec_fuel Ty xs n'
 end
-end.
+end. 
 
 Definition search_compdec (Ty : term) (l : list (term*term)) :=
 let fuel := 
@@ -242,7 +238,7 @@ match n with
 | 0 => default_reif
 | S m =>
 match t with
-| tProd Na Ty u => let occ := (compute_occurences_max 0 u) in
+| tProd Na Ty u => let occ := (compute_occurences_max_parameters 0 0 u) in
  if Nat.ltb 1 occ then (* we compute the new term only if the quantified variable occurs in the rest of the term *)
 let len := (occ - 1) in
 let l0 := get_list_of_rel occ (2*len) in 
@@ -307,36 +303,6 @@ else aux lcomp t xs npars nb_lift_reccall (S nb_reccall) l_types
 end
 in aux lcomp t (rev Typars) npars 0 0 [].
 
-(*(tApp (tRel 8)
-                                                [tRel 7; tRel 6; 
-                                                tRel 5; tRel 4; 
-                                                tRel 3; tRel 1]) *)
-
-Definition test_pars := (tApp (tRel 4)
-                                    [tRel 3; tRel 2; 
-                                    tRel 1; tRel 0; 
-                                    tRel 1; tRel 0]).
-
-
-
-(* Compute linearize_parameter_compdec s [] test_pars [impossible_term_reif] 4.
-Compute compute_occurences_max_parameters s 3 4 (tApp (tRel 6) [tRel 5; tRel 4; tRel 3; tRel 2; tRel 3; tRel 1]).
-Compute get_list_of_rel2 1 2.
-Compute linearize_parameter_compdec s [] test_pars [impossible_term_reif; impossible_term_reif] 4. *)
-
-
-
-
-(* Fixpoint list_pars_to_linearize Σ (l : list context_decl) := 
-match l with
-| [] => []
-| x :: xs => let Ty := x.(decl_type) in 
-        match x.(decl_type) with
-        | tSort s => list_pars_to_linearize xs
-        | tApp u l => if eqb_term (trans Σ u) <% CompDec %> then list_pars_to_linearize xs else (Ty, x.(decl_name)) :: list_pars_to_linearize xs
-        | _  => (Ty, x.(decl_name)) :: list_pars_to_linearize xs 
-        end
-end. *)
 
 Definition app_or_not (t : term) (n : nat):=
 match n with
@@ -469,7 +435,8 @@ match l with
 | x :: xs => x || contains_true xs
 end.
 
-(* Warning: because of the only one ident, does not work for mutuals *)
+(* Warning: because of the only one ident, does not work for mutuals 
+inductives *)
 Definition linearize_oind_entry_list (l : list one_inductive_entry) (params : list context_decl) lpars npars
 list_compdecs new_name : (list one_inductive_entry)*bool :=
 let interm_res :=
@@ -482,7 +449,7 @@ Definition linearize_from_mind_entry (t: term) :=
 t <- monadic_compdec_inductive t ;;
 let list_compdecs := t.1.1 in 
 let lpars := t.1.2 in 
-let mind_entry := t.2 in (* the user may have given an term with parameters instantiated *)
+let mind_entry := t.2 in (* the user may have given a term with parameters instantiated *)
 let npars := List.length (mind_entry_params mind_entry) in
 params <- tmEval all (replace_params mind_entry lpars) ;; 
 new_compdecs <- tmEval all (inst_parametric_compdec_hypothesis list_compdecs) ;;
@@ -548,7 +515,7 @@ Inductive test4occ : nat -> nat -> nat -> nat -> Prop :=
 | test4occ_constructor : forall n, test4occ n n n n.
 
 MetaCoq Run (tmQuote test4occ >>= 
-linearize_from_mind_entry).
+linearize_from_mind_entry). 
 
 Inductive test22occ : nat -> nat -> nat -> nat -> Prop :=
 | test22occ_constructor : forall n k, test22occ 1 2 3 k -> test22occ n n k k.
@@ -573,10 +540,6 @@ forall y, y = b -> test2pars_linear A HA a b x y.
 Inductive test2pars2 (A : Type) (HA : CompDec A) (a b : A) : A -> A -> Prop :=
 | test2pars_constructor2 :
 test2pars2 A HA a b a b.
-
-(* MetaCoq Quote Recursively Definition entry_test := test2pars2.
-
-MetaCoq Quote Recursively Definition goal_test := test2pars_linear. *)
 
 Inductive bar : nat -> nat -> nat -> nat -> Prop :=
 | barc : forall n k, bar k n k n.

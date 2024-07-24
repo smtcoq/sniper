@@ -11,6 +11,7 @@ From Trakt Require Import Trakt.
 From Sniper Require Import Transfos.
 
 Require Import triggers_tactics.
+Require Import run_tactic.
 Require Import triggers.
 Require Import printer.
 Require Import orchestrator.
