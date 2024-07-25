@@ -5,6 +5,7 @@ Require Import ZArith.
 Require Import add_compdecs.
 
 From SMTCoq Require SMT_classes Conversion Tactics.
+Import Tactics.
 
 Ltac trakt_rels rels :=
   lazymatch rels with
@@ -98,9 +99,6 @@ Ltac preprocess1 Hs :=
     let rels := Conversion.generate_rels cpds in
     trakt1 rels Hs.
 
-
-Declare ML Module "coq-smtcoq.smtcoq".
-Tactic Notation "verit_bool_no_check_base_auto" constr(h) := verit_bool_no_check_base h; try (exact _).
 
 Tactic Notation "verit_bool_no_check" constr(h) :=
   let tac :=
