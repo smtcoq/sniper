@@ -1,6 +1,6 @@
--R ./orchestrator Sniper.orchestrator
+# -R ./orchestrator Sniper.orchestrator
 -R . Sniper
--Q ./elpi Sniper.elpi
+# -Q ./elpi Sniper.elpi
 -docroot Sniper
 
 orchestrator/triggers.v
