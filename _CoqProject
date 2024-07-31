@@ -20,6 +20,7 @@ theories/expand.v
 theories/fold_local_def.v
 theories/elimination_fixpoints.v
 theories/elimination_pattern_matching.v
+theories/pattern_matching_goal.v
 theories/anonymous_functions.v
 theories/higher_order.v
 theories/instantiate_type.v
