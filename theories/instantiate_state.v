@@ -7,7 +7,7 @@ From elpi Require Import elpi.
 (* Number of parameters of the inductive corresponding to a
 given constructor *) 
 
-Ltac mypose n := pose n.
+Ltac my_pose n := pose n.
 
 Elpi Tactic npars.
 Elpi Accumulate lp:{{
@@ -19,7 +19,7 @@ Elpi Accumulate lp:{{
   solve (goal _ _ _ _ [trm (global (indc C))] as G) GL :- 
      std.do! [ coq.env.indc->indt C Indu _,
      coq.env.indt Indu _ Npars _ _ _ _, int_to_constr Npars Npars',
-     coq.ltac.call "mypose" [trm Npars'] G GL].
+     coq.ltac.call "my_pose" [trm Npars'] G GL].
 
 }}.
 

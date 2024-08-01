@@ -1,3 +1,5 @@
+From SMTCoq Require Export SMTCoq.
+
 From Ltac2 Require Import Ltac2.
 
 Require Import ZArith.

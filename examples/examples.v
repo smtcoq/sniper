@@ -9,15 +9,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
-(* If you have Sniper installed, change these two lines into:
-   From Sniper.orchestrator Require Import Sniper.
-   From Sniper Require Import tree.
-*)
-From SMTCoq Require Import SMTCoq.
-From Sniper.orchestrator Require Import Sniper.
+From Sniper Require Import Sniper.
 From Sniper Require Import tree.
-From Sniper Require Import Transfos.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
