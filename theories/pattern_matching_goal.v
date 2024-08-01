@@ -61,12 +61,6 @@ Goal forall (x : nat) (f g : nat -> nat) , ((match x with O => f | S _ => g end)
   (* now one can do scope *)
   Abort.
 
-(* Why this can't be solved by pose_case + scope + verit? *)
-Goal forall (x : nat) , (match x with O => 42 | _ => 42 end) = 42.
-  intro x.
-  pose_case.
-  Abort.
-
 (* This one was already covered *)
 Goal forall y : nat , let x := match y with | O => 2 | S _ => 3 end in x = x.
   intro y.
