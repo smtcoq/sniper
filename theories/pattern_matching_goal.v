@@ -2,8 +2,6 @@ From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf Message.
 Import Unsafe.
 
-Ltac2 fail s := Control.backtrack_tactic_failure s.
-
 Ltac2 rec first_some (args : 'a array) (f : 'a -> 'b option) : 'b option :=
   let rec loop args_list :=
     match args_list with
