@@ -2,27 +2,6 @@ From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf Message.
 Import Unsafe.
 
-(* | Rel (int) *)
-(* | Var (ident) *)
-(* | Meta (meta) *)
-(* | Evar (evar, constr array) *)
-(* | Sort (sort) *)
-(* | Cast (constr, cast, constr) *)
-(* | Prod (binder, constr) *)
-(* | Lambda (binder, constr) *)
-(* | LetIn (binder, constr, constr) *)
-(* | App (constr, constr array) *)
-(* | Constant (constant, instance) *)
-(* | Ind (inductive, instance) *)
-(* | Constructor (constructor, instance) *)
-(* | Case (case, constr, case_invert, constr, constr array) *)
-(* | Fix (int array, int, binder array, constr array) *)
-(* | CoFix (int, binder array, constr array) *)
-(* | Proj (projection, constr) *)
-(* | Uint63 (uint63) *)
-(* | Float (float) *)
-(* | Array (instance, constr array, constr, constr) *)
-
 Ltac2 fail s := Control.backtrack_tactic_failure s.
 
 Ltac2 rec first_some (args : 'a array) (f : 'a -> 'b option) : 'b option :=
@@ -62,7 +41,7 @@ Ltac2 pose_case (_ : unit) : unit :=
         let new_constr :=
           make (Var fresh_id) in
         fold $new_constr
-    | None => fail "No pattern matching found in goal."
+    | None => ()
   end.
 
 Set Default Proof Mode "Classic".
@@ -94,6 +73,13 @@ Goal forall (x : nat) , (match x with O => 42 | _ => 42 end) = 42.
 Goal forall y : nat , let x := match y with | O => 2 | S _ => 3 end in x = x.
   intro y.
   pose_case.
+  Abort.
+
+(* veriT gets stuck here but z3 and cvc5 can solve it *)
+Goal forall (x : nat) , (match x with O => 3 | _ => 3 end) = 3.
+  intro x.
+  (* scope. *)
+  (* verit. *)
   Abort.
 
 End Examples.
