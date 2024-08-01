@@ -188,5 +188,4 @@ Ltac2 trigger_trakt_bool_hyp () :=
 Ltac2 trigger_trakt_bool_goal () :=
   (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
 
-
-
+Ltac2 trigger_pose_case () := TAlways.
