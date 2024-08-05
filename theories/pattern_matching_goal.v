@@ -12,6 +12,11 @@ Section Examples.
 
 Set Default Proof Mode "Classic".
 
+(* This did not work with fold (automatic reduction), but works with rewrite *)
+Goal match O with O => 42 | S _ => 41 end = 42.
+  pose_case (match O with O => 42 | S _ => 41 end).
+  reflexivity.
+Qed.
 (* pose_case does not work here (but regular scope works) -> we have to avoid lambdas? *)
 Goal forall x : nat , ((fun y => (match y with O => 42 | _ => 41 end)) x) = 41.
   intro x.
