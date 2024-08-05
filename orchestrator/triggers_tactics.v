@@ -188,4 +188,11 @@ Ltac2 trigger_trakt_bool_hyp () :=
 Ltac2 trigger_trakt_bool_goal () :=
   (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
 
-Ltac2 trigger_pose_case () := TAlways.
+(* Ltac2 trigger_pose_case () := TContains (TGoal, NotArg) (TCase tDiscard tDiscard None (Arg id)). *)
+
+Ltac2 trigger_pose_case () :=
+  TMetaLetIn (TContains (TGoal, NotArg) (TCase tDiscard tDiscard None (Arg id))) ["M"]
+    (TConj
+       (TNot (TMetaLetIn (TContains (TGoal, NotArg) (TProd tDiscard tArg NotArg)) ["f"]
+               (TContains (TNamed "f", NotArg) (TTrigVar (TNamed "M") (Arg id)))))
+       (TIs (TNamed "M", Arg id) tDiscard)).
