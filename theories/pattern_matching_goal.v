@@ -1,77 +1,60 @@
+Require Import ZArith.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf Message.
 Import Unsafe.
 
-Ltac2 rec first_some (args : 'a array) (f : 'a -> 'b option) : 'b option :=
-  let rec loop args_list :=
-    match args_list with
-      | [] => None
-      | arg::args_tail =>
-          match f arg with
-            | Some c => Some c
-            | None => loop args_tail
-          end
-      end
-  in
-  loop (Array.to_list args).
+Ltac2 l_pose_case (c : constr) : unit :=
+  let fresh_id := Fresh.in_goal @pat in
+  pose ($fresh_id := $c);
+  let new_constr := make (Var fresh_id) in
+  fold $new_constr.
 
-Ltac2 rec find_case (c : constr) : constr option :=
-  match Constr.Unsafe.kind c with
-    | Case _ _ _ _ _ => Some c
-    | LetIn _ v b => find_case v
-        (* find_case b will have the same problem as lambda and prod *)
-    | App f args =>
-        match find_case f with
-          | Some x => Some x
-          | None => first_some args find_case
-        end
-    (* Should we go inside lambdas and prods? Lambdas will be taken care of by another transformation, and we don't support prods *)
-    | Prod _ b => None
-    | Lambda _ b => None
-    | _ => None
-  end.
+Ltac pose_case c :=
+  let tac := ltac2:(c |- let c' := Option.get (Ltac1.to_constr c) in l_pose_case c') in
+  tac c.
 
-Ltac2 pose_case (_ : unit) : unit :=
-  match find_case (Control.goal ()) with
-    | Some c =>
-        let fresh_id := Fresh.in_goal @pat in
-        pose ($fresh_id := $c);
-        let new_constr :=
-          make (Var fresh_id) in
-        fold $new_constr
-    | None => ()
-  end.
+Section Examples.
 
 Set Default Proof Mode "Classic".
 
-Ltac pose_case := ltac2:(pose_case ()).
-
-Section Examples.
+Goal forall x , (match x with | O => 41 | S _ => 42 end) = 42.
+  intro x.
+  let m := constr:(match x with | O => 41 | S _ => 42 end) in
+  pose_case m.
+  Abort.
 
 (* pose_case does not work here (but regular scope works) -> we have to avoid lambdas? *)
 Goal forall x : nat , ((fun y => (match y with O => 42 | _ => 41 end)) x) = 41.
   intro x.
-  (* pose_case. *)
+  Fail
+    let m := constr:(match y with O => 42 | _ => 41 end) in
+    pose_case m.
   Abort.
 
 (* This case was not covered before *)
 Goal forall (x : nat) (f g : nat -> nat) , ((match x with O => f | S _ => g end) 42 = 42).
   intros x f g.
-  pose_case.
+  let m := constr:(match x with O => f | S _ => g end) in pose_case m.
   (* now one can do scope *)
   Abort.
 
 (* This one was already covered *)
 Goal forall y : nat , let x := match y with | O => 2 | S _ => 3 end in x = x.
   intro y.
-  pose_case.
+  let m := constr:(match y with | O => 2 | S _ => 3 end) in pose_case m.
   Abort.
 
 (* veriT gets stuck here but z3 and cvc5 can solve it *)
 Goal forall (x : nat) , (match x with O => 3 | _ => 3 end) = 3.
   intro x.
-  (* scope. *)
-  (* verit. *)
+  let m := constr:(match x with | O => 3 | S _ => 3 end) in pose_case m.
+(*   (* scope. *) *)
+(*   (* verit. *) *)
+  Abort.
+
+Goal forall y : nat , let x := (match y with | O => 2 | S _ => 3 end)%Z in x = x.
+  intro y.
+  let m := constr:(match y with O => 2%Z | S _ => 3%Z end) in pose_case m.
   Abort.
 
 End Examples.
