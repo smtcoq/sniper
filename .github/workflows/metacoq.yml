@@ -2,7 +2,7 @@ name: MetaCoq CI
 
 on:
   schedule:
-    # Every day at midnight
+    # Every week at sunday midnight
     - cron: '0 0 * * 0'
   # Enables manually running the workflow
   workflow_dispatch:
