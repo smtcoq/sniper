@@ -6,7 +6,7 @@ Ltac pose_case M :=
   pose (pat := M);
   assert (pf_refl : M = pat) by reflexivity;
   rewrite pf_refl;
-  clear pf_refl.
+  clearbody pat.
 
 Section Examples.
 
@@ -17,6 +17,7 @@ Goal match O with O => 42 | S _ => 41 end = 42.
   pose_case (match O with O => 42 | S _ => 41 end).
   reflexivity.
 Qed.
+
 (* pose_case does not work here (but regular scope works) -> we have to avoid lambdas? *)
 Goal forall x : nat , ((fun y => (match y with O => 42 | _ => 41 end)) x) = 41.
   intro x.
