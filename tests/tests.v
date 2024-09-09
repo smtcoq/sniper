@@ -97,7 +97,7 @@ Abort.
 
 Lemma nth_default_eq :
     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
-Proof. intros A HA n ; induction n.  
+Proof. intros A HA n ; induction n.
   - snipe.
   - intros l ; destruct l.
     * snipe.
@@ -137,7 +137,7 @@ Import ListNotations.
 
 Lemma search_append_neq : 
 forall l1 l2 l3 x, search x (l1 ++ l2) <> search x l3 -> l1 ++ l2 <> l3.
-Proof. 
+Proof.
 Time snipe. Qed.
 
 
@@ -281,4 +281,28 @@ Proof. Time snipe_no_check. Qed.
 
 End Pairs.
 
+Check N.
 
+(* `expand_hyp` shouldn't rely on the body of the symbol, but on the proof of equality *)
+Section expand_hyp_without_body.
+
+Variable  x : nat.
+Variable  f g : nat -> nat.
+Variable  h1 : f 42 = 42.
+Variable  h2 : g 42 = 42.
+Variable  M : nat -> nat.
+Variable  pf_refl : M = match x with | 0 => f | S _ => g end.
+
+Goal M 42 = 42.
+  scope.
+  Abort.
+
+End expand_hyp_without_body.
+
+
+(* Testing interaction of `pose_case` with other transformations - verit won't conclude the goal due to silent simplification  *)
+Goal forall (x : nat) (f g : nat -> nat) , (f 2 = 2) -> (g 2 = 2) -> ((match x with O => f | S _ => g end) 2 = 2).
+Proof.
+  scope.
+  verit.
+  Abort.
