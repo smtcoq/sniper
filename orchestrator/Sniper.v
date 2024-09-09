@@ -49,13 +49,13 @@ Ltac my_anonymous_function f := anonymous_fun f.
 
 Ltac my_algebraic_types t := try (interp_alg_types t).
 
-Ltac my_gen_principle t := 
+Ltac my_gen_principle t :=
  pose_gen_statement t.
 
-Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
+Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, and, or, Init.Peano.le,
 @CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare)).
 
-Ltac my_polymorphism_state := 
+Ltac my_polymorphism_state :=
   ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
     clear_prenex_poly_hyps_in_context.
 
@@ -66,6 +66,8 @@ Ltac my_add_compdec t := add_compdecs_terms t.
 
 Ltac my_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
 
+Ltac my_pose_case := pose_case.
+
 Ltac2 trigger_generation_principle := TAlways.
 
 (* Ltac2 trigger_anonymous_funs := TAlways. *)
@@ -74,7 +76,8 @@ Ltac2 trigger_higher_order :=
   TAlways.
 
 Ltac2 scope_verbos v := orchestrator 5
-{ all_tacs := [((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
+{ all_tacs := [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
+((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
 ((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
@@ -98,8 +101,9 @@ Ltac2 scope_debug () := scope_verbos Debug.
 Ltac2 scope_full () := scope_verbos Full.
 
 Ltac2 scope2_verbos v := orchestrator 5
-{ all_tacs := 
-[((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
+{ all_tacs :=
+[((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
+((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
 ((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl", trivial_filter);
@@ -125,6 +129,8 @@ Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
 
 Tactic Notation "scope_info" := ltac2:(Control.enter (fun () => intros; scope_info ())).
 
+Tactic Notation "scope_full" := ltac2:(Control.enter (fun () => intros; scope_full ())).
+
 Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
 Tactic Notation "snipe_no_check" := 
@@ -138,6 +144,4 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
-
-
 

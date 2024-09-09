@@ -197,8 +197,13 @@ Ltac2 rec orchestrator_aux
                                 let cg' := (it).(local_env) in
                                 let hs2 := Control.hyps () in
                                 let g2 := Control.goal () in
-                                let g3 := if Constr.equal g1 g2 then None else Some g2 
-                                in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                                let goalChanged := Bool.neg (Constr.equal g1 g2) in
+                                let g3 := if goalChanged then Some g2 else None in
+                                if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
+                                let diff := diff_hyps hs1 hs2 in
+                                let hypsChanged := Int.gt (List.length diff) 0 in
+                                if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
+                                it.(local_env) := (diff, g3) ;
                                 it.(global_flag) := false ;
                                 let fuel' :=
                                   if multipletimes then
@@ -210,8 +215,13 @@ Ltac2 rec orchestrator_aux
                                     let cg' := (it).(local_env) in
                                     let hs2 := Control.hyps () in
                                     let g2 := Control.goal () in
-                                    let g3 := if Constr.equal g1 g2 then None else Some g2 
-                                    in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
+                                    let goalChanged := Bool.neg (Constr.equal g1 g2) in
+                                    let g3 := if goalChanged then Some g2 else None in
+                                    if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
+                                    let diff := diff_hyps hs1 hs2 in
+                                    let hypsChanged := Int.gt (List.length diff) 0 in
+                                    if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
+                                    it.(local_env) := (diff, g3) ;
                                     it.(global_flag) := false ;
                                       let fuel' :=
                                       if multipletimes then
@@ -221,9 +231,14 @@ Ltac2 rec orchestrator_aux
                                     let cg' := (it).(local_env) in
                                     let hs2 := Control.hyps () in
                                     let g2 := Control.goal () in
-                                    let g3 := if Constr.equal g1 g2 then None else Some g2 
-                                    in it.(local_env) := (diff_hyps hs1 hs2, g3) ; 
-                                      it.(global_flag) := false ;
+                                    let goalChanged := Bool.neg (Constr.equal g1 g2) in
+                                    let g3 := if goalChanged then Some g2 else None in
+                                    if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
+                                    let diff := diff_hyps hs1 hs2 in
+                                    let hypsChanged := Int.gt (List.length diff) 0 in
+                                    if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
+                                    it.(local_env) := (diff, g3) ;
+                                    it.(global_flag) := false ;
                                     let fuel' :=
                                       if multipletimes then
                                       Int.sub fuel 1 else fuel in
