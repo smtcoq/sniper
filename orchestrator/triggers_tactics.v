@@ -138,7 +138,7 @@ Ltac2 trigger_generation_principle () :=
 
 Ltac2 filter_generation_principle () :=
   FConj (FConstr 
-          ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
+          ['Z; 'bool; 'positive; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
           'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])

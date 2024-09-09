@@ -52,7 +52,7 @@ Ltac my_algebraic_types t := try (interp_alg_types t).
 Ltac my_gen_principle t :=
  pose_gen_statement t.
 
-Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, N, and, or, nat, Init.Peano.le,
+Ltac my_gen_principle_temporary := ltac2:(get_projs_in_variables '(Z, bool, True, False, positive, and, or, Init.Peano.le,
 @CompDec, Comparable, EqbType, Inhabited, OrderedType.Compare)).
 
 Ltac my_polymorphism_state :=
@@ -128,6 +128,8 @@ Ltac2 scope2_full () := scope2_verbos Full.
 Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
 
 Tactic Notation "scope_info" := ltac2:(Control.enter (fun () => intros; scope_info ())).
+
+Tactic Notation "scope_full" := ltac2:(Control.enter (fun () => intros; scope_full ())).
 
 Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
