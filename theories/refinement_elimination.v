@@ -11,13 +11,12 @@ Definition t := { x : nat | p x }.
 
 Definition x : t := exist _ 3 (le_n 3).
 
-Tactic Notation "step_one" uconstr(x) :=
-  elpi step_one_tac ltac_term:(x).
+Tactic Notation "step_one" ident(i) constr(x) :=
+  elpi step_one_tac ltac_string:(i) ltac_term:(x).
 
 Goal (proj1_sig x) >= 3.
-  elpi step_one_tac "foo" (exist p 3 (le_n 3)).
-  elpi step_one_tac "blah" ((fun (_ : nat) => (exist p 3 (le_n 3))) 42).
-  step_one (fun _ => (exist _ 3 (le_n 3)) 42).
+  step_one foo (exist p 3 (le_n 3)).
+  step_one blah ((fun (_ : nat) => (exist p 3 (le_n 3))) 42).
   Abort.
   (* let foo := fresh in *)
   (* elpi step_one_tac ltac_string:(ident:foo) (x). *)
