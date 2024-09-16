@@ -16,11 +16,7 @@ Tactic Notation "step_one" ident(i) constr(x) :=
 
 Goal (proj1_sig x) >= 3.
   step_one foo (exist p 3 (le_n 3)).
-  step_one blah ((fun (_ : nat) => (exist p 3 (le_n 3))) 42).
   Abort.
-  (* let foo := fresh in *)
-  (* elpi step_one_tac ltac_string:(ident:foo) (x). *)
-
 
 (* param p: symbol whose type contain a refinement type *)
 (* 1. Define new equivalent symbol free of refinement types *)
@@ -28,18 +24,8 @@ Goal (proj1_sig x) >= 3.
 (* 3. Prove that the new symbol satisfies the predicate of p *)
 (* 4. Replace p by the new symbol everywhere *)
 
-
 Ltac2 fail msg :=
   Control.zero (Tactic_failure (Some msg)).
-
-
-
-(*Ltac2 step_one (p : constr) :=
-  lazy_match! p with
-    | exist _ ?body _ => body
-    | f x =>*)
-
-(* Ltac2 step_one (p: constr) := constr:(proj1_sig $p). *)
 
 Ltac2 get_pred (tp:constr) : constr :=
   lazy_match! tp with
@@ -50,18 +36,9 @@ Ltac2 get_pred (tp:constr) : constr :=
 (*Definition get_pred {A : Type} {P : A -> Prop} : @sig A P -> (A -> Prop) := fun _ => P.*)
 
 Ltac elim_refinement_types foo p :=
-
   (* Step 1 *)
-  (* let new_p_id := fresh "new_p" in *)
   let p2 := eval hnf in p in
-  step_one p2;
-
-  (* let tac := *)
-  (*   ltac2:(new_p_id' p' |- *)
-  (*            let new_p := Ltac1.of_constr (step_one (Option.get (Ltac1.to_constr p'))) in *)
-  (*            ltac1:(new_p_id'' new_p' |- pose (new_p_id'' := new_p')) new_p_id' new_p) *)
-  (* in *)
-  (* tac new_p_id p; *)
+  step_one foo p;
 
   (* Step 2 *)
   let pf_refl := fresh "pf_refl" in
@@ -83,9 +60,9 @@ Ltac elim_refinement_types foo p :=
 
   clear pf_refl.
 
-Goal (proj1_sig x) >= 3.
+Goal (proj1_sig (exist p 3 (le_n 3))) >= 3.
   (* assert (H:x = exist _ 3 (le_n 3)) by reflexivity. *)
-  elim_refinement_types foo x.
+  elim_refinement_types foo (exist p 3 (le_n 3)).
 
   Goal forall (x : t) , (proj1_sig x) >= 3.
   intro x.
