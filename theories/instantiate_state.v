@@ -149,7 +149,7 @@ Ltac2 rec subterms_nary_app (c : constr) : constr list :=
     | Constant _ _ => [c]
     | Ind _ _ => [c]
     | Constructor _ _ => [c]
-    | Case _ c1 _ c2 ca => 
+    | Case _ (c1, _) _ c2 ca => 
         let l := Array.to_list ca in
         let res := List.map subterms_nary_app l in
         let res' := List.flatten res in 
@@ -170,9 +170,10 @@ Ltac2 rec subterms_nary_app (c : constr) : constr list :=
         let res1 := List.map (fun x => subterms_nary_app (Binder.type x)) l' in
         let res1' := List.flatten res1 in
         List.append [c] (List.append res' res1')
-    | Proj _ c1 => List.append [c] (subterms_nary_app c1)
+    | Proj _ _ c1 => List.append [c] (subterms_nary_app c1)
     | Uint63 _ => [c]
     | Float _ => [c]
+    | String _ => [c]
     | Array _ ca c1 c2 => 
         let l := Array.to_list ca in
         let res := List.map subterms_nary_app l in
@@ -500,7 +501,7 @@ Ltac2 compute_init_state () :=
   let context_hyps := List.map (fun x => find_context_hyp x) hyps_constr in
   let context_types := 
     List.append 
-      (List.fold_left (fun acc x => List.append (find_context_types (type x)) acc) hyps_constr' [])
+      (List.fold_left (fun acc x => List.append (find_context_types (type x)) acc) [] hyps_constr')
       (find_context_types g) in
   let context_types' :=
             List.nodup (fun (x, y) (x', y') => Bool.and (equal x x') (List.equal equal y y'))
