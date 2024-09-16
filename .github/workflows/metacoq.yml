@@ -51,3 +51,5 @@ jobs:
         with:
           coq_version: dev
           opam_file: 'coq-sniper.opam'
+          custom_script:
+            make
