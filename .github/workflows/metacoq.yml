@@ -53,4 +53,7 @@ jobs:
           opam_file: 'coq-sniper.opam'
           custom_script: |
             sudo chown -R coq:coq .
+            opam update
+            opam upgrade -y
+            opam install . --deps-only -y
             make
