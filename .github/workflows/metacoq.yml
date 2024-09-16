@@ -51,5 +51,6 @@ jobs:
         with:
           coq_version: dev
           opam_file: 'coq-sniper.opam'
-          custom_script:
+          custom_script: |
+            sudo chown -R coq:coq .
             make
