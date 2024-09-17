@@ -9,15 +9,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
-
-(* If you have Sniper installed, change these two lines into:
-   From Sniper.orchestrator Require Import Sniper.
-   From Sniper Require Import tree.
-*)
-From SMTCoq Require Import SMTCoq.
-From Sniper.orchestrator Require Import Sniper.
+From Sniper Require Import Sniper.
 From Sniper Require Import tree.
-From Sniper Require Import Transfos.
 Require Import String.
 Require Import ZArith.
 Require Import Bool.
@@ -31,7 +24,7 @@ Local Open Scope Z_scope.
 
 (* A simple example *)
 Goal forall (l : list Z) (x : Z), hd_error l = Some x -> (l <> nil).
-Proof. snipe_no_check. Qed.
+Proof. snipe. Qed.
 
 (* The `snipe` and `snipe_no_check` tactics requires instances of equality to be decidable.
    It is in particular visible with type variables. *)
@@ -127,7 +120,7 @@ Qed.
 (* The proof of this lemma, except induction, can be automatized *)
 Lemma search_app_snipe : forall (x: A) (l1 l2: list A),
     @search x (l1 ++ l2) = ((@search x l1) || (@search x l2))%bool.
-Proof. intros x l1 l2. induction l1 as [ | x0 l0 IH]; snipe_no_check. Qed. 
+Proof. induction l1 ; snipe_no_check. Qed. 
 
 
 (* Manually using this lemma *)
@@ -148,7 +141,7 @@ Proof. pose proof search_app. snipe_no_check. Qed.
 
 Lemma in_inv : forall (a b:A) (l:list A),
     search b (a :: l) -> orb (eqb_of_compdec H a b) (search b l).
-Proof. intros; scope; verit. Qed.
+Proof. snipe. Qed.
 
 
 (*  Another example with an induction *)
@@ -165,26 +158,6 @@ Variable HA : CompDec A.
 Variable HB : CompDec B.
 Variable HC : CompDec C.
 
-Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
-  match l, l' with
-  | [], _ => []
-  | x :: xs, [] => []
-  | x :: xs, y :: ys => (x, y) :: zip xs ys 
-  end.
-
-
-(* TODO : work on this 
-
-Lemma zip_map : forall (f : A -> B) (g : A -> C) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l).
-Proof. Time intros f g l ; induction l; scope. verit. Qed.
- *)
-(* An example with higher order and anonymous functions 
-Note that as map should be instantiated by f and g, 
-it does not work by using an induction principle which generalizes 
-on f and g, so f and g have to be introduced before l 
-It also work only with snipe2 because the arrow type instances will 
-make SMTCoq complain *) 
 
 Lemma map_compound : forall (f : A -> B) (g : B -> C) (l : list A), 
 map g (map f l) = map (fun x => g (f x)) l.
@@ -195,17 +168,22 @@ End higher_order.
 
 (** Examples on trees *)
 
+Section Tree. 
+
+
 Lemma empty_tree_Z2 : forall (t : @tree Z) a t' b,
 is_empty t = true -> t <> Node a t' b.
-Proof. intros t a t' b; snipe. Qed.
+Proof. snipe. Qed.
 
 Lemma rev_elements_app :
  forall A (H:CompDec A) s acc, tree.rev_elements_aux A acc s = ((tree.rev_elements A s) ++ acc)%list.
-Proof. intros A H s ; induction s.
+Proof. intros A H s ; induction s. 
 - pose proof List.app_nil_r; snipe.
 - pose proof app_ass ; pose proof List.app_nil_r; snipe. 
 Qed.
 
 Lemma rev_elements_node c (H: CompDec c) l x r :
  rev_elements c (Node l x r) = (rev_elements c r ++ x :: rev_elements c l)%list.
-Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe_no_check. Qed.
+Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe. Qed.
+
+End Tree.

@@ -1,5 +1,4 @@
 From Ltac2 Require Import Ltac2.
-From Ltac2 Require Import Ltac1.
 From Ltac2 Require Import Constr.
 From Ltac2 Require Import String.
 Require Import List ZArith.
@@ -9,84 +8,6 @@ Require Import triggers.
 Require Import filters.
 
 From SMTCoq Require SMT_classes Conversion Tactics Trace State SMT_classes_instances QInst BVList FArray.
-
-From Trakt Require Import Trakt.
-
-Inductive dumb_ind :=.
-
-Ltac trakt_bool_hyp H :=  
-  let H' := fresh H in
-  trakt_pose dumb_ind bool : H as H' ; clearbody H'.
-
-Ltac trakt_bool_goal := trakt bool.
-
-Section test_trakt_bool_hyp. 
-
-Lemma toto : (forall (H: True), False).
-ltac1:(intros H ; trakt_bool_hyp H).
-Abort.
-
-(* Trakt Add Relation 2 (@eq nat) (@SMT_classes.eqb_of_compdec nat SMT_classes_instances.Nat_compdec)
-(@SMT_classes.compdec_eq_eqb nat SMT_classes_instances.Nat_compdec). *)
-
-(* Variable (H : forall (n : nat), n =  n).
-
-Lemma tutu : False.
-ltac1:(trakt_bool_hyp H).
-Abort. *)
-
-End test_trakt_bool_hyp.
-
-(** We need to use a trick here: there
-is no function in Ltac2's API which returns 
-a Ltac1 value given its ident. We always need the absolute path
-and we cannot look at several paths because the function [Ltac1.ref] 
-throws an uncatchable exception whenever the path is not the good one.
-Consequently, all the Orchestrator's tactics should be in one file, or the user has to 
-provide the absolute path herself, which is not convenient at all.
-Using elpi avoid these difficulties, even if the user needs
-to create its own copy of all the tactic which take arguments 
-TODO : a PR in Coq to avoid this problem *)
-
-From elpi Require Import elpi.
-
-Elpi Tactic apply_ltac1.
-Elpi Accumulate lp:{{
-
-  solve ((goal _ _ _ _ [str S| H]) as G) GS :-
-    coq.ltac.call S H G GS.
-
-}}.
-Elpi Typecheck.
-
-Ltac2 get_opt o := match o with None => Control.throw Not_found | Some x => x end.
-
-(** [run] runs a Ltac1 tactic given its ident and its arguments (provided as a string) *) 
-
-Ltac2 run (s : string) (l : constr list) :=
-let id := Ident.of_string s in
-let id := of_ident (get_opt id) in
-let l := of_list (List.map of_constr l) in
-Ltac1.apply ltac1val:(fun s l => 
-  let id := s in elpi apply_ltac1 ltac_string:(id) ltac_term_list:(l)) [id; l] run.
-
-Section tests.
-
-(** For tests *)
-Ltac myapply2 A B := split ; [apply A | apply B].
-Ltac myexact t := exact t.
-
-Goal (True /\ True) /\ (True -> True -> True /\ True).
-Proof.
-run "split" [].
-let str := "split" in run str [].
-run "myexact" ['I].
-run "myexact" ['I].
-intros H1 H2.
-run "myapply2" ['H1; 'H2].
-Qed.
-
-End tests.
 
 Ltac2 is_prod (c: constr) :=
   match Constr.Unsafe.kind c with
@@ -217,7 +138,7 @@ Ltac2 trigger_generation_principle () :=
 
 Ltac2 filter_generation_principle () :=
   FConj (FConstr 
-          ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
+          ['Z; 'bool; 'positive; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
           'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
@@ -240,7 +161,7 @@ Ltac2 trigger_add_compdecs () :=
 
 Ltac2 filter_add_compdecs () :=
 FConj
-(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray])
+(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray; 'Prop; 'Set; 'Type])
 (FPred (fun x => Bool.or (is_prod x)
     (match Constr.Unsafe.kind x with | Constr.Unsafe.App u ca => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
    
@@ -267,5 +188,9 @@ Ltac2 trigger_trakt_bool_hyp () :=
 Ltac2 trigger_trakt_bool_goal () :=
   (TNot (TIs (TGoal, NotArg) (TEq (TTerm 'bool NotArg) tDiscard tDiscard NotArg))).
 
-
-
+Ltac2 trigger_pose_case () :=
+  TMetaLetIn (TContains (TGoal, NotArg) (TCase tDiscard tDiscard None (Arg id))) ["M"]
+    (TConj
+       (TNot (TMetaLetIn (TContains (TGoal, NotArg) (TProd tArg tDiscard NotArg)) ["f"]
+               (TContains (TNamed "f", NotArg) (TTrigVar (TNamed "M") NotArg))))
+       (TIs (TNamed "M", Arg id) tDiscard)).
