@@ -16,16 +16,16 @@ install: [
   [make "install"]
 ]
 depends: [
-  "coq" {>= "8.19" & < "8.20~"}
-  "coq-metacoq-utils" {= "1.3.1+8.19"}
-  "coq-metacoq-template" {= "1.3.1+8.19"}
+  "coq" {>= "8.20" & < "8.21~"}
+  "coq-metacoq-utils" {= "1.3.2+8.20"}
+  "coq-metacoq-template" {= "1.3.2+8.20"}
   "elpi"
   "coq-trakt"
   "coq-elpi"
   "coq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-8.19" ]
+  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-coq-8.20" ]
   [ "coq-trakt.1.2c" "git+https://github.com/ecranceMERCE/trakt.git#1.2c" ]
 ]
 tags: [
