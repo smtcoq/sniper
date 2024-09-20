@@ -6,7 +6,11 @@ tests: tests/tests.v
 	$(SHOW)COQC $<
 	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
 
-test: examples tests
+tests_triggers: orchestrator/tests/tests.v
+	$(SHOW)COQC $<
+	$(HIDE)$(TIMER) $(COQC) $(COQDEBUG) $(TIMING_ARG) $(COQFLAGS) $(COQLIBS) $< $(TIMING_EXTRA)
+
+test: examples tests tests_triggers
 
 clean::
 	rm -f examples/examples.glob examples/examples.vo examples/examples.vok examples/examples.vos tests/tests.glob tests/tests.vo tests/tests.vok tests/tests.vos benchs/*.glob benchs/*.vo benchs/*.vok benchs/*.vos
