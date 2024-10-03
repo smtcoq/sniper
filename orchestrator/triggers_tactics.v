@@ -25,13 +25,41 @@ let rec aux t :=
   end
 in aux t.
 
+Ltac2 is_prop (c: constr) := Constr.equal c 'Prop.
+
+Ltac2 is_proof (c: constr) :=
+  let t := Constr.type c in
+  let t2 := Constr.type t in
+  is_prop t2.
 
 Ltac2 rec codomain_not_prop_aux (c: constr) :=
   match Constr.Unsafe.kind c with
   | Constr.Unsafe.Prod bi c' => codomain_not_prop_aux c'
   | Constr.Unsafe.App x1 arr => codomain_not_prop_aux x1
-  | _ => if Constr.equal c 'Prop then false else true
+  | _ => Bool.neg (is_prop c)
   end.
+
+Require Import sig_expand_elpi.
+From elpi Require Import elpi.
+
+Tactic Notation "sigfull" constr(x) :=
+  elpi sigfull_tac ltac_term:(x).
+
+
+Ltac2 contains_refinement_type (c: constr) : bool :=
+  match! constr:(true) with
+   | _ => (ltac1:(c' |- (sigfull c'))) (Ltac1.of_constr (Constr.type c)); true
+   | _ => false
+  end.
+
+(* Goal True. *)
+(*   if contains_refinement_type constr:(@sig nat (fun x => x >= 3)) then pose (x:=true) else pose (x:=false). *)
+(*   if contains_refinement_type constr:(True) then pose (y:=true) else pose (y:=false). *)
+(*   pose (z := constr:(contains_refinement_type constr:(@sig nat (fun x => x >= 3)))). *)
+(*   let x := contains_refinement_type constr:(@sig nat (fun x => x >= 3)) in idtac x. *)
+(*   let x := ltac2:(contains_refinement_type constr:(@sig nat (fun x => x >= 3))) in *)
+(*   idtac x. *)
+(*   pose (x := ltac2:(contains_refinement_type constr:(@sig nat (fun x => x >= 3)))). *)
 
 Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
 
@@ -47,34 +75,36 @@ Ltac2 trigger_reflexivity () :=
         (TContains (TGoal, NotArg) (TConstant None (Arg id)))).
 
 Ltac2 filter_reflexivity () :=
-  FConj 
-    (FConstr 
-      ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
-      'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
-      'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt; 
-      'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
-      'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq; 
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
-      '@FArray.select;
-      '@FArray.diff;
-      'is_true;
-      '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
-      '@SMTCoq.classes.SMT_classes.CompDec;
-      '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.list_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.option_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
-      (FPred higher_order).
+  FConj
+    (FConj
+      (FConstr
+        ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
+        'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
+        'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt;
+        'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
+        'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
+        'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
+        '@FArray.select;
+        '@FArray.diff;
+        'is_true;
+        '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
+        '@SMTCoq.classes.SMT_classes.CompDec;
+        '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
+        '@SMTCoq.classes.SMT_classes_instances.list_compdec;
+        '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
+        '@SMTCoq.classes.SMT_classes_instances.option_compdec;
+        '@SMTCoq.classes.SMT_classes_instances.Z_compdec])
+        (FPred higher_order))
+    (FConj (FPred is_proof) (FPred contains_refinement_type)).
 
 Ltac2 trigger_unfold_reflexivity () :=
  TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg).
@@ -122,6 +152,7 @@ Ltac2 trigger_polymorphism () :=
 Ltac2 trigger_higher_order :=
   TContains (TSomeHyp, NotArg) (TProd (TProd tDiscard tDiscard NotArg) tDiscard NotArg).
 
+
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
@@ -160,10 +191,11 @@ Ltac2 trigger_add_compdecs () :=
   (triggered when (TGoal) contains TEq (TAny (Arg id)) tDiscard tDiscard NotArg).
 
 Ltac2 filter_add_compdecs () :=
-FConj
-(FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray; 'Prop; 'Set; 'Type])
-(FPred (fun x => Bool.or (is_prod x)
-    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u ca => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
+  (FConj
+    (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray; 'Prop; 'Set; 'Type])
+    (FPred (fun x => Bool.or (is_prod x)
+      (match Constr.Unsafe.kind x with | Constr.Unsafe.App u ca => Bool.or (Constr.equal u '@SMT_classes.CompDec) (Constr.equal u '@sig) | _=> false end )))).
+
    
 (* Ltac2 trigger_fold_local_def () :=
   tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in
