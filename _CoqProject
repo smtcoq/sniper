@@ -33,6 +33,7 @@ theories/add_compdecs.v
 theories/verit.v
 theories/Transfos.v
 theories/refinement_elimination_elpi.v
+theories/sig_expand_elpi.v
 
 theories/deciderel/add_hypothesis_on_parameters.v
 theories/deciderel/compdec_plugin.v
