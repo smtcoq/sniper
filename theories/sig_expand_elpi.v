@@ -1,51 +1,12 @@
 From elpi Require Import elpi.
 
+From Sniper.elpi Extra Dependency "sigfull.elpi" as Sigfull.
 
 Elpi Tactic sig_expand_tac.
 
+Elpi Accumulate File Sigfull.
+
 Elpi Accumulate lp:{{
-
-  pred sigfull i:term.
-  pred sigfull_rec i:term.
-
-  sigfull_rec ({{ @sig _ _ }}).
-
-  sigfull_rec (fun _ T _) :-
-    sigfull T.
-  sigfull_rec (fun _ T F) :-
-    pi x\ decl x _ T => sigfull (F x).
-
-  sigfull_rec (let _ T _ _) :-
-    sigfull T.
-  sigfull_rec (let _ _ B _) :-
-    sigfull B.
-  sigfull_rec (let _ T _ F) :-
-    pi x\ decl x _ T => sigfull (F x).
-
-  sigfull_rec (prod _ T _) :-
-    sigfull T.
-  sigfull_rec (prod _ T F) :-
-    pi x\ decl x _ T => sigfull (F x).
-
-  sigfull_rec (app L) :- std.exists L sigfull.
-
-  sigfull_rec (fix _ _ Ty _) :-
-    sigfull Ty.
-  sigfull_rec (fix _ _ Ty F) :-
-    pi x\ decl x _ Ty => sigfull (F x).
-
-  sigfull_rec (match T _ _) :-
-    sigfull T.
-  sigfull_rec (match _ Rty _) :-
-    sigfull Rty.
-  sigfull_rec (match _ _ B) :-
-    std.exists B sigfull.
-
-  sigfull_rec (uvar _ L) :- std.exists L sigfull.
-
-  sigfull I :-
-    coq.reduction.lazy.whd I Ir,
-    sigfull_rec Ir.
 
   pred smart_sig_expand i:term o:term.
   pred sig_expand i:term o:term.
@@ -112,5 +73,21 @@ Elpi Accumulate lp:{{
 
   solve (goal _ _ _ _ _) _ :- coq.ltac.fail 0 "There should be exactly two arguments".
 
+}}.
+Elpi Typecheck.
+
+Elpi Tactic sigfull_tac.
+
+Elpi Accumulate File Sigfull.
+
+Elpi Accumulate lp:{{
+  solve (goal _ _ _ _ [trm P]) _ :-
+    sigfull P.
+  solve (goal _ _ _ _ [trm _]) _ :-
+    coq.ltac.fail 0 "The argument is not sigfull".
+  solve (goal _ _ _ _ [_]) _ :-
+    coq.ltac.fail 0 "The argument should be a term".
+  solve (goal _ _ _ _ _) _ :-
+    coq.ltac.fail 0 "There should be exactly 1 argument".
 }}.
 Elpi Typecheck.

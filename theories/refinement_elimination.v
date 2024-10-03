@@ -309,12 +309,11 @@ Theorem In_interval: forall x l h, (InBoolRef x (interval l h) = true) <-> l <= 
   Proof.
   split.
   intro H.
-  elim_refinement_types interval.
 
 
-(*   let f1 := fresh "step_one" in *)
-(*   let p2 := eval hnf in InBoolRef in *)
-(*   step_one f1 p2. *)
+  let f1 := fresh "step_one" in
+  let p2 := eval hnf in interval in
+  step_one f1 p2.
 
 (*   let f1 := eval cbn in step_one in *)
 (*   let tp := type of InBoolRef in idtac tp. *)

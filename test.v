@@ -185,15 +185,16 @@ Trakt Add Relation 1 ok ok' ok_ok'.
 
 Check interval.
 
+Check @proj1_sig data ok.
+
 Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
   intros l h.
-  scope.
+  scope_info.
   - admit.
-  - admit.
-  - elim_refinement_types interval.
-
-    clear f H0 f0 H5 H3 H4 H p0.
+  - clear H3.
+    elim_refinement_types interval.
     scope.
+    clear f H0 H4.
     verit.
   clearbody f.
   clear -H1.
