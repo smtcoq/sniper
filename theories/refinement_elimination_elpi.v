@@ -76,9 +76,15 @@ Elpi Accumulate lp:{{
       % We should add another variable and figure out which rule to add between the two introduced variables
     replace T T1, pi x\ decl x _ T => replace (F x) (F1 x).
   replace X Y :- name X, !, X = Y, !. % avoid loading "replace x x" at binders
-  replace (global _ as C) C1 :- refinefull C, !, coq.reduction.lazy.whd C C2, replace C2 C1.
+  replace (global _ as C) C1 :-
+    refinefull C, !,
+    @redflags! coq.redflags.delta => coq.reduction.lazy.whd C C2,
+    replace C2 C1.
   replace (global _ as C) C.
-  replace (pglobal _ _ as C) C1 :- refinefull C, !, coq.reduction.lazy.whd C C2, replace C2 C1.
+  replace (pglobal _ _ as C) C1 :-
+    refinefull C, !,
+    @redflags! coq.redflags.delta => coq.reduction.lazy.whd C C2,
+    replace C2 C1.
   replace (pglobal _ _ as C) C :- !.
   replace (sort _ as C) C :- !.
   replace (let N T B F) (let N T1 B1 F1) :- !,
