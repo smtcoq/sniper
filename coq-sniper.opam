@@ -7,6 +7,7 @@ authors: ["Valentin Blot <Valentin.Blot@inria.fr>"
           "Louise Dubois de Prisque <Louise.Dubois-de-Prisque@inria.fr>"
           "Chantal Keller <Chantal.Keller@lri.fr"
           "Pierre Vial <Pierre.Vial@inria.fr>"
+          "Tomaz Mascarenhas <tomgm1502@gmail.com>"
 ]
 license: "CECILL-C"
 build: [
