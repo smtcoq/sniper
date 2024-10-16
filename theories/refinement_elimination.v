@@ -21,30 +21,44 @@ Require Import ZArith.
 Ltac2 fail msg :=
   Control.zero (Tactic_failure (Some msg)).
 
-Ltac2 rec make_eq' (f : constr) (g : constr) (gA : constr) (gP : constr) (t : constr) (i : int) (args : constr list) :=
+Ltac2 rec make_eq' (f : constr) (g : constr) (t : constr) (i : int) (argsF : constr list) (argsG : constr list) :=
   match kind t with
   | Prod b c =>
-      make (Prod b (make_eq' f g gA gP c (Int.add i 1) (make (Rel i) :: args)))
+      lazy_match! Constr.Binder.type b with
+        | @sig ?d ?p =>
+            let argF : constr := make (App constr:(@proj1_sig) (Array.of_list [d; p; make (Rel i)])) in
+            make (Prod b (make_eq' f g c (Int.sub i 1) ((argF) :: argsF) (make (Rel i) :: argsG)))
+        | _ => make (Prod b (make_eq' f g c (Int.sub i 1) (make (Rel i) :: argsF) (make (Rel i) :: argsG)))
+      end
   | _ =>
-      let lhs := make (App f (Array.of_list args)) in
-      let rhs := make (App g (Array.of_list args)) in
-      let rhs' := make (App constr:(proj1_sig) (Array.of_list [gA; gP; rhs])) in
-      make (App constr:(@eq) (Array.of_list [t; lhs; rhs']))
+      let lhs := make (App f (Array.of_list (List.rev argsF))) in
+      let rhs := make (App g (Array.of_list (List.rev argsG))) in
+      lazy_match! t with
+        | @sig ?d ?p =>
+            let rhs' := make (App constr:(@proj1_sig) (Array.of_list [d; p; rhs])) in
+            make (App constr:(@eq) (Array.of_list [d; lhs; rhs']))
+        | _ => make (App constr:(@eq) (Array.of_list [t; lhs; rhs]))
+      end
   end.
 
-Ltac2 rec get_ret_sig (t : constr) : constr * constr :=
+Ltac2 rec arity (t : constr) : int :=
+  match kind t with
+    | Prod _ c => Int.add 1 (arity c)
+    | _ => 0
+  end.
+
+Ltac2 rec get_ret_sig (t : constr) : (constr * constr) option :=
   match kind t with
     | Prod _ c => get_ret_sig c
     | _ =>
        lazy_match! t with
-         | @sig ?d ?p => (d, p)
-         | _ => fail (Message.concat (Message.of_string "Expected refinement type but got: ") (Message.of_constr t))
+         | @sig ?d ?p => Some (d, p)
+         | _ => None
        end
   end.
 
 Ltac2 make_eq (f : constr) (g : constr) (reducedTypeG : constr) :=
-  let (gA, gP) := get_ret_sig reducedTypeG in
-  make_eq' f g gA gP (Constr.type f) 1 [].
+  make_eq' f g reducedTypeG (arity reducedTypeG) [] [].
 
 Ltac2 rec make_pred' (f : constr) (tF : constr) (pred : constr) (i : int) (args : constr list) :=
   match kind tF with
@@ -60,9 +74,6 @@ Ltac2 make_pred (f : constr) (pred : constr) :=
 
 Tactic Notation "step_one" ident(i) constr(x) :=
   elpi step_one_tac ltac_string:(i) ltac_term:(x).
-
-Tactic Notation "make_eq" constr(x) constr(y) :=
-  elpi make_eq ltac_term:(x) ltac_term:(y).
 
 Tactic Notation "sig_expand" ident(i) constr(x) :=
   elpi sig_expand_tac ltac_string:(i) ltac_term:(x).
@@ -86,26 +97,30 @@ Ltac elim_refinement_types p :=
     let p'' := Option.get (Ltac1.to_constr p') in
     let redPType' := Option.get (Ltac1.to_constr redPType) in
     let eq := make_eq f1'' p'' redPType' in
+
     ltac1:(eq' pf_refl' |- assert (pf_refl' : eq') by now simpl) (Ltac1.of_constr eq) pf_refl
   ) in tac f1 p tp pf_refl;
 
   (* Step 3 *)
+  (* Does not work yet if `p` receives refinement types as arguments and also returns a refinement type *)
   let tac := ltac2:(f1' tp' pf_refl' |-
       let tp'' := Option.get (Ltac1.to_constr tp') in
-      let (_, pred) := get_ret_sig tp'' in
-      let pred_applied := make_pred (Option.get (Ltac1.to_constr f1')) pred in
-      (* TODO: We really just want to beta reduce one time, maybe head normal form is too strong, maybe a bit of ELPI here would help *)
-      ltac1:(pred' f1'' pf_refl'' |-
-        let pred' := eval cbn in pred' in
-        assert (pred') by (intros; rewrite pf_refl''; apply proj2_sig)
-      ) (Ltac1.of_constr pred_applied) f1' pf_refl'
+      match get_ret_sig tp'' with
+        | Some (_, pred) =>
+          let pred_applied := make_pred (Option.get (Ltac1.to_constr f1')) pred in
+          (* TODO: We really just want to beta reduce one time, maybe head normal form is too strong, maybe a bit of ELPI here would help *)
+          ltac1:(pred' f1'' pf_refl'' |-
+            let pred' := eval cbn in pred' in
+            assert (pred')  by (intros; rewrite pf_refl''; apply proj2_sig))
+            (Ltac1.of_constr pred_applied) f1' pf_refl'
+        | _ => ()
+      end
     )
   in tac f1 tp pf_refl;
 
-  (* Step 4 *)
-  try rewrite <- pf_refl in *;
+  (* (* Step 4 *) *)
+  rewrite <- pf_refl in *;
 
-  (* clear pf_refl *)
   clear pf_refl tp_exp.
 
 Section Examples.
@@ -145,7 +160,7 @@ Section Examples.
   Axiom foo : forall l h , ok' (if l <? h then Cons l h Nil else Nil) = true.
 
   Program Definition interval (l h: Z) : refData :=
-    exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
+    @exist _ _ (if Z.ltb l h then Cons l h Nil else Nil) _.
   Next Obligation.
     exact (foo l h).
   Defined.
@@ -167,8 +182,21 @@ Section Examples.
     - admit.
     - elim_refinement_types interval.
       scope.
-      clear H0 H4 f. (* Need to fix, generated by Trakt *)
+      clear H0 H4 f.
       verit.
+  Admitted.
+
+  Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
+    intros x l h.
+    split.
+    - intro h2.
+      scope.
+      elim_refinement_types InBoolRef.
+      elim_refinement_types interval.
+      scope.
+      admit.
+      verit.
+    - admit.
   Admitted.
 
 End Examples.
