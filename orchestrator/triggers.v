@@ -95,6 +95,7 @@ Ltac2 Type rec trigger := [
   | TIs ((trigger_var*flag), trigger_term) 
   | TPred ((trigger_var*flag), constr -> bool) (* the trigger_var should verify the user-defined Ltac2 predicate *)
   | TContains ((trigger_var*flag), trigger_term)
+  | TContainsClosed ((trigger_var*flag), trigger_term)
   | TConj (trigger, trigger) (* two triggers need to be present at the same time *)
   | TDisj (trigger, trigger) (* one of the two triggers needs to be present *)
   | TNot (trigger) (* negation of a trigger *)
@@ -571,6 +572,18 @@ Ltac2 all_partial_apps (c : constr) (l : constr list) :=
   let arrs := build_arrays_aux l in
   List.append [c] (List.map (fun ar => make (App c ar)) arrs).
 
+Ltac2 rec append_without_dup l1 l2 :=
+  match l1 with
+    | [] => l2
+    | x::xs => if List.mem Constr.equal x l2 then append_without_dup xs l2 else x::(append_without_dup xs l2)
+  end.
+
+Ltac2 rec flatten_remove_dup l :=
+  match l with
+    | [] => []
+    | l::ls => append_without_dup l (flatten_remove_dup ls)
+  end.
+
 Ltac2 rec subterms (c : constr) : constr list :=
   match kind c with
     | Rel _ => [c]
@@ -591,8 +604,8 @@ Ltac2 rec subterms (c : constr) : constr list :=
     | App c1 ca => 
         let l := Array.to_list ca in
         let res := List.map subterms l in
-        let res' := List.flatten res in 
-        List.append (all_partial_apps c1 l) (List.append (subterms c1) res')
+        let res' := flatten_remove_dup res in
+        append_without_dup (all_partial_apps c1 l) (append_without_dup (subterms c1) res')
     | Constant _ _ => [c]
     | Ind _ _ => [c]
     | Constructor _ _ => [c]
@@ -687,8 +700,8 @@ Ltac2 look_for_subterms_goal (s : (ident*constr list) list * (constr list) optio
       | Some lc => Some lc
     end.
 
-Ltac2 interpret_trigger_contains 
-  (it : interpretation_state)  (envref: env_triggers) tv tf : (constr * constr list list) list := 
+Ltac2 interpret_trigger_contains
+  (is_closed : bool) (it : interpretation_state)  (envref: env_triggers) tv tf : (constr * constr list list) list :=
   let scg := (it).(subterms_coq_goal) in
   let cg := (it).(local_env) in
   let env := (envref).(env_triggers) in
@@ -701,7 +714,7 @@ Ltac2 interpret_trigger_contains
               | (x, y, z) :: xs => 
                   match look_for_subterms_hyps x scg with
                     | None =>
-                        let lc := subterms z in
+                        let lc := if is_closed then closed_subterms z else subterms z in
                         let (hyps, o) := scg in
                         let _ := (it).(subterms_coq_goal) := ((x, lc)::hyps, o) in
                         let l := interpret_trigger_contains_aux cg env lc b in 
@@ -718,7 +731,7 @@ Ltac2 interpret_trigger_contains
               | (x, y, z) :: xs => 
                   match look_for_subterms_hyps x (it.(subterms_coq_goal)) with
                     | None =>
-                        let lc := subterms y in
+                        let lc := if is_closed then closed_subterms y else subterms  y in
                         let (hyps, o) := it.(subterms_coq_goal) in
                         let _ := it.(subterms_coq_goal) := ((x, lc)::hyps, o) in
                         let l := interpret_trigger_contains_aux cg env lc b in 
@@ -732,7 +745,7 @@ Ltac2 interpret_trigger_contains
       | Goal (Some g) =>
           match look_for_subterms_goal (it.(subterms_coq_goal)) with
             | None =>
-              let lc := subterms g in
+              let lc := if is_closed then closed_subterms g else subterms g in
               let (hyps, o) := it.(subterms_coq_goal) in
               let _ := it.(subterms_coq_goal) := (hyps, Some lc) in
               let l := interpret_trigger_contains_aux cg env lc tf in 
@@ -747,7 +760,7 @@ Ltac2 interpret_trigger_contains
                 end
           end
       | Constr c => 
-          let lc := subterms c in
+          let lc := if is_closed then closed_subterms c else subterms c in
           let l := interpret_trigger_contains_aux cg env lc tf in 
             match l with
               | [] => []
@@ -830,6 +843,13 @@ Ltac2 interpret_trigger
   let scg := (it).(subterms_coq_goal) in
   let cg := (it).(local_env) in
   let nametac := (it).(name_of_tac) in
+  let interpret_and_filter_contains is_closed a b fl flag_letin :=
+    let l := interpret_trigger_contains is_closed it env a b in
+    let res := (List.flatten (List.map (fun (x, l1) => List.map (fun l2 => cons_option (interpret_flag x fl) l2) l1) l)) in
+    if flag_letin then res
+    else filter_out_same_types res alr_trig nametac
+  in
+
   let rec interpret_trigger cg (env : env_triggers) alr_trig scg flag_letin nametac t := 
   match t with
     | TIs (a, fl) b =>
@@ -841,12 +861,9 @@ Ltac2 interpret_trigger
         let l := interpret_trigger_pred cg ((env).(env_triggers)) a fl p in
         if flag_letin then l 
         else filter_out_same_types l alr_trig nametac
-    | TContains (a, fl) b => 
-        let l := interpret_trigger_contains it env a b in
-        let res := (List.flatten (List.map (fun (x, l1) => List.map (fun l2 => cons_option (interpret_flag x fl) l2) l1) l)) in 
-        if flag_letin then res 
-        else filter_out_same_types res alr_trig nametac
-    | TConj t1 t2 => 
+    | TContains (a, fl) b => interpret_and_filter_contains false a b fl flag_letin
+    | TContainsClosed (a, fl) b => interpret_and_filter_contains true a b fl flag_letin
+    | TConj t1 t2 =>
         let res := interpret_trigger cg env alr_trig scg flag_letin nametac t1 in
         let res' := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
         let l := cartesian_product res res' in
@@ -865,26 +882,23 @@ Ltac2 interpret_trigger
     | TAlways => interpret_trigger_always ()
     | TNever => interpret_trigger_never ()
     | TMetaLetIn t1 ls t2 =>
-       let it1 := interpret_trigger cg env alr_trig scg true nametac t1 in (* the result is a constr constr list, all the possibilities to bind the arguments *)
+       let it1 := interpret_trigger cg env alr_trig scg true nametac t1 in (* the result is a constr list list, all the possibilities to bind the arguments *)
          let rec aux it1 cg env scg ls t2 :=
           match it1 with
             | [] => []
-            | lc :: lcs => (*  List.iter (fun x => Message.print (Message.of_constr x)) lc ; *)
+            | lc :: lcs => (*Message.print (Message.of_string "aux:"); List.iter (fun x => Message.print (Message.of_constr x)) lc;*)
                 let _ := bind_triggers env lc ls in
                 let it2 := interpret_trigger cg env alr_trig scg flag_letin nametac t2 in
                 let _ := env.(env_triggers) := List.skipn (List.length ls) (env.(env_triggers)) in
-                match it2 with
-                  | _ :: _ => 
-                      if flag_letin then it2
-                      else filter_out_same_types it2 alr_trig nametac
-                  | [] => 
-                      match aux lcs cg env scg ls t2 with
-                        | [] => []
-                        | l =>
-                      if flag_letin then l
-                      else filter_out_same_types l alr_trig nametac
-                      end
-                end
+                let rest := aux lcs cg env scg ls t2 in
+                let result :=
+                  match it2 with
+                    | [] => rest
+                    | _ :: _ => List.append it2 rest
+                    end
+                in
+                if flag_letin then result
+                else filter_out_same_types result alr_trig nametac
          end in aux it1 cg env scg ls t2
     end 
 in List.filter (List.for_all is_closed) (interpret_trigger cg env alr_trig scg true nametac t).
