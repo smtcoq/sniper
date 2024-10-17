@@ -68,6 +68,8 @@ Ltac my_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
 
 Ltac my_pose_case := pose_case.
 
+Ltac my_elim_refinement_types := elim_refinement_types.
+
 Ltac2 trigger_generation_principle := TAlways.
 
 (* Ltac2 trigger_anonymous_funs := TAlways. *)
@@ -76,7 +78,9 @@ Ltac2 trigger_higher_order :=
   TAlways.
 
 Ltac2 scope_verbos v := orchestrator 5
-{ all_tacs := [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
+{ all_tacs := [
+((trigger_elim_refinement_types (), false, None), "my_elim_refinement_types", filter_elim_refinement_types ());
+((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
 ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
 ((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());

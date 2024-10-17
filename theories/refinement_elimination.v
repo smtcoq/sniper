@@ -8,7 +8,6 @@ From elpi Require Import elpi.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Printf.
 Import Constr.Unsafe.
-Require Import Sniper.
 Require Import ZArith.
 
 (* The trigger should be activated for any symbol that contains a refinement type in its type *)
@@ -17,6 +16,7 @@ Require Import ZArith.
 (* 2. Prove that the first projection of p is equal to the new symbol *)
 (* 3. Prove that the new symbol satisfies the predicate of p *)
 (* 4. Replace p by the new symbol everywhere *)
+
 
 Ltac2 fail msg :=
   Control.zero (Tactic_failure (Some msg)).
@@ -60,8 +60,8 @@ Ltac2 rec get_ret_sig (t : constr) : (constr * constr) option :=
 Ltac2 make_eq (f : constr) (g : constr) (reducedTypeG : constr) :=
   make_eq' f g reducedTypeG (arity reducedTypeG) [] [].
 
-Ltac2 rec make_pred' (f : constr) (tF : constr) (pred : constr) (i : int) (args : constr list) :=
-  match kind tF with
+Ltac2 rec make_pred' (f : constr) (tG : constr) (pred : constr) (i : int) (args : constr list) :=
+  match kind tG with
   | Prod b c =>
       make (Prod b (make_pred' f c pred (Int.add i 1) (make (Rel i) :: args)))
   | _ =>
@@ -119,84 +119,7 @@ Ltac elim_refinement_types p :=
   in tac f1 tp pf_refl;
 
   (* (* Step 4 *) *)
-  rewrite <- pf_refl in *;
 
-  clear pf_refl tp_exp.
+  try (rewrite <- pf_refl in *; clear pf_refl);
+  clear tp_exp.
 
-Section Examples.
-
-  Set Default Proof Mode "Classic".
-
-  Open Scope Z.
-
-  Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
-
-  Fixpoint In (x: Z) (s: data) :=
-    match s with
-    | Nil => False
-    | Cons l h s' => l <= x < h \/ In x s'
-    end.
-
-  Inductive ok: data -> Prop :=
-    | ok_nil: ok Nil
-    | ok_cons: forall l h s
-        (BOUNDS: l < h)
-        (BELOW: forall x, In x s -> h < x)
-        (OK: ok s),
-        ok (Cons l h s).
-
-  Fixpoint ok' (x : data) : bool :=
-    match x with
-      | Nil => true
-      | Cons l1 h1 s =>
-          match s with
-          | Nil => l1 <? h1
-          | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok' s)
-          end
-    end.
-
-  Definition refData := { r : data | ok' r = true }.
-
-  Axiom foo : forall l h , ok' (if l <? h then Cons l h Nil else Nil) = true.
-
-  Program Definition interval (l h: Z) : refData :=
-    @exist _ _ (if Z.ltb l h then Cons l h Nil else Nil) _.
-  Next Obligation.
-    exact (foo l h).
-  Defined.
-
-  Fixpoint InBool (x: Z) (s: data) : bool :=
-    match s with
-    | Nil => false
-    | Cons l h s' => ((Z.leb l x) && (Z.ltb x h)) || InBool x s'
-    end.
-
-  Program Definition InBoolRef (x : Z) (s : refData) : bool := InBool x s.
-
-  Axiom ok_ok' : forall x, ok x <-> ok' x = true.
-  Trakt Add Relation 1 ok ok' ok_ok'.
-
-  Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
-    intros l h.
-    scope.
-    - admit.
-    - elim_refinement_types interval.
-      scope.
-      clear H0 H4 f.
-      verit.
-  Admitted.
-
-  Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
-    intros x l h.
-    split.
-    - intro h2.
-      scope.
-      elim_refinement_types InBoolRef.
-      elim_refinement_types interval.
-      scope.
-      admit.
-      verit.
-    - admit.
-  Admitted.
-
-End Examples.

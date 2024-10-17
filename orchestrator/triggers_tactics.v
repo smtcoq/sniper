@@ -65,6 +65,8 @@ Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
 
 Ltac2 codomain_prop (c: constr) := Bool.neg (codomain_not_prop c).
 
+Ltac2 trigger_hyp_or_goal trig := TDisj (trig TSomeHyp) (trig TGoal).
+
 (* Ltac2 Eval (higher_order '@nth). *) 
 
 (** Triggers and filters for Sniper tactics *)
@@ -226,3 +228,27 @@ Ltac2 trigger_pose_case () :=
        (TNot (TMetaLetIn (TContains (TGoal, NotArg) (TProd tArg tDiscard NotArg)) ["f"]
                (TContains (TNamed "f", NotArg) (TTrigVar (TNamed "M") NotArg))))
        (TIs (TNamed "M", Arg id) tDiscard)).
+
+
+(* There is an hypothesis or the goal which contain a term whose type contains a `sig` and it returns the set of minimal such terms *)
+Ltac2 trigger_elim_refinement_types_loc loc :=
+  let containsSigInType trig_var :=
+      TMetaLetIn (TIs (trig_var, Arg type) tDiscard) ["T"]
+        (TContains (TNamed "T", NotArg) (TTerm 'sig NotArg))
+  in
+  TMetaLetIn (TContainsClosed (loc, NotArg) tArg) ["x"]
+      (TConj
+          (TConj
+            (containsSigInType (TNamed "x"))
+            (TNot (TMetaLetIn (TContainsClosed (TNamed "x", NotArg) tArg) ["y"]
+              (TConj
+                (TNot (TIs (TNamed "x", NotArg) (TTrigVar (TNamed "y") NotArg)))
+                (containsSigInType (TNamed "y"))
+          ))))
+          (TIs (TNamed "x", Arg id) tDiscard)).
+
+Ltac2 trigger_elim_refinement_types () :=
+  trigger_hyp_or_goal trigger_elim_refinement_types_loc.
+
+Ltac2 filter_elim_refinement_types () :=
+  FConstr ['@proj1_sig].
