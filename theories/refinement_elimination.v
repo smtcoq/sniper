@@ -41,6 +41,17 @@ Ltac2 rec arity (t : constr) : int :=
     | _ => 0
   end.
 
+(* Assumes `t` is the type of a function. Computer the number of arguments that are refinement types. *)
+Ltac2 rec count_ref_types (t : constr) : int :=
+  match kind t with
+    | Prod b c =>
+        lazy_match! Constr.Binder.type b with
+          | @sig _ _ => Int.add 1 (count_ref_types c)
+          | _ => count_ref_types c
+        end
+    | _ => 0
+  end.
+
 (* Assumes that `t` is the type of a function that returns a refinement type. Returns the predicate of the return type. *)
 Ltac2 rec get_ret_sig (t : constr) : constr option :=
   match kind t with
@@ -79,20 +90,30 @@ Ltac2 rec make_eq' (f : constr) (g : constr) (t : constr) (i : int) (argsF : con
 
 (* Given two symbols `f` and `g` produces the term corresponding to `forall x1 .. xn , f x1 .. xn = g x1 .. xn, applying `proj1_sig` *)
 (* whenever necessary to the arguments or to the return value *)
-Ltac2 make_eq (f : constr) (g : constr) (reducedTypeG : constr) :=
-  make_eq' f g reducedTypeG (arity reducedTypeG) [] [].
+Ltac2 make_eq (f : constr) (g : constr) (body_type_g : constr) :=
+  make_eq' f g body_type_g (arity body_type_g) [] [].
 
 Ltac2 rec make_pred' (f : constr) (tG : constr) (pred : constr) (i : int) (args : constr list) :=
   match kind tG with
   | Prod b c =>
-      make (Prod b (make_pred' f c pred (Int.add i 1) (make (Rel i) :: args)))
+      lazy_match! Constr.Binder.type b with
+        | @sig ?d ?p =>
+            let binder_d := Constr.Binder.make None d in
+            let d_pred := make (App pred (Array.of_list [make (Rel 1)])) in
+            let binder_d_pred := Constr.Binder.make None d_pred in
+            let exist_arg := make (App constr:(@exist) (Array.of_list [d; p; make (Rel i); make (Rel (Int.sub i 1))])) in
+            let arg := make (App constr:(@proj1_sig) (Array.of_list [d; p; exist_arg])) in
+            let rest := make_pred' f c pred (Int.sub i 2) (arg :: args) in
+            make (Prod binder_d (make (Prod binder_d_pred rest)))
+        | _ => make (Prod b (make_pred' f c pred (Int.sub i 1) (make (Rel i) :: args)))
+      end
   | _ =>
-      let fApplied := make (App f (Array.of_list args)) in
+      let fApplied := make (App f (Array.of_list (List.rev args))) in
       make (App pred (Array.of_list [fApplied]))
   end.
 
-Ltac2 make_pred (f : constr) (pred : constr) :=
-  make_pred' f (Constr.type f) pred 1 [].
+Ltac2 make_pred (body_type_g : constr) (f : constr) (pred : constr) :=
+  make_pred' f body_type_g pred (Int.add (arity body_type_g) (count_ref_types body_type_g)) [].
 
 Tactic Notation "convert_sigless" ident(i) constr(x) :=
   elpi convert_sigless_tac ltac_string:(i) ltac_term:(x).
@@ -101,10 +122,10 @@ Tactic Notation "sig_expand" ident(i) constr(x) :=
   elpi sig_expand_tac ltac_string:(i) ltac_term:(x).
 
 Ltac elim_refinement_types p :=
-  let sigless_p := fresh p in
+  let sigless_p := fresh "sigless_symbol" in
   let reduced_p := eval hnf in p in
 
-  (* Replace every `sig`s, `proj1_sig` and `exist` in reduced_p *)
+  (* Replace every `sig`s, `proj1_sig`s and `exist`s in reduced_p *)
   convert_sigless sigless_p reduced_p;
 
   (* Replace sigless_p by its body *)
@@ -126,7 +147,7 @@ Ltac elim_refinement_types p :=
     let p'' := Option.get (Ltac1.to_constr p') in
     let body_type_p'' := Option.get (Ltac1.to_constr body_type_p') in
     let eq := make_eq sigless_p'' p'' body_type_p'' in
-    ltac1:(eq' id_conversion'' |- assert (id_conversion'' : eq') by now simpl) (Ltac1.of_constr eq) id_conversion'
+    ltac1:(eq' id_conversion'' |- assert (id_conversion'' : eq') by now simpl ) (Ltac1.of_constr eq) id_conversion'
   ) in tac sigless_p p body_type_p id_conversion;
 
   (* Declare and prove the fact that `sigless_p` also has the property of `p` *)
@@ -134,19 +155,17 @@ Ltac elim_refinement_types p :=
       let body_type_p'' := Option.get (Ltac1.to_constr body_type_p') in
       match get_ret_sig body_type_p'' with
         | Some pred =>
-          let pred_applied := make_pred (Option.get (Ltac1.to_constr sigless_p')) pred in
+          let pred_applied := make_pred body_type_p'' (Option.get (Ltac1.to_constr sigless_p')) pred in
           ltac1:(pred' sigless_p'' id_conversion'' |-
-            (* TODO: We really just want to beta reduce one time, maybe head normal form is too strong, maybe a bit of ELPI here would help *)
-            let pred' := eval cbn in pred' in
-            assert (pred')  by (intros; rewrite id_conversion''; apply proj2_sig))
-            (Ltac1.of_constr pred_applied) sigless_p' id_conversion'
+            let H := fresh "H" in
+            assert (pred') by (intros; rewrite id_conversion''; apply proj2_sig);
+            cbn in H (* eliminate `proj1_sig (exist ...)` introduced by make_pred *)
+          ) (Ltac1.of_constr pred_applied) sigless_p' id_conversion'
         (* If `p` only has refinement types in its arguments we skip this step, since we can't guarantee the property for the returned value *)
         | _ => ()
       end
     )
   in tac sigless_p body_type_p id_conversion;
-
-  (* Step 4 *)
 
   (* Replace `p` by `sigless_p` everywhere in the context *)
   try (rewrite <- id_conversion in *; clear id_conversion);
@@ -155,7 +174,7 @@ Ltac elim_refinement_types p :=
 
 Definition p := fun x => x > 3.
 
-Program Definition w : sig p := exist _ 4 _.
+Program Definition w : sig p -> sig p -> sig p := fun x y => exist _ 4 _.
 Next Obligation.
   unfold p.
   auto.
@@ -163,16 +182,13 @@ Qed.
 
 Set Default Proof Mode "Classic".
 
+Program Definition k : nat -> sig p -> nat -> sig p -> nat -> sig p := fun _ _ _ _ _ => exist _ 4 _.
+Next Obligation.
+  unfold p.
+  auto.
+Qed.
+
 Goal True.
-  elim_refinement_types w.
-
-
-Ltac tac p :=
-  let t := type of p in
-  let f := fresh t in
-  idtac f.
-
-
-Goal True -> True.
-  intro h.
-  tac h.
+  elim_refinement_types k.
+  trivial.
+Qed.
