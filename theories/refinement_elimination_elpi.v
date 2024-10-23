@@ -1,6 +1,6 @@
 From elpi Require Import elpi.
 
-Elpi Tactic step_one_tac.
+Elpi Tactic convert_sigless_tac.
 
 Elpi Accumulate lp:{{
   shorten std.{map}.
