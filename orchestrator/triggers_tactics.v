@@ -52,15 +52,6 @@ Ltac2 contains_refinement_type (c: constr) : bool :=
    | _ => false
   end.
 
-(* Goal True. *)
-(*   if contains_refinement_type constr:(@sig nat (fun x => x >= 3)) then pose (x:=true) else pose (x:=false). *)
-(*   if contains_refinement_type constr:(True) then pose (y:=true) else pose (y:=false). *)
-(*   pose (z := constr:(contains_refinement_type constr:(@sig nat (fun x => x >= 3)))). *)
-(*   let x := contains_refinement_type constr:(@sig nat (fun x => x >= 3)) in idtac x. *)
-(*   let x := ltac2:(contains_refinement_type constr:(@sig nat (fun x => x >= 3))) in *)
-(*   idtac x. *)
-(*   pose (x := ltac2:(contains_refinement_type constr:(@sig nat (fun x => x >= 3)))). *)
-
 Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (Constr.type c).
 
 Ltac2 codomain_prop (c: constr) := Bool.neg (codomain_not_prop c).
