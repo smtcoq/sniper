@@ -251,9 +251,10 @@ Section RefinementTypes.
   (* Instance compDecData : CompDec data := *)
   (*   { Eqb := eqbData ; Ordered := ordData ; Comp := compData ; Inh := inhData }. *)
 
-  (* Two modifications: *)
+  (* Three modifications: *)
   (*   1 - Use boolean version of lt (`Z.ltb` instead of `Z_lt_dec`) *)
   (*   2 - Put the `exist` on the top of the term (`exist if ...` instead of `if (..) then exist (..) else exist (..)) *)
+  (*   3 - Don't use an alias for the refinement type, inline it in the return type of `interval` *)
   Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
   Program Definition interval (l h: Z) : { r : data | ok r } :=
     exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
