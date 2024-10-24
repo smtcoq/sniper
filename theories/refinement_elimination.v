@@ -1,8 +1,3 @@
-(* DONE: Comment the code *)
-(* TODO: Add unit tests in the tests file *)
-(* DONE: Add examples of usage in the examples showroom *)
-(* DONE: Find a better name for the symbol introduced (maybe based on the original name) *)
-(* DONE: Step three does not work if `p` has refinement types in any argument and in the return type *)
 (* TODO: The trigger should work with equality modulo delta, but it doesn't yet *)
 (* TODO: Check again how far we are from proving automatically the `interval` example in CompCert *)
 (* TODO: Currently we are relying on the fact that if the user has an application `f x` such that `f` takes *)
@@ -10,13 +5,16 @@
 (*       `x`. We shouldn't rely on this. Maybe we could split it into two transformations, one for generating the term *)
 (*       and proving the equality; other for rewriting the equality. *)
 (* TODO: Create a new version of this tactic that will operate in terms without a body. *)
-(*   - The new symbol should be defined using `p` directly, instead of the body of `p` *)
-(*   - After defining the new symbol, the rest of the tactic should be approximately the same *)
+(*         - NOTE: It will only work if the input symbol does not contain refinement types in its domain *)
+(*         - The new symbol should be defined using `p` directly, instead of the body of `p` *)
+(*         - After defining the new symbol, the rest of the tactic should be approximately the same *)
 (* TODO: In the future we will want to support dependent records - for that we need to generalize the parts in *)
 (*       which we deal specifically with `proj1_sig` *)
+(* TODO: Depending on the place we put this transformation in orchestrator, then some other transformation fails *)
+(*       Investigate if this is due to the transformation itself or is a bug in orchestrator *)
+(*       Ref: https://github.com/smtcoq/sniper/issues/27 *)
 
 Require Import refinement_elimination_elpi.
-Require Import sig_expand_elpi.
 From elpi Require Import elpi.
 From Ltac2 Require Import Ltac2.
 Import Constr.Unsafe.
@@ -156,7 +154,7 @@ Ltac elim_refinement_types p :=
     let p'' := Option.get (Ltac1.to_constr p') in
     let body_type_p'' := Option.get (Ltac1.to_constr body_type_p') in
     let eq := make_eq sigless_p'' p'' body_type_p'' in
-    ltac1:(eq' id_conversion'' |- assert (id_conversion'' : eq') by now simpl ) (Ltac1.of_constr eq) id_conversion'
+    ltac1:(eq' id_conversion'' |- assert (id_conversion'' : eq') by reflexivity ) (Ltac1.of_constr eq) id_conversion'
   ) in tac sigless_p p body_type_p id_conversion;
 
   (* Declare and prove the fact that `sigless_p` also has the property of `p` *)
@@ -179,3 +177,67 @@ Ltac elim_refinement_types p :=
   (* Replace `p` by `sigless_p` everywhere in the context *)
   try (rewrite <- id_conversion in *; clear id_conversion);
   clear type_p_expanded.
+
+(* Copy paste from original version in CompCert *)
+
+(* Require Import ZArith. *)
+(* Open Scope Z_scope. *)
+
+(* Module R. *)
+
+(*     Inductive t : Type := Nil | Cons (lo hi: Z) (tl: t). *)
+
+(*     Fixpoint In (x: Z) (s: t) := *)
+(*     match s with *)
+(*     | Nil => False *)
+(*     | Cons l h s' => l <= x < h \/ In x s' *)
+(*     end. *)
+
+(*     Inductive ok: t -> Prop := *)
+(*     | ok_nil: ok Nil *)
+(*     | ok_cons: forall l h s *)
+(*         (BOUNDS: l < h) *)
+(*         (BELOW: forall x, In x s -> h < x) *)
+(*         (OK: ok s), *)
+(*         ok (Cons l h s). *)
+
+(* End R. *)
+
+(* Definition t := { r: R.t | R.ok r }. *)
+
+(* Program Definition In (x: Z) (s: t) := R.In x s. *)
+
+(* Definition zlt: forall (x y: Z), {x < y} + {x >= y} := Z_lt_dec. *)
+
+(* Set Default Proof Mode "Classic". *)
+
+(* Program Definition interval (l h: Z) : t := *)
+(*   (* if zlt l h then R.Cons l h R.Nil else R.Nil. *) *)
+(*   exist _ (if zlt l h then R.Cons l h R.Nil else R.Nil) _. *)
+(* Next Obligation. *)
+(*   case (zlt l h). *)
+(*   intro H1. *)
+(*   constructor; auto. simpl; tauto. constructor. *)
+(*   constructor. *)
+(* Qed. *)
+
+(* Theorem In_interval: forall x l h, In x (interval l h) <-> l <= x < h. *)
+(* Proof. *)
+(*   intros. *)
+(*   split. *)
+(*   intro H. *)
+(*   unfold In in H. *)
+(*   elim_refinement_types interval. *)
+(*   verit. *)
+
+
+(*   assert (R: forall x I, In x I = R.In x (proj1_sig I)). *)
+(*   admit. *)
+
+(*   unfold In in H. *)
+(*   intros *)
+(*   simpl. *)
+
+
+(*   (* intros. unfold In, interval; destruct (zlt l h); simpl; intuition auto with zarith. *) *)
+(* Qed. *)
