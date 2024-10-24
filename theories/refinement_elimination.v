@@ -15,17 +15,11 @@
 (* TODO: In the future we will want to support dependent records - for that we need to generalize the parts in *)
 (*       which we deal specifically with `proj1_sig` *)
 
-Require Import expand.
 Require Import refinement_elimination_elpi.
-Require Import reflexivity.
 Require Import sig_expand_elpi.
-Require Import unfold_reflexivity.
-Require Import unfold_in.
 From elpi Require Import elpi.
 From Ltac2 Require Import Ltac2.
-From Ltac2 Require Import Printf.
 Import Constr.Unsafe.
-Require Import ZArith.
 
 (* The trigger should be activated for any symbol that contains a refinement type in its type *)
 (* param p: symbol whose type contain a refinement type *)
@@ -185,19 +179,3 @@ Ltac elim_refinement_types p :=
   (* Replace `p` by `sigless_p` everywhere in the context *)
   try (rewrite <- id_conversion in *; clear id_conversion);
   clear type_p_expanded.
-
-
-Definition p := fun x => x > 3.
-
-Set Default Proof Mode "Classic".
-
-Program Definition k : nat -> sig p -> nat -> sig p -> nat -> sig p := fun _ _ _ _ _ => exist _ 4 _.
-Next Obligation.
-  unfold p.
-  auto.
-Qed.
-
-Goal True.
-  elim_refinement_types k.
-  trivial.
-Qed.
