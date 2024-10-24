@@ -187,3 +187,53 @@ Lemma rev_elements_node c (H: CompDec c) l x r :
 Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe. Qed.
 
 End Tree.
+
+Section RefinementTypes.
+
+  (* Source: CompCert (https://github.com/AbsInt/CompCert/blob/bf8a3e19dcdd8fec1f8b49e137262c7280d6d8a8/lib/IntvSets.v#L326)  *)
+  (* Note: we did modify the example *)
+  Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
+
+  (* The original version of this was an equivalent function returning `Prop` *)
+  Fixpoint InBool (x: Z) (s: data) : bool :=
+    match s with
+    | Nil => false
+    | Cons l h s' => ((Z.leb l x) && (Z.ltb x h)) || InBool x s'
+    end.
+
+  (* The original version of this was an equivalent function returning `Prop` *)
+  Fixpoint ok (x : data) : bool :=
+    match x with
+      | Nil => true
+      | Cons l1 h1 s =>
+          match s with
+          | Nil => l1 <? h1
+          | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok s)
+          end
+    end.
+
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable intervalOk : forall l h , ok (if l <? h then Cons l h Nil else Nil).
+
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable compDecData : CompDec data.
+
+  (* Three modifications: *)
+  (*   1 - Use boolean version of lt (`Z.ltb` instead of `Z_lt_dec`) *)
+  (*   2 - Put the `exist` on the top of the term (`exist if ...` instead of `if (..) then exist (..) else exist (..)) *)
+  (*   3 - Don't use an alias for the refinement type, inline it in the return type of `interval` *)
+
+  Program Definition interval (l h: Z) : { r : data | ok r } :=
+    exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
+
+  Program Definition InBoolRef (x : Z) (s : {r : data | ok r }) : bool := InBool x s.
+
+  Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
+    snipe.
+  Qed.
+
+  Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
+    snipe. (* Not fully proved due to a bug in SMTCoq *)
+  Abort.
+
+End RefinementTypes.

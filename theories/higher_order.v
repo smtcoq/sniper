@@ -6,9 +6,9 @@ Require Import anonymous_functions.
 
 From elpi Require Import elpi.
 
-Ltac mypose_elpi t := 
+Ltac mypose_elpi t :=
 tryif (is_local_def t) then idtac else
-let t' := 
+let t' :=
   match t with
   | ?u ?v =>
         match goal with
@@ -18,7 +18,7 @@ let t' :=
   | _ => t
   end in
 tryif (is_local_def t') then idtac else
-let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order 
+let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order
 to avoid unification failures with the fixpoint transformation *)
   match t with
   | ?u ?v =>
@@ -26,7 +26,7 @@ to avoid unification failures with the fixpoint transformation *)
         | x := v |- _ => try (fold x in Na)
         | _ => idtac
         end
-  | _ => idtac 
+  | _ => idtac
   end.
 
 Elpi Tactic prenex_higher_order.
