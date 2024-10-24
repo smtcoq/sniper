@@ -191,14 +191,17 @@ End Tree.
 Section RefinementTypes.
 
   (* Source: CompCert (https://github.com/AbsInt/CompCert/blob/bf8a3e19dcdd8fec1f8b49e137262c7280d6d8a8/lib/IntvSets.v#L326)  *)
+  (* Note: we did modify the example *)
   Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
 
+  (* The original version of this was an equivalent function returning `Prop` *)
   Fixpoint InBool (x: Z) (s: data) : bool :=
     match s with
     | Nil => false
     | Cons l h s' => ((Z.leb l x) && (Z.ltb x h)) || InBool x s'
     end.
 
+  (* The original version of this was an equivalent function returning `Prop` *)
   Fixpoint ok (x : data) : bool :=
     match x with
       | Nil => true
@@ -209,7 +212,6 @@ Section RefinementTypes.
           end
     end.
 
-  Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
 
   (* Fixpoint eqb (d1 : data) (d2 : data) := *)
   (*   match d1, d2 with *)
@@ -249,6 +251,10 @@ Section RefinementTypes.
   (* Instance compDecData : CompDec data := *)
   (*   { Eqb := eqbData ; Ordered := ordData ; Comp := compData ; Inh := inhData }. *)
 
+  (* Two modifications: *)
+  (*   1 - Use boolean version of lt (`Z.ltb` instead of `Z_lt_dec`) *)
+  (*   2 - Put the `exist` on the top of the term (`exist if ...` instead of `if (..) then exist (..) else exist (..)) *)
+  Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
   Program Definition interval (l h: Z) : { r : data | ok r } :=
     exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
   Next Obligation.
