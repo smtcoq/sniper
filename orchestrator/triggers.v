@@ -572,18 +572,6 @@ Ltac2 all_partial_apps (c : constr) (l : constr list) :=
   let arrs := build_arrays_aux l in
   List.append [c] (List.map (fun ar => make (App c ar)) arrs).
 
-Ltac2 rec append_without_dup l1 l2 :=
-  match l1 with
-    | [] => l2
-    | x::xs => if List.mem Constr.equal x l2 then append_without_dup xs l2 else x::(append_without_dup xs l2)
-  end.
-
-Ltac2 rec flatten_remove_dup l :=
-  match l with
-    | [] => []
-    | l::ls => append_without_dup l (flatten_remove_dup ls)
-  end.
-
 Ltac2 rec subterms (c : constr) : constr list :=
   match kind c with
     | Rel _ => [c]
@@ -604,8 +592,8 @@ Ltac2 rec subterms (c : constr) : constr list :=
     | App c1 ca => 
         let l := Array.to_list ca in
         let res := List.map subterms l in
-        let res' := flatten_remove_dup res in
-        append_without_dup (all_partial_apps c1 l) (append_without_dup (subterms c1) res')
+        let res' := List.flatten res in
+        List.append (all_partial_apps c1 l) (List.append (subterms c1) res')
     | Constant _ _ => [c]
     | Ind _ _ => [c]
     | Constructor _ _ => [c]
