@@ -39,12 +39,11 @@ Ltac2 rec codomain_not_prop_aux (c: constr) :=
   | _ => Bool.neg (is_prop c)
   end.
 
-Require Import sig_expand_elpi.
+Require Import refinement_elimination_elpi.
 From elpi Require Import elpi.
 
 Tactic Notation "sigfull" constr(x) :=
   elpi sigfull_tac ltac_term:(x).
-
 
 Ltac2 contains_refinement_type (c: constr) : bool :=
   match! constr:(true) with
