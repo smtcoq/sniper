@@ -187,3 +187,63 @@ Lemma rev_elements_node c (H: CompDec c) l x r :
 Proof. pose proof app_ass ; pose proof rev_elements_app ; snipe. Qed.
 
 End Tree.
+
+Section RefinementTypes.
+
+  (* Source: CompCert *)
+  Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
+
+  Fixpoint In (x: Z) (s: data) :=
+    match s with
+    | Nil => False
+    | Cons l h s' => l <= x < h \/ In x s'
+    end.
+
+  Fixpoint InBool (x: Z) (s: data) : bool :=
+    match s with
+    | Nil => false
+    | Cons l h s' => ((Z.leb l x) && (Z.ltb x h)) || InBool x s'
+    end.
+
+  Fixpoint ok (x : data) : bool :=
+    match x with
+      | Nil => true
+      | Cons l1 h1 s =>
+          match s with
+          | Nil => l1 <? h1
+          | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok s)
+          end
+    end.
+
+  Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
+
+  Program Definition interval (l h: Z) : { r : data | ok r } :=
+    exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
+  Next Obligation.
+    exact (foo l h).
+  Defined.
+
+  Program Definition InBoolRef (x : Z) (s : {r : data | ok r }) : bool := InBool x s.
+
+  Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
+    intros l h.
+    scope.
+    - admit.
+    - verit.
+  Admitted.
+
+  Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
+    intros x l h.
+    split.
+    - intro h2.
+      scope.
+      + admit.
+      + verit.
+    - intro h2.
+      scope.
+      + admit.
+      + verit.
+       admit.
+  Admitted.
+
+End RefinementTypes.

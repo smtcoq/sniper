@@ -1,6 +1,6 @@
 (* DONE: Comment the code *)
 (* TODO: Add unit tests in the tests file *)
-(* TODO: Add examples of usage in the examples showroom *)
+(* DONE: Add examples of usage in the examples showroom *)
 (* DONE: Find a better name for the symbol introduced (maybe based on the original name) *)
 (* DONE: Step three does not work if `p` has refinement types in any argument and in the return type *)
 (* TODO: The trigger should work with equality modulo delta, but it doesn't yet *)
