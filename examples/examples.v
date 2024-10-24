@@ -193,12 +193,6 @@ Section RefinementTypes.
   (* Source: CompCert *)
   Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
 
-  Fixpoint In (x: Z) (s: data) :=
-    match s with
-    | Nil => False
-    | Cons l h s' => l <= x < h \/ In x s'
-    end.
-
   Fixpoint InBool (x: Z) (s: data) : bool :=
     match s with
     | Nil => false
