@@ -190,7 +190,7 @@ End Tree.
 
 Section RefinementTypes.
 
-  (* Source: CompCert *)
+  (* Source: CompCert (https://github.com/AbsInt/CompCert/blob/bf8a3e19dcdd8fec1f8b49e137262c7280d6d8a8/lib/IntvSets.v#L326)  *)
   Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
 
   Fixpoint InBool (x: Z) (s: data) : bool :=
