@@ -1,5 +1,6 @@
 shorten std.{map}.
 
+% Checks if the input term contains a `sig` in its definition up to evaluation.
 pred sigfull i:term.
 pred sigfull_rec i:term.
 
@@ -42,6 +43,7 @@ sigfull I :-
   coq.reduction.lazy.whd I Ir,
   sigfull_rec Ir.
 
+% Expand all the necessary subterms of `i` in order to reveal any `sig`.
 pred smart_sig_expand i:term o:term.
 pred sig_expand i:term o:term.
 pred sig_expand_rec i:term o:term.
@@ -81,6 +83,7 @@ sig_expand_rec (uvar M L) W :- !,
 sig_expand_rec (uvar X L) (uvar X L1) :-
     std.map L smart_sig_expand L1.
 
+% Checks if the input term contains `sig`, `proj1_sig` or `exist` in its definition up to evaluation.
 pred refinefull i:term.
 pred refinefull_rec i:term.
 
@@ -123,24 +126,8 @@ refinefull I :-
   coq.reduction.lazy.whd I Ir,
   refinefull_rec Ir.
 
-pred smart_replace i:term o:term.
-pred red_replace i:term o:term.
-pred replace i:term o:term.
-
-smart_replace I O :-
-  refinefull I, !,
-  red_replace I O.
-
-smart_replace I I.
-
-red_replace I O :-
-  coq.term->string I Is,
-  coq.say "red_replace: " Is,
-  coq.reduction.lazy.whd I Ir,
-  coq.term->string Ir Irs,
-  coq.say "red_replace: " Irs,
-  replace Ir O.
-
+% Remove all refinement types in the input term. `sig A P` is replaced by `A`, `proj1_sig x` is replaced by `x` and
+% `exist p h` is replaced by p. Works up to delta reduction.
 pred replace i:term, o:term.
 replace ({{ exist _ lp:P _ }}) P' :- !, replace P P'.
 replace ({{ @sig lp:A _ }}) A' :- !, replace A A'.
