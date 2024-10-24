@@ -364,4 +364,4 @@ Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
   scope.
   - admit.
   - verit.
-Admitted.
+Abort.

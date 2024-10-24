@@ -211,6 +211,44 @@ Section RefinementTypes.
 
   Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
 
+  (* Fixpoint eqb (d1 : data) (d2 : data) := *)
+  (*   match d1, d2 with *)
+  (*     | Cons l1 h1 tl1, Cons l2 h2 tl2 => Z.eqb l1 l2 && Z.eqb h1 h2 && eqb tl1 tl2 *)
+  (*     | Nil, Nil => true *)
+  (*     | _, _ => false *)
+  (*   end. *)
+
+  (* Theorem eqb_spec : forall d1 d2 : data , eqb d1 d2 = true <-> d1 = d2. *)
+  (*   intros d1 d2. *)
+  (*   split. *)
+  (*   intro H. *)
+  (*   destruct d1. *)
+  (*   - destruct d2. *)
+  (*     + reflexivity. *)
+  (*     + discriminate H. *)
+  (*   - destruct d2. *)
+  (*     + discriminate H. *)
+  (*     + simpl in H. *)
+  (*       case H. *)
+
+  (* Instance eqbData : EqbType data := { *)
+  (*   eqb := *)
+  (*     fun (d1 d2 : data) => *)
+  (*       match d1, d2 with *)
+  (*         | _, _ => false *)
+  (*       end *)
+  (*   eqb_spec *)
+  (* }. *)
+
+  (* Program Definition ordData : OrdType data. admit. Admitted. *)
+
+  (* Program Definition compData : @Comparable data ordData. admit. Admitted. *)
+
+  (* Program Definition inhData : Inhabited data. admit. Admitted. *)
+
+  (* Instance compDecData : CompDec data := *)
+  (*   { Eqb := eqbData ; Ordered := ordData ; Comp := compData ; Inh := inhData }. *)
+
   Program Definition interval (l h: Z) : { r : data | ok r } :=
     exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
   Next Obligation.
@@ -224,7 +262,7 @@ Section RefinementTypes.
     scope.
     - admit.
     - verit.
-  Admitted.
+  Abort.
 
   Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
     intros x l h.
@@ -238,6 +276,6 @@ Section RefinementTypes.
       + admit.
       + verit.
        admit.
-  Admitted.
+  Abort.
 
 End RefinementTypes.
