@@ -2,7 +2,7 @@
 (* TODO: Add unit tests in the tests file *)
 (* TODO: Add examples of usage in the examples showroom *)
 (* DONE: Find a better name for the symbol introduced (maybe based on the original name) *)
-(* TODO: Step three does not work if `p` has refinement types in any argument and in the return type *)
+(* DONE: Step three does not work if `p` has refinement types in any argument and in the return type *)
 (* TODO: The trigger should work with equality modulo delta, but it doesn't yet *)
 (* TODO: Check again how far we are from proving automatically the `interval` example in CompCert *)
 (* TODO: Currently we are relying on the fact that if the user has an application `f x` such that `f` takes *)
@@ -66,43 +66,52 @@ Ltac2 rec get_ret_sig (t : constr) : constr option :=
 (* Auxiliary function for `make_eq`. Traverses the arrows of the type of `g`, adding `proj1_sig` whenever it encouters an argument *)
 (* which is a refinement type. `i` is the De Bruijn index of the current argument. The arguments to be applied to `f` and `g` are *)
 (* accumulated in `argsF` and `argsG`, respectively. *)
-Ltac2 rec make_eq' (f : constr) (g : constr) (t : constr) (i : int) (argsF : constr list) (argsG : constr list) :=
-  match kind t with
+Ltac2 rec make_eq' (f : constr) (g : constr) (body_type_g : constr) (i : int) (argsF : constr list) (argsG : constr list) :=
+  match kind body_type_g with
   | Prod b c =>
       (* If the current argument is a `sig`, we apply the function to `proj1_sig (Rel i)`, otherwise is just `Rel i` *)
       lazy_match! Constr.Binder.type b with
         | @sig ?d ?p =>
             let argF : constr := make (App constr:(@proj1_sig) (Array.of_list [d; p; make (Rel i)])) in
-            make (Prod b (make_eq' f g c (Int.sub i 1) ((argF) :: argsF) (make (Rel i) :: argsG)))
+            make (Prod b (make_eq' f g c (Int.sub i 1) (argF :: argsF) (make (Rel i) :: argsG)))
         | _ => make (Prod b (make_eq' f g c (Int.sub i 1) (make (Rel i) :: argsF) (make (Rel i) :: argsG)))
       end
   | _ =>
       let lhs := make (App f (Array.of_list (List.rev argsF))) in
       let rhs := make (App g (Array.of_list (List.rev argsG))) in
       (* If the return type is a `sig` we apply `proj1_sig` to the right side of the equality *)
-      lazy_match! t with
+      lazy_match! body_type_g with
         | @sig ?d ?p =>
             let rhs' := make (App constr:(@proj1_sig) (Array.of_list [d; p; rhs])) in
             make (App constr:(@eq) (Array.of_list [d; lhs; rhs']))
-        | _ => make (App constr:(@eq) (Array.of_list [t; lhs; rhs]))
+        | _ => make (App constr:(@eq) (Array.of_list [body_type_g; lhs; rhs]))
       end
   end.
 
 (* Given two symbols `f` and `g` produces the term corresponding to `forall x1 .. xn , f x1 .. xn = g x1 .. xn, applying `proj1_sig` *)
-(* whenever necessary to the arguments or to the return value *)
+(* whenever there is a type mismatch in the arguments or in the return value *)
 Ltac2 make_eq (f : constr) (g : constr) (body_type_g : constr) :=
+  (* `arity body_type_g` represents the De Bruijn index of `x1` in the final expression *)
   make_eq' f g body_type_g (arity body_type_g) [] [].
 
-Ltac2 rec make_pred' (f : constr) (tG : constr) (pred : constr) (i : int) (args : constr list) :=
-  match kind tG with
+Ltac2 rec make_pred' (f : constr) (body_type_g : constr) (pred : constr) (i : int) (args : constr list) :=
+  match kind body_type_g with
   | Prod b c =>
       lazy_match! Constr.Binder.type b with
+        (* In this case we want to produce forall x : d , forall h : pred x , (recursive call) *)
         | @sig ?d ?p =>
+            (* binder for a variable of type `d` *)
             let binder_d := Constr.Binder.make None d in
+            (* binder for a proof of `pred` of the variable we just introduced *)
             let d_pred := make (App pred (Array.of_list [make (Rel 1)])) in
             let binder_d_pred := Constr.Binder.make None d_pred in
+            (* Here instead of adding just `x` to the args of `f` in the final expression, we add `proj1_sig (exist x h)` *)
+            (* Which evaluates to `x`. This is necessary since, when proving that the resulting expression holds, we will *)
+            (* use the result of the previous step, which states that `f (proj1_sig x) = g x`. *)
+            (* Note: `Rel i` is `x` and `Rel (Int.sub i 1)` is `h` in the final expression. *)
             let exist_arg := make (App constr:(@exist) (Array.of_list [d; p; make (Rel i); make (Rel (Int.sub i 1))])) in
             let arg := make (App constr:(@proj1_sig) (Array.of_list [d; p; exist_arg])) in
+            (* We subtract 2 from `i` in the recursive call since we added two binders *)
             let rest := make_pred' f c pred (Int.sub i 2) (arg :: args) in
             make (Prod binder_d (make (Prod binder_d_pred rest)))
         | _ => make (Prod b (make_pred' f c pred (Int.sub i 1) (make (Rel i) :: args)))
@@ -112,7 +121,13 @@ Ltac2 rec make_pred' (f : constr) (tG : constr) (pred : constr) (i : int) (args 
       make (App pred (Array.of_list [fApplied]))
   end.
 
+(* Given a symbol `f` and a predicate `pred`, produces the term corresponding to *)
+(* `forall x1 .. xn , pred y1 -> .. -> pred ym -> pred (f x1 .. xn) *)
+(* The variables `y1` .. `ym` are defined based on which parameters in `body_type_g` are refinement types. *)
+(* The parameters of `f` and `g` need to have the same type, except for some parameters that have the form *)
+(* `sig A P` in `g` and `A` in `f`. *)
 Ltac2 make_pred (body_type_g : constr) (f : constr) (pred : constr) :=
+  (* Int.add (arity body_type_g) (count_ref_types body_type_g) represents the De Bruijn index of x1 in the final expression *)
   make_pred' f body_type_g pred (Int.add (arity body_type_g) (count_ref_types body_type_g)) [].
 
 Tactic Notation "convert_sigless" ident(i) constr(x) :=
@@ -173,12 +188,6 @@ Ltac elim_refinement_types p :=
 
 
 Definition p := fun x => x > 3.
-
-Program Definition w : sig p -> sig p -> sig p := fun x y => exist _ 4 _.
-Next Obligation.
-  unfold p.
-  auto.
-Qed.
 
 Set Default Proof Mode "Classic".
 
