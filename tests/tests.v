@@ -333,35 +333,38 @@ Goal True.
   trivial.
 Qed.
 
-Local Open Scope Z_scope.
+Section CompCertExample.
 
-(* The trigger does not work up to delta conversion, but the tactic does *)
-Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
+  Local Open Scope Z_scope.
 
-Fixpoint ok (x : data) : bool :=
-  match x with
-    | Nil => true
-    | Cons l1 h1 s =>
-        match s with
-        | Nil => l1 <? h1
-        | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok s)
-        end
-  end.
+  (* The trigger does not work up to delta conversion, but the tactic does *)
+  Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
 
-Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
+  Fixpoint ok (x : data) : bool :=
+    match x with
+      | Nil => true
+      | Cons l1 h1 s =>
+          match s with
+          | Nil => l1 <? h1
+          | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok s)
+          end
+    end.
 
-Definition refData := { r : data | ok r }.
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable intervalOk : forall l h , ok (if l <? h then Cons l h Nil else Nil).
 
-Program Definition interval (l h: Z) : refData :=
-  exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
-Next Obligation.
-  exact (foo l h).
-Defined.
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable compDecData : CompDec data.
 
-Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
-  intros l h.
-  elim_refinement_types interval.
-  scope.
-  - admit.
-  - verit.
-Abort.
+  Definition refData := { r : data | ok r }.
+
+  Program Definition interval (l h: Z) : refData :=
+    exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
+
+  Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
+    intros l h.
+    elim_refinement_types interval.
+    snipe.
+  Qed.
+
+End CompCertExample.
