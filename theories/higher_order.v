@@ -6,33 +6,27 @@ Require Import anonymous_functions.
 
 From elpi Require Import elpi.
 
-(* NOTE: Here we are doing a special case for proj1_sig since there is no filter for this tactic yet, it should be a filter *)
-(* proj1_sig is now a special case because we handle refinement types *)
 Ltac mypose_elpi t :=
+tryif (is_local_def t) then idtac else
+let t' :=
   match t with
-  | @proj1_sig ?b ?a => idtac
-  | _ =>
-    tryif (is_local_def t) then idtac else
-    let t' :=
-      match t with
-      | ?u ?v =>
-            match goal with
-            | x := v |- _ => constr:(u x)
-            | _ => t
-            end
-      | _ => t
-      end in
-      tryif (is_local_def t') then idtac else
-      let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order
-      to avoid unification failures with the fixpoint transformation *)
-        match t with
-        | ?u ?v =>
-              match goal with
-              | x := v |- _ => try (fold x in Na)
-              | _ => idtac
-              end
+  | ?u ?v =>
+        match goal with
+        | x := v |- _ => constr:(u x)
+        | _ => t
+        end
+  | _ => t
+  end in
+tryif (is_local_def t') then idtac else
+let Na := fresh "f" in pose t as Na ; (* HACK : fold local def eagerly in order
+to avoid unification failures with the fixpoint transformation *)
+  match t with
+  | ?u ?v =>
+        match goal with
+        | x := v |- _ => try (fold x in Na)
         | _ => idtac
         end
+  | _ => idtac
   end.
 
 Elpi Tactic prenex_higher_order.
