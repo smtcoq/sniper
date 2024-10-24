@@ -299,10 +299,69 @@ Goal M 42 = 42.
 
 End expand_hyp_without_body.
 
-
 (* Testing interaction of `pose_case` with other transformations - verit won't conclude the goal due to silent simplification  *)
 Goal forall (x : nat) (f g : nat -> nat) , (f 2 = 2) -> (g 2 = 2) -> ((match x with O => f | S _ => g end) 2 = 2).
 Proof.
   scope.
   verit.
   Abort.
+
+Set Default Proof Mode "Classic".
+
+Definition p := fun x : nat => x > 3.
+
+Program Definition k : nat -> sig p -> nat -> sig p -> nat -> sig p := fun _ _ _ _ _ => exist _ 4 _.
+Next Obligation.
+  unfold p.
+  auto.
+Qed.
+
+Goal 4 > 3.
+  elim_refinement_types k.
+  assert (five: 5 > 3) by auto.
+  exact (H 5 5 five 5 5 five 5).
+Qed.
+
+Fixpoint rep_sig (i : nat) : Set :=
+  match i with
+    | 0 => nat
+    | S i' => @sig (rep_sig i') (fun x => x = x)
+  end.
+
+Goal True.
+  convert_sigless h (rep_sig 100).
+  trivial.
+Qed.
+
+Local Open Scope Z_scope.
+
+(* The trigger does not work up to delta conversion, but the tactic does *)
+Inductive data : Type := Nil | Cons (lo hi: Z) (tl: data).
+
+Fixpoint ok (x : data) : bool :=
+  match x with
+    | Nil => true
+    | Cons l1 h1 s =>
+        match s with
+        | Nil => l1 <? h1
+        | Cons l2 _ _ => (l1 <? h1) && (h1 <? l2) && (ok s)
+        end
+  end.
+
+Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
+
+Definition refData := { r : data | ok r }.
+
+Program Definition interval (l h: Z) : refData :=
+  exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
+Next Obligation.
+  exact (foo l h).
+Defined.
+
+Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
+  intros l h.
+  elim_refinement_types interval.
+  scope.
+  - admit.
+  - verit.
+Admitted.
