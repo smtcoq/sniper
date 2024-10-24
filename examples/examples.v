@@ -212,77 +212,28 @@ Section RefinementTypes.
           end
     end.
 
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable intervalOk : forall l h , ok (if l <? h then Cons l h Nil else Nil).
 
-  (* Fixpoint eqb (d1 : data) (d2 : data) := *)
-  (*   match d1, d2 with *)
-  (*     | Cons l1 h1 tl1, Cons l2 h2 tl2 => Z.eqb l1 l2 && Z.eqb h1 h2 && eqb tl1 tl2 *)
-  (*     | Nil, Nil => true *)
-  (*     | _, _ => false *)
-  (*   end. *)
-
-  (* Theorem eqb_spec : forall d1 d2 : data , eqb d1 d2 = true <-> d1 = d2. *)
-  (*   intros d1 d2. *)
-  (*   split. *)
-  (*   intro H. *)
-  (*   destruct d1. *)
-  (*   - destruct d2. *)
-  (*     + reflexivity. *)
-  (*     + discriminate H. *)
-  (*   - destruct d2. *)
-  (*     + discriminate H. *)
-  (*     + simpl in H. *)
-  (*       case H. *)
-
-  (* Instance eqbData : EqbType data := { *)
-  (*   eqb := *)
-  (*     fun (d1 d2 : data) => *)
-  (*       match d1, d2 with *)
-  (*         | _, _ => false *)
-  (*       end *)
-  (*   eqb_spec *)
-  (* }. *)
-
-  (* Program Definition ordData : OrdType data. admit. Admitted. *)
-
-  (* Program Definition compData : @Comparable data ordData. admit. Admitted. *)
-
-  (* Program Definition inhData : Inhabited data. admit. Admitted. *)
-
-  (* Instance compDecData : CompDec data := *)
-  (*   { Eqb := eqbData ; Ordered := ordData ; Comp := compData ; Inh := inhData }. *)
+  (* TODO: Currently we use Variable, but this is provable. *)
+  Variable compDecData : CompDec data.
 
   (* Three modifications: *)
   (*   1 - Use boolean version of lt (`Z.ltb` instead of `Z_lt_dec`) *)
   (*   2 - Put the `exist` on the top of the term (`exist if ...` instead of `if (..) then exist (..) else exist (..)) *)
   (*   3 - Don't use an alias for the refinement type, inline it in the return type of `interval` *)
-  Axiom foo : forall l h , ok (if l <? h then Cons l h Nil else Nil).
+
   Program Definition interval (l h: Z) : { r : data | ok r } :=
     exist _ (if Z.ltb l h then Cons l h Nil else Nil) _.
-  Next Obligation.
-    exact (foo l h).
-  Defined.
 
   Program Definition InBoolRef (x : Z) (s : {r : data | ok r }) : bool := InBool x s.
 
   Goal forall l h , (proj1_sig (interval l h) = Nil) \/ (l <? h = true).
-    intros l h.
-    scope.
-    - admit.
-    - verit.
-  Abort.
+    snipe.
+  Qed.
 
   Goal forall x l h, (InBoolRef x (interval l h) = true) <-> l <= x < h.
-    intros x l h.
-    split.
-    - intro h2.
-      scope.
-      + admit.
-      + verit.
-    - intro h2.
-      scope.
-      + admit.
-      + verit.
-       admit.
+    snipe. (* Not fully proved due to a bug in SMTCoq *)
   Abort.
 
 End RefinementTypes.
