@@ -45,7 +45,7 @@ False
 
 eliminate_dependent_pattern_matching H.
 
-H1 : forall (A : Type), length [] = []
+H1 : forall (A : Type), length [] = 0
 H2 : forall (A : Type) (x : A) (xs : list A),
     length (x::xs) = S (length xs)
 ______________________________________(1/1)

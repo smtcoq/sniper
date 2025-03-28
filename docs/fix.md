@@ -28,7 +28,7 @@ Goal (forall (H : forall (A: Type) (l : A), @length A l =
                 match l with
                 | [] => 0
                 | _ :: l' => S (length l')
-                end) A l) -> False). intros.
+                end) A l), False). intros.
 
 1 goal
 H : forall (A: Type) (l : A), @length A l =
