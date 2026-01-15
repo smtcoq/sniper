@@ -832,12 +832,17 @@ Definition call_cstr_handler_list
 let im := initial_mappings e I in
 cstr_handler_list e (init_vars im) (rev (ty_vars im)) (init_premises im) (patterns im) (mappings im) ldec 1000.
 
+
 Definition build_fixpoint_aux
 (recarg : nat) (* the recusive argument to build the fixpoint *)
 (t : term) (* the big match *)
 na (* a name for the fixpoint *)
 (lty : list term) (* the list of types of the arguments (already lifted) *) :=
 let ty := mkProd lty <% bool %> in
+(* ICI *)
+tmMsg "Printing t:"%bs;;
+t_un <- tmUnquote t;;
+tmPrint t_un;;
 (tFix 
 [{| dname := {| binder_name := nNamed (na++"_decidable")%bs ; binder_relevance := Relevant |} ;
 dtype := ty ;
@@ -845,17 +850,25 @@ dbody := mkLambda lty t ;
 rarg := recarg |}] 0, ty).
 
 
+Ltac foo :=
+  run_template_program (tmMsg "foo"%bs) (fun _ => idtac);
+  true.
+
+
 Definition build_fixpoint_aux2 
 (e : global_env) (* the global envronment to look for information about inductives *)
 (I : term) 
 (ldec : list (term*term*term))
 (recarg : nat) :=
+(* let _ := ltac:(foo) in *)
+(* let _ := ltac:(run_template_program (tmMsg "foo"%bs) (fun _ => idtac); true) in *)
 let na := find_name_gref I in
 let lty := rev (get_args_inductive_fresh_types e I) in
 let typars := params_inductive e I in
 let tys_to_bind := typars ++ lty in
 let res := call_cstr_handler_list e I ldec in
-build_fixpoint_aux recarg res na tys_to_bind.
+tmMsg "Calling build_fixpoint_aux2"%bs;; (* Has a side effect on the validity of the Coq term ?? ICI *)
+tmReturn (build_fixpoint_aux recarg res na tys_to_bind).
 
 (** Functions to compute the recursive argument **) 
 
@@ -1038,7 +1051,7 @@ let name := Indu_name_decidable indu in
 let genv := p.1 in
 let recarg := find_decreasing_arg genv indu in
 match recarg with
-| Some n => let fixp := build_fixpoint_aux2 genv indu l n in
+| Some n => fixp <- build_fixpoint_aux2 genv indu l n;;
             let fixp_trm := fixp.1 in trm_print <- tmEval all fixp_trm ;;
             fresh <- tmFreshName name ;;
             tmMkDefinition fresh fixp_trm
@@ -1057,9 +1070,10 @@ let indu := p.2 in
 let genv := p.1 in
 let name := Indu_name_decidable indu in
 fresh <- tmFreshName name ;; 
-let fixp := build_fixpoint_aux2 genv indu l n in
+fixp <- build_fixpoint_aux2 genv indu l n;;
 let fixp_trm := fixp.1 in
 tmMkDefinition fresh fixp_trm.
+
 
 
 Definition linearize_and_fixpoint_auto 
@@ -1086,9 +1100,14 @@ npars' <- tmEval all npars ;;
 match recarg with
 | Some n => fresh <- tmFreshName name ;; 
             n' <- tmEval all n ;;
-            let fixp := build_fixpoint_aux2 new_genv indu l n in
+            tmMsg "Calling build_fixpoint_aux2 a"%bs;;
+            fixp <- build_fixpoint_aux2 new_genv indu l n;;
+            tmMsg "Calling build_fixpoint_aux2 b"%bs;;
             let fixp_ty := fixp.2 in
-            let fixp_trm := fixp.1 in  trm_print <- tmEval all fixp_trm ;; (* tmPrint trm_print;; *)
+            let fixp_trm := fixp.1 in
+            tmMsg "Printing fixp_trm:"%bs;;
+            fixp_trm_un <- tmUnquote fixp_trm;;
+            tmPrint fixp_trm_un;;
             tmMkDefinition fresh fixp_trm ;;
             tmReturn (t, fresh, n', npars', fixp_trm, genv) 
 | None => tmFail "cannot find the recursive argument automatically, you should try 

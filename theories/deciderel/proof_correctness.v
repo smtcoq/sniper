@@ -557,6 +557,9 @@ let (ty_id_fix_recarg_npars, fix_qu) := ty_id_fix_recarg_npars_fix_qu in
 let (ty_id_fix_recarg, npars) := ty_id_fix_recarg_npars in
 let (ty_id_fix, recarg) := ty_id_fix_recarg in
 let (ty, id_fix) := ty_id_fix in
+tmMsg "Printing fix_qu:";;
+fix_qu_un <- tmUnquote fix_qu;;
+tmPrint fix_qu_un;;
 current <- tmCurrentModPath tt ;; 
 let trm := (tConst (current, id_fix ) []) in 
 tquote <- tmQuote t ;; 
