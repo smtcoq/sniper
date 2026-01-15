@@ -34,16 +34,16 @@ pred contains_only_context_variables i: list term, i: term.
 pred subterms_and_args i: term, i: list term, o: (list (pair term (list term))). %closed subterms of a term and their arguments if they are applied
 subterms_and_args (sort U) _ [pr (sort U) []] :- !.
 subterms_and_args (fun N Ty F) Na [pr (fun N Ty F) [] | R] :- contains_only_context_variables Na (fun N Ty F), !,
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R. %backtracks when the function depends on a variable bound by a previous rule
 subterms_and_args (fun N Ty F) Na R :- !,
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R. 
 subterms_and_args (prod N Ty F) Na [pr (prod N Ty F) [] | R] :- contains_only_context_variables Na (prod N Ty F), !,
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R. 
 subterms_and_args (prod N Ty F) Na R :- !, 
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R. 
 % TODO : define curry
 subterms_and_args (app [T|L]) Na [pr (app [T|L]) [], pr T L |R] :- contains_only_context_variables Na T,
@@ -53,11 +53,11 @@ subterms_and_args (app [_T|L]) Na R :- !,
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
 subterms_and_args (global G) _Na [pr (global G) []] :- !.
 subterms_and_args (let N Ty V F) Na [pr (let N Ty V F) []| R] :- contains_only_context_variables Na (let N Ty V F), !,
-    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ (def x N Ty V => subterms_and_args (F x) Na R3),
     std.append R1 R2 R12,
     std.append R12 R3 R.
 subterms_and_args (let N Ty V F) Na R :- !,
-    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ def x N Ty V => subterms_and_args (F x) Na R3,
+    subterms_and_args Ty Na R1, subterms_and_args V Na R2, pi x\ (def x N Ty V => subterms_and_args (F x) Na R3),
     std.append R1 R2 R12,
     std.append R12 R3 R.
 subterms_and_args (match T U L) Na [pr (match T U L) [] | R] :- contains_only_context_variables Na (match T U L), !,
@@ -71,10 +71,10 @@ subterms_and_args (match T U L) Na R :- !,
     std.flatten R3 R',
     std.append R12 R' R.
 subterms_and_args (fix N Rno Ty F) Na [pr (fix N Rno Ty F) []|R] :- contains_only_context_variables Na (fix N Rno Ty F), !,
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R.
 subterms_and_args (fix N _ Ty F) Na R :- !,
-    subterms_and_args Ty Na R1, pi x\ decl x N Ty => subterms_and_args (F x) Na R2,
+    subterms_and_args Ty Na R1, pi x\ (decl x N Ty => subterms_and_args (F x) Na R2),
     std.append R1 R2 R.
 subterms_and_args T Na [pr T []] :- contains_only_context_variables Na T.
 subterms_and_args _ _ [].

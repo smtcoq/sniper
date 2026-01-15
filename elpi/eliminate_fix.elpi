@@ -23,7 +23,7 @@ pred mkEq i: term, i: term, o: term.
     mkEq T1 T2 R :- coq.typecheck T2 T3 ok, mkEq_aux T1 T2 T3 [] R.
 
 pred nb_prod i: term, o: int.
-    nb_prod (prod Na Ty F) N' :- !, pi x\ decl x Na Ty => nb_prod (F x) N, N' is N + 1.
+    nb_prod (prod Na Ty F) N' :- !, pi x\ (decl x Na Ty => nb_prod (F x) N), N' is N + 1.
     nb_prod _ 0.
 
 pred mk_napp i: term, i: int, o: term.
@@ -58,7 +58,7 @@ pred bind i: bool, i: term, i: term, o: term.
     bind ff T _ T1 :- copy T T1.
 
 pred abstract i: term, i: list (pair term term), o: term.
-    abstract T [pr X Ty | XS] R :- (copy X abs :- !) => copy T T1, 
+    abstract T [pr X Ty | XS] R :- ((copy X abs :- !) => copy T T1),
         bind tt T1 Ty T2,
         abstract T2 XS R.
     abstract T [] T.
@@ -72,18 +72,18 @@ pred subterms_fix_fun i: term, o: (list term).
 pred subterms_fix i: term, o: (list term). 
     subterms_fix (sort _U) [] :- !.
     subterms_fix (fun N Ty F) R :- !,
-        subterms_fix Ty R1, pi x\ decl x N Ty => subterms_fix (F x) R2,
+        subterms_fix Ty R1, pi x\ (decl x N Ty => subterms_fix (F x) R2),
         std.append R1 R2 R. 
     subterms_fix (prod N Ty F) R :- !,
-        subterms_fix Ty R1, pi x\ decl x N Ty =>
-        subterms_fix (F x) R2,
+        subterms_fix Ty R1, pi x\ (decl x N Ty =>
+        subterms_fix (F x) R2),
         std.append R1 R2 R.
     subterms_fix (app L) R :- !,
         std.map L subterms_fix R',
         std.flatten R' R.
     subterms_fix (global _G) [] :- !.
     subterms_fix (let N Ty V F) R :- !,
-        subterms_fix Ty R1, subterms_fix V R2, pi x\ def x N Ty V => subterms_fix (F x) R3,
+        subterms_fix Ty R1, subterms_fix V R2, pi x\ (def x N Ty V => subterms_fix (F x) R3),
         std.append R1 R2 R12,
         std.append R12 R3 R.
     subterms_fix (match T U L) R :- !, 
@@ -95,24 +95,24 @@ pred subterms_fix i: term, o: (list term).
         names Nms, std.filter Nms (x\ occurs x Fix) Nms',
         std.rev Nms' Nmsrev, recover_types Nmsrev NTy,
         abstract Fix NTy Res, !,
-        subterms_fix Ty R1, pi x\ decl x Na Ty => subterms_fix (F x) R2,
+        subterms_fix Ty R1, pi x\ (decl x Na Ty => subterms_fix (F x) R2),
         std.append R1 R2 R.
     subterms_fix _T [].
 
 pred subterms_glob_const i: term, o: (list term). 
     subterms_glob_const (sort _U) [] :- !.
     subterms_glob_const (fun N Ty F) R :- !,
-        subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+        subterms_glob_const Ty R1, pi x\ (decl x N Ty => subterms_glob_const (F x) R2),
         std.append R1 R2 R. 
     subterms_glob_const (prod N Ty F) R :- !, 
-        subterms_glob_const Ty R1, pi x\ decl x N Ty => subterms_glob_const (F x) R2,
+        subterms_glob_const Ty R1, pi x\ (decl x N Ty => subterms_glob_const (F x) R2),
         std.append R1 R2 R. 
     subterms_glob_const (app L) R :- !,
         std.map L subterms_glob_const R',
         std.flatten R' R.
     subterms_glob_const (global (const G)) [global (const G)].
     subterms_glob_const (let N Ty V F) R :- !,
-        subterms Ty R1, subterms V R2, pi x\ def x N Ty V => subterms_glob_const (F x) R3,
+        subterms Ty R1, subterms V R2, pi x\ (def x N Ty V => subterms_glob_const (F x) R3),
         std.append R1 R2 R12,
         std.append R12 R3 R.
     subterms_glob_const (match T U L) R :- !,
@@ -121,7 +121,7 @@ pred subterms_glob_const i: term, o: (list term).
         std.flatten R3 R',
         std.append R12 R' R.
     subterms_glob_const (fix Na _ Ty F) R :- !,
-        subterms_glob_const Ty R1, pi x\ decl x Na Ty => subterms_glob_const (F x) R2,
+        subterms_glob_const Ty R1, pi x\ (decl x Na Ty => subterms_glob_const (F x) R2),
         std.append R1 R2 R.
     subterms_glob_const _ [].
 
@@ -141,7 +141,7 @@ pred abstract_unify_aux i: term, i: term, i: term.
     abstract_unify_aux T1 (fun _ _ F2) (prod Na Ty F3) :- !,
         pi x\ decl x Na Ty =>
         abstract_unify_aux T1 (F2 _) (F3 x).
-    abstract_unify_aux T1 T2 T3 :- @holes! => !,
+    abstract_unify_aux T1 T2 T3 :- (@holes! => !),
         coq.elaborate-skeleton T1 T3 T1' ok, coq.elaborate-skeleton T2 T3 T2' ok, 
         coq.unify-leq T1' T2' ok.
 

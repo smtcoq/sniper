@@ -1,9 +1,9 @@
-From MetaCoq.Template Require Import All.
+From MetaRocq.Template Require Import All.
 From SMTCoq Require Import SMTCoq.
-Import MCMonadNotation.
+Import MRMonadNotation.
 Require Import add_hypothesis_on_parameters.
 Require Import utilities.
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Declare Scope string_scope2.
 Notation "s1 ^ s2" := (bytestring.String.append s1 s2) : string_scope2.
@@ -14,11 +14,14 @@ Open Scope string_scope2.
 into a new one with supplementary hypothesis (HA1 : CompDec A1), ..., (HAn : CompDec An) 
 taken as parameters *)
 
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
-MetaCoq Quote Definition CompDec_reif := CompDec.
+MetaRocq Quote Definition CompDec_reif := CompDec.
 
-MetaCoq Quote Definition Prop_reif := Prop.
+MetaRocq Quote Definition Prop_reif := Prop.
+
+
+
 
 Section utilities.
 

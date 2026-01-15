@@ -11,7 +11,7 @@
 
 
 Require Import SMTCoq.SMTCoq.
-Require Import Bool OrderedType OrderedTypeEx.
+From Stdlib Require Import Bool OrderedType OrderedTypeEx.
 
 Section tree.
 

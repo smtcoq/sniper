@@ -9,13 +9,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
-From MetaCoq.Template Require Import All. 
-From MetaCoq.Template Require Import Checker.
-From MetaCoq.Common Require Import config.
-Require Import List.
+From MetaRocq.Template Require Import All. 
+From MetaRocq.Template Require Import Checker.
+From MetaRocq.Common Require Import config.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
-Require Import ZArith.
+From Stdlib Require Import String.
+From Stdlib Require Import ZArith.
 
 (** Generic *)
 
@@ -55,23 +55,23 @@ Definition eqb_term := @eq_term default_checker_flags init_graph.
 
 (** Quoted useful terms **)
 
-MetaCoq Quote Definition unit_reif := unit.
+MetaRocq Quote Definition unit_reif := unit.
 
-MetaCoq Quote Definition or_reif := Logic.or.
+MetaRocq Quote Definition or_reif := Logic.or.
 
-MetaCoq Quote Definition and_reif := Logic.and.
+MetaRocq Quote Definition and_reif := Logic.and.
 
-MetaCoq Quote Definition True_reif := True.
+MetaRocq Quote Definition True_reif := True.
 
-MetaCoq Quote Definition False_reif := False.
+MetaRocq Quote Definition False_reif := False.
 
-MetaCoq Quote Definition eq_reif := @eq.
+MetaRocq Quote Definition eq_reif := @eq.
 
-MetaCoq Quote Definition bool_reif := bool. 
+MetaRocq Quote Definition bool_reif := bool. 
 
-MetaCoq Quote Definition Z_reif := Z.
+MetaRocq Quote Definition Z_reif := Z.
 
-MetaCoq Quote Definition nat_reif := nat.
+MetaRocq Quote Definition nat_reif := nat.
 
 Inductive default :=.
 Definition default_reif := <% default %>. 
@@ -104,7 +104,7 @@ match t with
 | _ => "error"%bs
 end.
 
-(** Functions to build MetaCoq terms **)
+(** Functions to build MetaRocq terms **)
 
 (*  declaring variables   *)
 Open Scope string_scope.
@@ -289,7 +289,7 @@ let g := get_info_inductive I in match g with
 end.
 
 
-(* Check is a MetaCoq term is a sort which is not Prop *)
+(* Check is a MetaRocq term is a sort which is not Prop *)
 Definition is_type (t : term) := match t with
                                  | tSort sProp => false
                                  | tSort (sType _ ) => true
@@ -420,7 +420,7 @@ Ltac clear_dup :=
 
 Ltac clear_dups := repeat clear_dup.
 
-(** Tactics to work on quoted MetaCoq terms **)
+(** Tactics to work on quoted MetaRocq terms **)
 
 Ltac unquote_term t_reif := 
 run_template_program (tmUnquote t_reif) ltac:(fun t => 
@@ -432,7 +432,7 @@ match constr:(l) with
 | cons ?x ?xs => unquote_term x ; unquote_list xs
 end.
 
-(* Allows to use MetaCoq without continuations *)
+(* Allows to use MetaRocq without continuations *)
 Ltac metacoq_get_value p :=
   let id := fresh in
   let _ := match goal with _ => run_template_program p
@@ -572,10 +572,10 @@ let h := Control.hyps () in
 let rec tac_rec c h :=
   match h with
   | x :: xs =>  match x with
-    | (id, opt, cstr) => let c' := Control.hyp id in 
+    | (id, opt, _) => let c' := Control.hyp id in 
     if Constr.equal c c' then 
       match opt with
-      | Some y => ltac1:(idtac)
+      | Some _ => ltac1:(idtac)
       | None => tac_rec c xs 
       end
     else tac_rec c xs
@@ -589,7 +589,7 @@ let h := Control.hyps () in
 let rec tac_rec c h :=
   match h with
   | x :: xs =>  match x with
-    | (id, opt, cstr) => 
+    | (_, opt, _) =>
       match opt with
       | Some c' => if Constr.equal c c' then ltac1:(idtac) else tac_rec c xs
       | None => tac_rec c xs 
@@ -629,7 +629,7 @@ Ltac2 rec new_hypothesis
 match h1 with
 | [] => h2
 | (id, _, _) :: xs => 
-   let h2' := List.filter (fun (x, y, z) => Ident.equal x id) h2
+   let h2' := List.filter (fun (x, _, _) => Ident.equal x id) h2
    in new_hypothesis xs h2'
 end.
 
@@ -638,7 +638,7 @@ Ltac2 rec hyps_printer (h : (ident * constr option * constr) list)
 match h with
 | [] => ()
 | x :: xs => match x with
-            | (id, opt, cstr) => 
+            | (id, _, cstr) => 
 let () := Message.print (Message.concat (Message.of_ident id)
                                         (Message.concat (Message.of_string " : ")
                                                         (Message.of_constr cstr))) 

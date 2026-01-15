@@ -1,4 +1,4 @@
-From MetaCoq.Template Require Import All.
+From MetaRocq.Template Require Import All.
 Require Import Lia.
 Import MCMonadNotation.
 Require Import List.
@@ -10,7 +10,7 @@ From SMTCoq Require Import SMTCoq.
 Require Import generate_fix.
 Require Import utilities.
 From Ltac2 Require Import Ltac2.
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
 Open Scope bs_scope.
 
@@ -104,9 +104,9 @@ end.
 
 (** Tests **)
 
-(* MetaCoq Unquote Definition correctness_test := 
+(* MetaRocq Unquote Definition correctness_test := 
 (correctness_statement even_reif_rec.1 even_reif_rec.2 <%even_decidable%>). *)
-(* MetaCoq Unquote Definition correctness_test' := 
+(* MetaRocq Unquote Definition correctness_test' := 
 (correctness_statement Add_linear_rec.1 Add_linear_rec.2 <%Add_decidable%>).
  *)
 (** Proofs **)
@@ -496,7 +496,7 @@ match (Ltac2.Ltac1.to_constr input) with
 | Some y => y
 end.
 
-(* Need to convert ltac2 tactic within ltac1 for compatibility reasons with MetaCoq *)
+(* Need to convert ltac2 tactic within ltac1 for compatibility reasons with MetaRocq *)
 Tactic Notation "correctness" constr(t) constr(t') constr(n) constr(n') := 
 let tac := 
 ltac2:(t1 t2 n n' |- let t1' := ltac1_to_constr_unsafe t1 in
@@ -508,7 +508,7 @@ timeout 5 (tac t t' n n').
 Ltac correctness_ltac1 t t' n n' := correctness t t' n n'.
 
 (* Thanks to Yannick Forster's trick, we can run Ltac from the TemplateMonad *)
-MetaCoq Run (tmCurrentModPath tt >>= tmDefinition "solve_ltac_mp"%bs).
+MetaRocq Run (tmCurrentModPath tt >>= tmDefinition "solve_ltac_mp"%bs).
 
 Definition solve_ltac (tac : string) {args  : Type} (a : args)  (Goal : Type) := Goal.
 Existing Class solve_ltac.
@@ -539,7 +539,7 @@ oprf <- tmInferInstance None (solve_ltac "correctness_lemma" (t1, t2, n1, n2)
              | my_None => tmPrint "no proof found, you should prove the equivalence manually"
              end. 
 
-(* MetaCoq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
+(* MetaRocq Run (apply_correctness_lemma (@Add_linear) (@Add_linear_decidable) 
 (forall (A : Type) (HA : CompDec A) (a : A) (x y : list A),
 Add_linear A HA a x y <-> Add_linear_decidable A HA a x y = true) 3 3).  *)
 
@@ -577,7 +577,7 @@ Section Poly.
 Variable A: Type.
 Variable HA : CompDec A.
 
-MetaCoq Run (decide (@Add) []). 
+MetaRocq Run (decide (@Add) []). 
 Next Obligation.
 intros A0 H a l1 l2.
 split.
@@ -601,7 +601,7 @@ Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
 | smNil : forall l, smaller_list [] l
 | smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
 
-MetaCoq Run (decide (@smaller_list nat) []).
+MetaRocq Run (decide (@smaller_list nat) []).
 Next Obligation.
 Abort.
 
@@ -609,7 +609,7 @@ Inductive mem : nat -> list nat -> Prop :=
     MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
   | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
 
-MetaCoq Run (decide (mem) []).
+MetaRocq Run (decide (mem) []).
 Next Obligation.
 exact decidable_proof. Qed. 
 
@@ -619,7 +619,7 @@ exact decidable_proof. Qed.
     member n xs -> member n (n'::xs).
 
 
-MetaCoq Run (linearize_and_fixpoint_auto (member) []). 
+MetaRocq Run (linearize_and_fixpoint_auto (member) []). 
 Next Obligation.
 exact decidable_proof0.
 Qed. *)

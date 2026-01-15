@@ -1,4 +1,4 @@
-From MetaCoq.Template Require Import All.
+From MetaRocq.Template Require Import All.
 Require Import List.
 Import ListNotations.
 Require Import String.
@@ -12,7 +12,7 @@ Require Import linearize_plugin.
 Require Import utilities.
 Import MCMonadNotation.
 
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
 (** Auxiliaries functions *)
 
@@ -1116,7 +1116,7 @@ Inductive ordered_list : list nat -> Prop :=
 | ordered_rec : forall l x y, Nat.le x y -> ordered_list l -> ordered_list (x::y::l).
 
 
-MetaCoq Run (build_fixpoint_auto ordered_list [(<%Nat.le%>, <%Nat.leb%>, <% Nat.leb_le %>)]).
+MetaRocq Run (build_fixpoint_auto ordered_list [(<%Nat.le%>, <%Nat.leb%>, <% Nat.leb_le %>)]).
 
 Goal (ordered_list_decidable =
 fix ordered_list_decidable (H : list nat) : bool :=
@@ -1126,7 +1126,7 @@ fix ordered_list_decidable (H : list nat) : bool :=
   | x :: x1 :: x2 => ordered_list_decidable x2 && (x <=? x1)
   end). reflexivity. Qed.
 
-MetaCoq Run (build_fixpoint_auto member []). 
+MetaRocq Run (build_fixpoint_auto member []). 
 
 Goal (member_decidable =
 fix member_decidable (H : nat) (H0 : list nat) {struct H0} :
@@ -1137,7 +1137,7 @@ fix member_decidable (H : nat) (H0 : list nat) {struct H0} :
       eqb_of_compdec Nat_compdec H x || member_decidable H x0
   end). reflexivity. Qed.
 
-MetaCoq Run (build_fixpoint_auto (Add_linear) []).
+MetaRocq Run (build_fixpoint_auto (Add_linear) []).
 
 Goal (Add_linear_decidable =
 fix Add_linear_decidable (H : Z) (H0 H1 : list Z) {struct H0} : bool :=
@@ -1151,7 +1151,7 @@ fix Add_linear_decidable (H : Z) (H0 H1 : list Z) {struct H0} : bool :=
          end
   end). reflexivity. Qed. 
 
-MetaCoq Run (build_fixpoint_auto even []). 
+MetaRocq Run (build_fixpoint_auto even []). 
 
 Goal (even_decidable =
 fix even_decidable (H : nat) : bool :=
@@ -1162,7 +1162,7 @@ fix even_decidable (H : nat) : bool :=
   end). 
 reflexivity. Qed.
 
-MetaCoq Run (linearize_and_fixpoint_auto (smallernat) []). 
+MetaRocq Run (linearize_and_fixpoint_auto (smallernat) []). 
 
 Goal (smallernat_decidable =
 fix smallernat_decidable (H H0 : list nat) {struct H} : bool :=
@@ -1174,7 +1174,7 @@ fix smallernat_decidable (H H0 : list nat) {struct H} : bool :=
                end
   end). reflexivity. Qed.
 
-MetaCoq Run (linearize_and_fixpoint_auto (add) []).
+MetaRocq Run (linearize_and_fixpoint_auto (add) []).
 
 Goal (add_linear_decidable =
 fix add_linear_decidable (H H0 H1 : nat) {struct H} : bool :=
@@ -1186,16 +1186,16 @@ fix add_linear_decidable (H H0 H1 : nat) {struct H} : bool :=
            end
   end). reflexivity. Qed.
 
-MetaCoq Run (build_fixpoint_recarg even [] 0).
+MetaRocq Run (build_fixpoint_recarg even [] 0).
 
-MetaCoq Run (build_fixpoint_auto (@smaller) []).
+MetaRocq Run (build_fixpoint_auto (@smaller) []).
 
 Inductive member' (B: Type) : B -> list B -> Prop :=
 | MemMatch' : forall xs n, member' B n (n::xs)
 | MemRecur' : forall xs n n',
     member' B n xs -> member' B n (n'::xs).
 
-MetaCoq Run (linearize_and_fixpoint_auto member' []).
+MetaRocq Run (linearize_and_fixpoint_auto member' []).
 
 End test.
 
@@ -1208,7 +1208,7 @@ eqb_of_compdec HA x a = true -> Add_linear' A HA a l (x :: l')
   | Add_cons : forall (x y : A) (l l' : list A), eqb_of_compdec HA x y = true ->
                Add_linear' A HA a l l' -> Add_linear' A HA a (x :: l) (y :: l').
 
-MetaCoq Run (build_fixpoint_auto (@Add_linear') []).
+MetaRocq Run (build_fixpoint_auto (@Add_linear') []).
 
 Variable A : Type.
 Variable HA : CompDec A.
@@ -1226,9 +1226,9 @@ Inductive smaller2 : list nat -> list nat -> Prop :=
               smaller2 l l' -> smaller2 (x :: l) (x' :: l').
 
 
-MetaCoq Run (build_fixpoint_auto (@smaller2) []).
+MetaRocq Run (build_fixpoint_auto (@smaller2) []).
 
-MetaCoq Run (build_fixpoint_auto (@Add_linear2) []). 
+MetaRocq Run (build_fixpoint_auto (@Add_linear2) []). 
 
 End test2.
 
@@ -1246,7 +1246,7 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
      (j <= a)%Z -> (a <= b)%Z ->  Inv_elt_list (b+2) q ->
      Inv_elt_list j (Cons a b q).
 
-MetaCoq Run (build_fixpoint_auto (Inv_elt_list) [(<%Z.le%>, <%Z.leb%>, <%Zle_is_le_bool%>)]).
+MetaRocq Run (build_fixpoint_auto (Inv_elt_list) [(<%Z.le%>, <%Z.leb%>, <%Zle_is_le_bool%>)]).
 
 Goal (Inv_elt_list_decidable =
 fix Inv_elt_list_decidable (H : Z) (H0 : elt_list) {struct H0} : bool :=
@@ -1259,7 +1259,7 @@ Inductive smaller_Z : list Z -> list Z -> Prop :=
 | sm_nil_Z : forall l, smaller_Z [] l
 | sm_cons_Z : forall x x' l l', smaller_Z l l' -> smaller_Z (x :: l) (x' :: l').
 
-MetaCoq Run (build_fixpoint_auto (smaller_Z) []).
+MetaRocq Run (build_fixpoint_auto (smaller_Z) []).
 
 Inductive lset : list nat -> Prop :=
 | Empty : lset []
@@ -1267,7 +1267,7 @@ Inductive lset : list nat -> Prop :=
            negb (member_decidable n xs) = true ->
            lset xs ->
            lset (n::xs).
-MetaCoq Run (build_fixpoint_recarg lset [] 0).  
+MetaRocq Run (build_fixpoint_recarg lset [] 0).  
 
 End test3.
 

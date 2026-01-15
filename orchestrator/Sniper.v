@@ -2,9 +2,9 @@ From SMTCoq Require Export SMTCoq.
 
 From Ltac2 Require Import Ltac2.
 
-Require Import ZArith.
-Require Import PArith.BinPos.
-Require Import NArith.BinNatDef.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import PArith.BinPos.
+From Stdlib Require Import NArith.BinNatDef.
 
 From SMTCoq Require Import SMT_classes SMT_classes_instances BVList FArray.
 

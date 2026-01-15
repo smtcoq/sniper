@@ -35,7 +35,7 @@ Ltac2 npars_of_constructor c :=
   let c := Ltac1.of_constr c in
   ltac1:(c |- npars c) c ;
   let hs := Control.hyps () in 
-  let (id, n_def, ty) := List.last hs in
+  let (id, n_def, _) := List.last hs in
     match n_def with
       | None => Control.throw (Invalid_argument None)
       | Some n => clear $id ; nat_to_int n
@@ -72,7 +72,7 @@ Ltac2 Type refs := [ .. ].
 
 Ltac2 is_type_or_set (c: constr) :=
   match kind c with
-    | Sort s => Bool.and (Bool.neg (equal c 'Prop)) (Bool.neg (equal c 'SProp))
+    | Sort _ => Bool.and (Bool.neg (equal c 'Prop)) (Bool.neg (equal c 'SProp))
     | _ => false
   end.
 
@@ -217,8 +217,8 @@ Ltac2 replace_by_inductive (c : constr) :=
 
 Ltac2 rec codomain_not_prop_aux (c: constr) := 
   match kind c with
-  | Prod bi c' => codomain_not_prop_aux c'
-  | App x1 arr => codomain_not_prop_aux x1
+  | Prod _ c' => codomain_not_prop_aux c'
+  | App x1 _ => codomain_not_prop_aux x1
   | _ => if equal c 'Prop then false else true
   end.
 
@@ -226,7 +226,7 @@ Ltac2 codomain_not_prop (c: constr) := codomain_not_prop_aux (type c).
 
 Ltac2 is_inductive_codomain_not_prop_applied (c: constr) :=
   match kind c with
-    | App c' ca => 
+    | App c' _ => 
           match kind c' with
             | Rel _ => false
             | _ => Bool.and (is_ind c') (codomain_not_prop c')
@@ -250,7 +250,7 @@ Ltac2 find_context_hyp_aux (c: constr) :=
   let subsindurel := 
     List.filter (fun x =>
       match kind x with
-        | App c' ca => Array.mem equal 'type_variable ca
+        | App _ ca => Array.mem equal 'type_variable ca
         | _ => false
       end) subsindu in
   List.map transform_into_context subsindurel.
@@ -314,7 +314,7 @@ Ltac2 find_context_types_aux (c : constr) :=
       let (b1, b2) := b in
       Bool.and (equal a1 b1) (equal a2 b2))
     (List.flatten (List.map list_context_types subsindu)) in
-  List.filter (fun (x, y) => Bool.neg (equal x 'wildcard)) res.
+  List.filter (fun (x, _) => Bool.neg (equal x 'wildcard)) res.
 
 Ltac2 rec reorder_context_types_aux  (c : constr) (l : (constr*constr) list) :=
   match l with
@@ -366,7 +366,7 @@ Ltac2 hyp_is_dup (id : ident) (h : constr) :=
 
 Ltac2 rec hyp_is_dup_aux2 (ty : constr) hs :=
   match hs with
-    | (id', _, ty') :: xs => Bool.or (equal ty ty') (hyp_is_dup_aux2 ty xs)
+    | (_, _, ty') :: xs => Bool.or (equal ty ty') (hyp_is_dup_aux2 ty xs)
     | _ => false
   end.
 
@@ -491,7 +491,7 @@ Ltac2 rec poly_hyps_of_type_prop_as_terms (hs: (ident*(constr option)*constr) li
   end.
 
 Ltac2 rec hyps_as_terms (hs: (ident*(constr option)*constr) list) :=
-  List.map (fun (x, y, z) => Control.hyp x) hs.
+  List.map (fun (x, _, _) => Control.hyp x) hs.
 
 Ltac2 compute_init_state () :=
   let hyps := Control.hyps () in
@@ -542,7 +542,7 @@ Ltac2 max_quantifiers () : int :=
   let rec aux hs max :=
     match hs with
       | [] => max
-      | (id, opt, ty) :: hs' => 
+      | (_, opt, ty) :: hs' => 
           match opt with
             | Some _ => aux hs' max
             | None => 
@@ -586,7 +586,7 @@ Tactic Notation "elimination_polymorphism" :=
 Tactic Notation "elimination_polymorphism_printer" :=
     ltac2:(Notations.do0 max_quantifiers elimination_polymorphism_printer).
 
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 
 Section tests.

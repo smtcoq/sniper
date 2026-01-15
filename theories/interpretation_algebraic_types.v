@@ -10,14 +10,14 @@
 (**************************************************************************)
 
 
-Require Import MetaCoq.Template.All.
-Require Import List String.
+Require Import MetaRocq.Template.All.
+From Stdlib Require Import List String.
 Import ListNotations.  
 Require Import utilities. 
-Require Import ZArith.
-Require Import PArith.BinPos. 
+From Stdlib Require Import ZArith.
+From Stdlib Require Import PArith.BinPos.
 
-Import ListNotations MCMonadNotation. 
+Import ListNotations MRMonadNotation.
 
 Ltac pose_quote_term c idn := let x := metacoq_get_value (tmQuote c) in (pose x as idn).
 
@@ -33,8 +33,8 @@ Ltac unquote_term_cbv' t idn  := unquote_term t idn ltac:(fun x => cbv in x).
 (** reified connectives **)
 
 
-MetaCoq Quote Definition ex_reif := <%@ex%>.
-MetaCoq Quote Definition ex_intro_reif := <%@ex_intro%>.
+MetaRocq Quote Definition ex_reif := <%@ex%>.
+MetaRocq Quote Definition ex_intro_reif := <%@ex_intro%>.
 
 
 (*** Useful operators ***)

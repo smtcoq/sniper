@@ -12,13 +12,13 @@
 
 Require Import utilities. 
 Require Import instantiate_type.
-Require Import MetaCoq.Template.All.
-Require Import String.
-Require Import List.
-Require Import ZArith.
+Require Import MetaRocq.Template.All.
+From Stdlib Require Import String.
+From Stdlib Require Import List.
+From Stdlib Require Import ZArith.
 Require Import interpretation_algebraic_types. 
 Require Import case_analysis.
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
 Local Open Scope bs_scope.
 
@@ -57,7 +57,7 @@ mkProd_rec typars (mkProdName "t" (tApp I lpars) (mkOr_n (aux (List.map (lift 1 
 
 Definition statement_list := statement_constructors <%@list %> [<% Type %>] [<%@nil%> ; <%@cons%>] [0 ; 2].
 
-MetaCoq Unquote Definition st_list := statement_list.
+MetaRocq Unquote Definition st_list := statement_list.
 
 (* Print st_list.
 st_list = 
@@ -65,7 +65,7 @@ forall (x : Type) (t : list x),
 t = [] \/ (exists (x0 : x) (x1 : list x), t = x0 :: x1)
      : Prop *) 
 
-MetaCoq Quote Recursively Definition list_reif_rec := @list.
+MetaRocq Quote Recursively Definition list_reif_rec := @list.
 
 Fixpoint skipn_forall (n : nat) (t : term) :=
 match n with

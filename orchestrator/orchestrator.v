@@ -2,7 +2,7 @@ From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Ltac1.
 From Ltac2 Require Import Constr.
 From Ltac2 Require Import Printf.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 Require Import printer.
 Require Import triggers.
@@ -66,7 +66,7 @@ Ltac2 rec diff_hyps hs1 hs2 :=
     | x :: xs, y :: ys => 
       if hyp_equal x y then diff_hyps xs ys 
       else y :: diff_hyps xs ys
-    | x :: xs, [] => [] (* we do not consider removed hypotheses *)
+    | _ :: _, [] => [] (* we do not consider removed hypotheses *)
   end.
 
 Ltac2 Type verbosity :=
@@ -150,7 +150,7 @@ Ltac2 rec orchestrator_aux
     if Int.le fuel 0 then  (* a problematic tactic used all the fuel *)
       match trigstacsfis with
         | [] => ()
-        | (_, name, _) :: trs => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
+        | (_, name, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
             Control.enter (fun () => orchestrator init_fuel alltacs trigtacs v)
       end 
     else
@@ -194,7 +194,7 @@ Ltac2 rec orchestrator_aux
                         match opt with
                           | None =>
                               Control.enter (fun () => 
-                                let cg' := (it).(local_env) in
+                                (* let cg' := (it).(local_env) in *)
                                 let hs2 := Control.hyps () in
                                 let g2 := Control.goal () in
                                 let goalChanged := Bool.neg (Constr.equal g1 g2) in
@@ -212,7 +212,7 @@ Ltac2 rec orchestrator_aux
                            | Some (nbg1, nbg2) => 
                                 let nb := numgoals () in if Int.lt nb nbg2 then
                                   Control.enter (fun () => 
-                                    let cg' := (it).(local_env) in
+                                    (* let cg' := (it).(local_env) in *)
                                     let hs2 := Control.hyps () in
                                     let g2 := Control.goal () in
                                     let goalChanged := Bool.neg (Constr.equal g1 g2) in
@@ -228,7 +228,7 @@ Ltac2 rec orchestrator_aux
                                       Int.sub fuel 1 else fuel in
                                     orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v) else
                                   Control.focus nbg1 nbg2 (fun () => 
-                                    let cg' := (it).(local_env) in
+                                    (* let cg' := (it).(local_env) in *)
                                     let hs2 := Control.hyps () in
                                     let g2 := Control.goal () in
                                     let goalChanged := Bool.neg (Constr.equal g1 g2) in

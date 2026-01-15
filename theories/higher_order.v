@@ -56,9 +56,8 @@ Elpi Accumulate lp:{{
     add_pos_ctx_pr Ctx' L' L'', mypose_list L'' G GL.
 
 }}.
-Elpi Typecheck.
 
-Require Import List.
+From Stdlib Require Import List.
 
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 List.map g (List.map f l) = map (fun x => g (f x)) l.

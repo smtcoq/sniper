@@ -1,6 +1,6 @@
 From Ltac2 Require Import Ltac2.
 From Trakt Require Import Trakt.
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Require Import add_compdecs.
 

@@ -1,15 +1,15 @@
-From MetaCoq.Template Require Import All.
-Import MCMonadNotation.
-Require Import List.
+From MetaRocq.Template Require Import All.
+Import MRMonadNotation.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
-Require Import ZArith.
-Require Import Bool.
+From Stdlib Require Import String.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Bool.
 From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Require Import utilities.
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
 (** Replacement of variables **) 
 
@@ -128,16 +128,16 @@ end in aux n npars t 0 fuel.
 
 (** 2: Generation of equalities **) 
 
-MetaCoq Quote Definition eq_reif := @eq.
+MetaRocq Quote Definition eq_reif := @eq.
 
-MetaCoq Quote Definition bool_reif := bool. 
+MetaRocq Quote Definition bool_reif := bool. 
 
-MetaCoq Quote Definition true_reif := true. 
+MetaRocq Quote Definition true_reif := true. 
 
-MetaCoq Quote Definition eqb_of_compdec_reif := @eqb_of_compdec.
+MetaRocq Quote Definition eqb_of_compdec_reif := @eqb_of_compdec.
 
 
-(** Functions to build MetaCoq terms **)
+(** Functions to build MetaRocq terms **)
 
 Definition mkEq (B t1 t2 : term) := tApp eq_reif [B ; t1 ; t2].
 
@@ -485,14 +485,14 @@ Inductive add : nat -> nat -> nat -> Prop :=
 | addS : forall n m k, add n m k -> add (S n) m (S k).
 
 
-MetaCoq Run (tmQuote (@Add Z) >>= 
+MetaRocq Run (tmQuote (@Add Z) >>= 
 linearize_from_mind_entry).
 
 Inductive smaller {A : Type} : list A -> list A -> Prop :=
 | sm_nil : forall l, smaller nil l
 | sm_cons : forall l l' x x', smaller l l' -> smaller (x :: l) (x' :: l').
 
-MetaCoq Run (tmQuote (@smaller Z) >>= 
+MetaRocq Run (tmQuote (@smaller Z) >>= 
 linearize_from_mind_entry).
 
 Inductive elt_list :=
@@ -508,25 +508,25 @@ Inductive Inv_elt_list : Z -> elt_list -> Prop :=
 Inductive test3occ : nat -> nat -> nat -> Prop :=
 | test3occ_constructor : forall n, test3occ n n n.
 
-MetaCoq Run (tmQuote test3occ >>= 
+MetaRocq Run (tmQuote test3occ >>= 
 linearize_from_mind_entry).
 
 Inductive test4occ : nat -> nat -> nat -> nat -> Prop :=
 | test4occ_constructor : forall n, test4occ n n n n.
 
-MetaCoq Run (tmQuote test4occ >>= 
+MetaRocq Run (tmQuote test4occ >>= 
 linearize_from_mind_entry). 
 
 Inductive test22occ : nat -> nat -> nat -> nat -> Prop :=
 | test22occ_constructor : forall n k, test22occ 1 2 3 k -> test22occ n n k k.
 
-MetaCoq Run (tmQuote test22occ >>= 
+MetaRocq Run (tmQuote test22occ >>= 
 linearize_from_mind_entry).
 
 Inductive test_poly_param (A: Type) : list A -> list A -> list A -> Prop :=
 | test2poly : forall (l: list A), test_poly_param A l l l.
 
-MetaCoq Run (tmQuote test_poly_param >>= 
+MetaRocq Run (tmQuote test_poly_param >>= 
 linearize_from_mind_entry). 
 
 Inductive test2pars (A : Type) (a b : A) : A -> A -> Prop :=
@@ -544,23 +544,23 @@ test2pars2 A HA a b a b.
 Inductive bar : nat -> nat -> nat -> nat -> Prop :=
 | barc : forall n k, bar k n k n.
 
-MetaCoq Run (tmQuote bar >>= 
+MetaRocq Run (tmQuote bar >>= 
 linearize_from_mind_entry). 
 
-MetaCoq Run (tmQuote (@test2pars) >>= 
+MetaRocq Run (tmQuote (@test2pars) >>= 
 linearize_from_mind_entry). 
 
 (* Linearization in functions *) 
 Inductive square : nat -> nat -> Prop :=
 | IsSquare : forall n, square n (n*n).
 
-MetaCoq Run (tmQuote square >>= 
+MetaRocq Run (tmQuote square >>= 
 linearize_from_mind_entry).
 
 Inductive foo : nat -> nat -> Prop :=
 | fooc : forall n, foo n n -> foo n n.
 
-MetaCoq Run (tmQuote foo >>= 
+MetaRocq Run (tmQuote foo >>= 
 linearize_from_mind_entry). 
 
 End tests.

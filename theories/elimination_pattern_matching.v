@@ -10,14 +10,14 @@
 (**************************************************************************)
 
 
-Require Import MetaCoq.Template.All.
-Require Import String.
+Require Import MetaRocq.Template.All.
+From Stdlib Require Import String.
 Require Import utilities.
 Require Import reflexivity.
 Require Import unfold_reflexivity.
 Require Import elimination_fixpoints.
 Require Import expand.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 
 Ltac create_evars_for_each_constructor i := 
@@ -270,7 +270,7 @@ Definition min1'' := min1'.
 Definition min1''' := min1''.
 
 
-MetaCoq Quote Definition hyp_cons_reif := ((forall (A: Type) (x : A) (a : A) (l : list A), 
+MetaRocq Quote Definition hyp_cons_reif := ((forall (A: Type) (x : A) (a : A) (l : list A), 
 @hd A x (@cons A a l) = match (@cons A a l) with
 | nil => x
 | y :: xs => y

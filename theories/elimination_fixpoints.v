@@ -15,7 +15,7 @@ Require Import reflexivity.
 Require Import unfold_reflexivity.
 Require Import unfold_in.
 Require Import expand.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
 From Ltac2 Require Import Ltac2.
 Set Default Proof Mode "Classic".
@@ -29,7 +29,7 @@ Ltac assert2 H2 Ty :=
   assert (H3 : Ty) by (intros; rewrite <- H2 ; auto).
 
 Elpi Tactic setoid_rewrite_at2.
-Elpi Accumulate File elimfix subs utils.
+Elpi Accumulate File utils subs elimfix.
 
 
 Elpi Accumulate lp:{{
@@ -44,7 +44,6 @@ Elpi Accumulate lp:{{
 
 }}.
 
-Elpi Typecheck.
 
 Tactic Notation "setoid_rewrite_at2" constr(H1) constr(H2) :=
   elpi setoid_rewrite_at2 (H1) (H2) ; clear H2 ; clear H1.
@@ -85,12 +84,12 @@ if Int.equal i 0 then []
 else drop_nlast (drop_last l) (Int.sub i 1).
 
 Goal ((forall (A B C : Type), C = C) -> False).
-intros. ltac2:(let x := specialize_list 'H ['nat; 'Type]
+intros. ltac2:(let _ := specialize_list 'H ['nat; 'Type]
 in ()). Abort.
 
 Ltac2 rec find_bounded_args (t : constr) (i : int) :=
 match Constr.Unsafe.kind t with
-| Constr.Unsafe.Prod bind t' => find_bounded_args t' (Int.add i 1)
+| Constr.Unsafe.Prod _ t' => find_bounded_args t' (Int.add i 1)
 | Constr.Unsafe.App u args => if Constr.equal u '(@eq) then 
   find_bounded_args (Array.get args 0) i
   else (drop_nlast (Array.to_list args) i)
@@ -102,7 +101,7 @@ Ltac2 specialize_in_eq (h1 : constr) (h2 : constr) :=
 let t := Constr.type h1 in
 let t' := (eval cbv delta in $t) in
 let args := find_bounded_args t' 0 in
-let y := specialize_list h2 args in ().
+let _ := specialize_list h2 args in ().
 
 Ltac specialize_in_eq x y :=
   let tac :=
@@ -128,8 +127,8 @@ Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
       let c := Array.get a 1 in 
       let rec aux c := 
         match Constr.Unsafe.kind c with
-          | Constr.Unsafe.App u l => aux u
-          | Constr.Unsafe.Fix tab k bda cstr => 
+          | Constr.Unsafe.App u _ => aux u
+          | Constr.Unsafe.Fix _ k bda _ => 
               let binder_fix := Array.get bda k in 
               let name := Option.get (Constr.Binder.name binder_fix) in
               let csts := Env.expand [name] in 
@@ -146,7 +145,7 @@ Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
 
 Ltac2 rec fold_in_eq_aux2 (t : constr) (h : constr) :=
   match Constr.Unsafe.kind t with
-    | Constr.Unsafe.Prod b t' => fold_in_eq_aux2 t' h
+    | Constr.Unsafe.Prod _ t' => fold_in_eq_aux2 t' h
     | _ => fold_in_eq_aux1 t h
   end.
 
@@ -241,7 +240,6 @@ Elpi Accumulate lp:{{
 
 }}.
 
-Elpi Typecheck.
 
 Tactic Notation "eliminate_fix_hyp'" constr(H) :=
 elpi eliminate_fix_hyp (H).

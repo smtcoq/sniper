@@ -12,10 +12,10 @@
 
 Require Import utilities. 
 Require Import instantiate_type.
-Require Import MetaCoq.Template.All.
-Require Import String.
-Require Import List.
-Require Import ZArith.
+Require Import MetaRocq.Template.All.
+From Stdlib Require Import String.
+From Stdlib Require Import List.
+From Stdlib Require Import ZArith.
 Require Import interpretation_algebraic_types. 
 Require Import SMTCoq.SMTCoq.
 From Ltac2 Require Import Ltac2.
@@ -623,14 +623,14 @@ end.
 Ltac2 is_var (v : constr) :=
 let k := Constr.Unsafe.kind v in
 match k with
-| Constr.Unsafe.Var id => true
+| Constr.Unsafe.Var _ => true
 | _ => false
 end.
 
 Ltac2 is_indu (c : constr) := 
 let k := Constr.Unsafe.kind c in
 match k with
-| Constr.Unsafe.Ind indu inst => true
+| Constr.Unsafe.Ind _ _ => true
 | _ => false
 end.
 
@@ -639,9 +639,9 @@ end.
 Ltac2 vars () := 
 let hyps := Control.hyps () in
 List.map (fun x => match x with
-            | (x1, x2, x3) => x1 end) 
+            | (x1, _, _) => x1 end) 
 (List.filter (fun x => match x with
-            | (x1, x2, x3) => let x' := Control.hyp x1 in is_var (x') end) hyps).
+            | (x1, _, _) => let x' := Control.hyp x1 in is_var (x') end) hyps).
 
 Ltac2 rec is_not_in_tuple (p : constr) (z : constr) := 
 match! p with
@@ -652,7 +652,7 @@ end.
 Ltac2 get_head (c : constr) :=
 let k := Constr.Unsafe.kind c in 
 match k with
-| Constr.Unsafe.App c1 carr => c1 
+| Constr.Unsafe.App c1 _ => c1 
 | _ => c
 end.
 

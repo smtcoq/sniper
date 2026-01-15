@@ -1,5 +1,5 @@
 Require Import utilities.
-Require Import List.
+From Stdlib Require Import List.
 From Ltac2 Require Import Ltac2.
 
 Ltac anonymous_fun f_body := 

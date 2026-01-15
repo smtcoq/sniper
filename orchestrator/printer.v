@@ -56,7 +56,7 @@ Message.print (Message.of_string "End state").
 Ltac2 rec print_triggered_tacs trigtacs :=
   match trigtacs with
     | [] => Message.print (Message.of_string "empty list")
-    | (name, l) :: xs => Message.print (Message.of_string name) ; 
+    | (name, _) :: xs => Message.print (Message.of_string name) ; 
 print_triggered_tacs xs
   end.
 

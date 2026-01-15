@@ -1,6 +1,6 @@
 From Ltac2 Require Import Ltac2.
 From SMTCoq Require SMT_classes SMT_classes_instances.
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 (** Add compdecs is an atomic transformation not related to Trakt *)
 

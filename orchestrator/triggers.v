@@ -128,7 +128,7 @@ Ltac2 Type hyps_or_letins_or_goal_or_constr := [
 (* Filter "real" hypotheses 
 (in the sense that we filter out local definitions) *)
 Ltac2 filter_hyps hyps :=
-  List.filter (fun (h, opt, c) => 
+  List.filter (fun (_, opt, _) => 
     match opt with
       | Some _ => false
       | None => true
@@ -136,14 +136,14 @@ Ltac2 filter_hyps hyps :=
 
 Ltac2 filter_defs hyps :=
   let l :=
-  List.filter (fun (h, opt, c) => 
+  List.filter (fun (_, opt, _) => 
     match opt with
       | Some _ => true
       | None => false
     end) hyps in List.map (fun (x, y, z) => (x, Option.get y, z)) l.
 
 Ltac2 filter_hyps_prop hyps :=
-  List.filter (fun (h, opt, c) => 
+  List.filter (fun (_, opt, c) => 
     match opt with
       | Some _ => false
       | None => equal (type c) 'Prop
@@ -166,13 +166,13 @@ Ltac2 interpret_trigger_var_with_constr cg env tv c :=
           let l := List.find_all (fun (_, _, z) => equal z c) hyps in 
             match l with
               | [] => None
-              | (_, _, z) :: xs => Some z 
+              | (_, _, z) :: _ => Some z 
             end
       | LetIns defs =>
           let l := List.find_all (fun (_, bod, _) => equal bod c) defs in 
             match l with
               | [] => None
-              | (_, bod, _) :: xs => Some bod
+              | (_, bod, _) :: _ => Some bod
             end
       | Goal (Some g) => if equal g c then Some g else None
       | Goal None => None
@@ -226,7 +226,7 @@ Ltac2 curry_app (c : constr) (ca : constr array) :=
 Ltac2 ref_equal_upto_univs (r1 : reference) (r2 : reference) :=
   match r1, r2 with
     | VarRef id1, VarRef id2 => Ident.equal id1 id2
-    | ConstRef c1, ConstRef c2 => 
+    | ConstRef _, ConstRef _ =>
         let t1 := instantiate r1 in
         let t2 := instantiate r2 in 
         equal t1 t2
@@ -278,7 +278,7 @@ Ltac2 is_local_def (c : constr) :=
   match kind c with
     | Var id => 
         let hs := Control.hyps () in 
-        List.exist (fun (x, y, z) => Bool.and (Ident.equal x id) (is_some y)) hs
+        List.exist (fun (x, y, _) => Bool.and (Ident.equal x id) (is_some y)) hs
     | _ => false
   end.
 
@@ -286,7 +286,7 @@ Ltac2 is_local_hyp (c : constr) :=
   match kind c with
     | Var id => 
         let hs := Control.hyps () in 
-        List.exist (fun (x, y, z) => Bool.and (Ident.equal x id) (Bool.neg (is_some y))) hs
+        List.exist (fun (x, y, _) => Bool.and (Ident.equal x id) (Bool.neg (is_some y))) hs
     | _ => false
   end.
 
@@ -363,7 +363,7 @@ the variable would escape its scope. *)
 (* Sorts: we do not want to deal with universes, as we are afraid 
 this may introduce difficulties which are unrelated to our main goal, 
 but we want to distinguish between Prop, Set and Type_i, i >= 0 *)
-    | Sort s, TSort ts fl =>
+    | Sort _, TSort ts fl =>
         match ts with
           | TProp => if equal c 'Prop then Some (cons_option (interpret_flag c fl) []) else None
           | TSet => if equal c 'Set then Some (cons_option (interpret_flag c fl) []) else None
@@ -441,7 +441,7 @@ the interpretation of our triggers *)
     | Constructor cstr _, TConstructor o fl =>
         if matching_ref o (ConstructRef cstr) then Some (cons_option (interpret_flag c fl) [])
         else None
-    | Case _ (ty, _) _ t ca, TCase tte1 tte2 o fl =>
+    | Case _ (ty, _) _ _ ca, TCase tte1 tte2 o fl =>
        let res := interpret_trigger_term_with_constr cg env ty tte1 in
         match res with
           | Some l => 
@@ -506,7 +506,7 @@ the interpretation of our triggers *)
     | _, TTrigVar v fl => 
       let opt := interpret_trigger_var_with_constr cg env v c in
         match opt with
-          | Some t => Some (cons_option (interpret_flag c fl) [])
+          | Some _ => Some (cons_option (interpret_flag c fl) [])
           | None => None
         end
     | _, TAny fl => Some (cons_option (interpret_flag c fl) [])
@@ -523,7 +523,7 @@ Ltac2 interpret_trigger_is cg env a b : (constr * constr list) list  :=
           let rec aux cg h b := 
             match h with
               | [] => []
-              | (x, y, z) :: xs => 
+              | (x, _, z) :: xs => 
                   let opt := interpret_trigger_term_with_constr cg env z b in 
                     match opt with
                       | None => aux cg xs b
@@ -536,7 +536,7 @@ Ltac2 interpret_trigger_is cg env a b : (constr * constr list) list  :=
           let rec aux cg h b := 
             match h with
               | [] => []
-              | (x, y, z) :: xs => 
+              | (x, y, _) :: xs => 
                   let opt := interpret_trigger_term_with_constr cg env y b in 
                     match opt with
                       | None => aux cg xs b
@@ -636,14 +636,14 @@ Ltac2 interpret_trigger_pred cg env a fl (p : constr -> bool) :=
   let a' := interpret_trigger_var cg env a in
     match a' with
       | Hyps hyps => 
-          match List.find_all (fun (x, y, z) => p z) hyps with 
+          match List.find_all (fun (_, _, z) => p z) hyps with 
             | [] => []
-            | l => (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
+            | l => (List.map (fun (x, _, _) => (cons_option (interpret_flag &x fl) [])) l)
           end 
       | LetIns defs =>
-          match List.find_all (fun (x, y, z) => p y) defs with 
+          match List.find_all (fun (_, y, _) => p y) defs with 
             | [] => []
-            | l => (List.map (fun (x, y, z) => (cons_option (interpret_flag &x fl) [])) l)
+            | l => (List.map (fun (x, _, _) => (cons_option (interpret_flag &x fl) [])) l)
           end 
       | Goal None => []
       | Goal (Some x) => if p x then [(cons_option (interpret_flag x fl) [])] else []
@@ -673,7 +673,7 @@ Ltac2 Type interpretation_state  :=
     mutable name_of_tac : string }.
 
 Ltac2 look_for_subterms_hyps (id : ident) (s : (ident*constr list) list * (constr list) option) :=
-  let (hyps, o) := s in
+  let (hyps, _) := s in
   let rec aux id hyps :=
     match hyps with
       | [] => None
@@ -682,7 +682,7 @@ Ltac2 look_for_subterms_hyps (id : ident) (s : (ident*constr list) list * (const
     end in aux id hyps.
 
 Ltac2 look_for_subterms_goal (s : (ident*constr list) list * (constr list) option) :=
-  let (hyps, o) := s in
+  let (_, o) := s in
     match o with
       | None => None
       | Some lc => Some lc
@@ -699,7 +699,7 @@ Ltac2 interpret_trigger_contains
           let rec aux cg h b := 
             match h with
               | [] => []
-              | (x, y, z) :: xs => 
+              | (x, _, z) :: xs => 
                   match look_for_subterms_hyps x scg with
                     | None =>
                         let lc := subterms z in
@@ -716,7 +716,7 @@ Ltac2 interpret_trigger_contains
           let rec aux cg h b := 
             match h with
               | [] => []
-              | (x, y, z) :: xs => 
+              | (x, y, _) :: xs => 
                   match look_for_subterms_hyps x (it.(subterms_coq_goal)) with
                     | None =>
                         let lc := subterms y in
@@ -734,12 +734,12 @@ Ltac2 interpret_trigger_contains
           match look_for_subterms_goal (it.(subterms_coq_goal)) with
             | None =>
               let lc := subterms g in
-              let (hyps, o) := it.(subterms_coq_goal) in
+              let (hyps, _) := it.(subterms_coq_goal) in
               let _ := it.(subterms_coq_goal) := (hyps, Some lc) in
               let l := interpret_trigger_contains_aux cg env lc tf in 
                 match l with
                   | [] => []
-                  | x :: xs => [(g, l)]
+                  | _ :: _ => [(g, l)]
                 end
             | Some lc =>
                 match interpret_trigger_contains_aux cg env lc tf with
@@ -772,7 +772,7 @@ Ltac2 Eval cartesian_product [[1; 2]; [3; 4]] []. *)
 
 (* returns the list of arguments and their type of a tactic named [nametac] *)
 Ltac2 find_args_of_tac alr_trig nametac : (string * (constr*constr) list) list :=
-  List.filter (fun (x, y) => String.equal x nametac) ((alr_trig).(already_triggered)).
+  List.filter (fun (x, _) => String.equal x nametac) ((alr_trig).(already_triggered)).
 
 (* remove the old types registered for the list of arguments given to a tactic when there was a change
 made by a side effect
@@ -781,8 +781,8 @@ a new hypothesis H: T' was introduced *)
 
 Ltac2 remove_old_assoc alr_trig nametac trm :=
   let res := find_args_of_tac alr_trig nametac in
-  let res' := List.filter_out (fun (_, l) => List.exist (fun (x, y) => equal y trm) l) res in
-  let res'' := List.filter_out (fun (x, y) => String.equal x nametac) ((alr_trig).(already_triggered)) in
+  let res' := List.filter_out (fun (_, l) => List.exist (fun (_, y) => equal y trm) l) res in
+  let res'' := List.filter_out (fun (x, _) => String.equal x nametac) ((alr_trig).(already_triggered)) in
   List.append res' res''.
 
 (* among a list of list of pair between terms and their types, finds the corresponding type of a given constr *)
@@ -807,7 +807,7 @@ Ltac2 rec find_old_type
                     let _ := (alr_trig).(already_triggered) := (nametac, List.combine l (List.map type l))::(remove_old_assoc alr_trig nametac x) in *)
 
 Ltac2 same_types_as_before (l: constr list) alr_trig nametac :=
-  let res := List.map (fun (x, y) => y) (find_args_of_tac alr_trig nametac) in
+  let res := List.map (fun (_, y) => y) (find_args_of_tac alr_trig nametac) in
   let rec aux l' :=
     match l' with 
       | [] => true
@@ -860,7 +860,7 @@ Ltac2 interpret_trigger
 (* warning: "not" is not involutive (intuitionnistic not) *)
     | TNot t' => 
         match interpret_trigger cg env alr_trig scg flag_letin nametac t' with
-          | x :: xs => []
+          | _ :: _ => []
           | [] => [[]]
         end
     | TAlways => interpret_trigger_always ()

@@ -1,9 +1,9 @@
-From MetaCoq.Template Require Import All.
-Require Import String.
-Require Import List. 
+From MetaRocq.Template Require Import All.
+From Stdlib Require Import String.
+From Stdlib Require Import List.
 Import ListNotations.
 Require Import utilities.
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
 (** The purpose of this file is to transform an 
 inductive of type [A1 -> ... -> An -> B1 -> ... Bm], 
@@ -113,10 +113,10 @@ Section tests.
 
 Variable (P : Type -> Type).
 
-MetaCoq Unquote Definition 
+MetaRocq Unquote Definition 
 trm_unq :=  (add_trm_parameter <% P %> <% forall (A : Type) (a : A), list A -> list A -> Prop %>).
 
-MetaCoq Unquote Definition 
+MetaRocq Unquote Definition 
 trm_unq2 :=  (add_trm_parameter <% P %> <% forall (A : Type) (B: Type), A -> B -> Prop %>).
 
 (* Print trm_unq. *)

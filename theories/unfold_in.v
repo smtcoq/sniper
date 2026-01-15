@@ -1,4 +1,4 @@
-Require List.
+From Stdlib Require List.
 
 Ltac unfold_in H t :=
   try unfold t in H.

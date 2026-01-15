@@ -23,7 +23,6 @@ Elpi Accumulate lp:{{
     coq.ltac.call S H G GS.
 
 }}.
-Elpi Typecheck.
 
 Ltac2 get_opt o := match o with None => Control.throw Not_found | Some x => x end.
 

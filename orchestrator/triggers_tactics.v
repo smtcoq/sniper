@@ -1,7 +1,7 @@
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr.
 From Ltac2 Require Import String.
-Require Import List ZArith.
+From Stdlib Require Import List ZArith.
 Import ListNotations.
 Require Import printer.
 Require Import triggers.
@@ -28,8 +28,8 @@ in aux t.
 
 Ltac2 rec codomain_not_prop_aux (c: constr) :=
   match Constr.Unsafe.kind c with
-  | Constr.Unsafe.Prod bi c' => codomain_not_prop_aux c'
-  | Constr.Unsafe.App x1 arr => codomain_not_prop_aux x1
+  | Constr.Unsafe.Prod _ c' => codomain_not_prop_aux c'
+  | Constr.Unsafe.App x1 _ => codomain_not_prop_aux x1
   | _ => if Constr.equal c 'Prop then false else true
   end.
 
@@ -84,7 +84,7 @@ Ltac2 filter_unfold_reflexivity () :=
   (
   let ty := Constr.type x in 
     match! ty with
-    | @eq ?a ?t ?u => Constr.equal t u
+    | @eq _ ?t ?u => Constr.equal t u
     | _ => false
     end))).
 
@@ -101,7 +101,7 @@ Ltac2 filter_unfold_in () :=
     Bool.or
     (let t := type x in 
       match! t with
-        | @eq ?a ?u ?v => Bool.neg (Constr.is_var u)
+        | @eq _ ?u _ => Bool.neg (Constr.is_var u)
       end) (Bool.neg (higher_order y)) | _ => true end).
 
 Ltac2 trigger_higher_order_equalities :=
@@ -130,7 +130,8 @@ Ltac2 filter_algebraic_types () :=
           ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
-          'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
+          'SMTCoq.classes.SMT_classes.Inhabited;
+          'Stdlib.Structures.OrderedType.Compare])
         (FPred codomain_prop).
 
 Ltac2 trigger_generation_principle () :=
@@ -141,7 +142,8 @@ Ltac2 filter_generation_principle () :=
           ['Z; 'bool; 'positive; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
           'SMTCoq.classes.SMT_classes.CompDec;
           'SMTCoq.classes.SMT_classes.Comparable;
-          'SMTCoq.classes.SMT_classes.Inhabited ; 'Coq.Structures.OrderedType.Compare])
+          'SMTCoq.classes.SMT_classes.Inhabited;
+          'Stdlib.Structures.OrderedType.Compare])
         (FPred codomain_prop).
 
 Ltac2 trigger_anonymous_fun () :=
@@ -163,7 +165,7 @@ Ltac2 filter_add_compdecs () :=
 FConj
 (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray; 'Prop; 'Set; 'Type])
 (FPred (fun x => Bool.or (is_prod x)
-    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u ca => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
+    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u _ => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
    
 (* Ltac2 trigger_fold_local_def () :=
   tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in

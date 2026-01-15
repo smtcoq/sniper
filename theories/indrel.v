@@ -1,8 +1,8 @@
-From MetaCoq.Template Require Import All.
-From MetaCoq.Template Require Import Checker.
+From MetaRocq.Template Require Import All.
+From MetaRocq.Template Require Import Checker.
 Require Import utilities.
-Require Import List.
-Require Import String.
+From Stdlib Require Import List.
+From Stdlib Require Import String.
 
 (** Examples for testing inductive relations **)
 
@@ -15,7 +15,7 @@ Inductive Add {A : Type} (a : A) : list A -> list A -> Prop :=
   | Add_cons : forall (x : A) (l l' : list A),
                Add a l l' -> Add a (x :: l) (x :: l').
 
-MetaCoq Quote Recursively Definition add_reif_rec := add.
+MetaRocq Quote Recursively Definition add_reif_rec := add.
 
 Definition add0_reif := <% add0 %>.
 Definition addS_reif := <% addS %>.
@@ -24,7 +24,7 @@ Definition nil_reif := <% @nil %>.
 Definition cons_reif := <% @cons %>.
 
 
-MetaCoq Quote Recursively Definition Add_reif_rec := Add.
+MetaRocq Quote Recursively Definition Add_reif_rec := Add.
 
 (** Transformation: we consider add as a function 
 with a codomain in Prop. 
@@ -372,20 +372,20 @@ Definition test_Add0 := mkProd <% Type %>
 (mkProd (tApp <%@list%> [tRel 1])
 (mkProd (tApp <%@list%> [tRel 2]) (inv_principle_one_constructor c1' 2 1 [tRel 2 ; tRel 1])))).
 
-Unset MetaCoq Strict Unquote Universe Mode.
+Unset MetaRocq Strict Unquote Universe Mode.
 
-MetaCoq Unquote Definition test_add0_unq := test_add0.
-MetaCoq Unquote Definition test_addS_unq := test_addS.
+MetaRocq Unquote Definition test_add0_unq := test_add0.
+MetaRocq Unquote Definition test_addS_unq := test_addS.
 
 
 Definition goal_Add0 := <% forall (A : Type) (a : A) (l : list A)
 (l' : list A), exists l'' : list A, l = l'' /\ l' = (a::l'') %>.
-MetaCoq Unquote Definition test_Add0_unq := test_Add0. 
+MetaRocq Unquote Definition test_Add0_unq := test_Add0. 
 
 Definition test_add := 
 (inv_principle_all_constructors [c1 ; c2] 0 [1 ; 3] add_app [tRel 2 ; tRel 1 ; tRel 0]).
 
-MetaCoq Unquote Definition test_add_unq := test_add.
+MetaRocq Unquote Definition test_add_unq := test_add.
 
 End test.
 

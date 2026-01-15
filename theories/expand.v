@@ -9,14 +9,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-Require Import MetaCoq.Template.All.
+Require Import MetaRocq.Template.All.
 Require Import utilities.
 Require Import reflexivity.
 Require Import unfold_reflexivity.
 Require Import unfold_in.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
+From Stdlib Require Import String.
 
 Definition list_of_args_and_codomain (t : term) := 
 let fix aux acc t := 

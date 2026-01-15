@@ -1,4 +1,4 @@
-Require Import ZArith.
+From Stdlib Require Import ZArith.
 
 Ltac pose_case M :=
   let pat := fresh "pat" in
