@@ -11,10 +11,10 @@
 
 From Sniper Require Import Sniper.
 From Sniper Require Import tree.
-Require Import String.
-Require Import ZArith.
-Require Import Bool.
-Require Import Coq.Lists.List.
+From Stdlib Require Import String.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Bool.
+From Stdlib Require Import Lists.List.
 Import ListNotations.
 
 
