@@ -5,6 +5,8 @@ Require Import add_hypothesis_on_parameters.
 Require Import utilities.
 From Stdlib Require Import Lia.
 
+Unset Universe Minimization ToSet.
+
 Declare Scope string_scope2.
 Notation "s1 ^ s2" := (bytestring.String.append s1 s2) : string_scope2.
 

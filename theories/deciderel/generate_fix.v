@@ -1,16 +1,16 @@
 From MetaRocq.Template Require Import All.
-Require Import List.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
-Require Import ZArith.
-Require Import Bool.
-Require Import Lia.
+From Stdlib Require Import String.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Bool.
+From Stdlib Require Import Lia.
 From SMTCoq Require Import SMTCoq.
 Require Import add_hypothesis_on_parameters.
 Require Import compdec_plugin.
 Require Import linearize_plugin.
 Require Import utilities.
-Import MCMonadNotation.
+Import MRMonadNotation.
 
 Unset MetaRocq Strict Unquote Universe Mode.
 

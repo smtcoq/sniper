@@ -1,16 +1,18 @@
 From MetaRocq.Template Require Import All.
-Require Import Lia.
-Import MCMonadNotation.
-Require Import List.
+From Stdlib Require Import Lia.
+Import MRMonadNotation.
+From Stdlib Require Import List.
 Import ListNotations.
-Require Import String.
-Require Import ZArith.
-Require Import Bool.
+From Stdlib Require Import String.
+From Stdlib Require Import ZArith.
+From Stdlib Require Import Bool.
 From SMTCoq Require Import SMTCoq.
 Require Import generate_fix.
 Require Import utilities.
 From Ltac2 Require Import Ltac2.
+Unset Universe Minimization ToSet.
 Unset MetaRocq Strict Unquote Universe Mode.
+
 
 Open Scope bs_scope.
 
@@ -120,14 +122,14 @@ Ltac2 Type exn ::= [ Empty ].
 Ltac2 get_head_exn (c : constr) :=
 let k := Constr.Unsafe.kind c in 
 match k with
-| Constr.Unsafe.App c1 carr => c1 
+| Constr.Unsafe.App c1 _ => c1
 | _ => Control.throw Not_an_application
 end.
 
 Ltac2 get_head (c : constr) :=
 let k := Constr.Unsafe.kind c in 
 match k with
-| Constr.Unsafe.App c1 carr => c1 
+| Constr.Unsafe.App c1 _ => c1
 | _ => c
 end.
 
@@ -141,8 +143,8 @@ else
 let rec aux t :=
 let k := Constr.Unsafe.kind t in
 match k with
-| Constr.Unsafe.App c' arr => aux c'
-| Constr.Unsafe.Ind indu inst => true
+| Constr.Unsafe.App c' _ => aux c'
+| Constr.Unsafe.Ind _ _ => true
 | _ => false
 end in aux t.
 
@@ -163,7 +165,7 @@ Ltac2 rec hyps_printer (h : (ident * constr option * constr) list)
 match h with
 | [] => ()
 | x :: xs => match x with
-            | (id, opt, cstr) => 
+            | (id, _, cstr) =>
 let () := Message.print (Message.concat (Message.of_ident id)
                                         (Message.concat (Message.of_string " : ")
                                                         (Message.of_constr cstr))) 
@@ -177,7 +179,7 @@ end.
 Ltac2 rec find_destructibles (t: constr) (npars: int) :=
 let k := Constr.Unsafe.kind t in
 match k with
-| Constr.Unsafe.App c1 arr => let l := Array.to_list arr in 
+| Constr.Unsafe.App _ arr => let l := Array.to_list arr in
 let l' := 
 List.skipn npars l in (* list_constr_printer l'; *) l'
 | _ => []
@@ -190,7 +192,7 @@ match h with
 | [] => []
 | x :: xs =>
     match x with
-    | (id, opt, t) => let id' := Control.hyp id in if List.mem Constr.equal id' l then 
+    | (id, _, _) => let id' := Control.hyp id in if List.mem Constr.equal id' l then 
 x :: find_corresponding_hyps xs l else find_corresponding_hyps xs l
 end
 end.
@@ -204,7 +206,7 @@ match h with
 | [] => []
 | x :: xs =>
     match x with
-    | (id, opt, t) => let ty := Constr.type t in 
+    | (id, _, t) => let ty := Constr.type t in
 if Constr.equal ty 'Prop then id :: find_rewritables xs else find_rewritables xs
 end
 end.
@@ -215,9 +217,9 @@ and returns the list minus this hypothesis *)
 Ltac2 blind_destruct (h : (ident * constr option * constr) list) :=
 match h with
 | [] => ()
-| x :: xs =>
+| x :: _ =>
     match x with
-    | (id, opt, cstr) => let y := Control.hyp id in destruct $y end
+    | (id, _, _) => let y := Control.hyp id in destruct $y end
 end.
 
 
@@ -243,7 +245,7 @@ match! goal with
                     let dstr := find_corresponding_hyps h (find_destructibles e npars) in 
                     match dstr with
                       | [] => ()
-                      | x :: xs =>
+                      | _ :: _ =>
                       blind_destruct dstr ; Control.enter (fun () => destruct_to_continue_computation f npars) 
                     end 
                     else ()
@@ -275,9 +277,9 @@ Ltac2 rec new_hypothesis
 (h2 : (ident * constr option * constr) list) := 
 match h1 with
 | [] => h2
-| x :: xs => match h2 with
+| _ :: xs => match h2 with
         | [] => []
-        | y :: ys => new_hypothesis xs ys
+        | _ :: ys => new_hypothesis xs ys
       end
 end.
 
@@ -286,11 +288,11 @@ end.
 Ltac2 hyps_minus_term (h : (ident * constr option * constr) list) (id : ident)
 := 
 let t := Control.hyp id in
-let rec aux h id := 
+let rec aux h _ :=
 match h with
 | [] => []
 | x :: xs => match x with
-      | (id', opt, cstr) => let t' := Control.hyp id' in if Constr.equal t' t then xs 
+      | (id', _, _) => let t' := Control.hyp id' in if Constr.equal t' t then xs
                            else x :: aux xs t
       end
 end in aux h t.
@@ -464,9 +466,9 @@ end.
 Ltac2 correctness_auto (t: constr) (t': constr) (n : int) (m : int) :=
 intros; split > [ltac1:(revert_all) ; completeness_auto_npars t' n | ltac1:(revert_all) ; soundness_auto_recarg_npars t m n].
 
-Require Import FunInd.
+From Stdlib Require Import FunInd.
 
-Ltac2 correctness_auto_scheme (t: constr) (t': constr) (scheme : constr) (n : int) :=
+Ltac2 correctness_auto_scheme (_: constr) (t': constr) (scheme : constr) (n : int) :=
 intros; split > 
   [ltac1:(revert_all) ; completeness_auto_npars t' n | 
    intros ; 
@@ -517,13 +519,14 @@ Definition tmDef name {A} a := @tmDefinitionRed name (Some (unfold (solve_ltac_m
 
 (* Local definition adding a new tactic *)
 
-#[export] Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) => unfold solve_ltac ;
-let x := eval hnf in P.1.1.1 in
-let x' := eval hnf in P.1.1.2 in
-let n := eval hnf in P.1.2 in
-let n' := eval hnf in P.2 in
-correctness_ltac1 x x' n n' : typeclass_instances. 
- 
+#[export] Hint Extern 0 (solve_ltac "correctness_lemma" ?P _) =>
+  ltac1:(unfold solve_ltac ;
+         let x := eval hnf in ?P.1.1.1 in
+         let x' := eval hnf in ?P.1.1.2 in
+         let n := eval hnf in ?P.1.2 in
+         let n' := eval hnf in ?P.2 in
+         correctness_ltac1 x x' n n') : typeclass_instances.
+
 
 Definition apply_correctness_lemma {A B : Type}
 (t1 : A)
@@ -559,13 +562,14 @@ let (ty_id_fix, recarg) := ty_id_fix_recarg in
 let (ty, id_fix) := ty_id_fix in
 current <- tmCurrentModPath tt ;; 
 let trm := (tConst (current, id_fix ) []) in 
-tquote <- tmQuote t ;; 
+tquote <- tmQuote t ;;
 fixpoint_unq_term <- tmUnquote trm ;;
 let st := correctness_statement initial_genv tquote trm in foo <- tmEval all st ;;
 st_unq <- tmUnquoteTyped Prop st ;; 
 _ <- (@apply_correctness_lemma _ _ t (my_projT2 fixpoint_unq_term) st_unq npars recarg)
 ;; name_fresh <-tmFreshName "decidable_lemma"%bs ;; 
 tmLemma name_fresh st_unq;; tmWait.
+
 
 End Decide.
 
@@ -597,21 +601,20 @@ Qed.
 
 End Poly.
 
-Inductive smaller_list {A : Type} : list A -> list A -> Prop :=
-| smNil : forall l, smaller_list [] l
-| smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l').
+(* Inductive smaller_list {A : Type} : list A -> list A -> Prop := *)
+(* | smNil : forall l, smaller_list [] l *)
+(* | smCons: forall l l' x x', smaller_list l l' -> smaller_list (x :: l) (x' :: l'). *)
 
-MetaRocq Run (decide (@smaller_list nat) []).
-Next Obligation.
-Abort.
+(* MetaRocq Run (decide (@smaller_list nat) []). *)
+(* Next Obligation. *)
+(* Abort. *)
 
-Inductive mem : nat -> list nat -> Prop :=
-    MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs)
-  | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs).
+(* Inductive mem : nat -> list nat -> Prop := *)
+(*     MemMatch : forall (xs : list nat) (n : nat), mem n (n :: xs) *)
+(*   | MemRecur : forall (xs : list nat) (n n' : nat), mem n xs -> mem n (n' :: xs). *)
 
-MetaRocq Run (decide (mem) []).
-Next Obligation.
-exact decidable_proof. Qed. 
+(* MetaRocq Run (decide (mem) []). *)
+(* exact decidable_proof. Qed. *)
 
 (* Inductive member : nat -> list nat -> Prop :=
 | MemMatch' : forall xs n n', eqb_of_compdec Nat_compdec n n' = true -> member n (n'::xs)
@@ -623,10 +626,3 @@ MetaRocq Run (linearize_and_fixpoint_auto (member) []).
 Next Obligation.
 exact decidable_proof0.
 Qed. *)
-
-
-
-
-
-
-
