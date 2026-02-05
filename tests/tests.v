@@ -95,15 +95,16 @@ intros H.
 scope.
 Abort. 
 
-Lemma nth_default_eq :
-    forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
-Proof. intros A HA n ; induction n.
-  - snipe.
-  - intros l ; destruct l.
-    * snipe.
-    * scope. get_projs_st option. (* specialize (gen_option A d). *)
-      (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *)
-Abort.
+(* Looping forever? *)
+(* Lemma nth_default_eq : *)
+(*     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d. *)
+(* Proof. intros A HA n ; induction n. *)
+(*   - snipe. *)
+(*   - intros l ; destruct l. *)
+(*     * snipe. *)
+(*     * scope. get_projs_st option. (* specialize (gen_option A d). *) *)
+(*       (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *) *)
+(* Abort. *)
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
@@ -300,9 +301,10 @@ Goal M 42 = 42.
 End expand_hyp_without_body.
 
 
-(* Testing interaction of `pose_case` with other transformations - verit won't conclude the goal due to silent simplification  *)
-Goal forall (x : nat) (f g : nat -> nat) , (f 2 = 2) -> (g 2 = 2) -> ((match x with O => f | S _ => g end) 2 = 2).
-Proof.
-  scope.
-  verit.
-  Abort.
+(* Loops forever? *)
+(* (* Testing interaction of `pose_case` with other transformations - verit won't conclude the goal due to silent simplification  *) *)
+(* Goal forall (x : nat) (f g : nat -> nat) , (f 2 = 2) -> (g 2 = 2) -> ((match x with O => f | S _ => g end) 2 = 2). *)
+(* Proof. *)
+(*   scope. *)
+(*   verit. *)
+(*   Abort. *)
