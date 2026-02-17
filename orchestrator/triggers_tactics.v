@@ -46,35 +46,73 @@ Ltac2 trigger_reflexivity () :=
         (TDisj (TContains (TSomeHyp, NotArg) (TConstant None (Arg id)))
         (TContains (TGoal, NotArg) (TConstant None (Arg id)))).
 
+(* Ltac2 mutable filter_reflexivity_terms_def () := *)
+(*   ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt; *)
+(*    'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul; *)
+(*    'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt; *)
+(*    'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb; *)
+(*    'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl; *)
+(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr; *)
+(*    '@FArray.select; *)
+(*    '@FArray.diff; *)
+(*    'is_true; *)
+(*    '@SMTCoq.classes.SMT_classes.eqb_of_compdec; *)
+(*    '@SMTCoq.classes.SMT_classes.CompDec; *)
+(*    '@SMTCoq.classes.SMT_classes_instances.Nat_compdec; *)
+(*    '@SMTCoq.classes.SMT_classes_instances.list_compdec; *)
+(*    '@SMTCoq.classes.SMT_classes_instances.prod_compdec; *)
+(*    '@SMTCoq.classes.SMT_classes_instances.option_compdec; *)
+(*    '@SMTCoq.classes.SMT_classes_instances.Z_compdec]. *)
+
+Ltac2 mutable filter_reflexivity_terms_def () :=
+  ['@FArray.select;
+   '@FArray.diff;
+   'is_true;
+   '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
+   '@SMTCoq.classes.SMT_classes.CompDec;
+   '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.list_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.option_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
+
+(* Ltac2 Notation "Snipe_opaque" t(constr) := *)
+(*   Ltac2 Set filter_reflexivity_terms_def as frtd := *)
+(*     fun () => t::(frtd ()). *)
+
+Ltac2 Set filter_reflexivity_terms_def as frtd :=
+  fun () =>
+    List.append ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
+   'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
+   'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt;
+   'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
+   'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr] (frtd ()).
+
+(* Ltac2 Eval filter_reflexivity_terms_def (). *)
+
 Ltac2 filter_reflexivity () :=
-  FConj 
-    (FConstr 
-      ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
-      'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
-      'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt; 
-      'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
-      'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq; 
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
-      'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
-      '@FArray.select;
-      '@FArray.diff;
-      'is_true;
-      '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
-      '@SMTCoq.classes.SMT_classes.CompDec;
-      '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.list_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.option_compdec;
-      '@SMTCoq.classes.SMT_classes_instances.Z_compdec]) 
-      (FPred higher_order).
+  FConj
+    (FConstr (filter_reflexivity_terms_def ()))
+    (FPred higher_order).
 
 Ltac2 trigger_unfold_reflexivity () :=
  TIs (TSomeHyp, Arg id) (TEq tDiscard tDiscard tDiscard NotArg).
