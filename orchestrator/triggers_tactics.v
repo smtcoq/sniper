@@ -163,14 +163,15 @@ Ltac2 trigger_higher_order :=
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
+Ltac2 mutable filter_algebraic_types_def () :=
+  ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
+   'SMTCoq.classes.SMT_classes.CompDec;
+   'SMTCoq.classes.SMT_classes.Comparable;
+   'SMTCoq.classes.SMT_classes.Inhabited;
+   'Stdlib.Structures.OrderedType.Compare].
+
 Ltac2 filter_algebraic_types () :=
-  FConj (FConstr 
-          ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType; 
-          'SMTCoq.classes.SMT_classes.CompDec;
-          'SMTCoq.classes.SMT_classes.Comparable;
-          'SMTCoq.classes.SMT_classes.Inhabited;
-          'Stdlib.Structures.OrderedType.Compare])
-        (FPred codomain_prop).
+  FConj (FConstr (filter_algebraic_types_def ())) (FPred codomain_prop).
 
 Ltac2 trigger_generation_principle () :=
   TIs (TSomeHyp, NotArg) (TInd None (Arg id)).
