@@ -176,14 +176,7 @@ Ltac2 filter_algebraic_types () :=
 Ltac2 trigger_generation_principle () :=
   TIs (TSomeHyp, NotArg) (TInd None (Arg id)).
 
-Ltac2 filter_generation_principle () :=
-  FConj (FConstr 
-          ['Z; 'bool; 'positive; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
-          'SMTCoq.classes.SMT_classes.CompDec;
-          'SMTCoq.classes.SMT_classes.Comparable;
-          'SMTCoq.classes.SMT_classes.Inhabited;
-          'Stdlib.Structures.OrderedType.Compare])
-        (FPred codomain_prop).
+Ltac2 filter_generation_principle () := filter_algebraic_types ().
 
 Ltac2 trigger_anonymous_fun () :=
   TDisj (
