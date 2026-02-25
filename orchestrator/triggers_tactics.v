@@ -164,7 +164,8 @@ Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
 Ltac2 mutable filter_algebraic_types_def () :=
-  ['Z; 'bool; 'positive; 'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
+  ['Z; 'bool; 'True; 'False; 'positive; 'and; 'or; 'Init.Peano.le;
+   'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
    'SMTCoq.classes.SMT_classes.CompDec;
    'SMTCoq.classes.SMT_classes.Comparable;
    'SMTCoq.classes.SMT_classes.Inhabited;

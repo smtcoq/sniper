@@ -52,12 +52,8 @@ Ltac my_algebraic_types t := try (interp_alg_types t).
 Ltac my_gen_principle t :=
  pose_gen_statement t.
 
-Ltac2 mutable filter_generation_principle_def () :=
-  ['Z; 'bool; 'True; 'False; 'positive; 'and; 'or; 'Init.Peano.le;
-      'CompDec; 'Comparable; 'EqbType; 'Inhabited; 'OrderedType.Compare].
-
 Ltac my_gen_principle_temporary :=
-  ltac2:(get_projs_in_variables (filter_generation_principle_def ())).
+  ltac2:(get_projs_in_variables (filter_algebraic_types_def ())).
 
 Ltac my_polymorphism_state :=
   ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
