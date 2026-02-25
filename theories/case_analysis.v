@@ -649,6 +649,14 @@ match! p with
 | _ => if Constr.equal p z then false else true
 end.
 
+(* TODO: this is used directly in the transformation
+   `my_gen_principle_temporary`, use the filter machnism instead *)
+Ltac2 rec is_not_in_list (p : constr list) (z : constr) :=
+  match p with
+  | [] => true
+  | x::xs => if Constr.equal x z then false else is_not_in_list xs z
+  end.
+
 Ltac2 get_head (c : constr) :=
 let k := Constr.Unsafe.kind c in 
 match k with
@@ -674,9 +682,9 @@ Ltac2 is_sort (c: constr) :=
   | _ => false
   end.
 
-Ltac2 get_projs_in_variables (p : constr) := 
+Ltac2 get_projs_in_variables (p : constr list) :=
 let var := vars () in 
-let rec aux (p : constr) (l: ident list) := 
+let rec aux (p : constr list) (l: ident list) :=
 match l with
 | [] => ()
 | x :: xs =>  let x' := Control.hyp x in
@@ -687,12 +695,12 @@ match l with
     let hd := get_head ty in
     if is_indu hd then 
     if
-    is_not_in_tuple p ty then
+    is_not_in_list p ty then
     let ind := get_head ty in
-    if is_not_in_tuple p ind then 
+    if is_not_in_list p ind then
     (ltac1:(ind ty |- try (let params := get_tail ty in (* removing this idtac may cause infinite loops *)
     get_projs_st_default_quote ind params)) (Ltac1.of_constr ind) (Ltac1.of_constr ty)) ; 
-    aux constr:(($p, $ty)) xs 
+    aux (ty::p) xs
     else aux p xs else aux p xs else aux p xs
 end
 in aux p var.
@@ -709,16 +717,16 @@ Inductive test: Set :=
 
 Goal test -> False.
    
-Proof. intros. ltac2:(get_projs_in_variables 'bool).
+Proof. intros. ltac2:(get_projs_in_variables ['bool]).
 Abort.
 
 Variable A : Type.
 Variable HA : CompDec A.
 
 Goal (forall (A : Type) (HA : CompDec A) (l : list A), False -> False).
-Proof. intros. ltac2:(get_projs_in_variables 'bool). Abort.
+Proof. intros. ltac2:(get_projs_in_variables ['bool]). Abort.
 
 Lemma app_eq_nil (l l' : list A) : l ++ l' = [] -> l = [] /\ l' = [].
-  Proof. ltac2:(get_projs_in_variables 'unit). Abort. 
+  Proof. ltac2:(get_projs_in_variables ['unit]). Abort.
 
 End tests.
