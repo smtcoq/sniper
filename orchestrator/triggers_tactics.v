@@ -46,52 +46,8 @@ Ltac2 trigger_reflexivity () :=
         (TDisj (TContains (TSomeHyp, NotArg) (TConstant None (Arg id)))
         (TContains (TGoal, NotArg) (TConstant None (Arg id)))).
 
-(* Ltac2 mutable filter_reflexivity_terms_def () := *)
-(*   ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt; *)
-(*    'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul; *)
-(*    'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt; *)
-(*    'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb; *)
-(*    'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl; *)
-(*    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr; *)
-(*    '@FArray.select; *)
-(*    '@FArray.diff; *)
-(*    'is_true; *)
-(*    '@SMTCoq.classes.SMT_classes.eqb_of_compdec; *)
-(*    '@SMTCoq.classes.SMT_classes.CompDec; *)
-(*    '@SMTCoq.classes.SMT_classes_instances.Nat_compdec; *)
-(*    '@SMTCoq.classes.SMT_classes_instances.list_compdec; *)
-(*    '@SMTCoq.classes.SMT_classes_instances.prod_compdec; *)
-(*    '@SMTCoq.classes.SMT_classes_instances.option_compdec; *)
-(*    '@SMTCoq.classes.SMT_classes_instances.Z_compdec]. *)
-
-Ltac2 mutable filter_reflexivity_terms_def () :=
-  ['@FArray.select;
-   '@FArray.diff;
-   'is_true;
-   '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
-   '@SMTCoq.classes.SMT_classes.CompDec;
-   '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.list_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.option_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
-
-(* Ltac2 Notation "Snipe_opaque" t(constr) := *)
-(*   Ltac2 Set filter_reflexivity_terms_def as frtd := *)
-(*     fun () => t::(frtd ()). *)
-
-Ltac2 Set filter_reflexivity_terms_def as frtd :=
-  fun () =>
-    List.append ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
+Ltac2 mutable filter_defined_terms () :=
+  ['Z.add; 'Z.sub; 'Z.mul; 'Z.eqb; 'Z.ltb; 'Z.leb; 'Z.geb; 'Z.gtb; 'Z.lt;
    'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
    'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt;
    'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
@@ -105,13 +61,25 @@ Ltac2 Set filter_reflexivity_terms_def as frtd :=
    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
    'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr] (frtd ()).
+   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
+   '@FArray.select;
+   '@FArray.diff;
+   'is_true;
+   '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
+   '@SMTCoq.classes.SMT_classes.CompDec;
+   '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.list_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.option_compdec;
+   '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
 
-(* Ltac2 Eval filter_reflexivity_terms_def (). *)
+(* Ltac2 Notation "Snipe_opaque" t(constr) := *)
+(*   Ltac2 Set filter_defined_terms as frtd := *)
+(*     fun () => t::(frtd ()). *)
 
 Ltac2 filter_reflexivity () :=
   FConj
-    (FConstr (filter_reflexivity_terms_def ()))
+    (FConstr (filter_defined_terms ()))
     (FPred higher_order).
 
 Ltac2 trigger_unfold_reflexivity () :=
@@ -163,7 +131,7 @@ Ltac2 trigger_higher_order :=
 Ltac2 trigger_algebraic_types :=
   TDisj (TContains (TGoal, NotArg) (TInd None (Arg id))) (TContains (TSomeHyp, NotArg) (TInd None (Arg id))).
 
-Ltac2 mutable filter_algebraic_types_def () :=
+Ltac2 mutable filter_inductive_types () :=
   ['Z; 'bool; 'True; 'False; 'positive; 'and; 'or; 'Init.Peano.le;
    'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
    'SMTCoq.classes.SMT_classes.CompDec;
@@ -172,7 +140,7 @@ Ltac2 mutable filter_algebraic_types_def () :=
    'Stdlib.Structures.OrderedType.Compare].
 
 Ltac2 filter_algebraic_types () :=
-  FConj (FConstr (filter_algebraic_types_def ())) (FPred codomain_prop).
+  FConj (FConstr (filter_inductive_types ())) (FPred codomain_prop).
 
 Ltac2 trigger_generation_principle () :=
   TIs (TSomeHyp, NotArg) (TInd None (Arg id)).

@@ -53,7 +53,7 @@ Ltac my_gen_principle t :=
  pose_gen_statement t.
 
 Ltac my_gen_principle_temporary :=
-  ltac2:(get_projs_in_variables (filter_algebraic_types_def ())).
+  ltac2:(get_projs_in_variables (filter_inductive_types ())).
 
 Ltac my_polymorphism_state :=
   ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
