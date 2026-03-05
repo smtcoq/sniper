@@ -228,6 +228,7 @@ Ltac2 rec orchestrator_aux
                                       Int.sub fuel 1 else fuel in
                                     orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v) else
                                   Control.focus nbg1 nbg2 (fun () => 
+                                   Control.enter (fun () =>
                                     (* let cg' := (it).(local_env) in *)
                                     let hs2 := Control.hyps () in
                                     let g2 := Control.goal () in
@@ -242,7 +243,9 @@ Ltac2 rec orchestrator_aux
                                     let fuel' :=
                                       if multipletimes then
                                       Int.sub fuel 1 else fuel in
-                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v)
+                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v
+                                   )
+                                  )
                           end
                   end in aux (remove_dups ll)
           end)
