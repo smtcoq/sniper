@@ -191,62 +191,39 @@ Ltac2 rec orchestrator_aux
                         run name l; 
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
+
+                        let continue () :=
+                          Control.enter (fun () =>
+                            (* let cg' := (it).(local_env) in *)
+                            let hs2 := Control.hyps () in
+                            let g2 := Control.goal () in
+                            let goalChanged := Bool.neg (Constr.equal g1 g2) in
+                            let g3 := if goalChanged then Some g2 else None in
+                            if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
+                            let diff := diff_hyps hs1 hs2 in
+                            let hypsChanged := Int.gt (List.length diff) 0 in
+                            if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
+                            it.(local_env) := (diff, g3) ;
+                            it.(global_flag) := false ;
+                            let fuel' :=
+                              if multipletimes then
+                                Int.sub fuel 1
+                              else
+                                fuel
+                            in
+                            orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v
+                          )
+                        in
+
                         match opt with
-                          | None =>
-                              Control.enter (fun () => 
-                                (* let cg' := (it).(local_env) in *)
-                                let hs2 := Control.hyps () in
-                                let g2 := Control.goal () in
-                                let goalChanged := Bool.neg (Constr.equal g1 g2) in
-                                let g3 := if goalChanged then Some g2 else None in
-                                if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
-                                let diff := diff_hyps hs1 hs2 in
-                                let hypsChanged := Int.gt (List.length diff) 0 in
-                                if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
-                                it.(local_env) := (diff, g3) ;
-                                it.(global_flag) := false ;
-                                let fuel' :=
-                                  if multipletimes then
-                                  Int.sub fuel 1 else fuel in
-                                orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v)
-                           | Some (nbg1, nbg2) => 
-                                let nb := numgoals () in if Int.lt nb nbg2 then
-                                  Control.enter (fun () => 
-                                    (* let cg' := (it).(local_env) in *)
-                                    let hs2 := Control.hyps () in
-                                    let g2 := Control.goal () in
-                                    let goalChanged := Bool.neg (Constr.equal g1 g2) in
-                                    let g3 := if goalChanged then Some g2 else None in
-                                    if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
-                                    let diff := diff_hyps hs1 hs2 in
-                                    let hypsChanged := Int.gt (List.length diff) 0 in
-                                    if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
-                                    it.(local_env) := (diff, g3) ;
-                                    it.(global_flag) := false ;
-                                      let fuel' :=
-                                      if multipletimes then
-                                      Int.sub fuel 1 else fuel in
-                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v) else
-                                  Control.focus nbg1 nbg2 (fun () => 
-                                   Control.enter (fun () =>
-                                    (* let cg' := (it).(local_env) in *)
-                                    let hs2 := Control.hyps () in
-                                    let g2 := Control.goal () in
-                                    let goalChanged := Bool.neg (Constr.equal g1 g2) in
-                                    let g3 := if goalChanged then Some g2 else None in
-                                    if goalChanged then (let (hyps, _) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := (hyps, None)) else ();
-                                    let diff := diff_hyps hs1 hs2 in
-                                    let hypsChanged := Int.gt (List.length diff) 0 in
-                                    if hypsChanged then (let (_, g) := it.(subterms_coq_goal) in it.(subterms_coq_goal) := ([], g)) else ();
-                                    it.(local_env) := (diff, g3) ;
-                                    it.(global_flag) := false ;
-                                    let fuel' :=
-                                      if multipletimes then
-                                      Int.sub fuel 1 else fuel in
-                                    orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v
-                                   )
-                                  )
-                          end
+                          | None => continue ()
+                          | Some (nbg1, nbg2) =>
+                              let nb := numgoals () in
+                              if Int.lt nb nbg2 then
+                                continue ()
+                              else
+                                Control.focus nbg1 nbg2 continue
+                        end
                   end in aux (remove_dups ll)
           end)
     end 
