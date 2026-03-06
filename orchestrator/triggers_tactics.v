@@ -72,6 +72,9 @@ Ltac2 mutable filter_defined_terms () :=
    '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
    '@SMTCoq.classes.SMT_classes_instances.option_compdec;
    '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
+(* To add a new term `t` not to unfold:
+     Ltac2 Set filter_defined_terms as ftd := fun () => t::(ftd ()).
+*)
 
 (* Ltac2 Notation "Snipe_opaque" t(constr) := *)
 (*   Ltac2 Set filter_defined_terms as frtd := *)
@@ -138,6 +141,9 @@ Ltac2 mutable filter_inductive_types () :=
    'SMTCoq.classes.SMT_classes.Comparable;
    'SMTCoq.classes.SMT_classes.Inhabited;
    'Stdlib.Structures.OrderedType.Compare].
+(* To add a new inductive `i` not to unfold:
+     Ltac2 Set filter_inductive_types as fit := fun () => i::(fit ()).
+*)
 
 Ltac2 filter_algebraic_types () :=
   FConj (FConstr (filter_inductive_types ())) (FPred codomain_prop).

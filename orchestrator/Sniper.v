@@ -75,22 +75,53 @@ Ltac2 trigger_generation_principle := TAlways.
 Ltac2 trigger_higher_order :=
   TAlways.
 
-Ltac2 scope_verbos v := orchestrator 5
-{ all_tacs := [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
-((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
-((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
-((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
-((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
-((trigger_unfold_in (), false, None), "my_unfold_in", filter_unfold_in ());
-((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter) ;
-((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter) ;
-((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
-((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ()) ;
-((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter) ; 
-((trigger_polymorphism (), true, None), "my_polymorphism_state", trivial_filter) ;
-((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ()) ]}
-{ already_triggered := [] } v.
+
+Ltac2 mutable sniper_transformations () :=
+  [
+    ((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
+    ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
+    ((trigger_higher_order, false, None), "my_higher_order", trivial_filter);
+    ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
+    ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
+    ((trigger_unfold_in (), false, None), "my_unfold_in", filter_unfold_in ());
+    ((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
+    ((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter);
+    ((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
+    ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
+    ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter);
+    ((trigger_polymorphism (), true, None), "my_polymorphism_state", trivial_filter);
+    ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
+    ((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ())
+  ].
+(* To add a new transformation `my_transfo`:
+
+     Ltac2 Set sniper_transformations as st := fun () =>
+       ((trigger_my_transfo (), is_global, continue_on_subgoals), "my_transfo", filter_my_transfo ())::(st ()).
+
+   - `trigger_my_transfo` is what triggers the transformation
+
+   - `is_global` is a boolean stating if the transformation acts on the
+     whole goal or on a single hypothesis or on the conclusion
+
+   - `continue_on_subgoals`, of type `option (int * int)`, states on
+     which subgoals to continue the transformations, if the tactic may
+     produce multiple subgoals; for example:
+
+     + if set to `None`, the transformations will continue on all the
+       generated goals
+
+     + if set to `Some (2, 4)`, the transformations will continue on
+       subgoals 2 to 4 inclusive, starting at 1, if it produces at least
+       4 subgoals; otherwise it will continue on all subgoals
+
+   - `"my_transfo"` is the name of the transformation, which must be an
+     Ltac tactic
+
+   - `filter_my_transfo` contains particular cases for which the
+     transformation may be triggered while we do not want to
+ *)
+
+Ltac2 scope_verbos v := orchestrator 5 { all_tacs := sniper_transformations ()} { already_triggered := [] } v.
 
 Ltac2 scope () := scope_verbos Nothing.
 
@@ -144,4 +175,3 @@ Tactic Notation "snipe" :=
 
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
-
