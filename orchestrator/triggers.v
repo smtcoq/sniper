@@ -930,4 +930,30 @@ triggered when (TNamed "H") is tDiscard).
 
 
 
+(* Tests of [interpret_trigger] *)
+Goal True.
 
+(* TAlways *)
+Ltac2 Eval (
+  let g := Control.goal () in
+  let hyps := Control.hyps () in
+  let env := { env_triggers := [] } in
+  let it := { subterms_coq_goal := ([], None);
+              local_env := (hyps, Some g);
+              global_flag := true;
+              name_of_tac := ""} in
+  interpret_trigger it env { already_triggered := [] } TAlways)
+.
+
+(* TNever *)
+Ltac2 Eval (
+  let g := Control.goal () in
+  let hyps := Control.hyps () in
+  let env := { env_triggers := [] } in
+  let it := { subterms_coq_goal := ([], None);
+              local_env := (hyps, Some g);
+              global_flag := true;
+              name_of_tac := ""} in
+  interpret_trigger it env { already_triggered := [] } TNever)
+.
+Abort.
