@@ -214,15 +214,6 @@ Ltac2 destruct_or (c : constr) :=
     | _ => None
   end.
 
-Ltac2 curry_app (c : constr) (ca : constr array) :=
-  let cl := Array.to_list ca in
-  let rec tac_rec c cl := 
-    match cl with
-      | [] => c
-      | x :: xs => tac_rec (make (App c (Array.of_list [x]))) xs
-    end
-  in tac_rec c cl. 
-
 Ltac2 ref_equal_upto_univs (r1 : reference) (r2 : reference) :=
   match r1, r2 with
     | VarRef id1, VarRef id2 => Ident.equal id1 id2
@@ -412,23 +403,36 @@ but we want to distinguish between Prop, Set and Type_i, i >= 0 *)
                   end
             | None => None
           end
-(* Application case : Some adjustments are made to be sure 
-that we have binary apps on both sides *)  
-    | App c ca, TApp tte1 tte2 fl => 
-       if Int.le (Array.length ca) 1 then
-        let res := interpret_trigger_term_with_constr cg env c tte1 in
-          match res with
-            | Some l => 
-                let c' := Array.get ca 0 in
-                let res' := interpret_trigger_term_with_constr cg env c' tte2 in
-                  match res' with
-                    | Some l' => Some (cons_option (interpret_flag c fl) (List.append l l'))
-                    | None => None
-                  end
+  (* Application case : Some adjustments are made to be sure that we
+     have binary apps on both sides *)
+    | App c ca, TApp tte1 tte2 fl =>
+        (* Make the Ltac2 term of the form `App (App c [args]) arglast` *)
+        let (args, arglast) :=
+          let rec aux l :=
+            match l with
+            | [] => fail "assert false"
+            | [x] => ([], x)
+            | x::xs =>
+                let (a, r) := aux xs in
+                (x::a, r)
+            end
+          in
+          let (a, r) := aux (Array.to_list ca) in
+          (Array.of_list a, r)
+        in
+        let func := make (App c args) in
+        let res :=
+          interpret_trigger_term_with_constr cg env func tte1
+        in
+        match res with
+        | Some l =>
+            let res' := interpret_trigger_term_with_constr cg env arglast tte2 in
+            match res' with
+            | Some l' => Some (cons_option (interpret_flag func fl) (List.append l l'))
             | None => None
-          end
-       else 
-        let c' := curry_app c ca in interpret_trigger_term_with_constr cg env c' tte
+            end
+        | None => None
+        end
 (* Constant, inductives, constructors : 
 only equalities up to universes in order to simplify 
 the interpretation of our triggers *)
@@ -931,7 +935,7 @@ triggered when (TNamed "H") is tDiscard).
 
 
 (* Tests of [interpret_trigger] *)
-Goal True.
+Goal id True.
 
 (* TAlways *)
 Ltac2 Eval (
@@ -955,5 +959,19 @@ Ltac2 Eval (
               global_flag := true;
               name_of_tac := ""} in
   interpret_trigger it env { already_triggered := [] } TNever)
+.
+
+(* TApp *)
+Ltac2 Eval (
+  let g := Control.goal () in
+  let hyps := Control.hyps () in
+  let env := { env_triggers := [] } in
+  let it := { subterms_coq_goal := ([], None);
+              local_env := (hyps, Some g);
+              global_flag := true;
+              name_of_tac := ""} in
+  interpret_trigger it env { already_triggered := [] }
+    (TContains (TGoal, NotArg) (TApp (TApp (TConstant (Some "id") NotArg) (TAny (Arg id)) NotArg) (TAny (Arg id)) NotArg))
+  )
 .
 Abort.
