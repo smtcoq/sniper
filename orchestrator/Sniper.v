@@ -14,7 +14,7 @@ From Sniper Require Import Transfos.
 
 Require Export triggers_tactics.
 Require Import run_tactic.
-Require Import triggers.
+Require Export triggers.
 Require Import printer.
 Require Import orchestrator.
 Require Import filters.
