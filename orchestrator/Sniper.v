@@ -17,7 +17,7 @@ Require Import run_tactic.
 Require Export triggers.
 Require Import printer.
 Require Import orchestrator.
-Require Import filters.
+Require Export filters.
 Require Import verit.
 
 Require Import tree.
