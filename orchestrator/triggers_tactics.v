@@ -68,9 +68,9 @@ Ltac2 mutable filter_defined_terms () :=
    '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
    '@SMTCoq.classes.SMT_classes.CompDec;
    '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.list_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.prod_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.option_compdec;
+   '@SMTCoq.classes.SMT_classes.list_compdec;
+   '@SMTCoq.classes.SMT_classes.prod_compdec;
+   '@SMTCoq.classes.SMT_classes.option_compdec;
    '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
 (* To add a new term `t` not to unfold:
      Ltac2 Set filter_defined_terms as ftd := fun () => t::(ftd ()).
