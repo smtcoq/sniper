@@ -20,12 +20,12 @@ depends: [
   "rocq-stdlib" {>= "9.0" & < "9.2~"}
   "rocq-metarocq-utils" {<= "1.4.1+9.1"}
   "rocq-metarocq-template" {<= "1.4.1+9.1"}
-  "coq-trakt"
+  "rocq-trakt"
   "coq-smtcoq"
 ]
 pin-depends: [
   [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-rocq-9.0v1" ]
-  [ "coq-trakt.dev" "git+https://github.com/rocq-trakt/trakt.git" ]
+  [ "rocq-trakt.dev" "git+https://github.com/rocq-trakt/trakt.git" ]
 ]
 tags: [
   "category:Computer Science/Decision Procedures and Certified Algorithms/Decision procedures"
