@@ -55,7 +55,7 @@ opam install -y .
 
 ### Installation of the automatic prover and use
 
-You also need the veriT SMT solver, using [these sources](https://www.lri.fr/~keller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
+You also need the veriT SMT solver, using [these sources](https://usr.lmf.cnrs.fr/~ckeller/Documents-recherche/Smtcoq/veriT9f48a98.tar.gz).
 Once unpacked, compilation of veriT is as follows:
 ```
 cd veriT9f48a98
