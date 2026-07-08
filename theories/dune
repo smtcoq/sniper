@@ -1,0 +1,17 @@
+(rocq.theory
+ (name Sniper)
+ (generate_project_file)
+ (package rocq-sniper)
+ (plugins rocq-elpi.elpi)
+ (theories
+  Stdlib
+  elpi
+  elpi_elpi
+  Equations
+  Ltac2
+  MetaRocq.Common
+  MetaRocq.Template
+  MetaRocq.Utils
+  Trakt
+  SMTCoq
+  Sniper.elpi))

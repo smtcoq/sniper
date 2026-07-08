@@ -1,0 +1,5 @@
+(rocq.theory
+ (name Sniper.orchestrator)
+ (generate_project_file)
+ (package rocq-sniper)
+ (theories Stdlib elpi elpi_elpi Ltac2 SMTCoq Trakt))

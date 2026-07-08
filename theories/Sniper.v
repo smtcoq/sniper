@@ -18,7 +18,7 @@ Require Export triggers.
 Require Import printer.
 Require Import orchestrator.
 Require Export filters.
-Require Import verit.
+Require Export verit.
 
 Require Import tree.
 
@@ -81,7 +81,7 @@ Ltac2 mutable sniper_transformations () :=
     ((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
     ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
     ((trigger_higher_order, false, None), "my_higher_order", trivial_filter);
-    ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
+    (* ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ()); *)
     ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
     ((trigger_unfold_in (), false, None), "my_unfold_in", filter_unfold_in ());
     ((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
@@ -90,8 +90,8 @@ Ltac2 mutable sniper_transformations () :=
     ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
     ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter);
     ((trigger_polymorphism (), true, None), "my_polymorphism_state", trivial_filter);
-    ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-    ((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ())
+    ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter)
+    (* ((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ()) *)
   ].
 (* To add a new transformation `my_transfo`:
 
@@ -135,17 +135,17 @@ Ltac2 scope2_verbos v := orchestrator 5
 { all_tacs :=
 [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
 ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
-((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ;
-((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
+((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
+(* ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ()); *)
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl", trivial_filter);
-((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
+((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter); 
 ((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter);
 ((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
 ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter) ;
 ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-((trigger_polymorphism (), false, Some (2, 2)), "my_polymorphism", trivial_filter);
-((trigger_add_compdecs (), false, None), "my_add_compdec",  filter_add_compdecs ()) ] }
+((trigger_polymorphism (), false, Some (2, 2)), "my_polymorphism", trivial_filter)
+(* ((trigger_add_compdecs (), false, None), "my_add_compdec",  filter_add_compdecs ()) *) ] }
 { already_triggered := [] } v.
 
 Ltac2 scope2 () := scope2_verbos Nothing.
