@@ -1,9 +1,9 @@
-*.d
-.*.aux
-*.vo
-*.vok
-*.vos
-*.glob
-.lia.cache
-Makefile.conf
-*~
+# dune
+_build/
+_opam/
+_RocqProject
+*.install
+
+# opam
+*.opam
+!/rocq-sniper.opam

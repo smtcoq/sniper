@@ -1,0 +1,8 @@
+messages: "
+  ======================================================================
+  Thanks for installing Sniper !
+  To use it, you also need to install the automatic solver veriT,
+  following these instructions:
+    https://github.com/smtcoq/sniper#installation-of-the-automatic-prover-and-use
+  ======================================================================
+"
