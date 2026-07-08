@@ -240,7 +240,7 @@ Ltac2 rec destruct_to_continue_computation
 := 
 simpl;
 match! goal with
-| [ |- ?e] => let t := get_head e in if Constr.equal t f then 
+| [ |- ?e] => let t := get_head e in if Constr.equal t f then
                     let h := Control.hyps () in
                     let dstr := find_corresponding_hyps h (find_destructibles e npars) in 
                     match dstr with
@@ -263,7 +263,7 @@ Ltac2 rec destruct_to_continue_computation_rewrite
 := 
 simpl;
 match! goal with
-| [ |- ?e = true] => let t := get_head e in if Constr.equal t f_dec then 
+| [ |- ?e = true] => let t := get_head e in if Constr.equal t f_dec then
                     let h := Control.hyps () in ltac1:(try assumption) ;
                     let dstr := find_corresponding_hyps h (find_destructibles e npars) in
                     blind_destruct dstr ; Control.enter (fun () => destruct_to_continue_computation_rewrite f_dec npars hyps_rew) 

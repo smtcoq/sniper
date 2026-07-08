@@ -135,10 +135,10 @@ Ltac2 scope2_verbos v := orchestrator 5
 { all_tacs :=
 [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
 ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
-((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ; 
+((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ;
 ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
 ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl", trivial_filter);
-((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter); 
+((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
 ((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter);
 ((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
 ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
