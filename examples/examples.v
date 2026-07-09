@@ -72,7 +72,7 @@ Section destruct_auto.
  Theorem app_eq_unit (x y:list A) (a:A) :
       x ++ y = [a] -> x = [] /\ y = [a] \/ x = [a] /\ y = [].
   Proof.
-    destruct x as [|a' l]; [ destruct y as [|a' l] | destruct y as [| a0 l0] ];
+    destruct x as [ |a' l]; [ destruct y as [ |a' l] | destruct y as [ | a0 l0] ];
       simpl.
     intros H; discriminate H.
     left; split; auto.
