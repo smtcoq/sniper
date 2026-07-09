@@ -1,5 +1,5 @@
 From Ltac2 Require Import Ltac2.
-From SMTCoq Require SMT_classes SMT_classes_instances.
+From SMTCoq Require CompDec CompDecInstances.
 From Stdlib Require Import ZArith.
 
 (** Add compdecs is an atomic transformation not related to Trakt *)
@@ -9,11 +9,11 @@ Ltac add_compdecs_terms t :=
   first [ first [constr_eq T Type | constr_eq T Set] ;
   match goal with
       (* If it is already in the local context, do nothing *)
-    | _ : SMT_classes.CompDec t |- _ => idtac
+    | _ : CompDec.CompDec t |- _ => idtac
     (* Otherwise, add it in the local context *)
     | _ =>
       let p := fresh "p" in 
-        assert (p:SMT_classes.CompDec t);
+        assert (p:CompDec.CompDec t);
         [ try (exact _)       (* Use the typeclass machinery *)
         | .. ]
   end | idtac].

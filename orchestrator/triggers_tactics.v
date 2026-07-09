@@ -7,7 +7,7 @@ Require Import printer.
 Require Import triggers.
 Require Import filters.
 
-From SMTCoq Require SMT_classes Conversion Tactics Trace State SMT_classes_instances QInst BVList FArray.
+From SMTCoq Require CompDec Conversion Tactics MainChecker State CompDecInstances QInst BVList FArray.
 
 Ltac2 is_prod (c: constr) :=
   match Constr.Unsafe.kind c with
@@ -51,27 +51,28 @@ Ltac2 mutable filter_defined_terms () :=
    'Z.le; 'Z.ge; 'Z.gt; 'Pos.lt; 'Pos.le; 'Pos.ge; 'Pos.gt; 'Z.to_nat; 'Pos.mul;
    'Pos.sub; 'Init.Nat.add; 'Init.Nat.mul; 'Nat.eqb; 'Nat.leb; 'Nat.ltb; 'ge; 'gt;
    'N.add; 'N.mul; 'N.eqb; 'N.leb; 'N.leb; 'N.ltb; 'Peano.lt; 'negb; 'not; 'andb; 'orb; 'implb; 'xorb;
-   'Bool.eqb; 'iff; 'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_eq;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_and;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_or;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_xor;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_add;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_mult;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_ult;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_slt;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_concat;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shl;
-   'SMTCoq.bva.BVList.BITVECTOR_LIST.bv_shr;
+   'Bool.eqb; 'iff;
+   'BVList.BITVECTOR_LIST.bv_eq;
+   'BVList.BITVECTOR_LIST.bv_and;
+   'BVList.BITVECTOR_LIST.bv_or;
+   'BVList.BITVECTOR_LIST.bv_xor;
+   'BVList.BITVECTOR_LIST.bv_add;
+   'BVList.BITVECTOR_LIST.bv_mult;
+   'BVList.BITVECTOR_LIST.bv_ult;
+   'BVList.BITVECTOR_LIST.bv_slt;
+   'BVList.BITVECTOR_LIST.bv_concat;
+   'BVList.BITVECTOR_LIST.bv_shl;
+   'BVList.BITVECTOR_LIST.bv_shr;
    '@FArray.select;
    '@FArray.diff;
    'is_true;
-   '@SMTCoq.classes.SMT_classes.eqb_of_compdec;
-   '@SMTCoq.classes.SMT_classes.CompDec;
-   '@SMTCoq.classes.SMT_classes_instances.Nat_compdec;
-   '@SMTCoq.classes.SMT_classes.list_compdec;
-   '@SMTCoq.classes.SMT_classes.prod_compdec;
-   '@SMTCoq.classes.SMT_classes.option_compdec;
-   '@SMTCoq.classes.SMT_classes_instances.Z_compdec].
+   '@CompDec.eqb_of_compdec;
+   '@CompDec.CompDec;
+   '@CompDecInstances.Nat_compdec;
+   '@CompDec.list_compdec;
+   '@CompDec.prod_compdec;
+   '@CompDec.option_compdec;
+   '@CompDecInstances.Z_compdec].
 (* To add a new term `t` not to unfold:
      Ltac2 Set filter_defined_terms as ftd := fun () => t::(ftd ()).
 *)
@@ -136,10 +137,11 @@ Ltac2 trigger_algebraic_types :=
 
 Ltac2 mutable filter_inductive_types () :=
   ['Z; 'bool; 'True; 'False; 'positive; 'and; 'or; 'Init.Peano.le;
-   'N; 'nat ; 'FArray.farray; 'SMTCoq.classes.SMT_classes.EqbType;
-   'SMTCoq.classes.SMT_classes.CompDec;
-   'SMTCoq.classes.SMT_classes.Comparable;
-   'SMTCoq.classes.SMT_classes.Inhabited;
+   'N; 'nat ; 'FArray.farray;
+   'CompDec.EqbType;
+   'CompDec.CompDec;
+   'CompDec.Comparable;
+   'CompDec.Inhabited;
    'Stdlib.Structures.OrderedType.Compare].
 (* To add a new inductive `i` not to unfold:
      Ltac2 Set filter_inductive_types as fit := fun () => i::(fit ()).
@@ -172,7 +174,7 @@ Ltac2 filter_add_compdecs () :=
 FConj
 (FConstr ['Z; 'bool; 'positive; 'nat ; 'FArray.farray; 'Prop; 'Set; 'Type])
 (FPred (fun x => Bool.or (is_prod x)
-    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u _ => (Constr.equal u '@SMT_classes.CompDec) | _=> false end ))).
+    (match Constr.Unsafe.kind x with | Constr.Unsafe.App u _ => (Constr.equal u '@CompDec.CompDec) | _=> false end ))).
    
 (* Ltac2 trigger_fold_local_def () :=
   tlet def ; def_unfold := (triggered when (TSomeDef) is (tArg) on (Arg id)) in

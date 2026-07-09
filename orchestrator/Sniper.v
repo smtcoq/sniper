@@ -6,7 +6,7 @@ From Stdlib Require Import ZArith.
 From Stdlib Require Import PArith.BinPos.
 From Stdlib Require Import NArith.BinNatDef.
 
-From SMTCoq Require Import SMT_classes SMT_classes_instances BVList FArray.
+From SMTCoq Require Import CompDec CompDecInstances BVList FArray.
 
 From Trakt Require Import Trakt.
 

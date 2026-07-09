@@ -4,7 +4,7 @@ From Stdlib Require Import ZArith.
 
 Require Import add_compdecs.
 
-From SMTCoq Require SMT_classes Conversion Tactics.
+From SMTCoq Require CompDec Conversion Tactics.
 Import Tactics.
 
 Ltac trakt_rels rels :=
