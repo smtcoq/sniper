@@ -21,10 +21,10 @@ depends: [
   "rocq-metarocq-utils" {<= "1.4.1+9.1"}
   "rocq-metarocq-template" {<= "1.4.1+9.1"}
   "rocq-trakt"
-  "coq-smtcoq"
+  "rocq-smtcoq"
 ]
 pin-depends: [
-  [ "coq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git#with-trakt-rocq-9.0v1" ]
+  [ "rocq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq.git" ]
   [ "rocq-trakt.dev" "git+https://github.com/rocq-trakt/trakt.git" ]
 ]
 tags: [
