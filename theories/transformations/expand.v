@@ -10,7 +10,7 @@
 (**************************************************************************)
 
 Require Import MetaRocq.Template.All.
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 Require Import reflexivity.
 Require Import unfold_reflexivity.
 Require Import unfold_in.

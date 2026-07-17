@@ -1,4 +1,4 @@
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 Require Import expand.
 Require Import elimination_fixpoints.
 Require Import elimination_pattern_matching.

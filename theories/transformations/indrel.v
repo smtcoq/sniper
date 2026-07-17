@@ -1,6 +1,6 @@
 From MetaRocq.Template Require Import All.
 From MetaRocq.Template Require Import Checker.
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 From Stdlib Require Import List.
 From Stdlib Require Import String.
 

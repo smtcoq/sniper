@@ -12,7 +12,7 @@
 
 From MetaRocq.Template Require Import All.
 From Stdlib Require Import List.
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 Import ListNotations.
 From Stdlib Require Import String.
 

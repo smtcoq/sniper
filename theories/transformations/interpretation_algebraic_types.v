@@ -13,7 +13,7 @@
 Require Import MetaRocq.Template.All.
 From Stdlib Require Import List String.
 Import ListNotations.  
-Require Import utilities. 
+From Sniper Require Import utils.utilities.
 From Stdlib Require Import ZArith.
 From Stdlib Require Import PArith.BinPos.
 

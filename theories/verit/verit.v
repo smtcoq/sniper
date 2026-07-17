@@ -2,7 +2,7 @@ From Ltac2 Require Import Ltac2.
 From Trakt Require Import Trakt.
 From Stdlib Require Import ZArith.
 
-Require Import add_compdecs.
+From Sniper Require Import transformations.add_compdecs.
 
 From SMTCoq Require CompDec Conversion Tactics.
 Import Tactics.

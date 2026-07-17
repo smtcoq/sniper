@@ -1,6 +1,5 @@
-Require Import orchestrator.triggers.
-Require Import orchestrator.printer.
-Require Import List.
+From Sniper Require Import orchestrator.triggers orchestrator.printer.
+From Stdlib Require Import List.
 From Ltac2 Require Import Ltac2 Printf.
 From Ltac2 Require Import Constr.
 Import Unsafe.

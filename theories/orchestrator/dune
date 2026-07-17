@@ -2,4 +2,13 @@
  (name Sniper.orchestrator)
  (generate_project_file)
  (package rocq-sniper)
- (theories Stdlib elpi elpi_elpi Ltac2 SMTCoq Trakt))
+ (theories
+  Stdlib
+  elpi
+  elpi_elpi
+  Ltac2
+  SMTCoq
+  Trakt
+  Sniper.utils
+  Sniper.transformations
+  Sniper.verit))

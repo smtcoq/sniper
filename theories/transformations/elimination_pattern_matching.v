@@ -12,7 +12,7 @@
 
 Require Import MetaRocq.Template.All.
 From Stdlib Require Import String.
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 Require Import reflexivity.
 Require Import unfold_reflexivity.
 Require Import elimination_fixpoints.
