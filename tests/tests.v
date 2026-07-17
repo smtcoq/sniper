@@ -11,10 +11,7 @@
 
 From Sniper Require Import Sniper.
 From Sniper Require Import Transfos.
-Require Import String.
-Require Import ZArith.
-Require Import Bool.
-Require Import List.
+From Stdlib Require Import String ZArith Bool List.
 Import ListNotations.
 
 Section poly.

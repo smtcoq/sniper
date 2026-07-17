@@ -103,7 +103,7 @@ test_trigger (TIs (TGoal, NotArg) (TTerm 'unit (Arg id))). (* unit is in the lis
 Abort.
 
 Goal False.
-ltac1:(pose proof app_nil_end).
+ltac1:(pose proof app_nil_r).
 test_trigger (TIs (TSomeHyp, NotArg) (TProd (TSort TBigType NotArg) tDiscard NotArg)).
 Abort.
 
@@ -118,7 +118,7 @@ test_trigger (trigger_trakt_bool ()).
 Abort.
 
 Goal False.
-ltac1:(pose proof app_nil_end).
+ltac1:(pose proof app_nil_r).
 test_trigger (trigger_trakt_bool ()).
 Abort.
 
