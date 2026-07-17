@@ -9,7 +9,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 From elpi Require Import elpi.
 Require Import reflexivity.
 Require Import unfold_reflexivity.

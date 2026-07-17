@@ -1,8 +1,7 @@
 (rocq.theory
- (name Sniper)
+ (name Sniper.utils)
  (generate_project_file)
  (package rocq-sniper)
- (plugins rocq-elpi.elpi)
  (theories
   Stdlib
   elpi
@@ -12,8 +11,5 @@
   MetaRocq.Common
   MetaRocq.Template
   MetaRocq.Utils
-  Trakt
   SMTCoq
-  Sniper.elpi
-  Sniper.orchestrator
-  ))
+  Trakt))

@@ -1,4 +1,4 @@
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 From Ltac2 Require Import Ltac2.
 From Ltac2 Require Import Constr Printf.
 Import Unsafe.

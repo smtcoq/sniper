@@ -10,7 +10,7 @@
 (**************************************************************************)
 
 
-Require Import utilities. 
+From Sniper Require Import utils.utilities.
 Require Import instantiate_type.
 Require Import MetaRocq.Template.All.
 From Stdlib Require Import String.

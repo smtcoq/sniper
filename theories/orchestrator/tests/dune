@@ -4,6 +4,6 @@
   (alias_rec all)))
 
 (rocq.theory
- (name Sniper.examples)
+ (name Sniper.orchestrator.tests)
  (generate_project_file)
- (theories Stdlib elpi elpi_elpi Sniper))
+ (theories Stdlib elpi elpi_elpi Sniper.orchestrator))

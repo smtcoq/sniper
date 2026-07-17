@@ -1,4 +1,4 @@
-Require Import utilities.
+From Sniper Require Import utils.utilities.
 From Stdlib Require Import List.
 From Ltac2 Require Import Ltac2.
 
