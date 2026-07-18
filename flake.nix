@@ -1,6 +1,6 @@
 {
   inputs = {
-    SMTCoq.url = "github:SMTCoq/SMTCoq?ref=lafeychine/ci-tests";
+    SMTCoq.url = "github:SMTCoq/SMTCoq";
 
     nixpkgs.follows = "SMTCoq/nixpkgs";
     flake-parts.follows = "SMTCoq/flake-parts";
