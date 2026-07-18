@@ -8,6 +8,9 @@
   elpi_elpi
   Equations
   Ltac2
+  ExtLib.Core
+  ExtLib.Data
+  ExtLib.Structures
   MetaRocq.Common
   MetaRocq.Template
   MetaRocq.Utils

@@ -17,7 +17,7 @@ From Sniper Require Import utils.utilities.
 From Stdlib Require Import ZArith.
 From Stdlib Require Import PArith.BinPos.
 
-Import ListNotations MRMonadNotation.
+Import ListNotations MonadNotation.
 
 Ltac pose_quote_term c idn := let x := metacoq_get_value (tmQuote c) in (pose x as idn).
 

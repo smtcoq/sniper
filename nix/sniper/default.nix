@@ -7,6 +7,7 @@ let
 
         # NOTE: Remove these packages when they will be available upstream
         equations = final.callPackage ./equations.nix { };
+        extlib = final.callPackage ./extlib.nix { };
         metarocq-template = final.callPackage ./metarocq-template.nix { };
       }
     );
