@@ -92,16 +92,38 @@ intros H.
 scope.
 Abort. 
 
+From SMTCoq Require Conversion.
+
 (* Looping forever? *)
-(* Lemma nth_default_eq : *)
-(*     forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d. *)
-(* Proof. intros A HA n ; induction n. *)
-(*   - snipe. *)
-(*   - intros l ; destruct l. *)
-(*     * snipe. *)
-(*     * scope. get_projs_st option. (* specialize (gen_option A d). *) *)
-(*       (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *) *)
-(* Abort. *)
+Lemma nth_default_eq :
+    forall (A : Type) (HA : CompDec A) n l (d:A), nth_default d l n = nth n l d.
+Proof. intros A HA n ; induction n.
+  - snipe.
+  - intros l ; destruct l.
+    * scope.
+intros; unfold is_true in *.
+
+ltac2:(Tactics.get_hyps_cont_ltac1 ltac1:(local |- idtac local)).
+let Hs := Conversion.pose_hyps (H_inst,
+    (H_inst0,
+     (H_inst1,
+      (H_inst2,
+       (H_inst3,
+        (H_inst4,
+         (H_inst5, (H_inst6, (H_inst7, (H_inst8, (H_inst9, (H_inst10, IHn)))))))))))) (@None unit) in idtac Hs.
+Sniper.verit.verit.preprocess1 (Some (H, H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11)).
+    let Hs' := Conversion.intros_names in idtac Hs'.
+    Conversion.preprocess2 (Some (H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12)).
+    verit_bool_base_auto (Some (H0, H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12)).
+    QInst.vauto.
+
+
+
+
+snipe.
+    * scope. get_projs_st option. (* specialize (gen_option A d). *)
+      (* verit does not succed because p and p0 are not Zified by trakt (see "Preprocessing" channel *)
+Abort.
 
 (* Test polymorphism *) 
 Goal (forall (A B : Type) (x1 x2 : A) (y1 y2 : B), 
