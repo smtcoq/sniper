@@ -29,7 +29,6 @@ mkRocqDerivation rec {
   };
 
   propagatedBuildInputs = [
-    rocq-core.ocamlPackages.num
     metarocq-template
     smtcoq
   ];

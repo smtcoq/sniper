@@ -32,4 +32,4 @@
    "keyword: SMT"
    "keyword: automation"
    "logpath:Sniper"))
- (depends num rocq-smtcoq))
+ (depends rocq-smtcoq))

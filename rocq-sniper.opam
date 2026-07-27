@@ -27,7 +27,6 @@ homepage: "https://github.com/smtcoq/sniper"
 bug-reports: "https://github.com/smtcoq/sniper/issues"
 depends: [
   "dune" {>= "3.21"}
-  "num"
   "rocq-smtcoq"
   "odoc" {with-doc}
 ]
