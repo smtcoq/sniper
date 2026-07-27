@@ -1,3 +1,6 @@
+pin-depends: [
+  ["rocq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq"]
+]
 messages: "
   ======================================================================
   Thanks for installing Sniper !

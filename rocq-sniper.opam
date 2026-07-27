@@ -47,6 +47,9 @@ build: [
 ]
 dev-repo: "git+https://github.com/smtcoq/sniper.git"
 x-maintenance-intent: ["(latest)"]
+pin-depends: [
+  ["rocq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq"]
+]
 messages: "
   ======================================================================
   Thanks for installing Sniper !
