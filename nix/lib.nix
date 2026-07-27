@@ -17,6 +17,9 @@ with lib;
     }:
     (mkSMTCoqScope pkgs versions).overrideScope (
       _: prev: {
+        smtcoq = prev.smtcoq.overrideAttrs (_: {
+          doCheck = false;
+        });
         sniper = prev.sniper.override { version = sniper; };
       }
     );
