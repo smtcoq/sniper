@@ -1,5 +1,6 @@
 pin-depends: [
   ["rocq-smtcoq.dev" "git+https://github.com/smtcoq/smtcoq"]
+  ["rocq-trakt.dev" "git+https://github.com/rocq-trakt/trakt"]
 ]
 messages: "
   ======================================================================

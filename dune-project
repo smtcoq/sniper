@@ -32,4 +32,13 @@
    "keyword: SMT"
    "keyword: automation"
    "logpath:Sniper"))
- (depends rocq-smtcoq))
+ (depends
+  rocq-smtcoq
+  (rocq-equations
+   (or
+    (= "1.3.2+9.2")
+    (= "1.3.1+9.1")))
+  (rocq-metarocq-template
+   (or
+    (= "1.5.1+9.2")
+    (= "1.5.1+9.1")))))
