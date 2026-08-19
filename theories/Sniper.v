@@ -18,7 +18,6 @@ Require Export triggers.
 Require Import printer.
 Require Import orchestrator.
 Require Export filters.
-Require Export verit.
 
 Require Import tree.
 
@@ -165,13 +164,13 @@ Tactic Notation "scope_full" := ltac2:(Control.enter (fun () => intros; scope_fu
 Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
 Tactic Notation "snipe_no_check" := 
-  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_no_check_orch))).
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_no_check_nocompdecs))).
 
 Tactic Notation "snipe2_no_check" := 
-  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_orch))).
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_nocompdecs))).
 
 Tactic Notation "snipe" :=
-  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_orch))).
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_nocompdecs))).
 
 Tactic Notation "snipe2" :=
-  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_orch))).
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_nocompdecs))).
