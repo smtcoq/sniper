@@ -120,7 +120,7 @@ Ltac2 mutable sniper_transformations () :=
      transformation may be triggered while we do not want to
  *)
 
-Ltac2 scope_verbos v := orchestrator 5 { all_tacs := sniper_transformations ()} { already_triggered := [] } v.
+Ltac2 scope_verbos v := orchestrator 0 5 { all_tacs := sniper_transformations ()} { already_triggered := [] } v.
 
 Ltac2 scope () := scope_verbos Nothing.
 
@@ -130,7 +130,7 @@ Ltac2 scope_debug () := scope_verbos Debug.
 
 Ltac2 scope_full () := scope_verbos Full.
 
-Ltac2 scope2_verbos v := orchestrator 5
+Ltac2 scope2_verbos v := orchestrator 0 5
 { all_tacs :=
 [((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
 ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;

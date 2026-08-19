@@ -93,35 +93,37 @@ Ltac2 leq_verb (v1 : verbosity) (v2 : verbosity) :=
         end
    end. 
 
-Ltac2 print_tactic_not_triggered (v : verbosity) (s : string) :=
+Ltac2 print_tactic_not_triggered (v : verbosity) (s : string) step_num :=
 if leq_verb v Debug then () else
-printf "NONE: The following tactic was not triggered: %s" s.
+printf "[%i] NONE: The following tactic was not triggered: %s" step_num s.
 
-Ltac2 print_tactic_already_applied (v : verbosity) (s : string) (l : constr list) :=
+Ltac2 print_tactic_already_applied
+  (v : verbosity) (s : string) (l : constr list) step_num :=
 if leq_verb v Debug then () else
-(printf "%s was already applied with the following args :" s ; 
+(printf "[%i] %s was already applied with the following args :" step_num s;
 List.iter (fun x => printf "%t" x) l).
 
-Ltac2 print_tactic_already_applied_once (v : verbosity) (s : string) :=
+Ltac2 print_tactic_already_applied_once (v : verbosity) (s : string) step_num :=
 if leq_verb v Debug then () else
-printf "%s was already applied one time" s.
+printf "[%i] %s was already applied one time" step_num s.
 
-Ltac2 print_tactic_global_in_local (v : verbosity) (s : string) :=
+Ltac2 print_tactic_global_in_local (v : verbosity) (s : string) step_num :=
 if leq_verb v Debug then () else
-printf "%s is global and cannot be applied in a local state" s.
+printf "[%i] %s is global and cannot be applied in a local state" step_num s.
 
 Ltac2 print_state_verb (v : verbosity) it :=
 if leq_verb v Debug then () else
 print_state (it.(local_env)).
 
-Ltac2 print_applied_tac (v : verbosity) (s : string) (l : constr list) :=
+Ltac2 print_applied_tac (v : verbosity) (s : string) (l : constr list) step_num :=
 if leq_verb v Nothing then () else
-(printf "Applied %s with the following args" s ;
+(printf "[%i] Applied %s with the following args" step_num s;
 List.iter (fun x => printf "%t: %t" x (Constr.type x)) l).
 
-Ltac2 print_tactic_trigger_filtered (v : verbosity) (s : string) (l : constr list) :=
+Ltac2 print_tactic_trigger_filtered
+  (v : verbosity) (s : string) (l : constr list) step_num :=
 if leq_verb v Debug then () else
-(printf "The tactic %s was filtered with the following args" s ;
+(printf "[%i] The tactic %s was filtered with the following args" step_num s;
 List.iter (fun x => printf "%t" x) l).
 
 Ltac2 rec remove_dups (ll : constr list list) := 
@@ -139,6 +141,7 @@ let c := { count := 0 } in
        ); (c).(count).
 
 Ltac2 rec orchestrator_aux
+  step_num (* couting the number of steps performed by the orchestrator *)
   alltacs (* the mutable field of all tactics *)
   init_fuel
   fuel
@@ -151,41 +154,41 @@ Ltac2 rec orchestrator_aux
       match trigstacsfis with
         | [] => ()
         | (_, name, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
-            Control.enter (fun () => orchestrator init_fuel alltacs trigtacs v)
+            Control.enter (fun () => orchestrator (Int.add step_num 1) init_fuel alltacs trigtacs v)
       end 
     else
     print_state_verb v it ;
     match trigstacsfis with
       | [] => 
           if (it).(global_flag) then () 
-          else Control.enter (fun () => orchestrator fuel alltacs trigtacs v)
+          else Control.enter (fun () => orchestrator (Int.add step_num 1) fuel alltacs trigtacs v)
       | ((trig, multipletimes, opt), name, fi) :: trigstacsfis' => 
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with
             | [] =>
-              print_tactic_not_triggered v name ;
-              orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
+              print_tactic_not_triggered v name step_num;
+              orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
             | ll =>
               let rec aux ll :=  (* if String.equal name "my_fold_local_def_in_hyp_goal" then print_interp_trigger ll else () ;  DEBUG *)
                 match ll with
-                  | [] => orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v
+                  | [] => orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                   | l :: ll' =>
                       if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
-                        print_tactic_global_in_local v name ;
-                        orchestrator_aux alltacs init_fuel fuel it env trigstacsfis' trigtacs v 
+                        print_tactic_global_in_local v name step_num;
+                        orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                       else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
-                          print_tactic_already_applied v name l ;
+                          print_tactic_already_applied v name l step_num;
                           aux ll'        
                       else if Bool.neg (pass_the_filter l fi) then
-                        print_tactic_trigger_filtered v name l ;
+                        print_tactic_trigger_filtered v name l step_num;
                         let ltysargs := List.map (fun x => type x) l in
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                         aux ll'   
                       else
                         let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
-                        print_applied_tac v name l ;
+                        print_applied_tac v name l step_num;
                         let hs1 := Control.hyps () in
                         let g1 := Control.goal () in
                         run name l; 
@@ -211,7 +214,7 @@ Ltac2 rec orchestrator_aux
                               else
                                 fuel
                             in
-                            orchestrator_aux alltacs init_fuel fuel' it env trigstacsfis trigtacs v
+                            orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel' it env trigstacsfis trigtacs v
                           )
                         in
 
@@ -227,13 +230,13 @@ Ltac2 rec orchestrator_aux
                   end in aux (remove_dups ll)
           end)
     end 
- with orchestrator n alltacs trigtacs v :=
+ with orchestrator step_num n alltacs trigtacs v :=
   if Int.le n 0 then () else
   let g := Control.goal () in
   let hyps := Control.hyps () in 
   let env := { env_triggers := [] } in
   let it := { subterms_coq_goal := ([], None) ; local_env := (hyps, Some g); global_flag := true ; name_of_tac := ""} in
-  orchestrator_aux alltacs n n it env ((alltacs).(all_tacs)) trigtacs v.
+  orchestrator_aux step_num alltacs n n it env ((alltacs).(all_tacs)) trigtacs v.
 
 (** 
 - TODO : essayer avec les tactiques de Sniper en les changeant le moins possible (scope)
