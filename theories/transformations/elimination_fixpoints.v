@@ -18,6 +18,7 @@ Require Import expand.
 From Stdlib Require Import List.
 Import ListNotations.
 From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Printf.
 Set Default Proof Mode "Classic".
 
 From Sniper.elpi Extra Dependency "eliminate_fix.elpi" as elimfix.
@@ -121,22 +122,36 @@ Ltac intros_destructn n :=
 (* fold constants in equalities *)
 
 Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
+  printf "fold_in_eq_aux1 1";
   match Constr.Unsafe.kind t with
     | Constr.Unsafe.App t' a => 
-      if Constr.equal t' '(@eq) then 
+      if Constr.equal t' '(@eq) then
+      printf "fold_in_eq_aux1 2";
       let c := Array.get a 1 in 
       let rec aux c := 
         match Constr.Unsafe.kind c with
-          | Constr.Unsafe.App u _ => aux u
-          | Constr.Unsafe.Fix _ k bda _ => 
-              let binder_fix := Array.get bda k in 
+          | Constr.Unsafe.App u _ =>
+              printf "fold_in_eq_aux1 3";
+              aux u
+          | Constr.Unsafe.Fix _ k bda _ =>
+              printf "fold_in_eq_aux1 4";
+              let binder_fix := Array.get bda k in
+              printf "fold_in_eq_aux1 5";
               let name := Option.get (Constr.Binder.name binder_fix) in
-              let csts := Env.expand [name] in 
-              let constantref := List.hd csts in
-              let cst := Env.instantiate constantref in
-              let cst' := Ltac1.of_constr cst in 
-              let h' := Ltac1.of_constr h in
-              ltac1:(x y |- fold x in y) cst' h'        
+              printf "fold_in_eq_aux1 6";
+              let csts := Env.expand [name] in
+              printf "fold_in_eq_aux1 7";
+              printf "%i" (List.length csts);
+              if Int.gt (List.length csts) 0 then (
+                let constantref := List.hd csts in
+                printf "fold_in_eq_aux1 8";
+                let cst := Env.instantiate constantref in
+                printf "fold_in_eq_aux1 9";
+                let cst' := Ltac1.of_constr cst in
+                printf "fold_in_eq_aux1 10";
+                let h' := Ltac1.of_constr h in
+                printf "fold_in_eq_aux1 11";
+                ltac1:(x y |- fold x in y) cst' h') else ()
           | _ => ()
         end in aux c
       else ()
@@ -145,7 +160,9 @@ Ltac2 fold_in_eq_aux1 (t : constr) (h : constr) :=
 
 Ltac2 rec fold_in_eq_aux2 (t : constr) (h : constr) :=
   match Constr.Unsafe.kind t with
-    | Constr.Unsafe.Prod _ t' => fold_in_eq_aux2 t' h
+    | Constr.Unsafe.Prod _ t' =>
+      printf "fold_in_eq_aux2 1"; fold_in_eq_aux2 t' h;
+      printf "fold_in_eq_aux2 2"
     | _ => fold_in_eq_aux1 t h
   end.
 
@@ -153,9 +170,11 @@ Ltac fold_in_eq H :=
   let T := type of H in
   let funct := ltac2:(t h |- 
   let t' := Ltac1.to_constr t in
+    printf "fold_in_eq 1";
     match t' with
       | Some t'' => 
         let h' := Ltac1.to_constr h in
+        printf "fold_in_eq 2";
         match h' with
           | Some h'' => fold_in_eq_aux2 t'' h''
           | None => ()
@@ -170,10 +189,29 @@ The problem is the automatic conversion made by setoid rewrite *)
 Ltac myrewrite Ty :=
 repeat match goal with
 | H1 : ?Ty1 |- _ =>
+  idtac "===== Ty =====";
+  idtac Ty;
   constr_eq Ty Ty1 ;
+  idtac "===== Ty1 =====";
+  idtac Ty1;
+  idtac "===== H1 =====";
+  idtac H1;
   lazymatch goal with
-    | H2 : ?T |- _ => first [first [first [setoid_rewrite H2 in H1 at 2 ; clear H2
-| specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2 | setoid_rewrite_at2 H1 H2 ]] | fold_in_eq H2; clear H1 ]
+    | H2 : ?T |- _ =>
+       idtac "===== T =====";
+       idtac T;
+       idtac "===== H2 =====";
+       idtac H2;
+       idtac "==========";
+       first
+         [ first
+            [ first
+              [ idtac ">>> HERE / 1"; setoid_rewrite H2 in H1 at 2 ; clear H2; idtac "<<< HERE / 1"
+              | idtac ">>> HERE / 2"; specialize_in_eq H1 H2 ; setoid_rewrite H2 in H1 ; clear H2; idtac "<<< HERE / 2"
+              | idtac ">>> HERE / 3"; setoid_rewrite_at2 H1 H2; idtac "<<< HERE / 3"
+              ]
+            ]
+         | idtac ">>> HERE / 4"; fold_in_eq H2; clear H1; idtac "<<< HERE / 4" | idtac "HELLO" ]
     end
 end.
 
@@ -195,49 +233,66 @@ Elpi Accumulate File utils.
 Elpi Accumulate lp:{{
 
   pred elim_pos_ctx_rewrite i: term, i: goal, o: list (sealed-goal).
-    elim_pos_ctx_rewrite H ((goal Ctx _ _ _ _) as G) GS :- 
-      std.rev Ctx Ctx',
-      elim_pos_ctx Ctx' H H', (coq.ltac.call "myrewrite" [trm H']) G GS.
+  elim_pos_ctx_rewrite H ((goal Ctx _ _ _ _) as G) GS :-
+    coq.say "HERE - rewrite - 1",
+    std.rev Ctx Ctx',
+    coq.say "HERE - rewrite - 2",
+    elim_pos_ctx Ctx' H H',
+    coq.say "HERE - rewrite - 3",
+    (coq.ltac.call "myrewrite" [trm H']) G GS,
+    coq.say "HERE - rewrite - 4".
 
   pred gen_eqs i: goal-ctx, i: list term, i: list term, o: list (pair term int).
-    gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
-      elim_pos_ctx Ctx' F F',
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
-      if (L' = []) (gen_eqs Ctx L Glob RS) fail.
-    gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
-      elim_pos_ctx Ctx' F F',
-      index_struct_argument F' I,
-      std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
-      std.last L' Def, 
-      elim_pos_ctx Ctx' Def Def',
-      subst_anon_fix F' Def' F'',
-      mkEq F' F'' R,
-      add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
-    gen_eqs _ [] _ [].
+  gen_eqs Ctx [F|L] Glob RS :- std.rev Ctx Ctx',
+    elim_pos_ctx Ctx' F F',
+    std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
+    if (L' = []) (gen_eqs Ctx L Glob RS) fail.
+  gen_eqs Ctx [F|L] Glob [pr R' I |RS] :- !, std.rev Ctx Ctx',
+    elim_pos_ctx Ctx' F F',
+    index_struct_argument F' I,
+    std.filter Glob (x\ elim_pos_ctx Ctx' x X', (coq.unify-leq X' F' ok ; abstract_unify X' F')) L',
+    std.last L' Def,
+    elim_pos_ctx Ctx' Def Def',
+    subst_anon_fix F' Def' F'',
+    mkEq F' F'' R,
+    add_pos_ctx Ctx' R R', gen_eqs Ctx L Glob RS.
+  gen_eqs _ [] _ [].
 
-    pred assert_list_rewrite i: term, i: list (pair term int), i: goal, o: list sealed-goal.
-    assert_list_rewrite H [pr Hyp I | XS] ((goal Ctx _ _ _ _) as G) GL :-
-      int_to_term I I',
-      std.rev Ctx Ctx',
-      elim_pos_ctx Ctx' Hyp Hyp',
-      coq.ltac.call "myassert" [trm Hyp', trm I'] G [G1 | _GS],
-      coq.ltac.open (elim_pos_ctx_rewrite H) G1 [G2 | _GS'],
-      coq.ltac.open (assert_list_rewrite H XS) G2 GL.
-      assert_list_rewrite _H [] _G _GL.
+  pred assert_list_rewrite i: term, i: list (pair term int), i: goal, o: list sealed-goal.
+  assert_list_rewrite H [pr Hyp I | XS] ((goal Ctx _ _ _ _) as G) GL :-
+    int_to_term I I',
+    std.rev Ctx Ctx',
+    elim_pos_ctx Ctx' Hyp Hyp',
+    coq.ltac.call "myassert" [trm Hyp', trm I'] G [G1 | _GS],
+    coq.say "HERE - >>> elim_pos_ctx_rewrite",
+    coq.ltac.open (elim_pos_ctx_rewrite H) G1 [G2 | _GS'],
+    coq.say "HERE - <<< elim_pos_ctx_rewrite",
+    coq.ltac.open (assert_list_rewrite H XS) G2 GL.
+  assert_list_rewrite _H [] _G _GL.
 
 
   solve ((goal Ctx _ _ _ [trm H]) as G) GL :-
+    coq.say "HERE PLEASE",
     globals_const_or_def_in_goal Ctx Glob,
+    coq.say "HERE 1",
     std.filter Glob is_fix Glob0,
+    coq.say "HERE 2",
     std.rev Ctx Ctx',
+    coq.say "HERE 3",
     std.map Glob0 (x\ add_pos_ctx Ctx' x) Glob',
+    coq.say "HERE 4",
     coq.typecheck H TyH ok,
+    coq.say "HERE 5",
     subterms_fix TyH L, !,
+    coq.say "HERE 6",
     std.map L (x\ add_pos_ctx Ctx' x) L',
+    coq.say "HERE 7",
     gen_eqs Ctx L' Glob' R,
+    coq.say "HERE 8",
     add_pos_ctx Ctx' TyH TyH',
-    assert_list_rewrite TyH' R G GL.
-
+    coq.say "HERE - >>> assert_list_rewrite",
+    assert_list_rewrite TyH' R G GL,
+    coq.say "HERE - <<< assert_list_rewrite".
 }}.
 
 
@@ -248,191 +303,4 @@ Ltac eliminate_fix_hyp H := eliminate_fix_hyp' H.
 
 Ltac eliminate_fix_cont H k :=
 eliminate_fix_hyp H ; k H.
-
-Section test_search.
-
-Variable (A: Type).
-Variable (CompDec : Type -> Type).
-Variable (H : CompDec A).
-Variable (eqb_of_compdec : forall (A : Type), CompDec A -> A -> A -> bool).
-
-Fixpoint search (x : A) l :=
-  match l with
-  | [] => false
-  | x0 :: l0 => orb (eqb_of_compdec A H x x0) (search x l0)
-  end.
-
-Goal forall (H0 : (search =
-         (fix search (x : A) (l : list A) {struct l} : bool :=
-            match l with
-            | [] => false
-            | x0 :: l0 => orb (eqb_of_compdec A H x x0) (search x l0)
-            end))), False.
-intros. eliminate_fix_hyp H0. Abort. 
-
-End test_search.
-
-Section test_ho.
-
-
-Variable (A B: Type).
-Variable (f: A -> B).
-
-Goal False.
-pose (map' := List.map f).
-assert_refl map'.
-unfold_refl H.
-expand_hyp H.
-unfold_refl H0.
-unfold_in H0 map.
-eliminate_fix_hyp H0.
-Abort.
-
-End test_ho.
-
-Section test.
-
-(* test bound variables in the context *)
-Goal (Type -> False).
-intro C.
-assert (H : forall l, (length l) = (fix length (l : list C) : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end) l) by reflexivity. eliminate_fix_hyp H.
-Abort.
-
-Goal (forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
-map g (map f l) = map (fun x => g (f x)) l).
-intros.
-pose (f1 := map g).
-assert (H0 : forall l, f1 l =
-     (fix map (l : list B) : list C :=
-        match l with
-        | nil => nil
-        | a :: t => g a :: map t
-        end) l) by reflexivity.
-eliminate_fix_hyp H0.
-Abort. 
-
-Variable toto : nat -> nat.
-
-Goal False -> False. intros. 
-assert (H0 : (forall (A : Type) (l : list A), 
-length l = (fix length (l : list A) : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end) l)) by reflexivity. eliminate_fix_hyp H0.
-assert (H1 : (forall (A : Type) (l : list A), 
-length l = (fix length (l : list A) : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end) l) -> False -> True) by (intros H1 HFalse; destruct HFalse).
-eliminate_fix_hyp H1.
-assert (H2' : forall n m, toto (Nat.add n m) =
-(fix add (n m : nat) :=
-  match n with
-  | 0 => m
-  | S p => S (add p m)
-  end) n m) by admit.
-eliminate_fix_cont H2' ltac:(fun H => idtac).
-assert (H3' : forall A l, toto (length l) = toto ((fix length (l : list A) : nat :=
-  match l with
-  | [] => 0
-  | _ :: l' => S (length l')
-  end) l) -> True) by admit. eliminate_fix_hyp H3'.
-Abort.
-
-(* Test higher-order + polymorphism *) 
-
-Fixpoint zip {A B : Type} (l : list A) (l' : list B) :=
-  match l, l' with
-  | [], _ => []
-  | x :: xs, [] => []
-  | x :: xs, y :: ys => (x, y) :: zip xs ys 
-  end.
-
-Goal (forall (A B C : Type)(f : A -> B) (g : A -> C) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
-intros A B C f g l.
-pose (f0 := fun x : A => (f x, g x)).
-pose (f1 := map f0).
-assert (H : forall l : list A,
-    f1 l =
-    (fix map (l0 : list A) : list (B * C) :=
-       match l0 with
-       | [] => []
-       | a :: t => f0 a :: map t
-       end) l) by reflexivity.
-eliminate_fix_hyp H.
-assert (foo : forall l : list A,
-    f1 l = match l with
-           | [] => []
-           | a :: t => f0 a :: map f0 t
-           end) by assumption.
-Abort.
-
-End test.
-
-Section debug_monomorphism.
-
-Variable A B C : Type.
-
-Goal (forall (f : A -> B) (g : A -> C) (l : list A),
-map (fun (x : A) => (f x, g x)) l = zip (map f l) (map g l)).
-intros f g l.
-pose (f0 := fun x : A => (f x, g x)).
-pose (f1 := map f0).
-pose (f2 := map f).
-pose (f3 := map (@id nat)).
-assert (H : forall l : list nat,
-    f3 l =
-    (fix map (l0 : list nat) : list nat :=
-       match l0 with
-       | [] => []
-       | a :: t => id a :: map t
-       end) l) by reflexivity.
-eliminate_fix_hyp H.
-assert (H1' : forall l : list A,
-    f2 l =
-    (fix map (l0 : list A) : list B :=
-       match l0 with
-       | [] => []
-       | a :: t => f a :: map t
-       end) l) by reflexivity.
-eliminate_fix_hyp H1'.
-assert (H2 : forall l : list A,
-    f1 l =
-    (fix map (l0 : list A) : list (B * C) :=
-       match l0 with
-       | [] => []
-       | a :: t => f0 a :: map t
-       end) l) by reflexivity.
-eliminate_fix_hyp H2. 
-unfold f0 in f1.
-assert (H3 : forall l : list A,
-    f1 l =
-    (fix map (l0 : list A) : list (B * C) :=
-       match l0 with
-       | [] => []
-       | a :: t => (f a, g a) :: map t
-       end) l) by reflexivity.
-eliminate_fix_hyp H3.
-assert (bar : forall l : list A, f2 l = match l with
-                               | [] => []
-                               | a :: t => f a :: map f t
-                               end) 
-by assumption.
-assert (foo : forall l : list A,
-    f1 l = match l with
-           | [] => []
-           | a :: t => f0 a :: map f0 t
-           end) by assumption.
-Abort.
-
-End debug_monomorphism.
-
-
 

@@ -31,7 +31,9 @@ pred add_pos_ctx_pr i: goal-ctx, i: (list (pair term (list term))), o: (list (pa
     add_pos_ctx_pr _ [] [].
 
 pred elim_pos_ctx_aux i: goal-ctx, i: int, i: term, o: term.
-    elim_pos_ctx_aux [X | XS] I A B :- var_pos_ctx X I T1 T2, (copy T2 T1 :- !) => (I' is I + 1, elim_pos_ctx_aux XS I' A B).
+    elim_pos_ctx_aux [X | XS] I A B :-
+        var_pos_ctx X I T1 T2,
+        (copy T2 T1 :- !) => (I' is I + 1, elim_pos_ctx_aux XS I' A B).
     elim_pos_ctx_aux [] _ A B :- copy A B.
 
 pred elim_pos_ctx i: goal-ctx, i: term, o: term. 

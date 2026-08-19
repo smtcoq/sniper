@@ -126,11 +126,23 @@ pred subterms_glob_const i: term, o: (list term).
     subterms_glob_const _ [].
 
 pred globals_const_or_def_in_goal i: goal-ctx, o: (list term).
-    globals_const_or_def_in_goal [(decl _ _ X)| L] L1 :- subterms_glob_const X L',
-        globals_const_or_def_in_goal L L'', std.append L' L'' L1.
-    globals_const_or_def_in_goal [(def _X0 _ _Ty X)| L] L1 :- subterms_glob_const X L',
-       globals_const_or_def_in_goal L L'', std.append L' L'' L1.
-    globals_const_or_def_in_goal [] [].
+    globals_const_or_def_in_goal [(decl _ _ X)| L] L1 :-
+        coq.say "GLOB - 2",
+        subterms_glob_const X L',
+        coq.say "GLOB - 3",
+        globals_const_or_def_in_goal L L'',
+        coq.say "GLOB - 4",
+        std.append L' L'' L1,
+        coq.say "GLOB - 5".
+    globals_const_or_def_in_goal [(def _X0 _ _Ty X)| L] L1 :-
+        coq.say "GLOB - 6",
+        subterms_glob_const X L',
+        coq.say "GLOB - 7",
+       globals_const_or_def_in_goal L L'',
+        coq.say "GLOB - 8",
+        std.append L' L'' L1,
+        coq.say "GLOB - 9".
+    globals_const_or_def_in_goal [] [] :- coq.say "GLOB - 10".
 
 pred abstract_unify_aux i: term, i: term, i: term.
     abstract_unify_aux (fun _ _ F1) (fun Na Ty F2) (prod _Na Ty F3) :- !, 

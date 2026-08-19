@@ -1,0 +1,25 @@
+% === Pre-quoted Coq constants ===
+
+pred eq-const i: term.
+eq-const {{ @eq }}.
+
+pred and-const i: term.
+and-const {{ and }}.
+
+pred or-const i: term.
+or-const {{ or }}.
+
+type true-const term -> prop.
+true-const {{ True }}.
+
+false-const {{ False }}.
+type false-const term -> prop.
+
+type bool-const term -> prop.
+bool-const {{ bool }}.
+
+type nat-const term -> prop.
+nat-const {{ nat }}.
+
+type z-const term -> prop.
+z-const {{ Z }}.

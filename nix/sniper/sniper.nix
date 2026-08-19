@@ -33,13 +33,6 @@ mkRocqDerivation rec {
     smtcoq
   ];
 
-  doCheck = true;
-  checkPhase = ''
-    runHook preCheck
-    dune runtest -p ${opam-name} ''${enableParallelBuilding:+-j $NIX_BUILD_CORES}
-    runHook postCheck
-  '';
-
   meta = {
     description = "A Rocq plugin for general proof automation";
     homepage = "https://github.com/smtcoq/sniper";

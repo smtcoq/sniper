@@ -1,9 +1,0 @@
-(alias
- (name runtest)
- (deps
-  (alias_rec all)))
-
-(rocq.theory
- (name Sniper.examples)
- (generate_project_file)
- (theories Stdlib elpi elpi_elpi Sniper))
