@@ -10,5 +10,4 @@
   SMTCoq
   Trakt
   Sniper.utils
-  Sniper.transformations
-  Sniper.verit))
+  Sniper.transformations))
