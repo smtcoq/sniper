@@ -103,9 +103,9 @@ Ltac2 contexts_printer c :=
   List.iter (fun (x, y) => printf "term: %t" x ;
   List.iter (fun z => printf "context: %t" z) y) c.
 
-Ltac2 inst_state_printer is :=
-  let hi := is.(hyps_inst) in
-  let ti := is.(types_inst) in
+Ltac2 inst_state_printer ist :=
+  let hi := ist.(hyps_inst) in
+  let ti := ist.(types_inst) in
   List.iter (fun (x, y) => printf "hypothesis: %t" x ;
     List.iter (fun z => printf "context: %t" z) y) hi ;
   printf "types inst:" ;
@@ -115,8 +115,8 @@ Ltac2 inst_state_printer is :=
 
 Ltac2 isr_printer isr :=
   match isr with
-    | ISR is =>
-        inst_state_printer (is.(contents))
+    | ISR ist =>
+        inst_state_printer (ist.(contents))
     | _ => Control.throw Wrong_reference
   end.
 
@@ -462,8 +462,8 @@ Ltac2 is_empty l :=
 
 Ltac2 instantiate_state isr :=
   match isr with
-    | ISR is => 
-        let state := get is in
+    | ISR ist =>
+        let state := get ist in
         let hyp_ctx_l := state.(hyps_inst) in 
         if is_empty hyp_ctx_l then () else
           let ty_ctx_l := state.(types_inst) in 
@@ -514,8 +514,8 @@ Ltac2 compute_init_state () :=
 Ltac2 init_state (isr : refs) :=
 let s := compute_init_state () in 
   match isr with
-    | ISR is =>
-        setref is s
+    | ISR ist =>
+        setref ist s
     | _ => Control.throw Wrong_reference
   end.
 
@@ -527,9 +527,9 @@ Ltac2 new_hyp_concrete_type
   (h : constr) :=
   let tyi := find_context_types (type h) in 
     match isr with
-      | ISR is =>
-          let res := get is in 
-          setref is { hyps_inst := res.(hyps_inst) ; types_inst := List.append (res.(types_inst)) tyi }
+      | ISR ist =>
+          let res := get ist in
+          setref ist { hyps_inst := res.(hyps_inst) ; types_inst := List.append (res.(types_inst)) tyi }
           might_instantiate_type tyi res.(hyps_inst)
       | _ => Control.throw Wrong_reference
     end.  *)
