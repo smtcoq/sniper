@@ -14,6 +14,82 @@ From Sniper Require Import Transfos.
 From Stdlib Require Import String ZArith Bool List.
 Import ListNotations.
 
+
+Section HO_Fixpoint.
+
+  Goal forall (l:list Z), map id l = l.
+  Proof.
+    (* scope_full. *)
+    induction l.
+    - snipe.
+    - scope.
+      pose (f0':=@id Z).
+      change (forall (z : Z) (l : list Z), f (z :: l) = f0' z :: f l) in H1.
+      assert (H10:forall (z:Z), f0' z = z) by auto.
+      clearbody f0'.
+      verit_nocompdecs.
+  Qed.
+
+
+  Variable T : Type.
+  Hypothesis CT : CompDec T.
+
+  Goal forall (l:list T), map id l = l.
+  Proof.
+    induction l.
+    - snipe.
+    - scope.
+      pose (f0':=@id T).
+      change (forall (z : T) (l : list T), f (z :: l) = f0' z :: f l) in H1.
+      assert (H10:forall (z:T), f0' z = z) by auto.
+      clearbody f0'.
+      verit_nocompdecs.
+  Qed.
+
+  Goal forall (l:list T), map id l = l.
+  Proof.
+    induction l.
+    - snipe.
+    - scope.
+      assert (H10:forall (z:T), id z = z) by auto.
+      verit_nocompdecs.
+  Qed.
+
+  Goal forall (l:list T), map id l = l.
+  Proof.
+    induction l.
+    - snipe.
+    - scope2.
+      assert (H10:forall x xs, f (x :: xs) = f0 T x :: f xs) by auto.
+      verit_nocompdecs.
+  Qed.
+
+(*
+"was already applied with the following args" -> il manque parfois l'argument
+
+Étape 27 :
+  - my_reflexivity sur qqch de type Type est-il utile ?
+  - fait qu'on perd l'état local avec @id = @id
+
+Étape 39 : add_compdec sur Type ?
+
+Étape 46 : on a bien la def de id, mais il aurait peut-être fallu poser (@id Z),
+  comme pour l'ordre supérieur ?
+
+Étape 68 : on applique bien my_higher_order_equalities pour f0, pourquoi
+  l'hypothèse va-t-elle disparaître ?
+
+Étape 106 : Problème : H6 n'est pas instanciée avec Z. Et à l'étape 110, on
+  constate que H6 a disparu du contexte global.
+
+  my_polymorphism_state aurait dû l'instancier. Par ailleurs, on peut peut-être
+  réfléchir à gérer (@id Z) comme l'ordre supérieur pour éviter de générer trop
+  de termes polymorphes.
+*)
+
+End HO_Fixpoint.
+
+
 Section poly.
 
 
