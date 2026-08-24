@@ -28,69 +28,148 @@ repeat match goal with
 | H : _ |- _ => try revert H
 end.
 
-Ltac my_reflexivity t := assert_refl t.
+Ltac tactic_reflexivity t := assert_refl t.
+Ltac2 transfo_reflexivity () :=
+  ((trigger_reflexivity (), false, None), "tactic_reflexivity", filter_reflexivity (),
+    "State reflexivity of a constant",
+    "Given a term `t`, this transformation states the hypothesis `t = t`. This is the first step to give semantics to constants, in combination with other transformations that will further transform the right hand side of the equality."
+  ).
 
-Ltac my_unfold_refl H := unfold_refl H.
+Ltac tactic_unfold_refl H := unfold_refl H.
+Ltac2 transfo_unfold_refl () :=
+  ((trigger_unfold_reflexivity (), false, None), "tactic_unfold_refl", filter_unfold_reflexivity (),
+    "Unfolds the right hand side of an equality of the shape `x = x`",
+    "Given an hypothesis `H : x = x`, unfolds the right hand side of the equality. This is part of the transformations that give semantics to constants."
+  ).
+(* TODO: probably a mistake to use the trivial filter? *)
+Ltac2 transfo_unfold_refl2 () :=
+  ((trigger_unfold_reflexivity (), false, None), "tactic_unfold_refl", trivial_filter,
+    "Unfolds the right hand side of an equality of the shape `x = x`",
+    "Given an hypothesis `H : x = x`, unfolds the right hand side of the equality. This is part of the transformations that give semantics to constants."
+  ).
 
-Ltac my_unfold_in H t := unfold_in H t.
+Ltac tactic_unfold_in H t := unfold_in H t.
+Ltac2 transfo_unfold_in () :=
+  ((trigger_unfold_in (), false, None), "tactic_unfold_in", filter_unfold_in (),
+    "Unfolds a term in an hypothesis",
+    "Given an hypothesis H and a term t, unfold t in H; H must be an equality whose right hand side contains t. This is part of the transformations that give semantics to constants."
+  ).
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  *)
 
-Ltac my_higher_order_equalities H := expand_hyp H ; clear H.
+Ltac tactic_higher_order_equalities H := expand_hyp H ; clear H.
+Ltac2 transfo_higher_order_equalities () :=
+  ((trigger_higher_order_equalities, false, None), "tactic_higher_order_equalities", trivial_filter,
+    "Eta expands a higher order equality",
+    "Given an hypothesis H of the form `a = b` where `a` (and `b`) have a function types, eta expands it by adding prenex quantification."
+  ).
 
-Ltac my_higher_order := prenex_higher_order.
+Ltac tactic_higher_order := prenex_higher_order.
+Ltac2 transfo_higher_order () :=
+  ((TAlways, false, None), "tactic_higher_order", trivial_filter,
+    "Give a name to an applied higher order function",
+    "If an hypothesis contains an applied higher order function, gives a name to the first order part of this application"
+  ).
 
-Ltac my_fixpoints H := eliminate_fix_hyp H.
+Ltac tactic_fixpoints H := eliminate_fix_hyp H.
+Ltac2 transfo_fixpoints () :=
+  ((trigger_fixpoints, false, None), "tactic_fixpoints", trivial_filter,
+    "Eliminate a fixpoint in a given hypothesis",
+    "Given an hypothesis `H : A` where `A` cointains an anonymous fixpoint, replaces this anonymous fixpoint by the constant that defines it."
+  ).
 
-Ltac my_pattern_matching H := try (eliminate_dependent_pattern_matching H).
+Ltac tactic_pattern_matching H := try (eliminate_dependent_pattern_matching H).
+Ltac2 transfo_pattern_matching () :=
+  ((trigger_pattern_matching, false, None), "tactic_pattern_matching",  trivial_filter,
+    "Eliminate pattern matching in a given hypothesis",
+    "Given an hypothesis `H : A` where `A` cointains an pattern matching, splits H into one hypothesis per branch."
+  ).
 
-Ltac my_anonymous_function f := anonymous_fun f.
+Ltac tactic_anonymous_function f := anonymous_fun f.
+Ltac2 transfo_anonymous_function () :=
+  ((trigger_anonymous_fun (), false, None), "tactic_anonymous_function", trivial_filter,
+    "Give a name to a given anonymous function",
+    "Given an anonymous function `f`, give a name to it and use the name everywhere instead of the function."
+  ).
 
-Ltac my_algebraic_types t := try (interp_alg_types t).
+Ltac tactic_algebraic_types t := try (interp_alg_types t).
+Ltac2 transfo_algebraic_types () :=
+  ((trigger_algebraic_types, false, None), "tactic_algebraic_types", filter_algebraic_types (),
+    "Gives (part of the) semantics to a given algebraic type",
+    "Given an algebraic type `t`, states (1) that constructors are pairwise disjoint and (2) that constructors are injective."
+  ).
 
-Ltac my_gen_principle t :=
- pose_gen_statement t.
+(* Ltac tactic_gen_principle t := *)
+(*  pose_gen_statement t. *)
 
-Ltac my_gen_principle_temporary :=
+Ltac tactic_gen_principle_experimental :=
   ltac2:(get_projs_in_variables (filter_inductive_types ())).
+Ltac2 transfo_gen_principle_experimental () :=
+  ((TAlways, false, None), "tactic_gen_principle_experimental", trivial_filter,
+    "Generates generation principle of algebraic types. Experimental",
+    "This experimental tactic generates the generation principles of algebraic types that are present in the goal or the context. To avoid existential quantifiers, the shape of these principles involves projections which are also generated by the tactic (using default values from CompDec)."
+  ).
 
-Ltac my_polymorphism_state :=
+Ltac tactic_polymorphism_state :=
   ltac2:(Notations.do0 max_quantifiers elimination_polymorphism) ;
     clear_prenex_poly_hyps_in_context.
+Ltac2 transfo_polymorphism_state () :=
+  ((trigger_polymorphism (), true, None), "tactic_polymorphism_state", trivial_filter,
+    "Locally monomorphizes the context",
+    "This transformation monomorphizes the current state of the orchestrator. It is based on a strategy that generates only the instances in which polymorphic inductive types are applied only to types for which they are already applied elsewhere in the context."
+  ).
 
+Ltac tactic_polymorphism := elimination_polymorphism_exhaustive unit.
+Ltac2 transfo_polymorphism () :=
+  ((trigger_polymorphism (), false, Some (2, 2)), "tactic_polymorphism", trivial_filter,
+    "Globally monomorphizes the context",
+    "This gobal transformation eagerly monomorphizes the context by applying universally quantified hypotheses to every concrete type present in the goal or the context."
+  ).
 
-Ltac my_polymorphism := elimination_polymorphism_exhaustive unit. 
+Ltac tactic_add_compdecs t := add_compdecs_terms t.
+Ltac2 transfo_add_compdecs () :=
+  ((trigger_add_compdecs (), false, Some (2, 2)), "tactic_add_compdecs",  filter_add_compdecs (),
+    "Adds the hypothesis `CompDec t` of a given term `t`",
+    "Given a term `t`, this tranformation adds the hypothesis `CompDec t`."
+  ).
+(* TODO: probably a mistake not to look at the second goal only? *)
+Ltac2 transfo_add_compdecs2 () :=
+  ((trigger_add_compdecs (), false, None), "tactic_add_compdecs",  filter_add_compdecs (),
+    "Adds the hypothesis `CompDec t` of a given term `t`",
+    "Given a term `t`, this tranformation adds the hypothesis `CompDec t`."
+  ).
 
-Ltac my_add_compdec t := add_compdecs_terms t.
+Ltac tactic_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
+Ltac2 transfo_fold_local_def_in_hyp_goal () :=
+  ((trigger_fold_local_def_in_hyp (), false, None), "tactic_fold_local_def_in_hyp_goal", trivial_filter,
+    "Given an hypothesis and a term, folds the term in the hypothesis",
+    "Given an hypothesis `H` and a term `t`, folds the term in the hypothesis"
+  ).
 
-Ltac my_fold_local_def_in_hyp_goal H t := fold_local_def_in_hyp_goal H t.
-
-Ltac my_pose_case := pose_case.
-
-Ltac2 trigger_generation_principle := TAlways.
-
-(* Ltac2 trigger_anonymous_funs := TAlways. *)
-
-Ltac2 trigger_higher_order :=
-  TAlways.
+Ltac tactic_pose_case := pose_case.
+Ltac2 transfo_pose_case () :=
+  ((trigger_pose_case (), false, None), "tactic_pose_case", trivial_filter,
+    "Replaces a pattern matching in a goal by a local constant",
+    "If the goal contains a pattern matching, it is replaced by a new constant. This allows us to avoid an explosion of goals containing pattern matching."
+  ).
 
 
 Ltac2 mutable sniper_transformations () :=
   [
-    ((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
-    ((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter);
-    ((trigger_higher_order, false, None), "my_higher_order", trivial_filter);
-    ((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
-    ((trigger_unfold_reflexivity (), false, None), "my_unfold_refl",  filter_unfold_reflexivity ());
-    ((trigger_unfold_in (), false, None), "my_unfold_in", filter_unfold_in ());
-    ((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
-    ((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter);
-    ((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
-    ((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
-    ((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter);
-    ((trigger_polymorphism (), true, None), "my_polymorphism_state", trivial_filter);
-    ((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-    ((trigger_add_compdecs (), false, Some (2, 2)), "my_add_compdec",  filter_add_compdecs ())
+    transfo_pose_case ();
+    transfo_anonymous_function ();
+    transfo_higher_order ();
+    transfo_reflexivity ();
+    transfo_unfold_refl ();
+    transfo_unfold_in ();
+    transfo_higher_order_equalities ();
+    transfo_fixpoints ();
+    transfo_pattern_matching ();
+    transfo_algebraic_types ();
+    transfo_gen_principle_experimental ();
+    transfo_polymorphism_state ();
+    transfo_fold_local_def_in_hyp_goal ();
+    transfo_add_compdecs ()
   ].
 (* To add a new transformation `my_transfo`:
 
@@ -131,21 +210,24 @@ Ltac2 scope_debug () := scope_verbos Debug.
 Ltac2 scope_full () := scope_verbos Full.
 
 Ltac2 scope2_verbos v := orchestrator 0 5
-{ all_tacs :=
-[((trigger_pose_case (), false, None), "my_pose_case", trivial_filter);
-((trigger_anonymous_fun (), false, None), "my_anonymous_function", trivial_filter) ;
-((trigger_higher_order, false, None), "my_higher_order", trivial_filter) ;
-((trigger_reflexivity (), false, None), "my_reflexivity", filter_reflexivity ());
-((trigger_unfold_reflexivity (), false, None), "my_unfold_refl", trivial_filter);
-((trigger_higher_order_equalities, false, None), "my_higher_order_equalities", trivial_filter);
-((trigger_fixpoints, false, None), "my_fixpoints", trivial_filter);
-((trigger_pattern_matching, false, None), "my_pattern_matching",  trivial_filter);
-((trigger_algebraic_types, false, None), "my_algebraic_types", filter_algebraic_types ());
-((trigger_generation_principle, false, None), "my_gen_principle_temporary", trivial_filter) ;
-((trigger_fold_local_def_in_hyp (), false, None), "my_fold_local_def_in_hyp_goal", trivial_filter);
-((trigger_polymorphism (), false, Some (2, 2)), "my_polymorphism", trivial_filter);
-((trigger_add_compdecs (), false, None), "my_add_compdec",  filter_add_compdecs ()) ] }
-{ already_triggered := [] } v.
+  { all_tacs :=
+      [
+        transfo_pose_case ();
+        transfo_anonymous_function ();
+        transfo_higher_order ();
+        transfo_reflexivity ();
+        transfo_unfold_refl2 ();
+        transfo_higher_order_equalities ();
+        transfo_fixpoints ();
+        transfo_pattern_matching ();
+        transfo_algebraic_types ();
+        transfo_gen_principle_experimental ();
+        transfo_fold_local_def_in_hyp_goal ();
+        transfo_polymorphism ();
+        transfo_add_compdec2 ()
+      ]
+  }
+  { already_triggered := [] } v.
 
 Ltac2 scope2 () := scope2_verbos Nothing.
 
