@@ -10,15 +10,17 @@ Require Import filters.
 Require Import triggers_tactics.
 Require Import run_tactic.
 
-Ltac2 Type all_tacs :=
-  { mutable all_tacs : ((trigger * bool * (int * int) option) * string * filter) list }.
+Ltac2 Type tac_type :=
+  ((trigger * bool * (int * int) option) * string * filter * string * string).
 
-Ltac2 rec remove_tac (na : string) (all_tacs : ((trigger * bool * (int * int) option) * string * filter) list ) :=
+Ltac2 Type all_tacs := { mutable all_tacs : tac_type list }.
+
+Ltac2 rec remove_tac (na : string) (all_tacs : tac_type list ) :=
   match all_tacs with 
     | [] => []
-    | (tr, na', f) :: xs => 
+    | (tr, na', f, sd, ld) :: xs =>
         if String.equal na na' then xs
-        else (tr, na', f) :: remove_tac na xs
+        else (tr, na', f, sd, ld) :: remove_tac na xs
   end.
 
 Ltac2 rec list_pair_equal (eq : 'a -> 'a -> bool) l1 l2  :=
@@ -147,13 +149,13 @@ Ltac2 rec orchestrator_aux
   fuel
   it (* the interpretation state (see [triggers.v]) *)
   env (* local triggers variables *)
-  (trigstacsfis : ((trigger * bool * (int * int) option) * string * filter) list) 
+  (trigstacsfis : tac_type list)
   (trigtacs : already_triggered) (* Triggered tactics, pair between a string and a list of arguments and their types *) 
   (v: verbosity) : (* number of information required *) unit :=
     if Int.le fuel 0 then  (* a problematic tactic used all the fuel *)
       match trigstacsfis with
         | [] => ()
-        | (_, name, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
+        | (_, name, _, _, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs));
             Control.enter (fun () => orchestrator (Int.add step_num 1) init_fuel alltacs trigtacs v)
       end 
     else
@@ -162,7 +164,7 @@ Ltac2 rec orchestrator_aux
       | [] => 
           if (it).(global_flag) then () 
           else Control.enter (fun () => orchestrator (Int.add step_num 1) fuel alltacs trigtacs v)
-      | ((trig, multipletimes, opt), name, fi) :: trigstacsfis' => 
+      | ((trig, multipletimes, opt), name, fi, _, _) :: trigstacsfis' =>
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with

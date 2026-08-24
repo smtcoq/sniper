@@ -228,7 +228,7 @@ Ltac2 scope2_verbos v := orchestrator 0 5
         transfo_gen_principle_experimental ();
         transfo_fold_local_def_in_hyp_goal ();
         transfo_polymorphism ();
-        transfo_add_compdec2 ()
+        transfo_add_compdecs2 ()
       ]
   }
   { already_triggered := [] } v.
