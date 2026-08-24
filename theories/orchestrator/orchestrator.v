@@ -164,12 +164,12 @@ Ltac2 rec orchestrator_aux
       | [] => 
           if (it).(global_flag) then () 
           else Control.enter (fun () => orchestrator (Int.add step_num 1) fuel alltacs trigtacs v)
-      | ((trig, multipletimes, opt), name, fi, _, _) :: trigstacsfis' =>
+      | ((trig, multipletimes, opt), name, fi, sd, _) :: trigstacsfis' =>
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with
             | [] =>
-              print_tactic_not_triggered v name step_num;
+              print_tactic_not_triggered v (String.concat "" [name; " ("; sd; ")"]) step_num;
               orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
             | ll =>
               let rec aux ll :=  (* if String.equal name "my_fold_local_def_in_hyp_goal" then print_interp_trigger ll else () ;  DEBUG *)
@@ -177,20 +177,20 @@ Ltac2 rec orchestrator_aux
                   | [] => orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                   | l :: ll' =>
                       if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
-                        print_tactic_global_in_local v name step_num;
+                        print_tactic_global_in_local v (String.concat "" [name; " ("; sd; ")"]) step_num;
                         orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                       else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
-                          print_tactic_already_applied v name l step_num;
+                          print_tactic_already_applied v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                           aux ll'        
                       else if Bool.neg (pass_the_filter l fi) then
-                        print_tactic_trigger_filtered v name l step_num;
+                        print_tactic_trigger_filtered v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                         let ltysargs := List.map (fun x => type x) l in
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                         aux ll'   
                       else
                         let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
-                        print_applied_tac v name l step_num;
+                        print_applied_tac v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                         let hs1 := Control.hyps () in
                         let g1 := Control.goal () in
                         run name l; 
