@@ -197,6 +197,10 @@ Ltac2 mutable sniper_transformations () :=
 
    - `filter_my_transfo` contains particular cases for which the
      transformation may be triggered while we do not want to
+
+   - `"Short description"` is a short description of the transformation
+
+   - `"Long description"` is a long description of the transformation
  *)
 
 Ltac2 scope_verbos v := orchestrator 0 5 { all_tacs := sniper_transformations ()} { already_triggered := [] } v.
