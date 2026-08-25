@@ -51,8 +51,8 @@ Ltac2 transfo_unfold_refl2 () :=
 Ltac tactic_unfold_in H t := unfold_in H t.
 Ltac2 transfo_unfold_in () :=
   ((trigger_unfold_in (), false, None), "tactic_unfold_in", filter_unfold_in (),
-    "Unfolds a term in an hypothesis",
-    "Given an hypothesis H and a term t, unfold t in H; H must be an equality whose right hand side contains t. This is part of the transformations that give semantics to constants."
+    "Unfolds a higher-order term in an hypothesis",
+    "Given an hypothesis H and a term t, unfold t in H; H must be an equality whose right hand side contains t, and t must be a higher order constant. This is because we do not give general equations for higher order functions, but instead give equations to them only when they are applied to functions."
   ).
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  *)
@@ -64,6 +64,9 @@ Ltac2 transfo_higher_order_equalities () :=
     "Given an hypothesis H of the form `a = b` where `a` (and `b`) have a function types, eta expands it by adding prenex quantification."
   ).
 
+(* CK: Not sure why this transformation is declared as local.
+       Not sure either why it is defined as a global transformation.
+*)
 Ltac tactic_higher_order := prenex_higher_order.
 Ltac2 transfo_higher_order () :=
   ((TAlways, false, None), "tactic_higher_order", trivial_filter,
