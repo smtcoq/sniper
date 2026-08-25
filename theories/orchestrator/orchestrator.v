@@ -10,15 +10,17 @@ Require Import filters.
 Require Import triggers_tactics.
 Require Import run_tactic.
 
-Ltac2 Type all_tacs :=
-  { mutable all_tacs : ((trigger * bool * (int * int) option) * string * filter) list }.
+Ltac2 Type tac_type :=
+  ((trigger * bool * (int * int) option) * string * filter * string * string).
 
-Ltac2 rec remove_tac (na : string) (all_tacs : ((trigger * bool * (int * int) option) * string * filter) list ) :=
+Ltac2 Type all_tacs := { mutable all_tacs : tac_type list }.
+
+Ltac2 rec remove_tac (na : string) (all_tacs : tac_type list ) :=
   match all_tacs with 
     | [] => []
-    | (tr, na', f) :: xs => 
+    | (tr, na', f, sd, ld) :: xs =>
         if String.equal na na' then xs
-        else (tr, na', f) :: remove_tac na xs
+        else (tr, na', f, sd, ld) :: remove_tac na xs
   end.
 
 Ltac2 rec list_pair_equal (eq : 'a -> 'a -> bool) l1 l2  :=
@@ -147,13 +149,13 @@ Ltac2 rec orchestrator_aux
   fuel
   it (* the interpretation state (see [triggers.v]) *)
   env (* local triggers variables *)
-  (trigstacsfis : ((trigger * bool * (int * int) option) * string * filter) list) 
+  (trigstacsfis : tac_type list)
   (trigtacs : already_triggered) (* Triggered tactics, pair between a string and a list of arguments and their types *) 
   (v: verbosity) : (* number of information required *) unit :=
     if Int.le fuel 0 then  (* a problematic tactic used all the fuel *)
       match trigstacsfis with
         | [] => ()
-        | (_, name, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs)) ; 
+        | (_, name, _, _, _) :: _ => (alltacs).(all_tacs) := remove_tac name ((alltacs).(all_tacs));
             Control.enter (fun () => orchestrator (Int.add step_num 1) init_fuel alltacs trigtacs v)
       end 
     else
@@ -162,12 +164,12 @@ Ltac2 rec orchestrator_aux
       | [] => 
           if (it).(global_flag) then () 
           else Control.enter (fun () => orchestrator (Int.add step_num 1) fuel alltacs trigtacs v)
-      | ((trig, multipletimes, opt), name, fi) :: trigstacsfis' => 
+      | ((trig, multipletimes, opt), name, fi, sd, _) :: trigstacsfis' =>
           (it).(name_of_tac) := name ; 
           Control.enter (fun () => let interp := interpret_trigger it env trigtacs trig in 
           match interp with
             | [] =>
-              print_tactic_not_triggered v name step_num;
+              print_tactic_not_triggered v (String.concat "" [name; " ("; sd; ")"]) step_num;
               orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
             | ll =>
               let rec aux ll :=  (* if String.equal name "my_fold_local_def_in_hyp_goal" then print_interp_trigger ll else () ;  DEBUG *)
@@ -175,20 +177,20 @@ Ltac2 rec orchestrator_aux
                   | [] => orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                   | l :: ll' =>
                       if Bool.and (Int.equal 0 (List.length l)) (Bool.neg ((it).(global_flag))) then
-                        print_tactic_global_in_local v name step_num;
+                        print_tactic_global_in_local v (String.concat "" [name; " ("; sd; ")"]) step_num;
                         orchestrator_aux (Int.add step_num 1) alltacs init_fuel fuel it env trigstacsfis' trigtacs v
                       else if Bool.and (Bool.neg multipletimes) (already_triggered ((trigtacs).(already_triggered)) (name, l)) then 
-                          print_tactic_already_applied v name l step_num;
+                          print_tactic_already_applied v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                           aux ll'        
                       else if Bool.neg (pass_the_filter l fi) then
-                        print_tactic_trigger_filtered v name l step_num;
+                        print_tactic_trigger_filtered v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                         let ltysargs := List.map (fun x => type x) l in
                         let argstac := List.combine l ltysargs in
                         trigtacs.(already_triggered) := (name, argstac) :: (trigtacs.(already_triggered)) ;
                         aux ll'   
                       else
                         let ltysargs := List.map (fun x => type x) l in (* computes types before a hypothesis may be removed *)
-                        print_applied_tac v name l step_num;
+                        print_applied_tac v (String.concat "" [name; " ("; sd; ")"]) l step_num;
                         let hs1 := Control.hyps () in
                         let g1 := Control.goal () in
                         run name l; 
