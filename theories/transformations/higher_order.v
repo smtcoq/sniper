@@ -52,18 +52,23 @@ Elpi Accumulate lp:{{
   solve (goal Ctx _ TyG _ _ as G) GL :-
     % `Trms` contains all the types of the hypotheses whose type is Prop
     ctx_to_hyps Ctx Trms,
-    % `Na` containts all the eigenvariables, see https://github.com/LPCIC/coq-elpi/blob/master/builtin-doc/elpi-builtin.elpi#L393
+    % `Na` containts all the eigenvariables, see
+    %   https://github.com/LPCIC/coq-elpi/blob/master/builtin-doc/elpi-builtin.elpi#L393
     names Na,
-    % `Subs` contains all the applications from `[TyG|Trms]` as a list of pairs of the function and its arguments
+    % `Subs` contains all the applications from `[TyG|Trms]` as a list of pairs
+    %   of the function and its arguments
     subterms_list_and_args [TyG|Trms] Na Subs,
-    % `L` is the sublist of `Subs` whose functions verify both `contains_prenex_ho_ty` and `prenex_ho1_ty`
+    % `L` is the sublist of `Subs` whose functions verify both
+    %   `contains_prenex_ho_ty` and `prenex_ho1_ty`, that is to say functions
+    %   whose type has the shape Π (A₁ ... Aₙ : Type). Π f: (Π x: B. C). ...
+    %   where B is not a product itself (CK: not sure why)
     std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L,
-    % `L'` truncates the lists of arguments to keep only those of type `Type` or product: this is the list of terms that we want to give name to
+    % `L'` truncates the lists of arguments to keep only those of type `Type` or
+    %   product: this is the list of terms that we want to give name to
     trm_and_args_type_funs L L',
     % The remaining of the tactic poses them
     std.rev Ctx Ctx',
     add_pos_ctx_pr Ctx' L' L'',
-    coq.say L'',
     mypose_list L'' G GL.
 
 }}.
