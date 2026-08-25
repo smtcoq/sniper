@@ -1,3 +1,4 @@
+% Suceeds if a given term is a product (possibly after delta-reduction)
 pred is_prod i: term.
     is_prod (prod _ _ _).
     is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.

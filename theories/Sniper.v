@@ -68,7 +68,7 @@ Ltac tactic_higher_order := prenex_higher_order.
 Ltac2 transfo_higher_order () :=
   ((TAlways, false, None), "tactic_higher_order", trivial_filter,
     "Give a name to an applied higher order function",
-    "If an hypothesis contains an applied higher order function, gives a name to the first order part of this application"
+    "If an hypothesis contains an applied higher order function, this transformation gives a name to the first order part of this application. For instance, if an hypothesis contains `map f l`, the transformation gives a name to `map f`."
   ).
 
 Ltac tactic_fixpoints H := eliminate_fix_hyp H.
@@ -89,7 +89,7 @@ Ltac tactic_anonymous_function f := anonymous_fun f.
 Ltac2 transfo_anonymous_function () :=
   ((trigger_anonymous_fun (), false, None), "tactic_anonymous_function", trivial_filter,
     "Give a name to a given anonymous function",
-    "Given an anonymous function `f`, give a name to it and use the name everywhere instead of the function."
+    "Given an anonymous function `f`, this transformation gives a name to it and uses the name instead of the anonymous function as much as possible."
   ).
 
 Ltac tactic_algebraic_types t := try (interp_alg_types t).
