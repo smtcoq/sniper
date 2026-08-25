@@ -65,7 +65,8 @@ Ltac2 transfo_higher_order_equalities () :=
   ).
 
 (* CK: Not sure why this transformation is declared as local.
-       Not sure either why it is defined as a global transformation.
+       Not sure either why it is defined as a global transformation. Maybe it is
+         tricky to write a trigger that computes the applied term?
 *)
 Ltac tactic_higher_order := prenex_higher_order.
 Ltac2 transfo_higher_order () :=
