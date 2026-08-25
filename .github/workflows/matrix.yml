@@ -1,0 +1,43 @@
+name: Build Sniper
+
+on:
+  pull_request_target:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    secrets:
+      ATTIC_ENDPOINT: ${{ secrets.ATTIC_ENDPOINT }}
+      ATTIC_CACHE: ${{ secrets.ATTIC_CACHE }}
+      ATTIC_TOKEN: ${{ secrets.ATTIC_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Sniper
+            repository: .
+            override-input: self
+
+    uses: lafeychine/rocq-utils/.github/workflows/matrix-template.yml@main
+    with:
+      repository: ${{ matrix.repository }}
+      override-input: ${{ matrix.override-input }}
+      use-attic: true
+      # NOTE: This is acceptable, these secrets are used for read/write access to the CI cache.
+      allow-unsafe-pr-checkout: true
+
+  build-success:
+    if: ${{ always() }}
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Has the build matrix failed?
+        if: ${{ needs.build.result != 'success' }}
+        run: exit 1
