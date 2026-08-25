@@ -28,6 +28,13 @@ pred contains_prenex_ho i: term.
 pred contains_prenex_ho_ty i: term.
     contains_prenex_ho_ty T :- coq.typecheck T Ty ok, contains_prenex_ho Ty.
 
+% Checks that a type is a product whose left hand side is a Set or a Type.
+pred polymorphic i:term.
+    polymorphic (prod _ (sort (typ _)) _).
+
+pred polymorphic_ty i:term.
+    polymorphic_ty T :- coq.typecheck T Ty ok, polymorphic Ty.
+
 pred replace i:list (pair A B), i:A, i: B, o: list (pair A B). 
     replace [pr X _|LS] X Z [pr X Z |LS].
     replace [U |LS] X Z [U|R] :- replace LS X Z R.

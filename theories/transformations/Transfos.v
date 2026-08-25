@@ -13,7 +13,7 @@ Require Export instantiate_state.
 Require Export interpretation_algebraic_types.
 Require Export case_analysis.
 Require Export case_analysis_existentials.
-Require Export higher_order.
+Require Export applied_higher_order_and_polymorphic.
 Require Export fold_local_def.
 Require Export anonymous_functions.
 Require Export add_compdecs.

@@ -29,14 +29,14 @@ to avoid unification failures with the fixpoint transformation *)
   | _ => idtac 
   end.
 
-Elpi Tactic prenex_higher_order.
+Elpi Tactic applied_higher_order_and_polymorphic.
 
-From Sniper.elpi Extra Dependency "higher_order.elpi" as HigherOrder.
 From Sniper.elpi Extra Dependency "utilities.elpi" as Utils.
 From Sniper.elpi Extra Dependency "subterms.elpi" as Subterms.
+From Sniper.elpi Extra Dependency "applied_higher_order_and_polymorphic.elpi" as AppliedHigherOrderAndPolymorphic.
 Elpi Accumulate File Utils.
 Elpi Accumulate File Subterms.
-Elpi Accumulate File HigherOrder.
+Elpi Accumulate File AppliedHigherOrderAndPolymorphic.
 
 Elpi Accumulate lp:{{
 
@@ -49,6 +49,14 @@ Elpi Accumulate lp:{{
   mypose_list [] _ _.
 
 
+  pred applied_higher_order_or_polymorphic i:pair term (list term).
+  applied_higher_order_or_polymorphic (pr X _) :-
+    contains_prenex_ho_ty X,
+    prenex_ho1_ty X.
+  applied_higher_order_or_polymorphic (pr X _) :-
+    polymorphic_ty X.
+
+
   solve (goal Ctx _ TyG _ _ as G) GL :-
     % `Trms` contains all the types of the hypotheses whose type is Prop
     ctx_to_hyps Ctx Trms,
@@ -58,14 +66,18 @@ Elpi Accumulate lp:{{
     % `Subs` contains all the applications from `[TyG|Trms]` as a list of pairs
     %   of the function and its arguments
     subterms_list_and_args [TyG|Trms] Na Subs,
+    coq.say "Subs = " Subs,
     % `L` is the sublist of `Subs` whose functions verify both
     %   `contains_prenex_ho_ty` and `prenex_ho1_ty`, that is to say functions
     %   whose type has the shape Π (A₁ ... Aₙ : Type). Π f: (Π x: B. C). ...
     %   where B is not a product itself (CK: not sure why)
-    std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L,
+    %   or are polymorphic
+    std.filter Subs applied_higher_order_or_polymorphic L,
+    coq.say "L = " L,
     % `L'` truncates the lists of arguments to keep only those of type `Type` or
     %   product: this is the list of terms that we want to give name to
     trm_and_args_type_funs L L',
+    coq.say "L' = " L',
     % The remaining of the tactic poses them
     std.rev Ctx Ctx',
     add_pos_ctx_pr Ctx' L' L'',
@@ -78,10 +90,10 @@ From Stdlib Require Import List.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 List.map g (List.map f l) = map (fun x => g (f x)) l.
 intros.
-elpi prenex_higher_order. Abort.
+elpi applied_higher_order_and_polymorphic. Abort.
 
-Tactic Notation "prenex_higher_order" :=
-  elpi prenex_higher_order.
+Tactic Notation "applied_higher_order_and_polymorphic" :=
+  elpi applied_higher_order_and_polymorphic.
 
 Import ListNotations.
 
@@ -90,14 +102,14 @@ Section Tests.
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros.
-prenex_higher_order.
+applied_higher_order_and_polymorphic.
 Abort.
 
 Lemma bar : forall (A B C : Type) (l : list A) (f : A -> B) (g : B -> C), 
 map g (map f l) = map (fun x => g (f x)) l.
 intros. 
 assert (IHl : map g (map f l) = map (fun x : A => g (f x)) l) by admit.
- prenex_higher_order. (* remove duplicates *)
+ applied_higher_order_and_polymorphic. (* remove duplicates *)
 Abort. 
 
 Goal (
@@ -111,6 +123,13 @@ let f0 := fun x : A => g (f x) in
 (forall (x : Type) (x0 : x) (x1 : list x),
      [] = x0 :: x1) ->
 map g (map f []) = map f0 [])).
-Proof. intros. prenex_higher_order. Abort.
+Proof. intros. applied_higher_order_and_polymorphic. Abort.
+
+Goal forall (A B:Type) (l:list A) (f:A -> B),
+    map id (map f l) = map (fun x => id (f x)) l.
+Proof.
+  intros.
+  applied_higher_order_and_polymorphic.
+Abort.
 
 End Tests.
