@@ -14,6 +14,137 @@ From Sniper Require Import Transfos.
 From Stdlib Require Import String ZArith Bool List.
 Import ListNotations.
 
+
+(* Test computing the maximum of a list.
+
+   We go from simpler (everything is axiomatized in a simple way) to
+   harder (we need to unfold functions, we do not use a standard
+   comparison, etc).
+ *)
+Section Max_list.
+
+  (* Simplest test *)
+  Section ML0.
+    Variable max_opt : option Z -> option Z -> option Z.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_None_Some : forall b,
+        max_opt None (Some b) = Some b.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a).
+
+    Variable max_list : list Z -> option Z -> option Z.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max_opt acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l,
+        Some b = max_list l None ->
+        Some (if (a <? b)%Z then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      snipe.
+    Qed.
+  End ML0.
+
+  (* We use a let ... in ... in the definition of a function *)
+  (* TODO: loops forever *)
+  (* Section ML1. *)
+  (*   Variable max_opt : option Z -> option Z -> option Z. *)
+  (*   Hypothesis max_opt_None_None : *)
+  (*     max_opt None None = None. *)
+  (*   Hypothesis max_opt_Some_None : forall a, *)
+  (*       max_opt (Some a) None = Some a. *)
+  (*   Hypothesis max_opt_None_Some : forall b, *)
+  (*       max_opt None (Some b) = Some b. *)
+  (*   Hypothesis max_opt_Some_Some : forall a b, *)
+  (*       max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a). *)
+
+  (*   Variable max_list : list Z -> option Z -> option Z. *)
+  (*   Hypothesis max_list_nil : forall acc, *)
+  (*       max_list [] acc = acc. *)
+  (*   Hypothesis max_list_cons : forall x xs acc, *)
+  (*     max_list (x::xs) acc = *)
+  (*       let a := max_opt acc (Some x) in *)
+  (*       max_list xs a. *)
+
+  (*   Goal forall a b l, *)
+  (*       Some b = max_list l None -> *)
+  (*       Some (if (a <? b)%Z then b else a) = max_list (l ++ [a]) None. *)
+  (*   Proof. *)
+  (*     snipe. *)
+  (*   Qed. *)
+  (* End ML1. *)
+
+  (* The max_list function is defined and not axiomatized anymore *)
+  Section ML2.
+    Variable max_opt : option Z -> option Z -> option Z.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_None_Some : forall b,
+        max_opt None (Some b) = Some b.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a).
+
+    Fixpoint max_list2 (l:list Z) (acc:option Z) : option Z :=
+      match l with
+      | [] => acc
+      | x::xs => max_list2 xs (max_opt acc (Some x))
+      end.
+    Lemma max_list2_app : forall l1 l2 acc,
+        max_list2 (l1++l2) acc = max_list2 l2 (max_list2 l1 acc).
+    Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed.
+
+    Goal forall a b l,
+        Some b = max_list2 l None ->
+        Some (if (a <? b)%Z then b else a) = max_list2 (l ++ [a]) None.
+    Proof.
+      generalize max_list2_app.
+      snipe.
+    Qed.
+  End ML2.
+
+  (* We replace Z with an abstract type *)
+  Section ML3.
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+    Variable lt : A -> A -> bool.
+
+    Variable max_opt : option A -> option A -> option A.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_None_Some : forall b,
+        max_opt None (Some b) = Some b.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (lt a b) then b else a).
+
+    Variable max_list : list A -> option A -> option A.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max_opt acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l,
+        Some b = max_list l None ->
+        Some (if (lt a b) then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      snipe.
+    Qed.
+  End ML3.
+
+End Max_list.
+
+
 Section poly.
 
 
