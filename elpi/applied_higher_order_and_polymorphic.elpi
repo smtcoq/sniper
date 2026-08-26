@@ -3,6 +3,7 @@ pred is_prod i: term.
     is_prod (prod _ _ _).
     is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.
 
+
 % Rejects types that pass `contains_prenex_ho` but where the left hand side of a product is a product itself.
 % For instance, it accepts `(A → B) → C` but not `((A₁ → A₂) → B) → C`.
 pred prenex_ho1 i: term.
@@ -17,6 +18,7 @@ pred prenex_ho1 i: term.
 pred prenex_ho1_ty i: term. 
     prenex_ho1_ty T :- coq.typecheck T Ty ok, prenex_ho1 Ty. 
 
+
 % Checks that a product type contains at least one product.
 % It corresponds to types of higher-order terms.
 % e.g., the type of map is Π A. Π B. Π (_: Π A. B). Π (_: list A). list B
@@ -28,12 +30,22 @@ pred contains_prenex_ho i: term.
 pred contains_prenex_ho_ty i: term.
     contains_prenex_ho_ty T :- coq.typecheck T Ty ok, contains_prenex_ho Ty.
 
-% Checks that a type is a product whose left hand side is a Set or a Type.
+
+% Checks that a type is a product whose first domain is a Type, and codomain is
+% not a Type.
+pred codomain_no_type i:term.
+    codomain_no_type (prod _ Ty F) :-
+        !, pi x\ decl x _ Ty => codomain_no_type (F x).
+    codomain_no_type (sort (typ _)) :- !, fail.
+    codomain_no_type _.
+
 pred polymorphic i:term.
-    polymorphic (prod _ (sort (typ _)) _).
+    polymorphic (prod _ ((sort (typ _)) as Ty) F) :-
+        pi x\ decl x _ Ty => codomain_no_type (F x).
 
 pred polymorphic_ty i:term.
     polymorphic_ty T :- coq.typecheck T Ty ok, polymorphic Ty.
+
 
 pred replace i:list (pair A B), i:A, i: B, o: list (pair A B). 
     replace [pr X _|LS] X Z [pr X Z |LS].
