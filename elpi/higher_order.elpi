@@ -1,7 +1,10 @@
+% Checks that a term is a product (possibly after delta-reduction)
 pred is_prod i: term.
     is_prod (prod _ _ _).
     is_prod (global (const C)) :- coq.env.const C (some Bo) _, is_prod Bo.
 
+% Rejects types that pass `contains_prenex_ho` but where the left hand side of a product is a product itself.
+% For instance, it accepts `(A → B) → C` but not `((A₁ → A₂) → B) → C`.
 pred prenex_ho1 i: term.
     prenex_ho1 (prod _ Ty F) :- not (is_prod Ty), pi x\ decl x _ Ty => prenex_ho1 (F x).
     prenex_ho1 (prod _ ((prod _ Ty' _) as Ty) F) :- not (is_prod Ty'), pi x\ decl x _ Ty => prenex_ho1 (F x).
@@ -14,6 +17,10 @@ pred prenex_ho1 i: term.
 pred prenex_ho1_ty i: term. 
     prenex_ho1_ty T :- coq.typecheck T Ty ok, prenex_ho1 Ty. 
 
+% Checks that a product type contains at least one product.
+% It corresponds to types of higher-order terms.
+% e.g., the type of map is Π A. Π B. Π (_: Π A. B). Π (_: list A). list B
+%   The predicate removes the first two Π then suceeds on the third one.
 pred contains_prenex_ho i: term.
     contains_prenex_ho (prod _ (prod _ _ _) _).
     contains_prenex_ho (prod Na Ty F) :- pi x\ decl x Na Ty => contains_prenex_ho (F x).

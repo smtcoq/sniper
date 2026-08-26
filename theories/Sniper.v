@@ -51,8 +51,8 @@ Ltac2 transfo_unfold_refl2 () :=
 Ltac tactic_unfold_in H t := unfold_in H t.
 Ltac2 transfo_unfold_in () :=
   ((trigger_unfold_in (), false, None), "tactic_unfold_in", filter_unfold_in (),
-    "Unfolds a term in an hypothesis",
-    "Given an hypothesis H and a term t, unfold t in H; H must be an equality whose right hand side contains t. This is part of the transformations that give semantics to constants."
+    "Unfolds a higher-order term in an hypothesis",
+    "Given an hypothesis H and a term t, unfold t in H; H must be an equality whose right hand side contains t, and t must be a higher order constant. This is because we do not give general equations for higher order functions, but instead give equations to them only when they are applied to functions."
   ).
 
 (* Ltac my_trakt_bool := revert_all ; trakt bool ; intros.  *)
@@ -64,11 +64,15 @@ Ltac2 transfo_higher_order_equalities () :=
     "Given an hypothesis H of the form `a = b` where `a` (and `b`) have a function types, eta expands it by adding prenex quantification."
   ).
 
+(* CK: Not sure why this transformation is declared as local.
+       Not sure either why it is defined as a global transformation. Maybe it is
+         tricky to write a trigger that computes the applied term?
+*)
 Ltac tactic_higher_order := prenex_higher_order.
 Ltac2 transfo_higher_order () :=
   ((TAlways, false, None), "tactic_higher_order", trivial_filter,
     "Give a name to an applied higher order function",
-    "If an hypothesis contains an applied higher order function, gives a name to the first order part of this application"
+    "If an hypothesis contains an applied higher order function, this transformation gives a name to the first order part of this application. For instance, if an hypothesis contains `map f l`, the transformation gives a name to `map f`."
   ).
 
 Ltac tactic_fixpoints H := eliminate_fix_hyp H.
@@ -89,7 +93,7 @@ Ltac tactic_anonymous_function f := anonymous_fun f.
 Ltac2 transfo_anonymous_function () :=
   ((trigger_anonymous_fun (), false, None), "tactic_anonymous_function", trivial_filter,
     "Give a name to a given anonymous function",
-    "Given an anonymous function `f`, give a name to it and use the name everywhere instead of the function."
+    "Given an anonymous function `f`, this transformation gives a name to it and uses the name instead of the anonymous function as much as possible."
   ).
 
 Ltac tactic_algebraic_types t := try (interp_alg_types t).

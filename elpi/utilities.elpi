@@ -58,6 +58,7 @@ pred ctx_to_trms i: goal-ctx, o: list term.
     ctx_to_trms [(def X _ _ _)|XS] [X|R] :- ctx_to_trms XS R.
     ctx_to_trms [] [].
 
+% Extract the hypotheses of sort Prop
 pred ctx_to_hyps i: goal-ctx, o: list term.
     ctx_to_hyps [(decl _ _ Ty)|XS] [Ty|R] :- coq.typecheck Ty {{ Prop }} ok, ctx_to_hyps XS R.
     ctx_to_hyps [_|XS] R :- ctx_to_hyps XS R.
