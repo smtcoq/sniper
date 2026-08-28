@@ -121,10 +121,10 @@ Section Max_list.
       max_opt None None = None.
     Hypothesis max_opt_Some_None : forall a,
         max_opt (Some a) None = Some a.
-    Hypothesis max_opt_None_Some : forall b,
-        max_opt None (Some b) = Some b.
     Hypothesis max_opt_Some_Some : forall a b,
         max_opt (Some a) (Some b) = Some (if (lt a b) then b else a).
+    Hypothesis max_opt_comm : forall a b,
+        max_opt a b = max_opt b a.
 
     Variable max_list : list A -> option A -> option A.
     Hypothesis max_list_nil : forall acc,
