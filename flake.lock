@@ -15,11 +15,11 @@
         "trakt": "trakt"
       },
       "locked": {
-        "lastModified": 1787687321,
-        "narHash": "sha256-xVFh3uJ/fk2CpjY0E3BehIIK1yBOXTku4tyyWDqFCEs=",
+        "lastModified": 1787930213,
+        "narHash": "sha256-UoksMQ4YBYx+8PRU2vh7f12s5Zd88qu4wBFqSWfMD3I=",
         "owner": "SMTCoq",
         "repo": "SMTCoq",
-        "rev": "34720c4bb233bcb8cf5243cb7fe047258eb26dbc",
+        "rev": "9caf1dd8b22c88465fe2d989cecbebca20993523",
         "type": "github"
       },
       "original": {
