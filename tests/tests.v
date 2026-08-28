@@ -51,7 +51,7 @@ Section Max_list.
     Qed.
   End ML0.
 
-  (* We use a let ... in ... in the definition of a function *)
+  (* Same as 0, but we use a let ... in ... in the definition of a function *)
   (* TODO: loops forever *)
   (* Section ML1. *)
   (*   Variable max_opt : option Z -> option Z -> option Z. *)
@@ -80,7 +80,7 @@ Section Max_list.
   (*   Qed. *)
   (* End ML1. *)
 
-  (* The max_list function is defined and not axiomatized anymore *)
+  (* Same as 0, but the max_list function is defined and not axiomatized anymore *)
   Section ML2.
     Variable max_opt : option Z -> option Z -> option Z.
     Hypothesis max_opt_None_None :
@@ -110,7 +110,9 @@ Section Max_list.
     Qed.
   End ML2.
 
-  (* We replace Z with an abstract type *)
+  (* Same as 0, but we replace Z with an abstract type
+     Commutativity of max_opt is now required
+   *)
   Section ML3.
     Variable A : Type.
     Hypothesis CA : CompDec A.
@@ -141,6 +143,40 @@ Section Max_list.
       snipe.
     Qed.
   End ML3.
+
+  (* Combination of 2 and 3 *)
+  Section ML23.
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+    Variable lt : A -> A -> bool.
+
+    Variable max_opt : option A -> option A -> option A.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (lt a b) then b else a).
+    Hypothesis max_opt_comm : forall a b,
+        max_opt a b = max_opt b a.
+
+    Fixpoint max_list23 (l:list A) (acc:option A) : option A :=
+      match l with
+      | [] => acc
+      | x::xs => max_list23 xs (max_opt acc (Some x))
+      end.
+    Lemma max_list23_app : forall l1 l2 acc,
+        max_list23 (l1++l2) acc = max_list23 l2 (max_list23 l1 acc).
+    Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed.
+
+    Goal forall a b l,
+        Some b = max_list23 l None ->
+        Some (if (lt a b) then b else a) = max_list23 (l ++ [a]) None.
+    Proof.
+      generalize max_list23_app.
+      snipe.
+    Qed.
+  End ML23.
 
 End Max_list.
 
