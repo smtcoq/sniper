@@ -178,6 +178,37 @@ Section Max_list.
     Qed.
   End ML23.
 
+  (* Same as 2, but the max_list function is defined using an internal anonymous fixpoint *)
+  Section ML4.
+    Variable max_opt : option Z -> option Z -> option Z.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_None_Some : forall b,
+        max_opt None (Some b) = Some b.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a).
+
+    Definition max_list4 : list Z -> option Z -> option Z :=
+      fix ml (l : list Z) (acc : option Z) {struct l} : option Z :=
+        match l with
+        | [] => acc
+        | x::xs => ml xs (max_opt acc (Some x))
+        end.
+    Lemma max_list4_app : forall l1 l2 acc,
+        max_list4 (l1++l2) acc = max_list4 l2 (max_list4 l1 acc).
+    Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed.
+
+    Goal forall a b l,
+        Some b = max_list4 l None ->
+        Some (if (a <? b)%Z then b else a) = max_list4 (l ++ [a]) None.
+    Proof.
+      generalize max_list4_app.
+      snipe.
+    Qed.
+  End ML4.
+
 End Max_list.
 
 
