@@ -305,7 +305,6 @@ Section Max_list.
         Some b = max_list l None ->
         Some (if comp then b else a) = max_list (l ++ [a]) None.
     Proof.
-      scope.
       assert (H100:forall c, (c = Eq \/ c = Lt) \/ c = Gt) by (intros [ | | ]; auto).
       snipe.
     Qed.
