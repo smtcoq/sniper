@@ -309,6 +309,45 @@ Section Max_list.
     Qed.
   End ML6.
 
+  (* Same as 6, but max is generic over comparison *)
+  Section ML7.
+    Variable max : forall {A}, (A -> A -> comparison) -> A -> A -> A.
+    Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
+
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+
+    Variable cmp : A -> A -> comparison.
+
+    Hypothesis max_None_None :
+        max (option_cmp cmp) None None = None.
+    Hypothesis max_Some_None : forall a,
+        max (option_cmp cmp) (Some a) None = Some a.
+    Hypothesis max_Some_Some : forall a b,
+        max (option_cmp cmp) (Some a) (Some b) = Some (max cmp a b).
+    Hypothesis max_opt_comm : forall a b,
+        max cmp a b = max cmp b a.
+
+    Variable max_list : list A -> option A -> option A.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max (option_cmp cmp) acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list l None ->
+        Some (if comp then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      scope.
+      Fail verit_nocompdecs.
+    (*   snipe. *)
+    (* Qed. *)
+    Abort.
+  End ML7.
+
 End Max_list.
 
 
