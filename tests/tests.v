@@ -306,8 +306,8 @@ Section Max_list.
         Some (if comp then b else a) = max_list (l ++ [a]) None.
     Proof.
       scope.
-      assert (H100:forall c, c = Eq \/ c = Lt \/ c = Gt) by (intros [ | | ]; auto).
-      snipe. intro H101. rewrite <- orb_assoc. apply H101.
+      assert (H100:forall c, (c = Eq \/ c = Lt) \/ c = Gt) by (intros [ | | ]; auto).
+      snipe.
     Qed.
   End ML6.
 
