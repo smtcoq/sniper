@@ -178,12 +178,13 @@ Ltac2 mutable sniper_transformations () :=
 (* To add a new transformation `my_transfo`:
 
      Ltac2 Set sniper_transformations as st := fun () =>
-       ((trigger_my_transfo (), is_global, continue_on_subgoals), "my_transfo", filter_my_transfo ())::(st ()).
+       ((trigger_my_transfo (), multiple_times, continue_on_subgoals), "my_transfo", filter_my_transfo ())::(st ()).
 
    - `trigger_my_transfo` is what triggers the transformation
 
-   - `is_global` is a boolean stating if the transformation acts on the
-     whole goal or on a single hypothesis or on the conclusion
+   - `multiple_times` is a boolean stating if the transformation can be applied
+     several times on the same parameters returned by the triggers. Be careful
+     before putting it to `true` as it is likely to make the orchestrator loop.
 
    - `continue_on_subgoals`, of type `option (int * int)`, states on
      which subgoals to continue the transformations, if the tactic may
@@ -205,6 +206,10 @@ Ltac2 mutable sniper_transformations () :=
    - `"Short description"` is a short description of the transformation
 
    - `"Long description"` is a long description of the transformation
+
+  Note that a transformation whose trigger returns parameters can be applied
+  locally, whereas a transformation whose trigger does not return anything is
+  considered global.
  *)
 
 Ltac2 scope_verbos v := orchestrator 0 5 { all_tacs := sniper_transformations ()} { already_triggered := [] } v.
