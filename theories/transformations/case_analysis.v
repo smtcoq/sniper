@@ -657,6 +657,12 @@ Ltac2 rec is_not_in_list (p : constr list) (z : constr) :=
   | x::xs => if Constr.equal x z then false else is_not_in_list xs z
   end.
 
+Ltac2 rec get_codomain (c:constr) :=
+  match Constr.Unsafe.kind c with
+  | Constr.Unsafe.Prod _ c => get_codomain c
+  | _ => c
+  end.
+
 Ltac2 get_head (c : constr) :=
 let k := Constr.Unsafe.kind c in 
 match k with
@@ -692,11 +698,16 @@ match l with
     let tyty := Constr.type ty in 
     if is_sort ty then aux p xs else
     if Constr.equal tyty 'Prop then aux p xs else
-    let hd := get_head ty in
-    if is_indu hd then 
+    (* Heuristic: we look only at inductive types present in codomains.
+       It allows the prover to do a case analysis of (f x₁ ... xₙ) if the
+         codomain of f is an inductive, as well as on a variable whose type is
+         an inductive
+    *)
+    let ty := get_codomain ty in
+    let ind := get_head ty in
+    if is_indu ind then
     if
     is_not_in_list p ty then
-    let ind := get_head ty in
     if is_not_in_list p ind then
     (ltac1:(ind ty |- try (let params := get_tail ty in (* removing this idtac may cause infinite loops *)
     get_projs_st_default_quote ind params)) (Ltac1.of_constr ind) (Ltac1.of_constr ty)) ; 
