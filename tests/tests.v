@@ -300,12 +300,13 @@ Section Max_list.
     Hypothesis max_list_app : forall l1 l2 acc,
         max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
 
+From Ltac2 Require Import Printf.
+
     Goal forall a b l comp,
         comp = true <-> cmp a b = Lt ->
         Some b = max_list l None ->
         Some (if comp then b else a) = max_list (l ++ [a]) None.
     Proof.
-      assert (H100:forall c, (c = Eq \/ c = Lt) \/ c = Gt) by (intros [ | | ]; auto).
       snipe.
     Qed.
   End ML6.
