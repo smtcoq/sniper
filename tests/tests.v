@@ -276,6 +276,41 @@ Section Max_list.
     Qed.
   End ML5.
 
+  (* Same as 5, but comparison is stated differently *)
+  Section ML6.
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+    Variable cmp : A -> A -> comparison.
+
+    Variable max_opt : option A -> option A -> option A.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (comparison_eqb (cmp a b) Lt) then b else a).
+    Hypothesis max_opt_comm : forall a b,
+        max_opt a b = max_opt b a.
+
+    Variable max_list : list A -> option A -> option A.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max_opt acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list l None ->
+        Some (if comp then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      scope.
+      assert (H100:forall c, c = Eq \/ c = Lt \/ c = Gt) by (intros [ | | ]; auto).
+      snipe. intro H101. rewrite <- orb_assoc. apply H101.
+    Qed.
+  End ML6.
+
 End Max_list.
 
 
