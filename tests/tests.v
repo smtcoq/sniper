@@ -52,33 +52,34 @@ Section Max_list.
   End ML0.
 
   (* Same as 0, but we use a let ... in ... in the definition of a function *)
-  (* TODO: loops forever *)
-  (* Section ML1. *)
-  (*   Variable max_opt : option Z -> option Z -> option Z. *)
-  (*   Hypothesis max_opt_None_None : *)
-  (*     max_opt None None = None. *)
-  (*   Hypothesis max_opt_Some_None : forall a, *)
-  (*       max_opt (Some a) None = Some a. *)
-  (*   Hypothesis max_opt_None_Some : forall b, *)
-  (*       max_opt None (Some b) = Some b. *)
-  (*   Hypothesis max_opt_Some_Some : forall a b, *)
-  (*       max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a). *)
+  Section ML1.
+    Variable max_opt : option Z -> option Z -> option Z.
+    Hypothesis max_opt_None_None :
+      max_opt None None = None.
+    Hypothesis max_opt_Some_None : forall a,
+        max_opt (Some a) None = Some a.
+    Hypothesis max_opt_None_Some : forall b,
+        max_opt None (Some b) = Some b.
+    Hypothesis max_opt_Some_Some : forall a b,
+        max_opt (Some a) (Some b) = Some (if (a <? b)%Z then b else a).
 
-  (*   Variable max_list : list Z -> option Z -> option Z. *)
-  (*   Hypothesis max_list_nil : forall acc, *)
-  (*       max_list [] acc = acc. *)
-  (*   Hypothesis max_list_cons : forall x xs acc, *)
-  (*     max_list (x::xs) acc = *)
-  (*       let a := max_opt acc (Some x) in *)
-  (*       max_list xs a. *)
+    Variable max_list : list Z -> option Z -> option Z.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+      max_list (x::xs) acc =
+        let a := max_opt acc (Some x) in
+        max_list xs a.
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
 
-  (*   Goal forall a b l, *)
-  (*       Some b = max_list l None -> *)
-  (*       Some (if (a <? b)%Z then b else a) = max_list (l ++ [a]) None. *)
-  (*   Proof. *)
-  (*     snipe. *)
-  (*   Qed. *)
-  (* End ML1. *)
+    Goal forall a b l,
+        Some b = max_list l None ->
+        Some (if (a <? b)%Z then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      snipe.
+    Qed.
+  End ML1.
 
   (* Same as 0, but the max_list function is defined and not axiomatized anymore *)
   Section ML2.
