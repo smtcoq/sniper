@@ -305,19 +305,25 @@ Section Max_list.
         Some b = max_list l None ->
         Some (if comp then b else a) = max_list (l ++ [a]) None.
     Proof.
-      snipe.
+      snipe_no_check.
     Qed.
   End ML6.
 
   (* Same as 6, but max is generic over comparison *)
   Section ML7.
     Variable max : forall {A}, (A -> A -> comparison) -> A -> A -> A.
-    Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
+    Variable option_cmp :
+      forall {A}, (A -> A -> comparison) ->
+                  option A -> option A -> comparison.
 
     Variable A : Type.
     Hypothesis CA : CompDec A.
 
     Variable cmp : A -> A -> comparison.
+
+    Hypothesis max_Lt : forall x y, cmp x y = Lt -> max cmp x y = y.
+    Hypothesis max_Ge : forall x y, cmp x y <> Lt -> max cmp x y = x.
+    Hypothesis max_comm : forall a b, max cmp a b = max cmp b a.
 
     Hypothesis max_None_None :
         max (option_cmp cmp) None None = None.
@@ -325,8 +331,6 @@ Section Max_list.
         max (option_cmp cmp) (Some a) None = Some a.
     Hypothesis max_Some_Some : forall a b,
         max (option_cmp cmp) (Some a) (Some b) = Some (max cmp a b).
-    Hypothesis max_opt_comm : forall a b,
-        max cmp a b = max cmp b a.
 
     Variable max_list : list A -> option A -> option A.
     Hypothesis max_list_nil : forall acc,
@@ -341,11 +345,8 @@ Section Max_list.
         Some b = max_list l None ->
         Some (if comp then b else a) = max_list (l ++ [a]) None.
     Proof.
-      scope.
-      Fail verit_nocompdecs.
-    (*   snipe. *)
-    (* Qed. *)
-    Abort.
+      snipe.
+    Qed.
   End ML7.
 
 End Max_list.
