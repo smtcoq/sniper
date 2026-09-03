@@ -217,6 +217,7 @@ Ltac2 scope_debug () := scope_verbos Debug.
 
 Ltac2 scope_full () := scope_verbos Full.
 
+
 Ltac2 scope2_verbos v := orchestrator 0 5
   { all_tacs :=
       [
@@ -245,22 +246,39 @@ Ltac2 scope2_debug () := scope2_verbos Debug.
 
 Ltac2 scope2_full () := scope2_verbos Full.
 
+
 Tactic Notation "scope" := ltac2:(Control.enter (fun () => intros; scope ())).
-
 Tactic Notation "scope_info" := ltac2:(Control.enter (fun () => intros; scope_info ())).
-
 Tactic Notation "scope_full" := ltac2:(Control.enter (fun () => intros; scope_full ())).
+
+Tactic Notation "snipe" constr(h) :=
+  let tac := ltac2:(h |- Control.enter (fun () => intros; let _ := pose_hyps (global_of_ltac1_constr h) [] in scope (); ltac1:(verit_nocompdecs))) in
+  tac h.
+Tactic Notation "snipe" :=
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_nocompdecs))).
+Tactic Notation "snipe_no_check" constr(h) :=
+  let tac := ltac2:(h |- Control.enter (fun () => intros; let _ := pose_hyps (global_of_ltac1_constr h) [] in scope (); ltac1:(verit_no_check_nocompdecs))) in
+  tac h.
+Tactic Notation "snipe_no_check" :=
+  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_no_check_nocompdecs))).
+
+Tactic Notation "snipe_timeout" constr(h) int_or_var(timeout) :=
+  let tac := ltac2:(h t |- Control.enter (fun () => intros; let _ := pose_hyps (global_of_ltac1_constr h) [] in scope (); ltac1:(t' |- verit_nocompdecs_timeout t') t)) in
+  tac h timeout.
+Tactic Notation "snipe_timeout" int_or_var(timeout) :=
+  let tac := ltac2:(t |- Control.enter (fun () => intros; scope (); ltac1:(t' |- verit_nocompdecs_timeout t') t)) in
+  tac timeout.
+Tactic Notation "snipe_no_check_timeout" constr(h) int_or_var(timeout) :=
+  let tac := ltac2:(h t |- Control.enter (fun () => intros; let _ := pose_hyps (global_of_ltac1_constr h) [] in scope (); ltac1:(t' |- verit_no_check_nocompdecs_timeout t') t)) in
+  tac h timeout.
+Tactic Notation "snipe_no_check_timeout" int_or_var(timeout) :=
+  let tac := ltac2:(t |- Control.enter (fun () => intros; scope (); ltac1:(t' |- verit_no_check_nocompdecs_timeout t') t)) in
+  tac timeout.
+
 
 Tactic Notation "scope2" := ltac2:(Control.enter (fun () => intros ; scope2 ())).
 
-Tactic Notation "snipe_no_check" := 
-  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_no_check_nocompdecs))).
-
-Tactic Notation "snipe2_no_check" := 
-  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_nocompdecs))).
-
-Tactic Notation "snipe" :=
-  ltac2:(Control.enter (fun () => intros; scope (); ltac1:(verit_nocompdecs))).
-
 Tactic Notation "snipe2" :=
   ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_nocompdecs))).
+Tactic Notation "snipe2_no_check" :=
+  ltac2:(Control.enter (fun () => intros; scope2 (); ltac1:(verit_no_check_nocompdecs))).
