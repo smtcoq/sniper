@@ -113,4 +113,21 @@ let f0 := fun x : A => g (f x) in
 map g (map f []) = map f0 [])).
 Proof. intros. prenex_higher_order. Abort.
 
+Section Max.
+  Definition max {A} (cmp:A -> A -> comparison) (a b:A) :=
+    match cmp a b with
+    | Gt => a
+    | _ => b
+    end.
+
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+
+  Goal forall a b, max cmp a b = max cmp b a.
+  Proof.
+    intros.
+    prenex_higher_order.
+  Abort.
+End Max.
+
 End Tests.
