@@ -350,6 +350,52 @@ Section Max_list.
     Qed.
   End ML7.
 
+  (* Same as 7, but max is defined *)
+  Section ML8.
+    Definition max8 {A} (cmp:A -> A -> comparison) (a b:A) :=
+      match cmp a b with
+      | Gt => a
+      | _ => b
+      end.
+
+    Variable option_cmp :
+      forall {A}, (A -> A -> comparison) ->
+                  option A -> option A -> comparison.
+
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+
+    Variable cmp : A -> A -> comparison.
+
+    (* Hypothesis max8_Lt : forall x y, cmp x y = Lt -> max8 cmp x y = y. *)
+    (* Hypothesis max8_Ge : forall x y, cmp x y <> Lt -> max8 cmp x y = x. *)
+    (* Hypothesis max8_comm : forall a b, max8 cmp a b = max8 cmp b a. *)
+
+    Hypothesis max8_None_None :
+        max8 (option_cmp cmp) None None = None.
+    Hypothesis max8_Some_None : forall a,
+        max8 (option_cmp cmp) (Some a) None = Some a.
+    Hypothesis max8_Some_Some : forall a b,
+        max8 (option_cmp cmp) (Some a) (Some b) = Some (max8 cmp a b).
+
+    Variable max_list : list A -> option A -> option A.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max8 (option_cmp cmp) acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list l None ->
+        Some (if comp then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      prenex_higher_order.
+      scope_full.
+    Abort.
+  End ML8.
+
   (* (* Everything together *) *)
   (* Section MLTop. *)
   (*   Definition maxTop {A} (cmp:A -> A -> comparison) (a b:A) := *)

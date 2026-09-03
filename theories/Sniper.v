@@ -64,8 +64,8 @@ Ltac2 transfo_higher_order_equalities () :=
     "Given an hypothesis H of the form `a = b` where `a` (and `b`) have a function types, eta expands it by adding prenex quantification."
   ).
 
-(* CK: Not sure either why this transformation is defined as global. Maybe it is
-         tricky to write a trigger that computes the applied term?
+(* CK: Not sure why this transformation is defined as global. Maybe it is tricky
+       to write a trigger that computes the applied term?
 *)
 Ltac tactic_higher_order := prenex_higher_order.
 Ltac2 transfo_higher_order () :=
