@@ -49,9 +49,31 @@ Elpi Accumulate lp:{{
   mypose_list [] _ _.
 
 
+  pred section_variable2hyp i:constant, o:term.
+  section_variable2hyp C H :-
+    GR = const C,
+    coq.env.typeof GR Ty,
+    coq.typecheck Ty {{ Prop }} ok,
+    coq.env.global GR H.
+
+  pred section_variables2hyps i:list constant, o:list term.
+  section_variables2hyps [] [].
+  section_variables2hyps [C|CS] [H|HS] :-
+    section_variable2hyp C H,
+    section_variables2hyps CS HS.
+  section_variables2hyps [C|CS] HS :- section_variables2hyps CS HS.
+
+
   solve (goal Ctx _ TyG _ _ as G) GL :-
-    % `Trms` contains all the types of the hypotheses whose type is Prop
-    ctx_to_hyps Ctx Trms,
+    % Collect the section variables
+    coq.env.section-variables SV,
+    % Collect hypotheses from the section variables
+    section_variables2hyps SV SVHyps,
+    % Collect hypotheses from the context
+    ctx_to_hyps Ctx CtxHyps,
+    % `Trms` contains all the types of the hypotheses (from the local context
+    %   and the section variables) whose type is Prop
+    std.append SVHyps CtxHyps Trms,
     % `Na` containts all the eigenvariables, see
     %   https://github.com/LPCIC/coq-elpi/blob/master/builtin-doc/elpi-builtin.elpi#L393
     names Na,
