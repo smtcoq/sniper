@@ -120,12 +120,13 @@ Section Max.
     | _ => b
     end.
 
+  Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
   Variable A : Type.
   Variable cmp : A -> A -> comparison.
+  Hypothesis max_Some_Some : forall a b : A, max (option_cmp cmp) (Some a) (Some b) = Some (max cmp a b).
 
-  Goal forall a b, max cmp a b = max cmp b a.
+  Goal True.
   Proof.
-    intros.
     prenex_higher_order.
   Abort.
 End Max.
