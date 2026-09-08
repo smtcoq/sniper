@@ -50,11 +50,10 @@ Elpi Accumulate lp:{{
 
 
   pred section_variable2hyp i:constant, o:term.
-  section_variable2hyp C H :-
+  section_variable2hyp C Ty :-
     GR = const C,
     coq.env.typeof GR Ty,
-    coq.typecheck Ty {{ Prop }} ok,
-    coq.env.global GR H.
+    coq.typecheck Ty {{ Prop }} ok.
 
   pred section_variables2hyps i:list constant, o:list term.
   section_variables2hyps [] [].
@@ -134,6 +133,25 @@ let f0 := fun x : A => g (f x) in
      [] = x0 :: x1) ->
 map g (map f []) = map f0 [])).
 Proof. intros. prenex_higher_order. Abort.
+
+Section Max_NoProd.
+  Definition max_noprod {A} (cmp:A -> A -> comparison) (a b:A) :=
+    match cmp a b with
+    | Gt => a
+    | _ => b
+    end.
+
+  Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+  Variables a b : A.
+  Hypothesis max_Some_Some : max_noprod (option_cmp cmp) (Some a) (Some b) = Some (max_noprod cmp a b).
+
+  Goal True.
+  Proof.
+    prenex_higher_order.
+  Abort.
+End Max_NoProd.
 
 Section Max.
   Definition max {A} (cmp:A -> A -> comparison) (a b:A) :=
