@@ -15,11 +15,11 @@
         "trakt": "trakt"
       },
       "locked": {
-        "lastModified": 1788426397,
-        "narHash": "sha256-D3O4onVJmbo8U0b72x0cMsj+xkmFhFv+67j6NoY4axM=",
+        "lastModified": 1788954279,
+        "narHash": "sha256-Gi4qvvydk616o9RNADi8UQf0jgoVB2U0dJsw+nfaU7M=",
         "owner": "SMTCoq",
         "repo": "SMTCoq",
-        "rev": "c614bafd96af37fdb7c5ddb4a2662845a67b6c87",
+        "rev": "0cb5fbcca27dd7e273e7e7d8c804ee56cb591e59",
         "type": "github"
       },
       "original": {
@@ -123,11 +123,11 @@
         "rocq-utils": "rocq-utils"
       },
       "locked": {
-        "lastModified": 1787580542,
-        "narHash": "sha256-1Zsy2of4SupbMjhQTZ3KC1r1zqarf41cdKSlefbWMTc=",
+        "lastModified": 1788946368,
+        "narHash": "sha256-VSnyWWU568iaosQQJz6WFwys99LLF4wqNZAI6RGKTYE=",
         "owner": "rocq-trakt",
         "repo": "trakt",
-        "rev": "b245940ea5d942828c6bc00e42155931805d9474",
+        "rev": "dcbfe6c85b3e39ae273f8f5a0fd2653366e76f53",
         "type": "github"
       },
       "original": {
