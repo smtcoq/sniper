@@ -60,7 +60,7 @@ Elpi Accumulate lp:{{
   section_variables2hyps [C|CS] [H|HS] :-
     section_variable2hyp C H,
     section_variables2hyps CS HS.
-  section_variables2hyps [C|CS] HS :- section_variables2hyps CS HS.
+  section_variables2hyps [_|CS] HS :- section_variables2hyps CS HS.
 
   pred filter_function i:pair term (list term).
   filter_function F :-
