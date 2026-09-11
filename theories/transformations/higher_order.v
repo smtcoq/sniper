@@ -62,6 +62,12 @@ Elpi Accumulate lp:{{
     section_variables2hyps CS HS.
   section_variables2hyps [C|CS] HS :- section_variables2hyps CS HS.
 
+  pred filter_function i:pair term (list term).
+  filter_function F :-
+    fst F X,
+    contains_prenex_ho_ty X,
+    prenex_ho1_ty X.
+
 
   solve (goal Ctx _ TyG _ _ as G) GL :-
     % Collect the section variables
@@ -83,7 +89,7 @@ Elpi Accumulate lp:{{
     %   `contains_prenex_ho_ty` and `prenex_ho1_ty`, that is to say functions
     %   whose type has the shape Π (A₁ ... Aₙ : Type). Π f: (Π x: B. C). ...
     %   where B is not a product itself (CK: not sure why)
-    std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L,
+    std.filter Subs filter_function L,
     % `L'` truncates the lists of arguments to keep only those of type `Type` or
     %   product: this is the list of terms that we want to give name to
     trm_and_args_type_funs L L',
