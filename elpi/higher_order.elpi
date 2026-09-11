@@ -66,8 +66,9 @@ subterms_and_args (app [T|L]) Na [pr (app [T|L]) [], pr T L |R] :-
     std.forall L (contains_only_context_variables Na), !,
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
 subterms_and_args (app [T|L]) Na [pr T L2 | R] :-
-    contains_only_context_variables Na T, !,
+    contains_only_context_variables Na T,
     filter_top_only_context_variables L Na L2,
+    not (L2 = []), !,
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
 subterms_and_args (app [_|L]) Na R :- !,
     std.map L (x\ subterms_and_args x Na) R', std.flatten R' R.
