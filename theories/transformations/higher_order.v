@@ -178,16 +178,15 @@ Section Max.
 End Max.
 
 Section Max2.
+  Variable max_list : forall {A}, (A -> A -> comparison) -> list A -> option A -> option A.
+  Hypothesis H : forall (A : Type) (cmp : A -> A -> comparison) (l1 l2 : list A) (acc : option A),
+      max_list cmp (l1 ++ l2) acc = max_list cmp l2 (max_list cmp l1 acc).
   Variable A : Type.
   Variable cmp : A -> A -> comparison.
-  Variable max12 : (A -> A -> comparison) -> A -> A -> A.
-  Variable max_list12 : forall {A}, (A -> A -> comparison) -> list A -> option A -> option A.
-  Hypothesis H : forall (A : Type) (cmp : A -> A -> comparison) (l1 l2 : list A) (acc : option A),
-      max_list12 cmp (l1 ++ l2) acc = max_list12 cmp l2 (max_list12 cmp l1 acc).
   Variable a : A.
   Variable l : list A.
 
-  Goal max_list12 cmp (l ++ [a]) None = None.
+  Goal max_list cmp (l ++ [a]) None = None.
   Proof.
     prenex_higher_order.
   Abort.
