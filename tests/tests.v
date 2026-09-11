@@ -529,6 +529,59 @@ Section Max_list.
     Qed.
   End ML11.
 
+  (* Same as 11, but max_list is generic over cmp *)
+  Section ML12.
+    Definition max12 {A} (cmp:A -> A -> comparison) (a b:A) :=
+      match cmp a b with
+      | Gt => a
+      | _ => b
+      end.
+
+    Definition option_cmp12 {A} (cmp:A -> A -> comparison) (a b:option A) :=
+      match a with
+      | Some a0 => match b with
+                   | Some b0 => cmp a0 b0
+                   | None => Gt
+                   end
+      | None => match b with
+                | Some _ => Lt
+                | None => Eq
+                end
+      end.
+
+    Definition max_list12 {A} (cmp:A -> A -> comparison) : list A -> option A -> option A :=
+      fix ml (l : list A) (acc : option A) {struct l} : option A :=
+        match l with
+        | [] => acc
+        | x::xs => ml xs (max12 (option_cmp12 cmp) acc (Some x))
+        end.
+    Lemma max_list12_app : forall A (cmp:A -> A -> comparison) l1 l2 acc,
+        max_list12 cmp (l1++l2) acc = max_list12 cmp l2 (max_list12 cmp l1 acc).
+    Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed.
+
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+
+    Variable cmp : A -> A -> comparison.
+    Hypothesis cmp_Lt_Gt : forall a b, cmp a b = Lt <-> cmp b a = Gt.
+
+    Hypothesis max12_comm : forall a b, max12 cmp a b = max12 cmp b a.
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list12 cmp l None ->
+        Some (if comp then b else a) = max_list12 cmp (l ++ [a]) None.
+    Proof.
+      generalize max_list12_app.
+      scope.
+      assert (H100:forall (l1 l2 : list A) (acc : option A),
+                 f (l1 ++ l2) acc = f l2 (f l1 acc)) by apply H_inst.
+      clear H_inst.
+      verit_nocompdecs_timeout 30.
+      (* snipe_no_check_timeout 30. *)
+    Qed.
+  End ML12.
+
 End Max_list.
 
 
