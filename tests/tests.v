@@ -524,53 +524,10 @@ Section Max_list.
         Some b = max_list11 l None ->
         Some (if comp then b else a) = max_list11 (l ++ [a]) None.
     Proof.
-      snipe_no_check_timeout 30.
-    Abort.
+      generalize max_list11_app.
+      snipe_no_check.
+    Qed.
   End ML11.
-
-  (* (* Everything together *) *)
-  (* Section MLTop. *)
-  (*   Definition maxTop {A} (cmp:A -> A -> comparison) (a b:A) := *)
-  (*     match cmp a b with *)
-  (*     | Gt => a *)
-  (*     | _ => b *)
-  (*     end. *)
-
-  (*   Definition option_cmpTop {A} (cmp:A -> A -> comparison) (a b:option A) := *)
-  (*     match a with *)
-  (*     | Some a0 => match b with *)
-  (*                  | Some b0 => cmp a0 b0 *)
-  (*                  | None => Gt *)
-  (*                  end *)
-  (*     | None => match b with *)
-  (*               | Some _ => Lt *)
-  (*               | None => Eq *)
-  (*               end *)
-  (*     end. *)
-
-  (*   Definition max_listTop {A} (cmp:A -> A -> comparison) := *)
-  (*     fix ml (l:list A) (acc:option A) : option A := *)
-  (*       match l with *)
-  (*       | [] => acc *)
-  (*       | x :: l0 => let a := maxTop (option_cmpTop cmp) acc (Some x) in ml l0 a *)
-  (*       end. *)
-  (*   Lemma max_listTop_app : forall {A} (cmp:A -> A -> comparison) l1 l2 acc, *)
-  (*       max_listTop cmp (l1++l2) acc = max_listTop cmp l2 (max_listTop cmp l1 acc). *)
-  (*   Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed. *)
-
-  (*   Variable A : Type. *)
-  (*   Hypothesis CA : CompDec A. *)
-  (*   Variable cmp : A -> A -> comparison. *)
-
-  (*   Goal forall a b l comp, *)
-  (*       comp = true <-> cmp a b = Lt -> *)
-  (*       Some b = max_listTop cmp l None -> *)
-  (*       Some (if comp then b else a) = max_listTop cmp (l ++ [a]) None. *)
-  (*   Proof. *)
-  (*     generalize (max_listTop_app cmp). *)
-  (*     snipe. *)
-  (*   Qed. *)
-  (* End MLTop. *)
 
 End Max_list.
 
