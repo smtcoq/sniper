@@ -436,6 +436,51 @@ Section Max_list.
     Qed.
   End ML9.
 
+  (* Same as 9, but option_cmp is defined *)
+  Section ML10.
+    Definition max10 {A} (cmp:A -> A -> comparison) (a b:A) :=
+      match cmp a b with
+      | Gt => a
+      | _ => b
+      end.
+
+    Definition option_cmp10 {A} (cmp:A -> A -> comparison) (a b:option A) :=
+      match a with
+      | Some a0 => match b with
+                   | Some b0 => cmp a0 b0
+                   | None => Gt
+                   end
+      | None => match b with
+                | Some _ => Lt
+                | None => Eq
+                end
+      end.
+
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+
+    Variable cmp : A -> A -> comparison.
+    Hypothesis cmp_Lt_Gt : forall a b, cmp a b = Lt <-> cmp b a = Gt.
+
+    Hypothesis max10_comm : forall a b, max10 cmp a b = max10 cmp b a.
+
+    Variable max_list : list A -> option A -> option A.
+    Hypothesis max_list_nil : forall acc,
+        max_list [] acc = acc.
+    Hypothesis max_list_cons : forall x xs acc,
+        max_list (x::xs) acc = max_list xs (max10 (option_cmp10 cmp) acc (Some x)).
+    Hypothesis max_list_app : forall l1 l2 acc,
+        max_list (l1++l2) acc = max_list l2 (max_list l1 acc).
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list l None ->
+        Some (if comp then b else a) = max_list (l ++ [a]) None.
+    Proof.
+      snipe_no_check.
+    Qed.
+  End ML10.
+
   (* (* Everything together *) *)
   (* Section MLTop. *)
   (*   Definition maxTop {A} (cmp:A -> A -> comparison) (a b:A) := *)
