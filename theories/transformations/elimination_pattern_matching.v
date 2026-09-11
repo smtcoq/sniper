@@ -215,7 +215,7 @@ else
 ; clear foo ; 
 repeat match goal with 
 | u : Prop |-_ => let H0 := fresh in let u' := eval unfold u in u in assert (H0 : u') by 
-first [ intros; rewrite H ; reflexivity 
+first [ intros; rewrite H ; first [reflexivity | assumption]
 | let hyps := intro_return_vars in specialize_tuple hyps H ; 
 lazymatch goal with
             | Hrew : _ |- _ => solve [rewrite Hrew in H; assumption]
