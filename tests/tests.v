@@ -481,6 +481,53 @@ Section Max_list.
     Qed.
   End ML10.
 
+  (* Same as 10, but max_list is defined *)
+  Section ML11.
+    Definition max11 {A} (cmp:A -> A -> comparison) (a b:A) :=
+      match cmp a b with
+      | Gt => a
+      | _ => b
+      end.
+
+    Definition option_cmp11 {A} (cmp:A -> A -> comparison) (a b:option A) :=
+      match a with
+      | Some a0 => match b with
+                   | Some b0 => cmp a0 b0
+                   | None => Gt
+                   end
+      | None => match b with
+                | Some _ => Lt
+                | None => Eq
+                end
+      end.
+
+    Variable A : Type.
+    Hypothesis CA : CompDec A.
+
+    Variable cmp : A -> A -> comparison.
+    Hypothesis cmp_Lt_Gt : forall a b, cmp a b = Lt <-> cmp b a = Gt.
+
+    Hypothesis max11_comm : forall a b, max11 cmp a b = max11 cmp b a.
+
+    Definition max_list11 : list A -> option A -> option A :=
+      fix ml (l : list A) (acc : option A) {struct l} : option A :=
+        match l with
+        | [] => acc
+        | x::xs => ml xs (max11 (option_cmp11 cmp) acc (Some x))
+        end.
+    Lemma max_list11_app : forall l1 l2 acc,
+        max_list11 (l1++l2) acc = max_list11 l2 (max_list11 l1 acc).
+    Proof. induction l1 as [ |x xs IHxs]; simpl; auto. Qed.
+
+    Goal forall a b l comp,
+        comp = true <-> cmp a b = Lt ->
+        Some b = max_list11 l None ->
+        Some (if comp then b else a) = max_list11 (l ++ [a]) None.
+    Proof.
+      snipe_no_check_timeout 30.
+    Abort.
+  End ML11.
+
   (* (* Everything together *) *)
   (* Section MLTop. *)
   (*   Definition maxTop {A} (cmp:A -> A -> comparison) (a b:A) := *)
