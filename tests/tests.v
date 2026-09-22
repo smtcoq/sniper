@@ -572,13 +572,7 @@ Section Max_list.
         Some b = max_list12 cmp l None ->
         Some (if comp then b else a) = max_list12 cmp (l ++ [a]) None.
     Proof.
-      generalize max_list12_app.
-      scope.
-      assert (H100:forall (l1 l2 : list A) (acc : option A),
-                 f (l1 ++ l2) acc = f l2 (f l1 acc)) by apply H_inst.
-      clear H_inst.
-      verit_nocompdecs_timeout 30.
-      (* snipe_no_check_timeout 30. *)
+      snipe_no_check (max_list12_app _ cmp).
     Qed.
   End ML12.
 
