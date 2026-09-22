@@ -565,8 +565,6 @@ Section Max_list.
     Variable cmp : A -> A -> comparison.
     Hypothesis cmp_Lt_Gt : forall a b, cmp a b = Lt <-> cmp b a = Gt.
 
-    Hypothesis max12_comm : forall a b, max12 cmp a b = max12 cmp b a.
-
     Goal forall a b l comp,
         comp = true <-> cmp a b = Lt ->
         Some b = max_list12 cmp l None ->
