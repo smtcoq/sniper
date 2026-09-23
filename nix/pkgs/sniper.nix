@@ -5,9 +5,9 @@
 
   # Dependencies
   metarocq-template,
-  smtcoq,
   rocq-core,
   rocq-elpi,
+  smtcoq,
 
   # Arguments
   version ? null,

@@ -24,7 +24,7 @@
         lib = nixpkgs.lib.fix (lib: SMTCoq.lib // import ./nix/lib.nix { inherit lib; });
 
         overlays = {
-          sniper = import ./nix/sniper;
+          sniper = import ./nix/pkgs;
 
           default = nixpkgs.lib.composeManyExtensions [
             SMTCoq.overlays.default
