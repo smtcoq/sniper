@@ -5,13 +5,17 @@
 
   # Dependencies
   metarocq-template,
-  smtcoq,
   rocq-core,
+  rocq-elpi,
+  smtcoq,
 
   # Arguments
   version ? null,
 }:
 
+let
+  case = case: out: { inherit case out; };
+in
 mkRocqDerivation rec {
   inherit version;
 
@@ -22,7 +26,9 @@ mkRocqDerivation rec {
   mlPlugin = true;
   useDune = true;
 
-  defaultVersion = "dev";
+  defaultVersion = lib.switch rocq-elpi.version [
+    (case (lib.versions.isGe "3.3.1") "dev")
+  ] null;
   release."dev" = {
     src = lib.cleanSource ../..;
     hash = "";

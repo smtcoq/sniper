@@ -49,9 +49,36 @@ Elpi Accumulate lp:{{
   mypose_list [] _ _.
 
 
+  pred section_variable2hyp i:constant, o:term.
+  section_variable2hyp C Ty :-
+    GR = const C,
+    coq.env.typeof GR Ty,
+    coq.typecheck Ty {{ Prop }} ok.
+
+  pred section_variables2hyps i:list constant, o:list term.
+  section_variables2hyps [] [].
+  section_variables2hyps [C|CS] [H|HS] :-
+    section_variable2hyp C H,
+    section_variables2hyps CS HS.
+  section_variables2hyps [_|CS] HS :- section_variables2hyps CS HS.
+
+  pred filter_function i:pair term (list term).
+  filter_function F :-
+    fst F X,
+    contains_prenex_ho_ty X,
+    prenex_ho1_ty X.
+
+
   solve (goal Ctx _ TyG _ _ as G) GL :-
-    % `Trms` contains all the types of the hypotheses whose type is Prop
-    ctx_to_hyps Ctx Trms,
+    % Collect the section variables
+    coq.env.section-variables SV,
+    % Collect hypotheses from the section variables
+    section_variables2hyps SV SVHyps,
+    % Collect hypotheses from the context
+    ctx_to_hyps Ctx CtxHyps,
+    % `Trms` contains all the types of the hypotheses (from the local context
+    %   and the section variables) whose type is Prop
+    std.append SVHyps CtxHyps Trms,
     % `Na` containts all the eigenvariables, see
     %   https://github.com/LPCIC/coq-elpi/blob/master/builtin-doc/elpi-builtin.elpi#L393
     names Na,
@@ -62,7 +89,7 @@ Elpi Accumulate lp:{{
     %   `contains_prenex_ho_ty` and `prenex_ho1_ty`, that is to say functions
     %   whose type has the shape Π (A₁ ... Aₙ : Type). Π f: (Π x: B. C). ...
     %   where B is not a product itself (CK: not sure why)
-    std.filter Subs (x\ fst x X, contains_prenex_ho_ty X, prenex_ho1_ty X) L,
+    std.filter Subs filter_function L,
     % `L'` truncates the lists of arguments to keep only those of type `Type` or
     %   product: this is the list of terms that we want to give name to
     trm_and_args_type_funs L L',
@@ -112,5 +139,57 @@ let f0 := fun x : A => g (f x) in
      [] = x0 :: x1) ->
 map g (map f []) = map f0 [])).
 Proof. intros. prenex_higher_order. Abort.
+
+Section Max_NoProd.
+  Definition max_noprod {A} (cmp:A -> A -> comparison) (a b:A) :=
+    match cmp a b with
+    | Gt => a
+    | _ => b
+    end.
+
+  Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+  Variables a b : A.
+  Hypothesis max_Some_Some : max_noprod (option_cmp cmp) (Some a) (Some b) = Some (max_noprod cmp a b).
+
+  Goal True.
+  Proof.
+    prenex_higher_order.
+  Abort.
+End Max_NoProd.
+
+Section Max.
+  Definition max {A} (cmp:A -> A -> comparison) (a b:A) :=
+    match cmp a b with
+    | Gt => a
+    | _ => b
+    end.
+
+  Variable option_cmp : forall {A}, (A -> A -> comparison) -> option A -> option A -> comparison.
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+  Hypothesis max_Some_Some : forall a b : A, max (option_cmp cmp) (Some a) (Some b) = Some (max cmp a b).
+
+  Goal True.
+  Proof.
+    prenex_higher_order.
+  Abort.
+End Max.
+
+Section Max2.
+  Variable max_list : forall {A}, (A -> A -> comparison) -> list A -> option A -> option A.
+  Hypothesis H : forall (A : Type) (cmp : A -> A -> comparison) (l1 l2 : list A) (acc : option A),
+      max_list cmp (l1 ++ l2) acc = max_list cmp l2 (max_list cmp l1 acc).
+  Variable A : Type.
+  Variable cmp : A -> A -> comparison.
+  Variable a : A.
+  Variable l : list A.
+
+  Goal max_list cmp (l ++ [a]) None = None.
+  Proof.
+    prenex_higher_order.
+  Abort.
+End Max2.
 
 End Tests.
