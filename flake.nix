@@ -60,7 +60,7 @@
           };
 
           checks = pkgs.lib.listToAttrs (
-            map (self.lib.mkSniper pkgs) (self.lib.mkRocqConstraints pkgs.rocqPackages "sniper")
+            map (self.lib.mkSniper pkgs) (self.lib.mkRocqConstraints pkgs "sniper")
           );
         };
     };
